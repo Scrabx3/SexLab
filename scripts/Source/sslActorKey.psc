@@ -47,13 +47,19 @@ int Function BuildActorKey(Actor akActor, bool abPreferVictim) global
   return ret
 EndFunction
 
-int[] Function BuildActorKeyArray(Actor[] akActors, int VictimIdx) global
+int[] Function BuildActorKeyArray(Actor[] akActors, int aiVictimIdx) global
   int[] ret = Utility.CreateIntArray(akActors.Length)
   int i = 0
   While(i < akActors.Length)
-    ret[i] = BuildActorKey(akActors[i], i == VictimIdx)
+    ret[i] = BuildActorKey(akActors[i], i == aiVictimIdx)
     i += 1
   EndWhile
+  return ret
+EndFunction
+
+int[] Function BuildSortedActorKeyArray(Actor[] akActors, int aiVictimIdx) global
+  int[] ret = BuildActorKeyArray(akActors, aiVictimIdx)
+  ; TODO: sort ret
   return ret
 EndFunction
 

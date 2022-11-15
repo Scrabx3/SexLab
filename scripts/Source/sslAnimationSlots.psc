@@ -37,10 +37,16 @@ bool Function MatchKey(int[] asPositionKey, int[] asAnimationKey)
 	return true
 EndFunction
 
-sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String[] asTags, String[] asTagsSuppressed, bool abAllTags, Actor akVictim, bool abUseBed, bool abAggressive, bool abRestrictAggressive)
+sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, String asTagsSuppressed, bool abAllTags, Actor akVictim, bool abUseBed, bool abAggressive, bool abRestrictAggressive)
 	; Get keys to quickly filter animations based on their key data
 	int vicidx = akPositions.Find(akVictim)
-	int[] keys = sslActorKey.BuildActorKeyArray(akPositions, vicidx)
+	int[] keys = sslActorKey.BuildSortedActorKeyArray(akPositions, vicidx)
+	String[] tags = StringSplit(asTags)
+	String[] tagss = StringSplit(asTagsSuppressed)
+	return _GetAnimations(keys, tags, tagss, abAllTags, abUseBed, abAggressive, abRestrictAggressive)
+EndFunction
+
+sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String[] asTagsSuppressed, bool abAllTags, bool abUseBed, bool abAggressive, bool abRestrictAggressive)
 	; Initiate the array directly, simple slice it later
 	sslBaseAnimation[] ret = new sslBaseAnimation[128]
 	int i = Slotted
@@ -50,7 +56,7 @@ sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String[] asTags, 
 		if Objects[i]
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
 			; Check for appropiate enabled aniamtion, position & race
-			If(Slot.Enabled && Slot.PositionCount == keys.Length && MatchKey(keys, Slot.ActorKeys))
+			If(Slot.Enabled && Slot.PositionCount == aiKeys.Length && MatchKey(aiKeys, Slot.ActorKeys))
 				String[] tags = Slot.GetRawTags()
 				; Suppress or ignore aggressive animation tags
 				If((!abRestrictAggressive || abAggressive == (tags.Find("Aggressive") != -1)) && Slot.TagSearch(asTags, asTagsSuppressed, abAllTags) && \
