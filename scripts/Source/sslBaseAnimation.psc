@@ -46,6 +46,13 @@ float[] BedOffset ; = forward, side, up, rotate
 
 bool property GenderedCreatures auto hidden
 
+int[] _ActorKeys	; See sslActorKey.psc
+int[] Property ActorKeys
+	int[] Function Get()
+		return _ActorKeys
+	EndFunction
+EndProperty
+
 ; ------------------------------------------------------- ;
 ; --- Array Indexers                                  --- ;
 ; ------------------------------------------------------- ;

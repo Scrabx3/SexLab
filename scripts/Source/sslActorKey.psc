@@ -35,7 +35,9 @@ ScriptName sslActorKey Hidden
 30 - Pad31
 /;
 
-int Function BuildGenderKey(Actor akActor, bool abPreferVictim) global
+; This might be worth putting into a dll solely due to how much it might get called
+; its one of the most important functions in this new architecture design
+int Function BuildActorKey(Actor akActor, bool abPreferVictim) global
   int genderid ; TODO: getgender()
   int raceidx ; TODO: getracekeyidx()
   int ret = Math.LogicalOr(raceidx, genderid)
@@ -45,11 +47,11 @@ int Function BuildGenderKey(Actor akActor, bool abPreferVictim) global
   return ret
 EndFunction
 
-int[] Function BuildGenderKeyArray(Actor[] akActors, int VictimIdx) global
+int[] Function BuildActorKeyArray(Actor[] akActors, int VictimIdx) global
   int[] ret = Utility.CreateIntArray(akActors.Length)
   int i = 0
   While(i < akActors.Length)
-    ret[i] = BuildGenderKey(akActors[i], i == VictimIdx)
+    ret[i] = BuildActorKey(akActors[i], i == VictimIdx)
     i += 1
   EndWhile
   return ret

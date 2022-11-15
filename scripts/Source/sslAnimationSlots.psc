@@ -20,6 +20,58 @@ sslThreadLibrary property ThreadLib auto
 ; --- Animation Filtering                             --- ;
 ; ------------------------------------------------------- ;
 
+bool Function MatchKey(int[] asPositionKey, int[] asAnimationKey)
+	int i = 0
+	While(i < asPositionKey.Length)
+		; return invalid match if the animation key isnt fully covered by the position key
+		; reasons for this to happen is are gender or race mismatches or because the 
+		; animation expects a victim at position i but the position at i isnt a victim
+		; note that this key combines multiple genders, so the position key at i may be male, 
+		; female and futa all at the same time
+		int match = Math.LogicalAnd(asPositionKey[i], asAnimationKey[i])
+		If(match < asAnimationKey[i])
+			return false
+		EndIf
+		i += 1
+	EndWhile
+	return true
+EndFunction
+
+sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String[] asTags, String[] asTagsSuppressed, bool abAllTags, Actor akVictim, bool abUseBed, bool abAggressive, bool abRestrictAggressive)
+	; Get keys to quickly filter animations based on their key data
+	int vicidx = akPositions.Find(akVictim)
+	int[] keys = sslActorKey.BuildActorKeyArray(akPositions, vicidx)
+	; Initiate the array directly, simple slice it later
+	sslBaseAnimation[] ret = new sslBaseAnimation[128]
+	int i = Slotted
+	int ii = 0
+	while i
+		i -= 1
+		if Objects[i]
+			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
+			; Check for appropiate enabled aniamtion, position & race
+			If(Slot.Enabled && Slot.PositionCount == keys.Length && MatchKey(keys, Slot.ActorKeys))
+				String[] tags = Slot.GetRawTags()
+				; Suppress or ignore aggressive animation tags
+				If((!abRestrictAggressive || abAggressive == (tags.Find("Aggressive") != -1)) && Slot.TagSearch(asTags, asTagsSuppressed, abAllTags) && \
+					((!abUseBed && tags.Find("BedOnly") == -1) || (abUseBed && tags.Find("Furniture") == -1 && (!Config.BedRemoveStanding || tags.Find("Standing") == -1))))
+					ret[ii] = Slot
+					If(ii == 127)	; Array is full
+						return ret
+					EndIf
+				EndIf
+			EndIf
+		endIf
+	endWhile
+	sslBaseAnimation[] _ret = sslUtility.AnimationArray(ii)
+	int j = 0
+	While(j < _ret.Length)
+		_ret[j] = ret[j]
+		j += 1
+	EndWhile
+	return _ret
+EndFunction
+
 sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
 	; Log("GetByTags(ActorCount="+ActorCount+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
 	; Making the tags lists and optimize for CACHE
