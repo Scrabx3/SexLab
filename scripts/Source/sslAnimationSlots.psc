@@ -39,8 +39,7 @@ EndFunction
 
 sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, String asTagsSuppressed, bool abAllTags, Actor akVictim, bool abAggressive, bool abUseBed)
 	; Get keys to quickly filter animations based on their key data
-	int vicidx = akPositions.Find(akVictim)
-	int[] keys = sslActorKey.BuildSortedActorKeyArray(akPositions, vicidx)
+	int[] keys = sslActorKey.BuildSortedActorKeyArray(akPositions, akPositions.Find(akVictim))
 	String[] tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTags))
 	String[] tagss = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTagsSuppressed))
 	return _GetAnimations(keys, tags, tagss, abAllTags, abUseBed, abAggressive)
@@ -181,6 +180,55 @@ sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Female
 endFunction
 
 sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
+	return GetAnimations(Positions, "", "", false, none, Aggressive, false)
+EndFunction
+
+sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
+	int[] keys = Utility.CreateIntArray(Males + Females)
+	int n = 0
+	While(n < Females)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		n += 1
+	EndWhile
+	int i = 0
+	While(i < Males)
+		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
+		i += 1
+	EndWhile
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	String[] tags = Utility.CreateStringArray(0)
+	String[] tagss
+	If(RestrictAggressive)
+		tagss = Utility.CreateStringArray(1, "Aggressive")
+	Else
+		tagss = Utility.CreateStringArray(0)
+	EndIf
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags, tagss, false, IsAggressive, UsingBed)
+EndFunction
+
+sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	int[] keys = Utility.CreateIntArray(Males + Females)
+	int n = 0
+	While(n < Females)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		n += 1
+	EndWhile
+	int i = 0
+	While(i < Males)
+		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
+		i += 1
+	EndWhile
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	String[] _tags = PapyrusUtil.StringSplit(Tags)
+	String[] _tagss = PapyrusUtil.StringSplit(TagsSuppressed)
+	If(RestrictAggressive && _tagss.Find("Aggressive") == -1)
+		PapyrusUtil.PushString(_tagss, "Aggressive")
+	EndIf
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), _tags, _tagss, RequireAll, IsAggressive, UsingBed)
+EndFunction
+
+
+sslBaseAnimation[] function PickByActors_Legacy(Actor[] Positions, int Limit = 64, bool Aggressive = false)
 	Log("PickByActors(Positions="+Positions+", Limit="+Limit+", Aggressive="+Aggressive+")")
 	int[] Genders = ActorLib.GenderCount(Positions)
 	sslBaseAnimation[] Matches = GetByDefault(Genders[0], Genders[1], Aggressive)
@@ -204,7 +252,7 @@ sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool
 	return Matches
 endFunction
 
-sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
+sslBaseAnimation[] function GetByDefault_Legacy(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
 	Log("GetByDefault(Males="+Males+", Females="+Females+", IsAggressive="+IsAggressive+", UsingBed="+UsingBed+", RestrictAggressive="+RestrictAggressive+")")
 	if Males == 0 && Females == 0
 		return none ; No actors passed or creatures present
@@ -251,7 +299,7 @@ sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressi
 	return Output
 endFunction
 
-sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+sslBaseAnimation[] function GetByDefaultTags_Legacy(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
 	Log("GetByDefaultTags(Males="+Males+", Females="+Females+", IsAggressive="+IsAggressive+", UsingBed="+UsingBed+", RestrictAggressive="+RestrictAggressive+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
 	if Males == 0 && Females == 0
 		return none ; No actors passed or creatures present

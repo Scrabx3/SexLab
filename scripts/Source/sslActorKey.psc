@@ -49,7 +49,12 @@ int Function BuildActorKey(Actor akActor, bool abPreferVictim) global
   return ret
 EndFunction
 
-int[] Function BuildActorKeyArray(Actor[] akActors, int aiVictimIdx) global
+; This is just a wrapper in case the key is ever expanded with some set bit as default
+int Function BuildBlankKeyByLegacyGender(int aiLegacyGender) global
+  return GetGenderByLegacyGender(aiLegacyGender)
+EndFunction
+
+int[] Function BuildActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
   int[] ret = Utility.CreateIntArray(akActors.Length)
   int i = 0
   While(i < akActors.Length)
@@ -59,7 +64,7 @@ int[] Function BuildActorKeyArray(Actor[] akActors, int aiVictimIdx) global
   return ret
 EndFunction
 
-int[] Function BuildSortedActorKeyArray(Actor[] akActors, int aiVictimIdx) global
+int[] Function BuildSortedActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
   return SortActorKeyArray(BuildActorKeyArray(akActors, aiVictimIdx))
 EndFunction
 
