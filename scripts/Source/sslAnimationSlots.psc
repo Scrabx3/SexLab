@@ -37,16 +37,16 @@ bool Function MatchKey(int[] asPositionKey, int[] asAnimationKey)
 	return true
 EndFunction
 
-sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, String asTagsSuppressed, bool abAllTags, Actor akVictim, bool abUseBed, bool abAggressive, bool abRestrictAggressive)
+sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, String asTagsSuppressed, bool abAllTags, Actor akVictim, bool abAggressive, bool abUseBed)
 	; Get keys to quickly filter animations based on their key data
 	int vicidx = akPositions.Find(akVictim)
 	int[] keys = sslActorKey.BuildSortedActorKeyArray(akPositions, vicidx)
-	String[] tags = StringSplit(asTags)
-	String[] tagss = StringSplit(asTagsSuppressed)
-	return _GetAnimations(keys, tags, tagss, abAllTags, abUseBed, abAggressive, abRestrictAggressive)
+	String[] tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTags))
+	String[] tagss = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTagsSuppressed))
+	return _GetAnimations(keys, tags, tagss, abAllTags, abUseBed, abAggressive)
 EndFunction
 
-sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String[] asTagsSuppressed, bool abAllTags, bool abUseBed, bool abAggressive, bool abRestrictAggressive)
+sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String[] asTagsSuppressed, bool abAllTags, bool abAggressive, bool abUseBed)
 	; Initiate the array directly, simple slice it later
 	sslBaseAnimation[] ret = new sslBaseAnimation[128]
 	int i = Slotted
@@ -59,12 +59,13 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String
 			If(Slot.Enabled && Slot.PositionCount == aiKeys.Length && MatchKey(aiKeys, Slot.ActorKeys))
 				String[] tags = Slot.GetRawTags()
 				; Suppress or ignore aggressive animation tags
-				If((!abRestrictAggressive || abAggressive == (tags.Find("Aggressive") != -1)) && Slot.TagSearch(asTags, asTagsSuppressed, abAllTags) && \
+				If((!abAggressive || tags.Find("Aggressive") > -1) && Slot.TagSearch(asTags, asTagsSuppressed, abAllTags) && \
 					((!abUseBed && tags.Find("BedOnly") == -1) || (abUseBed && tags.Find("Furniture") == -1 && (!Config.BedRemoveStanding || tags.Find("Standing") == -1))))
 					ret[ii] = Slot
 					If(ii == 127)	; Array is full
 						return ret
 					EndIf
+					ii += 1
 				EndIf
 			EndIf
 		endIf
