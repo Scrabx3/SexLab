@@ -1,7 +1,9 @@
 ScriptName sslActorKey Hidden
 { Fancy bitflag magic to store actor data }
 
-
+; COMEBACK: It might be worth pushing this entire Script into a .dll
+; none of the operations here are overly expensive but its a lot of arithmetic and they are called quite a lot
+; and cpp syntax + compiler might be able to optimize this code quite significantly
 
 ;/ Bit flags are defined as follows:
 0  - Female
@@ -37,8 +39,22 @@ ScriptName sslActorKey Hidden
 30 - Pad31
 /;
 
-; NOTE: This might be worth defining within a dll solely due to how much it might get called
-; its one of the most important functions in this new architecture design
+
+; Return if aiCmp accepts aiKey, this mans:
+; aiKey and aiCmp must be representing the same Race
+; aiKey must be at least aiCmps gender
+; if aiCmp is a Victim, then aiKey must be a victim too
+bool Function IsKeyAccepted(int aiKey, int aiCmp) global
+  If(GetRawKey_Creature(aiKey) != GetRawKey_Creature(aiCmp))
+    return false
+  ElseIf(Math.LogicalAND(GetRawKey_Gender(aiKey), GetRawKey_Gender(aiCmp)) != aiCmp)
+    return false
+  ElseIf(IsVictim(aiCmp) && !IsVictim(aiKey))
+    return false
+  EndIf
+  return true
+EndFunction
+
 int Function BuildActorKey(Actor akActor, bool abPreferVictim) global
   int genderid ; TODO: getgender()
   int raceidx ; TODO: getracekeyidx()
@@ -49,9 +65,17 @@ int Function BuildActorKey(Actor akActor, bool abPreferVictim) global
   return ret
 EndFunction
 
-; This is just a wrapper in case the key is ever expanded with some set bit as default
 int Function BuildBlankKeyByLegacyGender(int aiLegacyGender) global
-  return GetGenderByLegacyGender(aiLegacyGender)
+  If(aiLegacyGender < 0)
+    ; Should only be used by legacy content !!!
+    return 0xFFFF
+  EndIf
+  int ret = GetGenderByLegacyGender(aiLegacyGender)
+  If(IsCreature(ret))
+    ; Set every creature bit
+    ret += 0xFF00
+  EndIf
+  return ret
 EndFunction
 
 int[] Function BuildActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) global

@@ -20,16 +20,10 @@ sslThreadLibrary property ThreadLib auto
 ; --- Animation Filtering                             --- ;
 ; ------------------------------------------------------- ;
 
-bool Function MatchKey(int[] asPositionKey, int[] asAnimationKey)
+bool Function MatchKey(int[] aiPositionKey, int[] asAnimationKey)
 	int i = 0
-	While(i < asPositionKey.Length)
-		; return invalid match if the animation key isnt fully covered by the position key
-		; reasons for this to happen is are gender or race mismatches or because the 
-		; animation expects a victim at position i but the position at i isnt a victim
-		; note that this key combines multiple genders, so the position key at i may be male, 
-		; female and futa all at the same time
-		int match = Math.LogicalAnd(asPositionKey[i], asAnimationKey[i])
-		If(match < asAnimationKey[i])
+	While(i < aiPositionKey.Length)
+		If(!sslActorKey.IsKeyAccepted(aiPositionKey[i], asAnimationKey[i]))
 			return false
 		EndIf
 		i += 1
@@ -50,9 +44,9 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String
 	sslBaseAnimation[] ret = new sslBaseAnimation[128]
 	int i = Slotted
 	int ii = 0
-	while i
+	While(i > 0)
 		i -= 1
-		if Objects[i]
+		If(Objects[i])
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
 			; Check for appropiate enabled aniamtion, position & race
 			If(Slot.Enabled && Slot.PositionCount == aiKeys.Length && MatchKey(aiKeys, Slot.ActorKeys))
@@ -67,8 +61,8 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String
 					ii += 1
 				EndIf
 			EndIf
-		endIf
-	endWhile
+		EndIf
+	EndWhile
 	sslBaseAnimation[] _ret = sslUtility.AnimationArray(ii)
 	int j = 0
 	While(j < _ret.Length)
@@ -79,6 +73,127 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String
 EndFunction
 
 sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	int[] keys = Utility.CreateIntArray(ActorCount)
+	int n = 0
+	While(n < ActorCount)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(-1)
+		n += 1
+	EndWhile
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	String[] _tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
+	String[] _tagss = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(TagsSuppressed))
+	return _GetAnimations(keys, _tags, _tagss, RequireAll, false, false)
+endFunction
+
+sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	; Function is a bit messy as basically need 2 searches here, one to look for the CommonTags specifically and another one to look for those containing the common tags
+	; Maybe I want to expand this to a default param? Sounds quite useful to enforce a few tags while keeping the rest optional
+	If(CommonTags == "")
+		return GetByTags(ActorCount, Tags, TagsSuppressed, RequireAll)
+	EndIf
+	sslBaseAnimation[] search = GetByTags(ActorCount, CommonTags, TagsSuppressed, true)
+	String[] _tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
+	int i = 0
+	int ii = 0
+	While(i < search.Length)
+		If(RequireAll && search[i].HasAllTag(_tags) || !RequireAll && search[i].HasOneTag(_tags))
+			ii += 1
+		Else
+			search[i] = none
+		EndIf
+		i += 1
+	EndWhile
+	If(ii == i)
+		return search
+	EndIf
+	sslBaseAnimation[] ret = sslUtility.AnimationArray(ii)
+	int j = 0
+	int jj = 0
+	While(j < ret.Length)
+		If(search[j])
+			ret[jj] = search[j]
+			jj += 1
+		EndIf
+		j += 1
+	EndWhile
+	return ret
+EndFunction
+
+sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
+	int[] keys = Utility.CreateIntArray(ActorCount)
+	int i = 0
+	While(i < Females)
+		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		i += 1
+	EndWhile
+	While(i < Females + Males)
+		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(0)
+		i += 1
+	EndWhile
+	While(i < ActorCount)
+		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(-1)
+		i += 1
+	EndWhile
+	String[] tags = Utility.CreateStringArray(0)
+	String[] tagss
+	If(Sexual)
+		tagss = Utility.CreateStringArray(1, "LeadIn")
+	Else
+		tagss = Utility.CreateStringArray(0)
+	EndIf
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags, tagss, false, Aggressive, false)
+endFunction
+
+sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
+	return GetAnimations(Positions, "", "", false, none, Aggressive, false)
+EndFunction
+
+sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
+	int[] keys = Utility.CreateIntArray(Males + Females)
+	int n = 0
+	While(n < Females)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		n += 1
+	EndWhile
+	int i = 0
+	While(i < Males)
+		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
+		i += 1
+	EndWhile
+	String[] tags = Utility.CreateStringArray(0)
+	String[] tagss
+	If(RestrictAggressive)
+		tagss = Utility.CreateStringArray(1, "Aggressive")
+	Else
+		tagss = Utility.CreateStringArray(0)
+	EndIf
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags, tagss, false, IsAggressive, UsingBed)
+EndFunction
+
+sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	int[] keys = Utility.CreateIntArray(Males + Females)
+	int n = 0
+	While(n < Females)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		n += 1
+	EndWhile
+	int i = 0
+	While(i < Males)
+		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
+		i += 1
+	EndWhile
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	String[] _tags = PapyrusUtil.StringSplit(Tags)
+	String[] _tagss = PapyrusUtil.StringSplit(TagsSuppressed)
+	If(RestrictAggressive && _tagss.Find("Aggressive") == -1)
+		PapyrusUtil.PushString(_tagss, "Aggressive")
+	EndIf
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), _tags, _tagss, RequireAll, IsAggressive, UsingBed)
+EndFunction
+
+sslBaseAnimation[] function GetByTags_Legacy(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
 	; Log("GetByTags(ActorCount="+ActorCount+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
 	; Making the tags lists and optimize for CACHE
 	string[] Suppress = StringSplit(TagsSuppressed)
@@ -108,7 +223,7 @@ sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSu
 	return Output
 endFunction
 
-sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+sslBaseAnimation[] function GetByCommonTags_Legacy(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
 	Log("GetByCommonTags(ActorCount="+ActorCount+", CommonTags="+CommonTags+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
 	; Making the tags lists and optimize for CACHE
 	string[] SearchCommon   = StringSplit(CommonTags)
@@ -152,7 +267,7 @@ sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, s
 	return Output
 endFunction
 
-sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
+sslBaseAnimation[] function GetByType_Legacy(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
 	; Log("GetByType(ActorCount="+ActorCount+", Males="+Males+", Females="+Females+", StageCount="+StageCount+", Aggressive="+Aggressive+", Sexual="+Sexual+")")
 	; Check Cache
 	string CacheName = ActorCount+":"+Males+":"+Females+":"+StageCount+":"+Aggressive+":"+Sexual
@@ -178,55 +293,6 @@ sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Female
 	CacheAnims(CacheName, Output)
 	return Output
 endFunction
-
-sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
-	return GetAnimations(Positions, "", "", false, none, Aggressive, false)
-EndFunction
-
-sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
-	int[] keys = Utility.CreateIntArray(Males + Females)
-	int n = 0
-	While(n < Females)
-		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
-		n += 1
-	EndWhile
-	int i = 0
-	While(i < Males)
-		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
-		i += 1
-	EndWhile
-	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	String[] tags = Utility.CreateStringArray(0)
-	String[] tagss
-	If(RestrictAggressive)
-		tagss = Utility.CreateStringArray(1, "Aggressive")
-	Else
-		tagss = Utility.CreateStringArray(0)
-	EndIf
-	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags, tagss, false, IsAggressive, UsingBed)
-EndFunction
-
-sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	int[] keys = Utility.CreateIntArray(Males + Females)
-	int n = 0
-	While(n < Females)
-		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
-		n += 1
-	EndWhile
-	int i = 0
-	While(i < Males)
-		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
-		i += 1
-	EndWhile
-	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	String[] _tags = PapyrusUtil.StringSplit(Tags)
-	String[] _tagss = PapyrusUtil.StringSplit(TagsSuppressed)
-	If(RestrictAggressive && _tagss.Find("Aggressive") == -1)
-		PapyrusUtil.PushString(_tagss, "Aggressive")
-	EndIf
-	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), _tags, _tagss, RequireAll, IsAggressive, UsingBed)
-EndFunction
-
 
 sslBaseAnimation[] function PickByActors_Legacy(Actor[] Positions, int Limit = 64, bool Aggressive = false)
 	Log("PickByActors(Positions="+Positions+", Limit="+Limit+", Aggressive="+Aggressive+")")
