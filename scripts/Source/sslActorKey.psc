@@ -56,11 +56,11 @@ bool Function IsKeyAccepted(int aiKey, int aiCmp) global
 EndFunction
 
 int Function BuildActorKey(Actor akActor, bool abPreferVictim) global
-  int genderid ; TODO: getgender()
-  int raceidx ; TODO: getracekeyidx()
+  int genderid = BuildGenderKey(akActor)
+  int raceidx = BuildRaceKeyIdx(akActor)
   int ret = Math.LogicalOr(raceidx, genderid)
   If(abPreferVictim)
-    ret += 64
+    ret += 65536  ; 1 << 16
   EndIf
   return ret
 EndFunction
@@ -142,6 +142,11 @@ bool Function IsLesserKey_GenderAndVictim(int aiKey, int aiCmp) global
   EndIf
 EndFunction
 
+; COMEBACK: This do be kinda hacky. Wanna rewrite eventually
+int function BuildGenderKey(Actor akActor) global
+  return GetGenderByLegacyGender(SexLabUtil.GetGender(akActor))
+endFunction
+
 int Function GetLegacyGenderByGender(int aiGender) global
   If(Math.LogicalAnd(aiGender, 5))       ; Female | Futa
     return 1
@@ -166,6 +171,14 @@ int Function GetGenderByLegacyGender(int aiLegacyGender) global
     return 16
   EndIf
   return 2
+EndFunction
+
+int Function BuildRaceKeyIdx(Actor akActor) global
+  int racekey = GetRaceIdx(sslCreatureAnimationSlots.GetRaceKey(akActor.GetRace()))
+  If(racekey <= 0)
+    return 0
+  EndIf
+  return Math.LeftShift(racekey, 8)
 EndFunction
 
 int Function AddGenderToKey(int aiKey, int aiGender) global
@@ -213,8 +226,73 @@ int Function GetRawKey_Gender(int aiKey) global
 EndFunction
 
 String Function GetRaceKey(int aiKey) global
-  int raceidx = GetRawKey_Creature(aiKey)
-  ; TODO: switch(raceidx) case 0: Human case 2: Draugr case 3: ...
-  ; best to predefine them in some array and just get the [raceidx]'th entry
+  int idx = GetRawKey_Creature(aiKey)
+  If(idx > 0)
+    return GetAllRaceKeys()[idx - 1]
+  EndIf
   return "human"
+EndFunction
+
+int Function GetRaceIdx(String asRaceKey) global
+  return GetAllRaceKeys().Find(asRaceKey)
+EndFunction
+
+; No docs on what sslCreatureAnimationSlots.GetRaceKeys() does so I just gotta improvise for the time being, sigh...
+String[] Function GetAllRaceKeys() global
+  String[] ret = new String[51]
+  ret[0] = "Ashhoppers"
+	ret[1] = "Bears"
+	ret[2] = "Boars"
+	ret[3] = "BoarsAny"
+	ret[4] = "BoarsMounted"
+	ret[5] = "Canines"
+	ret[6] = "Chaurus"
+	ret[7] = "ChaurusHunters"
+	ret[8] = "ChaurusReapers"
+	ret[9] = "Chickens"
+	ret[10] = "Cows"
+	ret[11] = "Deers"
+	ret[12] = "Dogs"
+	ret[13] = "DragonPriests"
+	ret[14] = "Dragons"
+	ret[15] = "Draugrs"
+	ret[16] = "DwarvenBallistas"
+	ret[17] = "DwarvenCenturions"
+	ret[18] = "DwarvenSpheres"
+	ret[19] = "DwarvenSpiders"
+	ret[20] = "Falmers"
+	ret[21] = "FlameAtronach"
+	ret[22] = "Foxes"
+	ret[23] = "FrostAtronach"
+	ret[24] = "Gargoyles"
+	ret[25] = "Giants"
+	ret[26] = "Goats"
+	ret[27] = "Hagravens"
+	ret[28] = "Horkers"
+	ret[29] = "Horses"
+	ret[30] = "IceWraiths"
+	ret[31] = "Lurkers"
+	ret[32] = "Mammoths"
+	ret[33] = "Mudcrabs"
+	ret[34] = "Netches"
+	ret[35] = "Rabbits"
+	ret[36] = "Rieklings"
+	ret[37] = "SabreCats"
+	ret[38] = "Seekers"
+	ret[39] = "Skeevers"
+	ret[40] = "Slaughterfishes"
+	ret[41] = "StormAtronach"
+	ret[42] = "Spiders"
+	ret[43] = "LargeSpiders"
+	ret[44] = "GiantSpiders"
+	ret[45] = "Spriggans"
+	ret[46] = "Trolls"
+	ret[47] = "VampireLords"
+	ret[48] = "Werewolves"
+	ret[49] = "WispMothers"
+	ret[50] = "Wisps"
+	ret[51] = "Wolves"
+  String[] other = sslCreatureAnimationSlots.GetAllRaceKeys()
+  Debug.Trace("[SLPP] GetAllCreatureKeys => " + other + " | Is same as ret = " + ret == other)
+  return ret
 EndFunction
