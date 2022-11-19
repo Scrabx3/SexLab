@@ -42,15 +42,14 @@
     </Folders>
     <ZipFiles Output="@Rel">
         <ZipFile Name="@ModName - @Ver" RootDir="@ThisProject" Compression="deflate">
-        	<Include>*.esp</Include>
+        	<!-- <Include>*.esp</Include>
             <Include>Interface</Include>
-            <Include>meshes</Include>
+            <Include>meshes</Include> -->
             <Include>Scripts</Include>
-            <Include>SEQ</Include>
+            <!-- <Include>SEQ</Include>
             <Include>SKSE</Include>
-            <Include>Source</Include>
             <Include>Sound</Include>
-            <Include>textures</Include>
+            <Include>textures</Include> -->
         </ZipFile>
     </ZipFiles>
 </PapyrusProject>

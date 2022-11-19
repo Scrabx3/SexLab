@@ -37,15 +37,19 @@ ScriptName sslActorKey Hidden
 28 - Pad29
 29 - Pad30
 30 - Pad31
+31 - Blank Key
 /;
 
 
 ; Return if aiCmp accepts aiKey, this mans:
-; aiKey and aiCmp must be representing the same Race
-; aiKey must be at least aiCmps gender
-; if aiCmp is a Victim, then aiKey must be a victim too
+; aiKey is a blank key and thus always accepted
+; aiKey and aiCmp represent the same Race
+; aiKey is at least aiCmps gender
+; if aiCmp is a Victim, then aiKey is a victim too
 bool Function IsKeyAccepted(int aiKey, int aiCmp) global
-  If(GetRawKey_Creature(aiKey) != GetRawKey_Creature(aiCmp))
+  If(Math.RightShift(aiKey, 31))
+    return true 
+  ElseIf(Math.LogicalAND(GetRawKey_Creature(aiKey), GetRawKey_Creature(aiCmp)) != aiCmp)
     return false
   ElseIf(Math.LogicalAND(GetRawKey_Gender(aiKey), GetRawKey_Gender(aiCmp)) != aiCmp)
     return false
@@ -55,11 +59,11 @@ bool Function IsKeyAccepted(int aiKey, int aiCmp) global
   return true
 EndFunction
 
-int Function BuildActorKey(Actor akActor, bool abPreferVictim) global
+int Function BuildActorKey(Actor akActor, bool abIsVictim) global
   int genderid = BuildGenderKey(akActor)
-  int raceidx = BuildRaceKeyIdx(akActor)
+  int raceidx = CreateRaceKeyId(akActor)
   int ret = Math.LogicalOr(raceidx, genderid)
-  If(abPreferVictim)
+  If(abIsVictim)
     ret += 65536  ; 1 << 16
   EndIf
   return ret
@@ -67,8 +71,7 @@ EndFunction
 
 int Function BuildBlankKeyByLegacyGender(int aiLegacyGender) global
   If(aiLegacyGender < 0)
-    ; Should only be used by legacy content !!!
-    return 0xFFFF
+    return Math.LeftShift(1, 31)
   EndIf
   int ret = GetGenderByLegacyGender(aiLegacyGender)
   If(IsCreature(ret))
@@ -93,11 +96,11 @@ int[] Function BuildSortedActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) 
 EndFunction
 
 int[] Function SortActorKeyArray(int[] aiKeys) global
-  int i = 0
+  int i = 1
 	While(i < aiKeys.Length)
 		int it = aiKeys[i]
 		int n = i - 1
-		While(n && !IsLesserKey(aiKeys[n], it))
+		While(n >= 0 && !IsLesserKey(aiKeys[n], it))
 			aiKeys[n + 1] = aiKeys[n]
 			n -= 1
 		EndWhile
@@ -148,13 +151,13 @@ int function BuildGenderKey(Actor akActor) global
 endFunction
 
 int Function GetLegacyGenderByGender(int aiGender) global
-  If(Math.LogicalAnd(aiGender, 5))       ; Female | Futa
-    return 1
-  ElseIf(Math.LogicalAnd(aiGender, 2))   ; Male
+  If(Math.LogicalAnd(aiGender, 2))      ; Male
     return 0
-  ElseIf(Math.LogicalAnd(aiGender, 8))   ; FCr
+  ElseIf(Math.LogicalAnd(aiGender, 5))  ; Female | Futa
+    return 1
+  ElseIf(Math.LogicalAnd(aiGender, 8))  ; FCr
     return 3
-  ElseIf(Math.LogicalAnd(aiGender, 16))  ; MCr
+  ElseIf(Math.LogicalAnd(aiGender, 16)) ; MCr
     return 2
   EndIf
 EndFunction
@@ -173,8 +176,12 @@ int Function GetGenderByLegacyGender(int aiLegacyGender) global
   return 2
 EndFunction
 
-int Function BuildRaceKeyIdx(Actor akActor) global
-  int racekey = GetRaceIdx(sslCreatureAnimationSlots.GetRaceKey(akActor.GetRace()))
+int Function CreateRaceKeyId(Actor akActor) global
+  return CreateRaceKeyIdByRaceKey(sslCreatureAnimationSlots.GetRaceKey(akActor.GetRace()))
+EndFunction
+
+int Function CreateRaceKeyIdByRaceKey(String asRaceKey) global
+  int racekey = GetRaceKeyId(asRaceKey)
   If(racekey <= 0)
     return 0
   EndIf
@@ -225,7 +232,7 @@ int Function GetRawKey_Gender(int aiKey) global
   return Math.LogicalAND(aiKey, 0xFF)
 EndFunction
 
-String Function GetRaceKey(int aiKey) global
+String Function GetRaceKeyByKey(int aiKey) global
   int idx = GetRawKey_Creature(aiKey)
   If(idx > 0)
     return GetAllRaceKeys()[idx - 1]
@@ -233,7 +240,7 @@ String Function GetRaceKey(int aiKey) global
   return "human"
 EndFunction
 
-int Function GetRaceIdx(String asRaceKey) global
+int Function GetRaceKeyId(String asRaceKey) global
   return GetAllRaceKeys().Find(asRaceKey)
 EndFunction
 

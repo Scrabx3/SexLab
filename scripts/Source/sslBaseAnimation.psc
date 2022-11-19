@@ -275,9 +275,9 @@ float[] function PositionOffsets(float[] Output, string AdjustKey, int Position,
 	Output[1] = Offsets[(i + 1)] ; Side
 	Output[2] = Offsets[(i + 2)] ; Up
 	Output[3] = Offsets[(i + 3)] ; Rot - no offset
-	
+
 	_PositionOffsets(Registry, AdjustKey+"."+Position, LastKeys[Position], Stage, Output)
-	
+
 	float Forward = Output[0]
 	float Side = Output[1]
 	if BedTypeID > 0 && BedOffset.Length == 4
@@ -294,7 +294,7 @@ float[] function PositionOffsets(float[] Output, string AdjustKey, int Position,
 	elseIf Output[3] < 0.0
 		Output[3] = Output[3] + 360.0
 	endIf
-	
+
 	Log("PositionOffsets()[Forward:"+Output[0]+",Sideward:"+Output[1]+",Upward:"+Output[2]+",Rotation:"+Output[3]+"]")
 	return Output
 endFunction
@@ -435,7 +435,7 @@ string function InitAdjustments(string AdjustKey, int Position)
 		Log("Unknown Position, '"+Position+"' given", "InitAdjustments")
 		return LastKeys[Position]
 	endIf
-	
+
 	AdjustKey += "."+Position
 	if !_HasAdjustments(Registry, AdjustKey, Stages)
 		; Pick key to copy from
@@ -578,7 +578,7 @@ endFunction
 
 bool function IsCumSource(int SourcePosition, int TargetPosition, int Stage = 1)
 	int CumSrc = GetCumSource(TargetPosition, Stage)
-	return CumSrc == -1 || CumSrc == SourcePosition 
+	return CumSrc == -1 || CumSrc == SourcePosition
 endFunction
 
 function SetStageCumID(int Position, int Stage, int CumID, int CumSource = -1)
@@ -752,22 +752,17 @@ int function AddPosition(int Gender = 0, int AddCum = -1)
 	endIf
 	while Locked
 		Utility.WaitMenuMode(0.1)
-		Debug.Trace(Registry+" AddPosition Lock! -- Adding Actor: "+Actors)
+		Log(Registry + " AddPosition Lock! -- Adding Actor: " + Actors)
 	endWhile
 	Locked = true
-	
+
 	oid = 0
 	fid = 0
 
-	Genders[Gender]   = Genders[Gender] + 1
-	Positions[Actors] = Gender
+	_ActorKeys[Actors] = sslActorKey.BuildBlankKeyByLegacyGender(Gender)
 
 	InitArrays(Actors)
 	FlagsArray(Actors)[kCumID] = AddCum
-
-	string GenderString = GetGenderString(Gender)
-	GenderTags[0] = GenderTags[0]+GenderString
-	GenderTags[1] = GenderString+GenderTags[1]
 
 	Actors += 1
 	Locked = false
@@ -782,15 +777,16 @@ int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1
 	elseIf Gender == 1
 		Gender = 3
 	endIf
-	
+
 	int pid = AddPosition(Gender, AddCum)
-	if pid != -1 && RaceKey != ""
-		if !RaceTypes || RaceTypes.Length < 1
-			RaceTypes = new string[5]
-		endIf
-		RaceType       = RaceKey
-		RaceTypes[pid] = RaceKey
-	endIf
+	If(pid != -1 && RaceKey != "")
+		_ActorKeys[pid] = _ActorKeys[pid] + sslActorKey.CreateRaceKeyIdByRaceKey(RaceKey)
+		; Technically its possible and supported to mix different creature races in an animation now
+		; so only set this one the first creature. Not ideal but w/e do I do
+		If(!RaceType)
+			RaceType = RaceKey
+		EndIf
+	EndIf
 
 	return pid
 endFunction
@@ -848,21 +844,37 @@ function AddPositionStage(int Position, string AnimationEvent, float forward = 0
 endFunction
 
 function Save(int id = -1)
+	; Sort Keys + Animations, then initialize legacy data
+	_ActorKeys = Utility.ResizeIntArray(_ActorKeys, Actors)
+	SortPositions()
+	int i = 0
+	While(i < _ActorKeys.Length)
+		int g = sslActorKey.GetLegacyGenderByGender(_ActorKeys[i])
+		string gs = GetGenderString(g)
+		Genders[g] 		= Genders[g] + 1
+		Positions[i] 	= g
+		RaceTypes[i] 	= sslActorKey.GetRaceKeyByKey(_ActorKeys[i])
+		GenderTags[0] = GenderTags[0] + gs
+		GenderTags[1] = gs + GenderTags[1]
+		i += 1
+	EndWhile
+
 	; Add gender tags
 	AddTag(GenderTags[0])
 	if GenderTags[0] != GenderTags[1]
 		AddTag(GenderTags[1])
 	endIf
+	; SLPP 1.0 - No longer supported
 	; Compensate for custom 3P+ animations that mix gender order, such as FMF
-	if PositionCount > 2
-		AddTag(GetGenderTag(false))
-		AddTag(GetGenderTag(true))
-	endIf
+	; if PositionCount > 2
+	; 	AddTag(GetGenderTag(false))
+	; 	AddTag(GetGenderTag(true))
+	; endIf
 
 	; Finalize config data
 	Flags0     = Utility.ResizeIntArray(Flags0, (Stages * kFlagEnd))
 	Offsets0   = Utility.ResizeFloatArray(Offsets0, (Stages * kOffsetEnd))
-	Animations = Utility.ResizeStringArray(Animations, aid)
+	; Animations = Utility.ResizeStringArray(Animations, aid)
 	; Positions  = Utility.ResizeIntArray(Positions, Actors)
 	; LastKeys   = Utility.ResizeStringArray(LastKeys, Actors)
 	; Init forward offset list
@@ -870,7 +882,7 @@ function Save(int id = -1)
 	if Actors > 1
 		int Stage = Stages
 		while Stage
-			CenterAdjust[(Stage - 1)] = CalcCenterAdjuster(Stage)
+			CenterAdjust[Stage - 1] = CalcCenterAdjuster(Stage)
 			Stage -= 1
 		endWhile
 	endIf
@@ -898,37 +910,61 @@ function Save(int id = -1)
 	parent.Save(id)
 endFunction
 
+Function SortPositions()
+	Log("Sorted Position | Stages = " + Stages)
+	; bit clunky but w/e; the startindex of every positions animations
+	; anims are stored as [A1S1, A1S2, ... A2S1, ... AnSn]
+	int[] og_anim = Utility.CreateIntArray(Actors)
+	int j = 1
+	While(j < og_anim.Length)
+		; Startindex for this actors animations
+		og_anim[j] = Stages * j
+		j += 1
+	EndWhile
+	Log("Sorting Positions -> Anim Stages = " + og_anim)
+	; ISort for the normal animations
+  int i = 1
+	While(i < _ActorKeys.Length)
+		int it = _ActorKeys[i]
+		int idx = og_anim[i]
+		int n = i - 1
+		While(n >= 0 && !sslActorKey.IsLesserKey(_ActorKeys[n], it))
+			_ActorKeys[n + 1] = _ActorKeys[n]
+			og_anim[n + 1] = og_anim[n]
+			n -= 1
+		EndWhile
+		_ActorKeys[n + 1] = it
+		og_anim[n + 1] = idx
+		i += 1
+	EndWhile
+	Log("Sorting Post Sort -> Anim Stages = " + og_anim)
+	; Now store the individual anims
+	String[] _Anims = Utility.CreateStringArray(aid)
+	int k = 0
+	While(k < og_anim.Length)
+		Log("Moving Animations from " + (k * Stages) + " to " + og_anim[k])
+		int n = 0
+		While(n < Stages)
+			_Anims[og_anim[k] + n] = Animations[k * Stages + n]
+			n += 1
+		EndWhile
+		k += 1
+	EndWhile
+	Animations = _Anims
+	Log("Sorted Animations -> " + Animations)
+EndFunction
+
 bool function IsInterspecies()
-	if IsCreature
-		int Position = PositionCount
-		while Position > 1
-			Position -= 1
-			if RaceTypes[(Position - 1)] != "" && RaceTypes[Position] != ""
-				string[] Keys1 = sslCreatureAnimationSlots.GetAllRaceIDs(RaceTypes[(Position - 1)])
-				string[] Keys2 = sslCreatureAnimationSlots.GetAllRaceIDs(RaceTypes[Position])
-				if Keys1 && Keys2 && Keys1.Length > 0 && Keys2.Length > 0 && Keys1 != Keys2
-					int k1 = Keys1.Length
-					int k2 = Keys2.Length
-					if k1 == 1 && k2 == 1 && Keys1[0] != Keys2[0] 
-						return true ; Simple single key mismatch
-					elseIf (k1 == 1 && k2 > 1 && Keys2.Find(Keys1[0]) < 0) && \
-						   (k2 == 1 && k1 > 1 && Keys1.Find(Keys2[0]) < 0)
-					   return true ; Single key to multikey mismatch
-					endIf
-					bool Matched = false
-					while k1
-						k1 -= 1
-						if Keys2.Find(Keys1[k1]) != -1
-							Matched = true ; Matched between multikey arrays
-						endIf
-					endWhile
-					if !Matched
-					   return true ; Mismatch between multikey arrays
-					endIf
-				endIf
-			endIf
-		endWhile
-	endIf
+	int k = sslActorKey.GetRawKey_Creature(_ActorKeys[0])
+	int i = 1
+	While(i < _ActorKeys.Length)
+		int nk = sslActorKey.GetRawKey_Creature(_ActorKeys[i])
+		If(nk != k)
+			return true
+		EndIf
+		k = nk
+		i += 1
+	EndWhile
 	return false
 endFunction
 
@@ -947,23 +983,6 @@ float function CalcCenterAdjuster(int Stage)
 	return Adjuster * -0.5
 endFunction
 
-string function GenderTag(int count, string gender)
-	if count == 0
-		return ""
-	elseIf count == 1
-		return gender
-	elseIf count == 2
-		return gender+gender
-	elseIf count == 3
-		return gender+gender+gender
-	elseIf count == 4
-		return gender+gender+gender+gender
-	elseIf count == 5
-		return gender+gender+gender+gender+gender
-	endIf
-	return ""
-endFunction
-
 string function GetGenderString(int Gender)
 	if Gender == 0
 		return "M"
@@ -973,13 +992,6 @@ string function GetGenderString(int Gender)
 		return "C"
 	endIf
 	return ""
-endFunction
-
-string function GetGenderTag(bool Reverse = false)
-	if Reverse
-		return GenderTag(Creatures, "C")+GenderTag(Males, "M")+GenderTag(Females, "F")
-	endIf
-	return GenderTag(Females, "F")+GenderTag(Males, "M")+GenderTag(Creatures, "C")
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -995,17 +1007,19 @@ function Initialize()
 	RaceType  = ""
 	GenderedCreatures = false
 
-	Genders      = new int[4]
-	Positions    = new int[5]
-	StageSoundFX = new Form[1]
-	GenderTags   = new string[2]
+	_ActorKeys	 	= new int[5]
+	Genders      	= new int[4]
+	Positions    	= new int[5]
+	StageSoundFX 	= new Form[1]
+	GenderTags   	= new string[2]
+	RaceTypes 		= new string[5]
 
 	; Only init if needed to keep between registry resets.
 	if LastKeys.Length != 5
 		LastKeys  = new string[5]
 	endIf
 
-	RaceTypes  = Utility.CreateStringArray(0)
+	; RaceTypes  = Utility.CreateStringArray(0)
 	Animations = Utility.CreateStringArray(0)
 	BedOffset  = Utility.CreateFloatArray(0)
 	Timers     = Utility.CreateFloatArray(0)
@@ -1032,7 +1046,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 ; Creature Use
-string property RaceType auto hidden
+string property RaceType auto hidden	; Redundant
 Form[] property CreatureRaces hidden
 	form[] function get()
 		string[] Races = sslCreatureAnimationSlots.GetAllRaceIDs(RaceType)
@@ -1388,3 +1402,73 @@ function ExportJSON()
 	JsonUtil.Save(Filename)
 	JsonUtil.Unload(Filename)
 endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+string function GenderTag(int count, string gender)
+	if count == 0
+		return ""
+	elseIf count == 1
+		return gender
+	elseIf count == 2
+		return gender+gender
+	elseIf count == 3
+		return gender+gender+gender
+	elseIf count == 4
+		return gender+gender+gender+gender
+	elseIf count == 5
+		return gender+gender+gender+gender+gender
+	endIf
+	return ""
+endFunction
+
+string function GetGenderTag(bool Reverse = false)
+	if Reverse
+		return GenderTag(Creatures, "C")+GenderTag(Males, "M")+GenderTag(Females, "F")
+	endIf
+	return GenderTag(Females, "F")+GenderTag(Males, "M")+GenderTag(Creatures, "C")
+endFunction
+
+bool function IsInterspecies_Legacy()
+	if IsCreature
+		int Position = PositionCount
+		while Position > 1
+			Position -= 1
+			if RaceTypes[(Position - 1)] != "" && RaceTypes[Position] != ""
+				string[] Keys1 = sslCreatureAnimationSlots.GetAllRaceIDs(RaceTypes[(Position - 1)])
+				string[] Keys2 = sslCreatureAnimationSlots.GetAllRaceIDs(RaceTypes[Position])
+				if Keys1 && Keys2 && Keys1.Length > 0 && Keys2.Length > 0 && Keys1 != Keys2
+					int k1 = Keys1.Length
+					int k2 = Keys2.Length
+					if k1 == 1 && k2 == 1 && Keys1[0] != Keys2[0]
+						return true ; Simple single key mismatch
+					elseIf (k1 == 1 && k2 > 1 && Keys2.Find(Keys1[0]) < 0) && \
+						   (k2 == 1 && k1 > 1 && Keys1.Find(Keys2[0]) < 0)
+					   return true ; Single key to multikey mismatch
+					endIf
+					bool Matched = false
+					while k1
+						k1 -= 1
+						if Keys2.Find(Keys1[k1]) != -1
+							Matched = true ; Matched between multikey arrays
+						endIf
+					endWhile
+					if !Matched
+					   return true ; Mismatch between multikey arrays
+					endIf
+				endIf
+			endIf
+		endWhile
+	endIf
+	return false
+endFunction
+
