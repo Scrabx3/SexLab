@@ -116,13 +116,17 @@ endProperty
 ; --- Load/Clear Alias For Use                        --- ;
 ; ------------------------------------------------------- ;
 
-bool function SetActor(Actor ProspectRef)
-	if !ProspectRef || ProspectRef != GetReference()
-		Log("ERROR: SetActor("+ProspectRef+") on State:'Ready' is not allowed")
+bool Function SetActor(Actor ProspectRef)
+	return SetActorEx(ProspectRef, false, none, false)
+EndFunction
+
+bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoice, bool abSilent)
+	if !akReference || akReference != GetReference()
+		Log("ERROR: SetActor("+akReference+") on State:'Ready' is not allowed")
 		return false ; Failed to set prospective actor into alias
 	endIf
 	; Init actor alias information
-	ActorRef   = ProspectRef
+	ActorRef   = akReference
 	BaseRef    = ActorRef.GetLeveledActorBase()
 	ActorName  = BaseRef.GetName()
 	; ActorVoice = BaseRef.GetVoiceType()
@@ -137,9 +141,6 @@ bool function SetActor(Actor ProspectRef)
 	IsPlayer   = ActorRef == PlayerRef
 	RaceEditorID = MiscUtil.GetRaceEditorID(BaseRef.GetRace())
 	; Player and creature specific
-	if IsPlayer
-		Thread.HasPlayer = true
-	endIf
 	if IsCreature
 		Thread.CreatureRef = BaseRef.GetRace()
 		if sslCreatureAnimationSlots.HasRaceKey("Canines") && sslCreatureAnimationSlots.HasRaceID("Canines", RaceEditorID)
@@ -645,9 +646,9 @@ state Prepare
 		GoToState("Animating")
 		SyncAll(true)
 		PlayingSA = Animation.Registry
-	;	if Stage == 1
-	;		CurrentSA = PlayingSA
-	;	endIf
+		;	if Stage == 1
+		;		CurrentSA = PlayingSA
+		;	endIf
 		if ActorRef.GetActorValue("Paralysis") != 0.0
 			Debug.SendAnimationEvent(ActorRef, "Ragdoll")
 			Utility.Wait(0.1)
@@ -2095,3 +2096,17 @@ endfunction
 ; string[] property StringShare auto hidden ; AdjustKey
 ; bool[] property BoolShare auto hidden ; 
 ; sslBaseAnimation[] property _Animation auto hidden ; Animation
+
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+

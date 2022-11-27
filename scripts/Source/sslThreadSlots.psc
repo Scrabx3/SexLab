@@ -36,7 +36,7 @@ sslThreadModel function PickModel(float TimeOut = 30.0)
 		while !Thread && i < Slots.Length
 			string ThreadState = Slots[i].GetState()
 			if ThreadState == "Frozen" || ThreadState == "Ending"
-				Slots[i].Fatal("Resetting possibly stuck thread: "+Slots[i], "PickModel")
+				Slots[i].ReportAndFail("Resetting possibly stuck thread: "+Slots[i], "PickModel")
 				Thread = Slots[i].Make()
 			endIf
 			i += 1
