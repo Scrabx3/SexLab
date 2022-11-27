@@ -22,24 +22,19 @@ endProperty
 
 string[] Tags
 string[] function GetRawTags()
-	return Tags
+	return GetTags()
 endFunction
 string[] function GetTags()
 	return PapyrusUtil.ClearEmpty(Tags)
 endFunction
 
 bool function HasTag(string Tag)
-	return Tag != "" && Tags.Find(Tag) != -1
+	return Tags.Find(Tag) != -1
 endFunction
 
 bool function AddTag(string Tag)
 	if Tag != "" && Tags.Find(Tag) == -1
-		int i = Tags.Find("")
-		if i != -1
-			Tags[i] = Tag
-		else
-			Tags = PapyrusUtil.PushString(Tags, Tag)
-		endIf
+		Tags = PapyrusUtil.PushString(Tags, Tag)
 		return true
 	endIf
 	return false
@@ -179,5 +174,5 @@ function Initialize()
 	Enabled  = false
 	bSaved   = false
 	Storage  = none
-	Tags     = new string[18]
+	Tags     = Utility.CreateStringArray(0)
 endFunction

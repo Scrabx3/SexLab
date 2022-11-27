@@ -53,6 +53,26 @@ int[] Property ActorKeys
 	EndFunction
 EndProperty
 
+; Check if the given (sorted) set of ActorKeys can animate this Animation
+bool Function MatchKeys(int[] aiActorKeys)
+	If(aiActorKeys.Length != _ActorKeys.Length)
+		return false
+	EndIf
+	int i = 0
+	While(i < _ActorKeys.Length)
+		If(!sslActorKey.IsKeyAccepted(_ActorKeys[i], aiActorKeys[i]))
+			return false
+		EndIf
+		i += 1
+	EndWhile
+	return true
+EndFunction
+
+; Placeholder func, will be moved into a dll, ideally, eventually
+bool Function MatchTags(String[] asTags)
+	return false
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Array Indexers                                  --- ;
 ; ------------------------------------------------------- ;
@@ -846,7 +866,7 @@ endFunction
 function Save(int id = -1)
 	; Sort Keys + Animations, then initialize legacy data
 	_ActorKeys = Utility.ResizeIntArray(_ActorKeys, Actors)
-	SortPositions()
+	FinalizePositionsAndAnimations()
 	int i = 0
 	While(i < _ActorKeys.Length)
 		int g = sslActorKey.GetLegacyGenderByGender(_ActorKeys[i])
@@ -896,7 +916,7 @@ function Save(int id = -1)
 	LastKeyReg = Registry
 	; Log the new animation
 	if IsCreature
-		; RaceTypes = PapyrusUtil.ResizeStringArray(RaceTypes, Actors)
+		RaceTypes = PapyrusUtil.ResizeStringArray(RaceTypes, Actors)
 		if IsInterspecies()
 			AddTag("Interspecies")
 		else
@@ -910,8 +930,8 @@ function Save(int id = -1)
 	parent.Save(id)
 endFunction
 
-Function SortPositions()
-	Log("Sorted Position | Stages = " + Stages)
+Function FinalizePositionsAndAnimations()
+	; Log("Sorted Position | Stages = " + Stages)
 	; bit clunky but w/e; the startindex of every positions animations
 	; anims are stored as [A1S1, A1S2, ... A2S1, ... AnSn]
 	int[] og_anim = Utility.CreateIntArray(Actors)
@@ -921,7 +941,7 @@ Function SortPositions()
 		og_anim[j] = Stages * j
 		j += 1
 	EndWhile
-	Log("Sorting Positions -> Anim Stages = " + og_anim)
+	; Log("Sorting Positions -> Anim Stages = " + og_anim)
 	; ISort for the normal animations
   int i = 1
 	While(i < _ActorKeys.Length)
@@ -937,12 +957,11 @@ Function SortPositions()
 		og_anim[n + 1] = idx
 		i += 1
 	EndWhile
-	Log("Sorting Post Sort -> Anim Stages = " + og_anim)
+	; Log("Sorting Post Sort -> Anim Stages = " + og_anim)
 	; Now store the individual anims
 	String[] _Anims = Utility.CreateStringArray(aid)
 	int k = 0
 	While(k < og_anim.Length)
-		Log("Moving Animations from " + (k * Stages) + " to " + og_anim[k])
 		int n = 0
 		While(n < Stages)
 			_Anims[og_anim[k] + n] = Animations[k * Stages + n]

@@ -48,8 +48,8 @@ ScriptName sslActorKey Hidden
 ; if aiCmp is a Victim, then aiKey is a victim too
 bool Function IsKeyAccepted(int aiKey, int aiCmp) global
   If(Math.RightShift(aiKey, 31))
-    return true 
-  ElseIf(Math.LogicalAND(GetRawKey_Creature(aiKey), GetRawKey_Creature(aiCmp)) != aiCmp)
+    return true    
+  ElseIf(GetRawKey_Creature(aiKey) != GetRawKey_Creature(aiCmp))
     return false
   ElseIf(Math.LogicalAND(GetRawKey_Gender(aiKey), GetRawKey_Gender(aiCmp)) != aiCmp)
     return false

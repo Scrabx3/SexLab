@@ -20,18 +20,6 @@ sslThreadLibrary property ThreadLib auto
 ; --- Animation Filtering                             --- ;
 ; ------------------------------------------------------- ;
 
-bool Function MatchKey(int[] aiPositionKey, int[] asAnimationKey)
-	int i = 0
-	While(i < aiPositionKey.Length)
-		If(!sslActorKey.IsKeyAccepted(aiPositionKey[i], asAnimationKey[i]))
-			return false
-		EndIf
-		i += 1
-	EndWhile
-	return true
-EndFunction
-
-
 ;/
 TODO: Rework Tag parsing using prefixes:
 - NoPrefix	-> Required
@@ -55,9 +43,10 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String
 		If(Objects[i])
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
 			; Check for appropiate enabled aniamtion, position & race
-			If(Slot.Enabled && Slot.PositionCount == aiKeys.Length && MatchKey(aiKeys, Slot.ActorKeys))
+			If(Slot.Enabled && Slot.MatchKeys(aiKeys)) ; && Slot.MatchTags(asTags)
 				String[] tags = Slot.GetRawTags()
 				; Suppress or ignore aggressive animation tags
+				; COMEBACK: When improving Tag matching, majority of this can be removed by simply adding them as required tags !IMPORTANT
 				If((!abAggressive || tags.Find("Aggressive") > -1) && Slot.TagSearch(asTags, asTagsSuppressed, abAllTags) && \
 					((!abUseBed && tags.Find("BedOnly") == -1) || (abUseBed && tags.Find("Furniture") == -1 && (!Config.BedRemoveStanding || tags.Find("Standing") == -1))))
 					ret[ii] = Slot
