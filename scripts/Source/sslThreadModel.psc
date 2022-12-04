@@ -27,7 +27,6 @@ sslCreatureAnimationSlots Property CreatureSlots auto
 ; Actor Info
 sslActorAlias[] Property ActorAlias auto hidden
 Actor[] Property Positions Auto Hidden
-int[] Property PositionKeys Auto Hidden
 
 Actor Property PlayerRef auto hidden
 
@@ -158,8 +157,8 @@ EndProperty
 
 ; Thread info
 float[] Property CenterLocation Auto Hidden
-ReferenceAlias Property CenterAlias Auto Hidden
-ObjectReference Property CenterRef
+ReferenceAlias Property CenterAlias Auto Hidden	; This is the Alias holding the object used as Center
+ObjectReference Property CenterRef							; This is the ObjectReference the above alias holds
 	ObjectReference Function Get()
 		return CenterAlias.GetReference()
 	EndFunction
@@ -167,6 +166,7 @@ ObjectReference Property CenterRef
 		CenterOnObject(akNewCenter)
 	EndFunction
 EndProperty
+ObjectReference _Center	; This is the actual center object the animation is using
 
 float[] Property RealTime auto hidden
 float Property StartedAt auto hidden
@@ -276,6 +276,16 @@ string ActorKeys
 bool Property DebugMode auto hidden
 float Property t auto hidden
 
+int[] Function GetAllPositionKeys()
+	int[] ret = Utility.CreateintArray(Positions.Length)
+	int j = 0
+	While(j < Positions.Length)
+		ret[j] = ActorAlias[j].ActorKey
+		j += 1
+	EndWhile
+	return ret
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Thread Making API                               --- ;
 ; ------------------------------------------------------- ;
@@ -350,27 +360,25 @@ State Making
 		EndIf
 
 		; Sort all positions
-		PositionKeys = sslActorKey.BuildActorKeyArray(Positions, Positions.Find(VictimRef))
 		int i = 1
-		While(i < PositionKeys.Length)
+		While(i < Positions.Length)
 			sslActorAlias it_s = ActorAlias[i]
-			Actor it_a = Positions[i]
-			int it = PositionKeys[i]
 			int n = i - 1
-			While(n >= 0 && !sslActorKey.IsLesserKey(PositionKeys[n], it))
-				PositionKeys[n + 1] = PositionKeys[n]
+			While(n >= 0 && !sslActorKey.IsLesserKey(ActorAlias[n].ActorKey, it_s.ActorKey))
 				ActorAlias[n + 1] = ActorAlias[n]
-				Positions[n + 1] = Positions[n]
 				n -= 1
 			EndWhile
-			PositionKeys[n + 1] = it
 			ActorAlias[n + 1] = it_s
-			Positions[n + 1] = it_a
 			i += 1
+		EndWhile
+		int k = 0
+		While(k < Positions.Length)
+			Positions[k] = ActorAlias[k].GetReference() as Actor
+			k +=1
 		EndWhile
 
 		; Legacy Data
-		Genders = ActorLib.GetGendersAll(Positions)
+		Genders = Utility.ResizeIntArray(ActorLib.GetGendersAll(Positions), 4)
 
 		; ------------------------- ;
 		; -- Validate Animations -- ;
@@ -386,7 +394,6 @@ State Making
 		Else
 			; No Custom Animations. If there were thered be no point validating these
 			PrimaryAnimations = ValidateAnimations(PrimaryAnimations)
-			AddCommonTags(PrimaryAnimations)
 			If(LeadIn)
 				LeadAnimations = ValidateAnimations(LeadAnimations)
 				If(!LeadAnimations.Length)
@@ -409,6 +416,7 @@ State Making
 				ReportAndFail("Failed to start Thread -- No valid animations for given actors")
 				return none
 			EndIf
+			AddCommonTags(PrimaryAnimations)
 		EndIf
 		
 		; ------------------------- ;
@@ -475,18 +483,11 @@ State Making
 		; --  Start Controller   -- ;
 		; ------------------------- ;
 
-		; The entire codeblock that is executed here has no reason to be splitted, eh?
-		; just move its code in here directly, makes the whole thing cleaner and less likely to glitch out fromo inconsistent timings
-		; Action("Prepare")
-
-		HookAnimationPrepare()
-		UpdateAdjustKey()
-		If(StartingAnimation && Animations.Find(StartingAnimation) != -1)
-			SetAnimation(Animations.Find(StartingAnimation))
-		Else
-			SetAnimation()
-			StartingAnimation = none
-		EndIf
+		; COMEBACK: I dont understand why this isnt just part of this codeblock here directly
+		; Just massively harms readability and overcomplicates scene starting
+		; Not to mention that the actual code executed here is in the child script, not the parent, not even as abstract func
+		; see sslThreadController State 'Prepare'.OnBeginState() to see the second part of this function
+		GoToState("Prepare")
 		return self as sslThreadController
 	EndFunction
 EndState
@@ -1041,13 +1042,13 @@ Function SetBedFlag(int flag = 0)
 EndFunction
 
 Function SetFurnitureIgnored(bool disabling = true)
-	If(!CenterRef)
+	If(!BedRef)
 		return
 	EndIf
-	CenterRef.SetDestroyed(disabling)
+	BedRef.SetDestroyed(disabling)
 	;	CenterRef.ClearDestruction()
-	CenterRef.BlockActivation(disabling)
-	CenterRef.SetNoFavorAllowed(disabling)
+	BedRef.BlockActivation(disabling)
+	BedRef.SetNoFavorAllowed(disabling)
 EndFunction
 
 Function SetTimers(float[] SetTimers)
@@ -1093,60 +1094,70 @@ Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
 	If(!CenterOn)
 		return
 	EndIf
-	; Check if it's a bed
-	BedRef  = none
-	BedStatus[1] = 0
+	_Center = CenterOn.PlaceAtMe(Config.BaseMarker)
+	CenterAlias.ForceRefTo(CenterOn)
+	; Check if center is one of our actors and lock them in place if so
 	int Pos = Positions.Find(CenterOn as Actor)
-	if Pos >= 0
+	If(Pos >= 0)
 		int SlotID = FindSlot(Positions[Pos])
-		if SlotID != -1
+		If(SlotID != -1)
 			ActorAlias[SlotID].LockActor()
-		endIf
-		if CenterOn == VictimRef as ObjectReference
-			Log("CenterRef == VictimRef: "+VictimRef)
-		elseIf CenterOn == PlayerRef as ObjectReference
-			Log("CenterRef == PlayerRef: "+PlayerRef)
-		else
-			Log("CenterRef == Positions["+Pos+"]: "+CenterRef)
-		endIf
-	elseIf CenterOn.GetBaseObject() != Config.LocationMarker
-		BedStatus[1] = ThreadLib.GetBedType(CenterOn)
-	endIf
-	; Get Position after Lock the Actor to aviod unwanted teleport.
+		EndIf
+		If(CenterOn == VictimRef as ObjectReference)
+			Log("CenterRef == VictimRef: " + VictimRef)
+		ElseIf CenterOn == PlayerRef as ObjectReference
+			Log("CenterRef == PlayerRef: " + PlayerRef)
+		Else
+			Log("CenterRef == Positions[" + Pos + "]: " + CenterRef)
+		EndIf
+	EndIf
 	CenterLocation[0] = CenterOn.GetPositionX()
 	CenterLocation[1] = CenterOn.GetPositionY()
 	CenterLocation[2] = CenterOn.GetPositionZ()
 	CenterLocation[3] = CenterOn.GetAngleX()
 	CenterLocation[4] = CenterOn.GetAngleY()
 	CenterLocation[5] = CenterOn.GetAngleZ()
-	if BedStatus[1] > 0
-		BedRef = CenterOn
-		Log("CenterRef == BedRef: "+BedRef)
-		float[] BedOffsets = Config.GetBedOffsets(BedRef.GetBaseObject())
-		if BedStatus[1] == 1 && BedOffsets == Config.BedOffset
-			BedOffsets[2] = 7.5 ; Most common BedRolls Up offset
-			BedOffsets[3] = 180 ; Most BedRolls meshes are rotated
-		endIf
-		Log("Using Bed Type: "+BedStatus[1])
-		Log("Bed Location[PosX:"+CenterLocation[0]+",PosY:"+CenterLocation[1]+",PosZ:"+CenterLocation[2]+",AngX:"+CenterLocation[3]+",AngY:"+CenterLocation[4]+",AngZ:"+CenterLocation[5]+"]")
-		Log("Bed Offset[Forward:"+BedOffsets[0]+",Sideward:"+BedOffsets[1]+",Upward:"+BedOffsets[2]+",Rotation:"+BedOffsets[3]+"]")
-		float Scale = CenterOn.GetScale()
-		if Scale != 1.0
-			BedOffsets[0] = BedOffsets[0] * Scale ; (((2-Scale)*((Math.ABS(BedOffsets[0])-BedOffsets[0])/(2*Math.ABS(BedOffsets[0]))))+(Scale*((BedOffsets[0]+Math.ABS(BedOffsets[0]))/(2*BedOffsets[0]))))
-			BedOffsets[1] = BedOffsets[1] * Scale ; (((2-Scale)*((Math.ABS(BedOffsets[1])-BedOffsets[1])/(2*Math.ABS(BedOffsets[1]))))+(Scale*((BedOffsets[1]+Math.ABS(BedOffsets[1]))/(2*BedOffsets[1]))))
-			BedOffsets[2] = BedOffsets[2] * (((2-Scale)*((Math.ABS(BedOffsets[2])-BedOffsets[2])/(2*Math.ABS(BedOffsets[2]))))+(Scale*((BedOffsets[2]+Math.ABS(BedOffsets[2]))/(2*BedOffsets[2]))))
-			BedOffsets[3] = BedOffsets[3]
-			Log("Scaled Bed Offset[Forward:"+BedOffsets[0]+",Sideward:"+BedOffsets[1]+",Upward:"+BedOffsets[2]+",Rotation:"+BedOffsets[3]+"]")
-		endIf
-		CenterLocation[0] = CenterLocation[0] + ((BedOffsets[0] * Math.sin(CenterLocation[5])) + (BedOffsets[1] * Math.cos(CenterLocation[5])))
-		CenterLocation[1] = CenterLocation[1] + ((BedOffsets[0] * Math.cos(CenterLocation[5])) - (BedOffsets[1] * Math.sin(CenterLocation[5])))
-		CenterLocation[2] = CenterLocation[2] + BedOffsets[2]
-		CenterLocation[5] = CenterLocation[5] + BedOffsets[3]
+  If(sslpp.IsBed(CenterOn))
+		BedStatus[1] = ThreadLib.GetBedType(CenterOn)
+    BedRef = CenterOn
 		SetFurnitureIgnored(true)
-	endIf
-	CenterAlias.ForceRefTo(CenterRef)
+    float offsetX
+	  float offsetY
+	  float offsetZ
+    float offsAnZ
+    If(BedStatus[1] == 1)
+      offsetZ = 7.5 ; Average Z offset for bedrolls
+      offsAnZ = 180 ; bedrolls are usually rotated 180° on Z
+    Else
+      int offset = -31 ; + ((_Positions_var.find(playerref) > -1) as int) * 36
+      offsetX = Math.Cos(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
+      offsetY = Math.Sin(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
+      offsetZ = 45 ; Z offset for beds
+    EndIf
+    float scale = CenterOn.GetScale()
+		If(scale != 1.0)
+			offsetX *= scale
+			offsetY *= scale
+      If(CenterLocation[2] < 0)
+        offsetZ *= (2 - scale) ; Assming Scale will always be in [0; 2)
+      Else
+        offsetZ *= scale
+      EndIf
+    EndIf
+    CenterLocation[0] = CenterLocation[0] + offsetX
+		CenterLocation[1] = CenterLocation[1] + offsetY
+		CenterLocation[2] = CenterLocation[2] + offsetZ
+		CenterLocation[5] = CenterLocation[5] - offsAnZ
+    CenterRef.SetPosition(CenterLocation[0], CenterLocation[1], CenterLocation[2])
+    CenterRef.SetAngle(CenterLocation[3], CenterLocation[4], CenterLocation[5])
+	Else
+		BedStatus[1] = 0
+		BedRef = none
+  EndIf
+  Log("Creating new Center Ref from = " + CenterOn + " at Coordinates = " + CenterLocation + "( New Center is Bed Type = " + BedStatus[1] + " )")
 EndFunction
 
+; COMEBACK: This here should be completely pointless but might wanna check that it doesnt break anythin just to be sure
 Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
 	CenterLocation[0] = LocX
 	CenterLocation[1] = LocY
@@ -1347,6 +1358,7 @@ EndFunction
 ; --- Thread Events - SYSTEM USE ONLY                 --- ;
 ; ------------------------------------------------------- ;
 
+; Unnecessary, just use OnBeginState()/OnEndState()
 Function Action(string FireState)
 	UnregisterForUpdate()
 	EndAction()
@@ -1844,9 +1856,10 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	EndIf
 	; Bit clunky but w/e do we do if Papyrus doesnt let us allocate arrays with dynamic size
 	int[] valids = Utility.CreateIntArray(akAnimations.Length, -1)
+	int[] pkeys = GetAllPositionKeys()
 	int n = 0
 	While(n < akAnimations.Length)
-		If(akAnimations[i] && akAnimations[i].MatchKeys(PositionKeys) && akAnimations[i].MatchTags(Tags))
+		If(akAnimations[i] && akAnimations[i].MatchKeys(pkeys) && akAnimations[i].MatchTags(Tags))
 			valids[n] = n
 		EndIf
 		n += 1
@@ -1881,6 +1894,36 @@ Function AddCommonTags(sslBaseAnimation[] akAnimations)
 		i += 1
 	EndWhile
 	AddTags(commons)
+EndFunction
+
+Function PlaceActors()
+	int i = 0
+  While(i < Positions.Length)
+		ActorAlias[i].LockActor()
+		; COMEBACK: Might wanna move this someplace else
+		; NOTE: Currently this is in the Prepare() function on the alias script
+		; Wanna find some proper structure once Im done with all this zzzz
+    ; IDEA: if (!partial_strip)
+      ; ActorAlias[i].Strip()
+		; else 
+		;		<do partial strip>
+    ; endif
+
+    Positions[i].SetVehicle(_Center)
+	  Debug.SendAnimationEvent(Positions[i], "sosfasterect")
+    i += 1
+  EndWhile
+  sslpp.SetPositions(Positions, _Center)
+EndFunction
+
+Function UnplaceActors()
+  int i = 0
+  While(i < Positions.Length)
+    Positions[i].SetVehicle(none)
+		ActorAlias[i].UnlockActor()
+		ActorAlias[i].SendDefaultAnimEvent()
+    i += 1
+  EndWhile
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -2144,57 +2187,5 @@ int Function FilterAnimations()
 		return 1
 	endIf
 	return 0
-EndFunction
-
-bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
-	bool InStart = GetState() == "Making"
-	int AskBed = Config.AskBed
-	if BedStatus[0] == -1 || (InStart && (!HasPlayer && Config.NPCBed == 0) || (HasPlayer && AskBed == 0))
-		return false ; Beds forbidden by flag or starting bed check/prompt disabled
-	endIf
-	bool BedScene = BedStatus[0] == 1
- 	ObjectReference FoundBed
-	int i = ActorCount
-	while i > 0
-		i -= 1
-		FoundBed = Positions[i].GetFurnitureReference()
-		if FoundBed
-			int BedType = ThreadLib.GetBedType(FoundBed)
-			if BedType > 0 && (ActorCount < 4 || BedType != 2)
-				CenterOnObject(FoundBed)
-				return true ; Bed found and approved for use
-			endIf
-		endIf
-	endWhile
-	if HasPlayer && (!InStart || AskBed == 1 || (AskBed == 2 && (!IsVictim(PlayerRef) || UseNPCBed)))
-		if BedScene
-			FoundBed  = ThreadLib.FindBed(PlayerRef, Radius * 2) ; Check within radius of player
-		else
-			FoundBed  = ThreadLib.FindBed(PlayerRef, Radius) ; Check within radius of player
-			; Same Floor only
-		;	if FoundBed && !ThreadLib.SameFloor(FoundBed, PlayerRef.GetPositionZ(), 200)
-		;		Log("FoundBed: "+FoundBed+" is not in the same floor")
-		;		FoundBed = none
-		;	endIf
-		endIf
-		AskPlayer = AskPlayer && (!InStart || !(AskBed == 2 && IsVictim(PlayerRef))) ; Disable prompt if bed found but shouldn't ask
-	elseIf !HasPlayer && UseNPCBed
-		if BedScene
-			FoundBed = ThreadLib.FindBed(Positions[0], Radius * 2) ; Check within radius of first position, if NPC beds are allowed
-		else
-			FoundBed = ThreadLib.FindBed(Positions[0], Radius) ; Check within radius of first position, if NPC beds are allowed
-			; Same Floor only
-		;	if FoundBed && !ThreadLib.SameFloor(FoundBed, PlayerRef.GetPositionZ(), 200)
-		;		Log("FoundBed: "+FoundBed+" is not in the same floor")
-		;		FoundBed = none
-		;	endIf
-		endIf
-	endIf
-	; Found a bed AND EITHER forced use OR don't care about players choice OR or player approved
-	if FoundBed && (BedStatus[0] == 1 || (!AskPlayer || (AskPlayer && (Config.UseBed.Show() as bool))))
-		CenterOnObject(FoundBed)
-		return true ; Bed found and approved for use
-	endIf
-	return false ; No bed found
 EndFunction
 

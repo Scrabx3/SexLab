@@ -112,6 +112,10 @@ bool function HasAllTag(string[] TagList)
 	return true
 endFunction
 
+bool Function MatchTags(String[] asTags)
+	return sslpp.MatchTags(Tags, asTags)
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Phantom Slots                                   --- ;
 ; ------------------------------------------------------- ;

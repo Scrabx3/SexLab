@@ -27,20 +27,11 @@ bool hkReady
 ; --- Thread Starter                                  --- ;
 ; ------------------------------------------------------- ;
 
-bool Prepared
-state Prepare
-	function FireAction()
-		Prepared = false
-
+State Prepare
+	Event OnBeginState()
 		HookAnimationPrepare()
-
-		; Ensure center is set
 		if !CenterRef
 			CenterOnObject(Positions[0], false)
-		endIf
-		if CenterAlias.GetReference() != CenterRef
-			CenterAlias.TryToClear()
-			CenterAlias.ForceRefTo(CenterRef)
 		endIf
 		; Set important vars needed for actor prep
 		UpdateAdjustKey()
@@ -53,72 +44,66 @@ state Prepare
 		Log(AdjustKey, "Adjustment Profile")
 		; Begin actor prep
 		SyncEvent(kPrepareActor, 40.0)
-	endFunction
+	EndEvent
 
-	function PrepareDone()
-		RegisterForSingleUpdate(0.1)
-	endFunction
-
-	function StartupDone()
-		RegisterForSingleUpdate(0.1)
-	endFunction
-
-	event OnUpdate()
-		if !Prepared
-			Prepared = true
-			; Reset loc, incase actor type center has moved during prep
-			;/ if CenterRef && CenterRef.Is3DLoaded() && SexLabUtil.IsActor(CenterRef) && Positions.Find(CenterRef as Actor) != -1
-				CenterLocation[0] = CenterRef.GetPositionX()
-				CenterLocation[1] = CenterRef.GetPositionY()
-				; CenterLocation[2] = CenterRef.GetPositionZ()
-				CenterLocation[3] = CenterRef.GetAngleX()
-				CenterLocation[4] = CenterRef.GetAngleY()
-				CenterLocation[5] = CenterRef.GetAngleZ()
-			endIf /;
-			; Set starting adjusted actor
-			int AdjustPos = Positions.Find(Config.TargetRef)
-			if AdjustPos == -1
-				AdjustPos   = (ActorCount > 1) as int
-				if Positions[AdjustPos] != PlayerRef
-					Config.TargetRef = Positions[AdjustPos]
-				endIf
+	; The SyncEvent() call will callback into this once all Sync calls have processed
+	Event PrepareDone()
+		; Reset loc, incase actor type center has moved during prep
+		;/ if CenterRef && CenterRef.Is3DLoaded() && SexLabUtil.IsActor(CenterRef) && Positions.Find(CenterRef as Actor) != -1
+			CenterLocation[0] = CenterRef.GetPositionX()
+			CenterLocation[1] = CenterRef.GetPositionY()
+			; CenterLocation[2] = CenterRef.GetPositionZ()
+			CenterLocation[3] = CenterRef.GetAngleX()
+			CenterLocation[4] = CenterRef.GetAngleY()
+			CenterLocation[5] = CenterRef.GetAngleZ()
+		endIf /;
+		; Set starting adjusted actor
+		int AdjustPos = Positions.Find(Config.TargetRef)
+		if AdjustPos == -1
+			AdjustPos   = (ActorCount > 1) as int
+			if Positions[AdjustPos] != PlayerRef
+				Config.TargetRef = Positions[AdjustPos]
 			endIf
-			AdjustAlias = PositionAlias(AdjustPos)
-			; Get localized config options
-			BaseDelay = Config.SFXDelay
-			; Send starter events
-			SendThreadEvent("AnimationStart")
-			if LeadIn
-				SendThreadEvent("LeadInStart")
-			endIf
-			; Start time trackers
-			RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
-			SkillTime = RealTime[0]
-			StartedAt = RealTime[0]
-			; Start actor loops
-			SyncEvent(kStartup, 10.0)
-		else
-			; Start animating
-			Action("Advancing")
 		endIf
-	endEvent
+		AdjustAlias = PositionAlias(AdjustPos)
+		; Get localized config options
+		BaseDelay = Config.SFXDelay
+		; Send starter events
+		SendThreadEvent("AnimationStart")
+		if LeadIn
+			SendThreadEvent("LeadInStart")
+		endIf
+		; Start time trackers
+		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
+		SkillTime = RealTime[0]
+		StartedAt = RealTime[0]
+		; Start actor loops
+		SyncEvent(kStartup, 10.0)
+	EndEvent
 
-	function PlayStageAnimations()
-	endFunction
-	function ResetPositions()
-	endFunction
-	function RecordSkills()
-	endFunction
-	function SetBonuses()
-	endFunction
-endState
+	; Same as above, but this time for 'kStartup'
+	; Doing the actual placement here with animation being called in 'advancing'
+	Event StartupDone()
+		PlaceActors()
+		GoToState("Advancing")
+	EndEvent
+
+	Function PlayStageAnimations()
+	EndFunction
+	Function ResetPositions()
+	EndFunction
+	Function RecordSkills()
+	EndFunction
+	Function SetBonuses()
+	EndFunction
+EndState
 
 ; ------------------------------------------------------- ;
 ; --- Animation Loop                                  --- ;
 ; ------------------------------------------------------- ;
 
 state Advancing
-	function FireAction()
+	Event OnBeginState()
 		; Log("Stage: "+Stage, "Advancing")
 		if Stage < 1
 			Stage = 1
@@ -131,8 +116,8 @@ state Advancing
 			return
 		endIf
 		SyncEvent(kSyncActor, 15.0)
-	endFunction
-	function SyncDone()
+	EndEvent
+	Function SyncDone()
 		if Stage > 1 && Stage > (StageCount * 0.5)
 			string[] Tags = Animation.GetRawTags()
 			IsType[6]  = IsType[6] || Females > 0 && Tags.Find("Vaginal") != -1
@@ -140,7 +125,7 @@ state Advancing
 			IsType[8]  = IsType[8] || Tags.Find("Oral")   != -1
 		endIf
 		RegisterForSingleUpdate(0.1)
-	endFunction
+	EndFunction
 	event OnUpdate()
 		HookStageStart()
 		Action("Animating")
@@ -150,7 +135,7 @@ endState
 
 state Animating
 
-	function FireAction()
+	Function FireAction()
 		UnregisterForUpdate()
 		; Prepare loop
 		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
@@ -165,7 +150,7 @@ state Animating
 		endIf
 		; Begin loop
 		RegisterForSingleUpdate(0.5)
-	endFunction
+	EndFunction
 
 	event OnUpdate()
 		; Debug.Trace("(thread update)")
@@ -192,26 +177,26 @@ state Animating
 		RegisterForSingleUpdate(0.5)
 	endEvent
 
-	function EndAction()
+	Function EndAction()
 		HookStageEnd()
 		if !LeadIn && Stage >= StageCount && !DisableOrgasms
 			SendThreadEvent("OrgasmEnd")
 		else
 			SendThreadEvent("StageEnd")
 		endIf
-	endFunction
+	EndFunction
 
-	function GoToStage(int ToStage)
+	Function GoToStage(int ToStage)
 		UnregisterForUpdate()
 		Stage = ToStage
 		Action("Advancing")
-	endFunction
+	EndFunction
 
 	; ------------------------------------------------------- ;
 	; --- Hotkey functions                                --- ;
 	; ------------------------------------------------------- ;
 
-	function AdvanceStage(bool backwards = false)
+	Function AdvanceStage(bool backwards = false)
 		if !backwards
 			GoToStage((Stage + 1))
 		elseIf backwards && Stage > 1
@@ -221,9 +206,9 @@ state Animating
 				GoToStage((Stage - 1))
 			endIf
 		endIf
-	endFunction
+	EndFunction
 
-	function ChangeAnimation(bool backwards = false)
+	Function ChangeAnimation(bool backwards = false)
 		if Animations.Length < 2
 			return ; Nothing to change
 		endIf
@@ -249,9 +234,9 @@ state Animating
 
 		SendThreadEvent("AnimationChange")
 		RegisterForSingleUpdate(0.2)
-	endFunction
+	EndFunction
 
-	function ChangePositions(bool backwards = false)
+	Function ChangePositions(bool backwards = false)
 		if ActorCount < 2 || HasCreature
 			return ; Solo/Creature Animation, nobody to swap with
 		endIf
@@ -280,9 +265,9 @@ state Animating
 		ResetPositions()
 		SendThreadEvent("PositionChange")
 		RegisterForSingleUpdate(1.0)
-	endFunction
+	EndFunction
 
-	function AdjustForward(bool backwards = false, bool AdjustStage = false)
+	Function AdjustForward(bool backwards = false, bool AdjustStage = false)
 		UnregisterforUpdate()
 		float Amount = SignFloat(backwards, 0.50)
 		Adjusted = true
@@ -298,9 +283,9 @@ state Animating
 			Utility.Wait(0.5)
 		endWhile
 		RegisterForSingleUpdate(0.1)
-	endFunction
+	EndFunction
 
-	function AdjustSideways(bool backwards = false, bool AdjustStage = false)
+	Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
 		UnregisterforUpdate()
 		float Amount = SignFloat(backwards, 0.50)
 		Adjusted = true
@@ -316,9 +301,9 @@ state Animating
 			Utility.Wait(0.5)
 		endWhile
 		RegisterForSingleUpdate(0.1)
-	endFunction
+	EndFunction
 
-	function AdjustUpward(bool backwards = false, bool AdjustStage = false)
+	Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
 		float Amount = SignFloat(backwards, 0.50)
 		UnregisterforUpdate()
 		Adjusted = true
@@ -334,9 +319,9 @@ state Animating
 			Utility.Wait(0.5)
 		endWhile
 		RegisterForSingleUpdate(0.1)
-	endFunction
+	EndFunction
 
-	function RotateScene(bool backwards = false)
+	Function RotateScene(bool backwards = false)
 		UnregisterForUpdate()
 		float Amount = 15.0
 		if Config.IsAdjustStagePressed()
@@ -378,9 +363,9 @@ state Animating
 			Utility.Wait(0.5)
 		endWhile
 		RegisterForSingleUpdate(0.2)
-	endFunction
+	EndFunction
 
-	function AdjustSchlong(bool backwards = false)
+	Function AdjustSchlong(bool backwards = false)
 		int Amount  = SignInt(backwards, 1)
 		int AdjustPos = GetAdjustPos()
 		int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
@@ -391,9 +376,9 @@ state Animating
 			Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
 			PlayHotkeyFX(2, !backwards)
 		endIf
-	endFunction
+	EndFunction
 
-	function AdjustChange(bool backwards = false)
+	Function AdjustChange(bool backwards = false)
 		UnregisterForUpdate()
 		if ActorCount > 1
 			int AdjustPos = GetAdjustPos()
@@ -409,32 +394,32 @@ state Animating
 			SexLabUtil.PrintConsole(msg)
 		endIf
 		RegisterForSingleUpdate(0.2)
-	endFunction
+	EndFunction
 
-	function RestoreOffsets()
+	Function RestoreOffsets()
 		UnregisterForUpdate()
 		Animation.RestoreOffsets(AdjustKey)
 		RealignActors()
 		RegisterForSingleUpdate(0.2)
-	endFunction
+	EndFunction
 
-	function CenterOnObject(ObjectReference CenterOn, bool resync = true)
+	Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
 		parent.CenterOnObject(CenterOn, resync)
 		if resync
 			RealignActors()
 			SendThreadEvent("ActorsRelocated")
 		endIf
-	endFunction
+	EndFunction
 
-	function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
+	Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
 		parent.CenterOnCoords(LocX, LocY, LocZ, RotX, RotY, RotZ, resync)
 		if resync
 			RealignActors()
 			SendThreadEvent("ActorsRelocated")
 		endIf
-	endFunction
+	EndFunction
 
-	function MoveScene()
+	Function MoveScene()
 		; Stop animation loop
 		UnregisterForUpdate()
 		; Processing Furnitures
@@ -548,7 +533,7 @@ state Animating
 			; Return to animation loop
 			ResetPositions()
 		endIf
-	endFunction
+	EndFunction
 
 	event OnKeyDown(int KeyCode)
 		; StateCheck()
@@ -665,7 +650,7 @@ state Animating
 		endIf
 	endEvent
 
-	function MoveActors()
+	Function MoveActors()
 		Utility.Wait(0.1)
 		ActorAlias[0].RefreshLoc()
 		ActorAlias[1].RefreshLoc()
@@ -673,9 +658,9 @@ state Animating
 		ActorAlias[3].RefreshLoc()
 		ActorAlias[4].RefreshLoc()
 		Utility.Wait(0.1)
-	endFunction
+	EndFunction
 
-	function RealignActors()
+	Function RealignActors()
 		UnregisterForUpdate()
 		ActorAlias[0].SyncAll(true)
 		ActorAlias[1].SyncAll(true)
@@ -684,32 +669,32 @@ state Animating
 		ActorAlias[4].SyncAll(true)
 		Utility.Wait(0.1)
 		RegisterForSingleUpdate(0.5)
-	endFunction
+	EndFunction
 
-	function TriggerOrgasm()
+	Function TriggerOrgasm()
 		UnregisterForUpdate()
 		if SoundFX
 			SoundFX.Play(GetCenterFX())
 		endIf
 		QuickEvent("Orgasm")
 		RegisterForSingleUpdate(0.5)
-	endFunction
+	EndFunction
 
-	function ResetPositions()
+	Function ResetPositions()
 		UnregisterForUpdate()
 		ApplyFade()
 		GoToState("Refresh")
 		SyncEvent(kRefreshActor, 15.0)
-	endFunction
+	EndFunction
 endState
 
 state Refresh
-	function RefreshDone()
+	Function RefreshDone()
 		RegisterForSingleUpdate(0.5)
-	endFunction
-	function ResetPositions()
+	EndFunction
+	Function ResetPositions()
 		RegisterForSingleUpdate(0.5)
-	endFunction
+	EndFunction
 	event OnUpdate()
 		GoToState("Animating")
 		FireAction()
@@ -720,7 +705,7 @@ endState
 ; --- Context Sensitive Info                          --- ;
 ; ------------------------------------------------------- ;
 
-function SetAnimation(int aid = -1)
+Function SetAnimation(int aid = -1)
 	; Randomize if -1
 	if aid < 0 || aid >= Animations.Length
 		aid = Utility.RandomInt(0, (Animations.Length - 1))
@@ -781,9 +766,9 @@ function SetAnimation(int aid = -1)
 			PlayStageAnimations()
 		endIf
 	endIf
-endFunction
+EndFunction
 
-ObjectReference function GetCenterFX()
+ObjectReference Function GetCenterFX()
 	if CenterRef != none && CenterRef.Is3DLoaded()
 		return CenterRef
 	else
@@ -795,9 +780,9 @@ ObjectReference function GetCenterFX()
 			i += 1
 		endWhile
 	endIf
-endFunction
+EndFunction
 
-float function GetTimer()
+float Function GetTimer()
 	; Custom acyclic stage timer
 	if TimedStage
 		return Animation.GetTimer(Stage)
@@ -810,9 +795,9 @@ float function GetTimer()
 		return Timers[last]
 	endIf
 	return Timers[(last - 1)]
-endFunction
+EndFunction
 
-function ResolveTimers()
+Function ResolveTimers()
 	parent.ResolveTimers()
 	if Animation
 		TimedStage = Animation.HasTimer(Stage)
@@ -822,18 +807,18 @@ function ResolveTimers()
 	else
 		TimedStage = false
 	endIf
-endFunction
+EndFunction
 
-float function GetAnimationRunTime()
+float Function GetAnimationRunTime()
 	return Animation.GetTimersRunTime(Timers)
-endFunction
+EndFunction
 
-function UpdateTimer(float AddSeconds = 0.0)
+Function UpdateTimer(float AddSeconds = 0.0)
 	TimedStage = true
 	StageTimer += AddSeconds
-endFunction
+EndFunction
 
-function EndLeadIn()
+Function EndLeadIn()
 	if LeadIn
 		UnregisterForUpdate()
 		; Swap to non lead in animations
@@ -849,9 +834,9 @@ function EndLeadIn()
 		SendThreadEvent("LeadInEnd")
 		Action("Advancing")
 	endIf
-endFunction
+EndFunction
 
-function EndAnimation(bool Quickly = false)
+Function EndAnimation(bool Quickly = false)
 	UnregisterForUpdate()
 	Stage   = StageCount
 	FastEnd = Quickly
@@ -863,7 +848,7 @@ function EndAnimation(bool Quickly = false)
 	endIf
 	Utility.WaitMenuMode(0.5)
 	GoToState("Ending")
-endFunction
+EndFunction
 
 state Ending
 	event OnBeginState()
@@ -880,11 +865,12 @@ state Ending
 		DisableHotkeys()
 		Config.DisableThreadControl(self)
 		SyncEvent(kResetActor, 15.0)
+		UnplaceActors()
 	endEvent
 	event OnUpdate()
 		ResetDone()
 	endEvent
-	function ResetDone()
+	Function ResetDone()
 		UnregisterforUpdate()
 		HookAnimationEnd()
 		SendThreadEvent("AnimationEnd")
@@ -893,10 +879,10 @@ state Ending
 			sslSystemConfig.SaveAdjustmentProfile()
 		endIf
 		GoToState("Frozen")
-	endFunction
+	EndFunction
 	; Don't allow to be called twice
-	function EndAnimation(bool Quickly = false)
-	endFunction
+	Function EndAnimation(bool Quickly = false)
+	EndFunction
 endState
 
 state Frozen
@@ -910,15 +896,15 @@ state Frozen
 	event OnUpdate()
 		Initialize()
 	endEvent
-	function EndAnimation(bool Quickly = false)
-	endFunction
+	Function EndAnimation(bool Quickly = false)
+	EndFunction
 endState
 
 ; ------------------------------------------------------- ;
 ; --- System Use Only                                 --- ;
 ; ------------------------------------------------------- ;
 
-function RecordSkills()
+Function RecordSkills()
 	float TimeNow = RealTime[0]
 	float xp = ((TimeNow - SkillTime) / 8.0)
 	if xp >= 0.5
@@ -941,7 +927,7 @@ function RecordSkills()
 	SkillTime = TimeNow
 endfunction
 
-function SetBonuses()
+Function SetBonuses()
 	SkillBonus[0] = SkillXP[0]
 	if IsType[1]
 		SkillBonus[1] = SkillXP[1]
@@ -958,9 +944,9 @@ function SetBonuses()
 	if IsType[5]
 		SkillBonus[5] = SkillXP[5]
 	endIf
-endFunction
+EndFunction
 
-function EnableHotkeys(bool forced = false)
+Function EnableHotkeys(bool forced = false)
 	if HasPlayer || forced
 		; Prepare bound keys
 		Hotkeys = new int[13]
@@ -988,26 +974,26 @@ function EnableHotkeys(bool forced = false)
 		; Ready
 	;	hkReady = true
 	endIf
-endFunction
+EndFunction
 
-function DisableHotkeys()
+Function DisableHotkeys()
 	UnregisterForAllKeys()
 ;	hkReady = false
-endFunction
+EndFunction
 
-function Initialize()
+Function Initialize()
 	Config.DisableThreadControl(self)
 	DisableHotkeys()
 	SFXTimer    = 0.0
 	SkillTime   = 0.0
 	TimedStage  = false
 	Adjusted    = false
-	Prepared    = false
+	; Prepared    = false
 	AdjustAlias = ActorAlias[0]
 	parent.Initialize()
-endFunction
+EndFunction
 
-int function GetAdjustPos()
+int Function GetAdjustPos()
 	int AdjustPos = -1
 	if AdjustAlias && AdjustAlias.ActorRef
 		AdjustPos = Positions.Find(AdjustAlias.ActorRef)
@@ -1023,15 +1009,15 @@ int function GetAdjustPos()
 	endIf
 	AdjustAlias = PositionAlias(AdjustPos)
 	return AdjustPos
-endFunction
+EndFunction
 
-function PlayStageAnimations()
+Function PlayStageAnimations()
 	if Stage <= StageCount
 		Animation.GetAnimEvents(AnimEvents, Stage)
 		QuickEvent("Animate")
 		StageTimer = RealTime[0] + GetTimer()
 	endIf
-endFunction
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Thread Events - SYSTEM USE ONLY                 --- ;
@@ -1044,43 +1030,43 @@ endFunction
 ; ------------------------------------------------------- ;
 
 auto state Unlocked
-	function EndAnimation(bool Quickly = false)
-	endFunction
+	Function EndAnimation(bool Quickly = false)
+	EndFunction
 endState
 
 ; State Animating
-function AdvanceStage(bool backwards = false)
-endFunction
-function ChangeAnimation(bool backwards = false)
-endFunction
-function ChangePositions(bool backwards = false)
-endFunction
-function AdjustForward(bool backwards = false, bool AdjustStage = false)
-endFunction
-function AdjustSideways(bool backwards = false, bool AdjustStage = false)
-endFunction
-function AdjustUpward(bool backwards = false, bool AdjustStage = false)
-endFunction
-function RotateScene(bool backwards = false)
-endFunction
-function AdjustSchlong(bool backwards = false)
-endFunction
-function AdjustChange(bool backwards = false)
-endFunction
-function RestoreOffsets()
-endFunction
-function MoveScene()
-endFunction
-function RealignActors()
-endFunction
-function MoveActors()
-endFunction
-function GoToStage(int ToStage)
-endFunction
-function ResetPositions()
-endFunction
-function TriggerOrgasm()
-endFunction
+Function AdvanceStage(bool backwards = false)
+EndFunction
+Function ChangeAnimation(bool backwards = false)
+EndFunction
+Function ChangePositions(bool backwards = false)
+EndFunction
+Function AdjustForward(bool backwards = false, bool AdjustStage = false)
+EndFunction
+Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
+EndFunction
+Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
+EndFunction
+Function RotateScene(bool backwards = false)
+EndFunction
+Function AdjustSchlong(bool backwards = false)
+EndFunction
+Function AdjustChange(bool backwards = false)
+EndFunction
+Function RestoreOffsets()
+EndFunction
+Function MoveScene()
+EndFunction
+Function RealignActors()
+EndFunction
+Function MoveActors()
+EndFunction
+Function GoToStage(int ToStage)
+EndFunction
+Function ResetPositions()
+EndFunction
+Function TriggerOrgasm()
+EndFunction
 
 int[] Hotkeys
 int property kAdvanceAnimation = 0  autoreadonly hidden
@@ -1099,20 +1085,20 @@ int property kAdjustSchlong    = 12 autoreadonly hidden
 
 Sound[] HotkeyDown
 Sound[] HotkeyUp
-function PlayHotkeyFX(int i, bool backwards)
+Function PlayHotkeyFX(int i, bool backwards)
 	int AdjustPos = GetAdjustPos()
 	if backwards
 		HotkeyDown[i].Play(Positions[AdjustPos])
 	else
 		HotkeyUp[i].Play(Positions[AdjustPos])
 	endIf
-endFunction
+EndFunction
 
 event OnKeyDown(int keyCode)
 	; StateCheck()
 endEvent
 
-;/ function StateCheck()
+;/ Function StateCheck()
 	Log("THREAD STATE: "+GetState())
 	if ActorCount == 1
 		ActorAlias[0].Log("State: "+ActorAlias[0].GetState())
@@ -1135,4 +1121,4 @@ endEvent
 		ActorAlias[3].Log("State: "+ActorAlias[3].GetState())
 		ActorAlias[4].Log("State: "+ActorAlias[4].GetState())
 	endIf
-endFunction /;
+EndFunction /;

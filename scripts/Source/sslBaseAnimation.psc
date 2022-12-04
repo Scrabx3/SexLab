@@ -60,7 +60,7 @@ bool Function MatchKeys(int[] aiActorKeys)
 	EndIf
 	int i = 0
 	While(i < _ActorKeys.Length)
-		If(!sslActorKey.IsKeyAccepted(_ActorKeys[i], aiActorKeys[i]))
+		If(!sslActorKey.IsKeyAccepted(aiActorKeys[i], _ActorKeys[i]))
 			return false
 		EndIf
 		i += 1
@@ -68,9 +68,10 @@ bool Function MatchKeys(int[] aiActorKeys)
 	return true
 EndFunction
 
-; Placeholder func, will be moved into a dll, ideally, eventually
+; Check if this animation matches all of the given tags
+; Similar to HasAllTags() but much faster and recognizes prefix-flags (~, -, ...)
 bool Function MatchTags(String[] asTags)
-	return false
+	return Parent.MatchTags(asTags)
 EndFunction
 
 ; ------------------------------------------------------- ;

@@ -220,6 +220,13 @@ endFunction
 ;|	Utility Functions
 ;\-----------------------------------------------/;
 
+float Function TrigAngleZ(float afGameAngle) global
+	If(afGameAngle < 90)
+		 return 90 - afGameAngle
+	EndIf
+ 	return 450 - afGameAngle
+EndFunction
+
 int function IndexTravel(int CurrentIndex, int ArrayLength, bool Reverse = false) global
 	if Reverse
 		CurrentIndex -= 1

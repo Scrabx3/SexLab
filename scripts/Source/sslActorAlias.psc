@@ -6,6 +6,8 @@ sslActorLibrary ActorLib
 sslActorStats Stats
 Actor PlayerRef
 
+; TODO: Remove these 3453462342634 local vars for readabilities sake. The ActorKey definition will make them redundant anyway
+
 ; Actor Info
 Actor property ActorRef auto hidden
 ActorBase BaseRef
@@ -34,7 +36,7 @@ bool LeadIn
 float StartWait
 string StartAnimEvent
 string EndAnimEvent
-string ActorKey
+string ActorKeyStr
 bool NoOrgasm
 
 ; Voice
@@ -112,6 +114,14 @@ bool property MalePosition hidden
 	endFunction
 endProperty
 
+
+int _ActorKey
+int Property ActorKey
+	int Function Get()
+		return _ActorKey
+	EndFunction
+EndProperty
+
 ; ------------------------------------------------------- ;
 ; --- Load/Clear Alias For Use                        --- ;
 ; ------------------------------------------------------- ;
@@ -125,6 +135,10 @@ bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoic
 		Log("ERROR: SetActor("+akReference+") on State:'Ready' is not allowed")
 		return false ; Failed to set prospective actor into alias
 	endIf
+	; sslpp REWORK START
+	_ActorKey = sslActorKey.BuildActorKey(akReference, abIsVictim)
+	; --- sslpp END
+
 	; Init actor alias information
 	ActorRef   = akReference
 	BaseRef    = ActorRef.GetLeveledActorBase()
@@ -152,24 +166,24 @@ bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoic
 		Stats.SeedActor(ActorRef)
 	endIf
 	; Actor's Adjustment Key
-	ActorKey = RaceEditorID
+	ActorKeyStr = RaceEditorID
 	if !Config.RaceAdjustments
 		if IsCreature
 			if ActorRaceKey
-				ActorKey = ActorRaceKey
+				ActorKeyStr = ActorRaceKey
 			endIf
 		else
-			ActorKey = "Humanoid"
+			ActorKeyStr = "Humanoid"
 		endIf
 	endIf
 	if IsCreature
-		ActorKey += "C"
+		ActorKeyStr += "C"
 	endIf
 	if !IsCreature || Config.UseCreatureGender
 		If isRealFemale
-			ActorKey += "F"
+			ActorKeyStr += "F"
 		else
-			ActorKey += "M"
+			ActorKeyStr += "M"
 		endIf
 	endIf
 	NioScale = 1.0
@@ -224,7 +238,7 @@ bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoic
 		ActorScalePlus = ((ActorScalePlus * 25) + 0.5) as int
 	;	Log(self, "ActorScalePlus("+ActorScalePlus+")")
 		if ActorScalePlus != 25.0
-			ActorKey += ActorScalePlus as int
+			ActorKeyStr += ActorScalePlus as int
 		endIf
 	endIf
 	; Set base voice/loop delay
@@ -304,6 +318,8 @@ int StageCount
 string[] AnimEvents
 sslBaseAnimation Animation
 
+; TODO: Remove; This here should just not be a thing
+; Saving the same data on 3 different places is just asking for overcomplication & slow code & bugs
 function LoadShares()
 	DebugMode  = Config.DebugMode
 	UseLipSync = Config.UseLipSync && !IsCreature
@@ -329,29 +345,10 @@ endFunction
 
 
 state Ready
-	event OnUpdate()
-		if StartWait < 0.1
-			StartWait = 0.1
-		endIf
-		string CurrentState = Thread.GetState()
-		if CurrentState == "Ready"
-			Log("WARNING: OnUpdate Event ON State:'Ready' FOR State:'"+CurrentState+"'")
-			GoToState("Prepare")
-			RegisterForSingleUpdate(StartWait)
-		else
-			Log("ERROR: OnUpdate Event ON State:'Ready' FOR State:'"+CurrentState+"'")
-			RegisterForSingleUpdate(StartWait)
-		endIf
-	endEvent
-
-	bool function SetActor(Actor ProspectRef)
-		Log("ERROR: SetActor("+ActorRef.GetLeveledActorBase().GetName()+") on State:'Ready' is not allowed")
-		return false
-	endFunction
-
+	; Invoked when the thread is about to start the animation
+	; Set all necessary passive data here, i.e. statistics n idk what else
+	; Also have actor path towards center if enabled. Once this func is done on all threads we start animating
 	function PrepareActor()
-		; Remove any unwanted combat effects
-		ClearEffects()
 		if IsPlayer
 			sslThreadController Control = Config.GetThreadControlled()
 			if Control && Control != none
@@ -363,73 +360,74 @@ state Ready
 		ActorRef.EvaluatePackage()
 		; Starting Information
 		LoadShares()
-		GetPositionInfo()
+		; GetPositionInfo()	; Doing this in the next func already (Why are we doin this here too)
 		IsAggressor = Thread.VictimRef && Thread.Victims.Find(ActorRef) == -1
 		string LogInfo
+
+		; !IMPORTANT TODO: Move this into the actual starting code
 		; Calculate scales
-		if UseScale
-			Thread.ApplyFade()
-			float display = ActorRef.GetScale()
-			ActorRef.SetScale(1.0)
-			float base = ActorRef.GetScale()
-			ActorScale = ( display / base )
-			AnimScale  = ActorScale
-			if ActorScale > 0.0 && ActorScale != 1.0
-				ActorRef.SetScale(ActorScale)
-			endIf
-			float FixNioScale = 1.0
-			if (Thread.ActorCount > 1 || BedStatus[1] >= 4) && Config.ScaleActors
-				if Config.HasNiOverride && !IsCreature && NioScale > 0.0 && NioScale != 1.0
-					FixNioScale = (FixNioScale / NioScale)
-					NiOverride.AddNodeTransformScale(ActorRef, False, isRealFemale, "NPC", "SexLab.esm",FixNioScale)
-					NiOverride.UpdateNodeTransform(ActorRef, False, isRealFemale, "NPC")
-				endIf
-				AnimScale = (1.0 / base)
-			endIf
-			LogInfo = "Scales["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"] "
-		else
-			AnimScale = 1.0
-			LogInfo = "Scales["+ActorRef.GetScale()+"/DISABLED/DISABLED/DISABLED/DISABLED/"+NioScale+"] "
-		endIf
-		; Stop other movements
-		if DoPathToCenter
-			PathToCenter()
-		endIf
-		LockActor()
-		
-		if BedStatus[1] <= 1
-			; pre-move to starting position near other actors
-			Offsets[0] = 0.0
-			Offsets[1] = 0.0
-			Offsets[2] = 5.0
-			Offsets[3] = 0.0
-			; Starting position
-			if Position == 1
-				Offsets[0] = 25.0
-				Offsets[3] = 180.0
+		; if UseScale
+		; 	Thread.ApplyFade()
+		; 	float display = ActorRef.GetScale()
+		; 	ActorRef.SetScale(1.0)
+		; 	float base = ActorRef.GetScale()
+		; 	ActorScale = ( display / base )
+		; 	AnimScale  = ActorScale
+		; 	if ActorScale > 0.0 && ActorScale != 1.0
+		; 		ActorRef.SetScale(ActorScale)
+		; 	endIf
+		; 	float FixNioScale = 1.0
+		; 	if (Thread.ActorCount > 1 || BedStatus[1] >= 4) && Config.ScaleActors
+		; 		if Config.HasNiOverride && !IsCreature && NioScale > 0.0 && NioScale != 1.0
+		; 			FixNioScale = (FixNioScale / NioScale)
+		; 			NiOverride.AddNodeTransformScale(ActorRef, False, isRealFemale, "NPC", "SexLab.esm",FixNioScale)
+		; 			NiOverride.UpdateNodeTransform(ActorRef, False, isRealFemale, "NPC")
+		; 		endIf
+		; 		AnimScale = (1.0 / base)
+		; 	endIf
+		; 	LogInfo = "Scales["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"] "
+		; else
+		; 	AnimScale = 1.0
+		; 	LogInfo = "Scales["+ActorRef.GetScale()+"/DISABLED/DISABLED/DISABLED/DISABLED/"+NioScale+"] "
+		; endIf
 
-			elseif Position == 2
-				Offsets[1] = -25.0
-				Offsets[3] = 90.0
+		; NOTE: We move the important bits of actor positoning into the .dll and main script
+		; i dont even know why SL needs 1k lines to do something that can be done in < 20	
+		; LockActor()	NOTE: THis should still be called but do it together with the SetPosition() func
+		;
+		; if BedStatus[1] <= 1
+		; 	; pre-move to starting position near other actors
+		; 	Offsets[0] = 0.0
+		; 	Offsets[1] = 0.0
+		; 	Offsets[2] = 5.0
+		; 	Offsets[3] = 0.0
+		; 	; Starting position
+		; 	if Position == 1
+		; 		Offsets[0] = 25.0
+		; 		Offsets[3] = 180.0
 
-			elseif Position == 3
-				Offsets[1] = 25.0
-				Offsets[3] = -90.0
+		; 	elseif Position == 2
+		; 		Offsets[1] = -25.0
+		; 		Offsets[3] = 90.0
 
-			elseif Position == 4
-				Offsets[0] = -25.0
+		; 	elseif Position == 3
+		; 		Offsets[1] = 25.0
+		; 		Offsets[3] = -90.0
 
-			endIf
-			OffsetCoords(Loc, Center, Offsets)
-			MarkerRef.SetPosition(Loc[0], Loc[1], Loc[2])
-			MarkerRef.SetAngle(Loc[3], Loc[4], Loc[5])
-			ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
-			ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
-			AttachMarker()
-			if !IsPlayer || !ActorRef.IsOnMount()
-				ActorRef.QueueNiNodeUpdate()
-			endIf
-		endIf
+		; 	elseif Position == 4
+		; 		Offsets[0] = -25.0
+
+		; 	endIf
+		; 	OffsetCoords(Loc, Center, Offsets)
+		; 	MarkerRef.SetPosition(Loc[0], Loc[1], Loc[2])
+		; 	MarkerRef.SetAngle(Loc[3], Loc[4], Loc[5])
+		; 	ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
+		; 	ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
+		; 	AttachMarker()
+		; 	if !IsPlayer || !ActorRef.IsOnMount()
+		; 		ActorRef.QueueNiNodeUpdate()
+		; 	endIf
+		; endIf
 
 		; Player specific actions
 		if IsPlayer
@@ -450,40 +448,7 @@ state Ready
 		endIf
 		if Voice
 			LogInfo += "Voice["+Voice.Name+"] "
-		endIf
-		; Extras for non creatures
-		if !IsCreature
-			; Decide on strapon for female, default to worn, otherwise pick random.
-			if IsFemale && !IsFuta && Config.UseStrapons
-				HadStrapon = Config.WornStrapon(ActorRef)
-				Strapon    = HadStrapon
-				if !HadStrapon
-					Strapon = Config.GetStrapon()
-				endIf
-			endIf
-			; Strip actor
-			Strip()
-			ResolveStrapon()
-			; Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
-			; Remove HDT High Heels
-			if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
-				HDTHeelSpell = Config.GetHDTSpell(ActorRef)
-				if HDTHeelSpell
-					Log(HDTHeelSpell, "RemoveHeelEffect (HDTHeelSpell)")
-					ActorRef.RemoveSpell(HDTHeelSpell)
-				endIf
-			endIf
-			; Pick an expression if needed
-			if !Expression && Config.UseExpressions
-				Expressions = Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim, IsType[0] && !IsVictim)
-				if Expressions && Expressions.Length > 0
-					Expression = Expressions[Utility.RandomInt(0, (Expressions.Length - 1))]
-				endIf
-			endIf
-			if Expression
-				LogInfo += "Expression["+Expression.Name+"] "
-			endIf
-		endIf
+		endIf		
 		IsSkilled = !IsCreature || sslActorStats.IsSkilled(ActorRef)
 		if IsSkilled
 			; Always use players stats for NPCS if present, so players stats mean something more
@@ -537,17 +502,60 @@ state Ready
 		endIf
 		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
 		Log(LogInfo)
-		; Play custom starting animation event
-		if StartAnimEvent != ""
-			Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
+		
+		; remember: This call is async and the below function is latent \o/
+		if DoPathToCenter
+			PathToCenter()
 		endIf
-		if StartWait < 0.1
-			StartWait = 0.1
+
+		; Play custom starting animation event
+		; COMEBACK: Might want to remove this. Cant really make out why anyone would want to use this
+		; Perhaps this could be used to push a clean strip animation?
+		If(StartAnimEvent != "")
+			Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
+			If(StartWait < 0.1)
+				Utility.Wait(0.1)
+			Else
+				Utility.Wait(StartWait)
+			EndIf
+		EndIf
+
+		; COMEBACK: Not sure if this should be here or in the actual moving func
+		If(sslActorKey.IsCreature(_ActorKey))
+			If(Config.UseStrapons && sslActorKey.IsFemalePure(_ActorKey))
+				; COMEBACK: Idk why we use 2 variables here
+				HadStrapon = Config.WornStrapon(ActorRef)
+				Strapon = HadStrapon
+				If(!HadStrapon)
+					Strapon = Config.GetStrapon()
+				EndIf
+			EndIf
+			Strip()
+			ResolveStrapon()
+			Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
+			; Remove HDT High Heels
+			if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
+				HDTHeelSpell = Config.GetHDTSpell(ActorRef)
+				if HDTHeelSpell
+					Log(HDTHeelSpell, "RemoveHeelEffect (HDTHeelSpell)")
+					ActorRef.RemoveSpell(HDTHeelSpell)
+				endIf
+			endIf
+			; Pick an expression if needed
+			if !Expression && Config.UseExpressions
+				Expressions = Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim, IsType[0] && !IsVictim)
+				if Expressions && Expressions.Length > 0
+					Expression = Expressions[Utility.RandomInt(0, (Expressions.Length - 1))]
+				endIf
+			endIf
+			if Expression
+				LogInfo += "Expression["+Expression.Name+"] "
+			endIf
 		endIf
 		GoToState("Prepare")
-		RegisterForSingleUpdate(StartWait)
 	endFunction
 
+	; COMEBACK: This one do be lookin kinda sketchy
 	function PathToCenter()
 		ObjectReference CenterRef = Thread.CenterAlias.GetReference()
 		if CenterRef && ActorRef && (Thread.ActorCount > 1 || CenterRef != ActorRef)
@@ -595,45 +603,72 @@ state Ready
 		endIf
 	endFunction
 
+	; This literally never fires, just clutters up the script
+	; event OnUpdate()
+	; 	if StartWait < 0.1
+	; 		StartWait = 0.1
+	; 	endIf
+	; 	string CurrentState = Thread.GetState()
+	; 	if CurrentState == "Ready"
+	; 		Log("WARNING: OnUpdate Event ON State:'Ready' FOR State:'"+CurrentState+"'")
+	; 		GoToState("Prepare")
+	; 		RegisterForSingleUpdate(StartWait)
+	; 	else
+	; 		Log("ERROR: OnUpdate Event ON State:'Ready' FOR State:'"+CurrentState+"'")
+	; 		RegisterForSingleUpdate(StartWait)
+	; 	endIf
+	; endEvent
+
+	bool Function SetActor(Actor ProspectRef)
+		Log("ERROR: SetActor(" + ProspectRef.GetLeveledActorBase().GetName() + ") on State:'Ready' is not allowed")
+		return false
+	EndFunction
+	bool Function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoice, bool abSilent)
+		return SetActor(akReference)
+	EndFunction
 endState
 
+; COMEBACK: These could easily be removed if the start func wouldnt be split up into a thousand pieces as it is rn
 bool Prepared ; TODO: Find better Solution
 bool StartedUp ; TODO: Find better Solution
 state Prepare
-	event OnUpdate()
-		; Check if still among the living and able.
-		if !ActorRef || ActorRef == none || ActorRef.IsDisabled() || (ActorRef.IsDead() && ActorRef.GetActorValue("Health") < 1.0)
+	Event OnBeginState()
+		; Check if still among the living and able
+		; COMEBACK: The whole startup should be refractured and optimized to a point where this check is no longer necessary. yw yw
+		if ActorRef.IsDisabled() || ActorRef.IsDead() || ActorRef.GetActorValue("Health") < 0.5
 			Log("Actor is undefined, disabled, or has no health - Unable to continue animating")
 			Thread.EndAnimation(true)
 		else
-			ClearEffects()
+			; ClearEffects()	; Move into actual statup
 			if IsPlayer
 				Thread.ApplyFade()
 			endIf
 			Offsets = new float[4]
 			GetPositionInfo()
 			; Starting position
-			OffsetCoords(Loc, Center, Offsets)
-			MarkerRef.SetPosition(Loc[0], Loc[1], Loc[2])
-			MarkerRef.SetAngle(Loc[3], Loc[4], Loc[5])
-			ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
-			ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
-			AttachMarker()
-			if !IsPlayer || !ActorRef.IsOnMount()
-				ActorRef.QueueNiNodeUpdate()
-			endIf
-			Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
+			; OffsetCoords(Loc, Center, Offsets)
+			; MarkerRef.SetPosition(Loc[0], Loc[1], Loc[2])
+			; MarkerRef.SetAngle(Loc[3], Loc[4], Loc[5])
+			; ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
+			; ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
+			; AttachMarker()	; Move into actual startup
+			; if !IsPlayer || !ActorRef.IsOnMount()
+				; ActorRef.QueueNiNodeUpdate()
+			; endIf
+			; Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
 			; Notify thread prep is done
-			if Thread.GetState() == "Prepare"
+			
+			; Wtf is this
+			; if Thread.GetState() == "Prepare"
 				if !Prepared
 					Prepared = True
 					Thread.SyncEventDone(kPrepareActor)
 				endIf
-			else
-				StartAnimating()
-			endIf
+			; else
+			; 	StartAnimating()
+			; endIf
 		endIf
-	endEvent
+	EndEvent
 
 	function StartAnimating()
 		TrackedEvent("Start")
@@ -663,14 +698,14 @@ state Prepare
 			MiscUtil.SetFreeCameraSpeed(Config.AutoSUCSM)
 		endIf
 		; Start update loop
-		if Thread.GetState() == "Prepare"
+		; if Thread.GetState() == "Prepare"
 			if !StartedUp
 				StartedUp = True
 				Thread.SyncEventDone(kStartUp)
 			endIf
-		else
-			SendAnimation()
-		endIf
+		; else
+		; 	SendAnimation()
+		; endIf
 		RegisterForSingleUpdate(Utility.RandomFloat(1.0, 3.0))
 	endFunction
 	
@@ -684,13 +719,13 @@ state Prepare
 			MiscUtil.SetFreeCameraState(false)
 		endIf
 		StopAnimating(true)
-		UnlockActor()
+		; UnlockActor()
 		RestoreActorDefaults()
 		; Tracked events
 		TrackedEvent("End")
 		; Unstrip items in storage, if any
 		if !IsCreature && !ActorRef.IsDead()
-			Unstrip()
+			; Unstrip()
 			; Add back high heel effects
 			if Config.RemoveHeelEffect
 				; HDT High Heel
@@ -749,7 +784,8 @@ string CurrentAE
 float LoopDelay
 float LoopExpressionDelay
 state Animating
-
+	; COMEBACK: Idk why this single call needs so much stuff and why we precache all this data here
+	; could easily do all of this through the main controller
 	function SendAnimation()
 		CurrentAE = AnimEvents[Position]
 		; Reenter SA - On stage 1 while animation hasn't changed since last call
@@ -852,20 +888,22 @@ state Animating
 
 	function SyncActor()
 		SyncThread()
-		SyncLocation(false)
+		; SyncLocation(false)
 		Thread.SyncEventDone(kSyncActor)
 	endFunction
 
+	; TODO: Check when and why this is called. May want to call native SetPositions() from whatever calls this
 	function SyncAll(bool Force = false)
 		SyncThread()
-		SyncLocation(Force)
+		; SyncLocation(Force)
 	endFunction
 
-	function RefreshActor()
+	; TODO: Check when and why this is called. May want to call native SetPositions() from whatever calls this
+	function RefreshActor()	
 		UnregisterForUpdate()
 		SyncThread()
 		StopAnimating(true)
-		SyncLocation(false)
+		; SyncLocation(false)
 		CurrentSA = "SexLabSequenceExit1"
 		CurrentAE = PlayingSA
 		Debug.SendAnimationEvent(ActorRef, CurrentAE)
@@ -876,7 +914,7 @@ state Animating
 		Debug.SendAnimationEvent(ActorRef, CurrentAE)
 		PlayingSA = CurrentSA
 		PlayingAE = CurrentAE
-		SyncLocation(true)
+		; SyncLocation(true)
 		SendAnimation()
 		RegisterForSingleUpdate(1.0)
 		Thread.SyncEventDone(kRefreshActor)
@@ -884,47 +922,48 @@ state Animating
 
 	function RefreshLoc()
 		Offsets = Animation.PositionOffsets(Offsets, AdjustKey, Position, Stage, BedStatus[1])
-		SyncLocation(true)
+		; SyncLocation(true)
 	endFunction
 
-	function SyncLocation(bool Force = false)
-		OffsetCoords(Loc, Center, Offsets)
-		MarkerRef.SetPosition(Loc[0], Loc[1], Loc[2])
-		MarkerRef.SetAngle(Loc[3], Loc[4], Loc[5])
-		; Avoid forcibly setting on player coords if avoidable - causes annoying graphical flickering
-		if Force && IsPlayer && IsInPosition(ActorRef, MarkerRef, 40.0)
-			AttachMarker()
-			ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5], 50000, 0)
-			return ; OnTranslationComplete() will take over when in place
-		elseIf Force
-			ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
-			ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
-		endIf
-		AttachMarker()
-		Snap()
-	endFunction
+	; function SyncLocation(bool Force = false)
+	; 	OffsetCoords(Loc, Center, Offsets)
+	; 	MarkerRef.SetPosition(Loc[0], Loc[1], Loc[2])
+	; 	MarkerRef.SetAngle(Loc[3], Loc[4], Loc[5])
+	; 	; Avoid forcibly setting on player coords if avoidable - causes annoying graphical flickering
+	; 	if Force && IsPlayer && IsInPosition(ActorRef, MarkerRef, 40.0)
+	; 		AttachMarker()
+	; 		ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5], 50000, 0)
+	; 		return ; OnTranslationComplete() will take over when in place
+	; 	elseIf Force
+	; 		ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
+	; 		ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
+	; 	endIf
+	; 	AttachMarker()
+	; 	Snap()
+	; endFunction
 
-	function Snap()
-		if !(ActorRef && ActorRef.Is3DLoaded())
-			return
-		endIf
-		; Quickly move into place and angle if actor is off by a lot
-		float distance = ActorRef.GetDistance(MarkerRef)
-		if distance > 125.0 || !IsInPosition(ActorRef, MarkerRef, 75.0)
-			ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
-			ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
-			AttachMarker()
-		elseIf distance > 2.0
-			ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5], 50000, 0.0)
-			return ; OnTranslationComplete() will take over when in place
-		endIf
-		; Begin very slowly rotating a small amount to hold position
-		ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5]+0.01, 500.0, 0.0001)
-	endFunction
+	; function Snap()
+	; 	if !(ActorRef && ActorRef.Is3DLoaded())
+	; 		return
+	; 	endIf
+	; 	; Quickly move into place and angle if actor is off by a lot
+	; 	float distance = ActorRef.GetDistance(MarkerRef)
+	; 	if distance > 125.0 || !IsInPosition(ActorRef, MarkerRef, 75.0)
+	; 		ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
+	; 		ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
+	; 		AttachMarker()
+	; 	elseIf distance > 2.0
+	; 		ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5], 50000, 0.0)
+	; 		return ; OnTranslationComplete() will take over when in place
+	; 	endIf
+	; 	; Begin very slowly rotating a small amount to hold position
+	; 	ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5]+0.01, 500.0, 0.0001)
+	; endFunction
 
+	; TODO: Check when and why this is called. May want to call native SetPositions() from whatever calls this
 	event OnTranslationComplete()
 		; Log("OnTranslationComplete")
-		Snap()
+		; Snap()
 	endEvent
 
 	;/ event OnTranslationFailed()
@@ -1091,13 +1130,13 @@ state Animating
 			PlayingAE = CurrentAE
 		endIf
 		StopAnimating(Thread.FastEnd, EndAnimEvent)
-		UnlockActor()
+		; UnlockActor()
 		RestoreActorDefaults()
 		; Tracked events
 		TrackedEvent("End")
 		; Unstrip items in storage, if any
 		if !IsCreature && !ActorRef.IsDead()
-			Unstrip()
+			; Unstrip()
 			; Add back high heel effects
 			if Config.RemoveHeelEffect
 				; HDT High Heel
@@ -1161,7 +1200,7 @@ function StopAnimating(bool Quick = false, string ResetAnim = "IdleForceDefaultS
 		if Offsets[2] < 1.0 ; Fix for animation default missaligned 
 			Offsets[2] = OffsetZ ; hopefully prevents some users underground/teleport to giant camp problem?
 		endIf
-		OffsetCoords(Loc, Center, Offsets)
+		; OffsetCoords(Loc, Center, Offsets)	; COMEBACK: Why
 		float PositionX = ActorRef.GetPositionX()
 		float PositionY = ActorRef.GetPositionY()
 		float AngleZ = ActorRef.GetAngleZ()
@@ -1185,10 +1224,12 @@ function StopAnimating(bool Quick = false, string ResetAnim = "IdleForceDefaultS
 			endIf
 		endIf
 		ActorRef.SetVehicle(none)
-		if AngleZ != Rotate
-			ActorRef.SetAngle(Loc[3], Loc[4], Rotate)
-		endIf
-		ActorRef.SetPosition(PositionX, PositionY, Loc[2])
+		; --- COMEBACK: Why
+		; if AngleZ != Rotate		
+		; 	ActorRef.SetAngle(Loc[3], Loc[4], Rotate)
+		; endIf
+		; ActorRef.SetPosition(PositionX, PositionY, Loc[2])
+		; ---
 	;	Utility.WaitMenuMode(0.1)
 	else
 		ActorRef.SetVehicle(none)
@@ -1313,24 +1354,27 @@ function AttachMarker()
 	endIf
 endFunction
 
+; sslpp - This will only freeze the actor in place, apply any Restrained features etcpp
+; no moving, or anything else. The main script will take care of that
 function LockActor()
 	if !ActorRef
 		Log(ActorName +"- WARNING: ActorRef if Missing or Invalid", "LockActor()")
 		return
 	endIf
 	; Move if actor out of cell
-	ObjectReference CenterRef = Thread.CenterAlias.GetReference()
-	if CenterRef && CenterRef != none && CenterRef != ActorRef as ObjectReference && ActorRef.GetDistance(CenterRef) > 3000
-		ActorRef.MoveTo(CenterRef)
-	endIf
+	; ObjectReference CenterRef = Thread.CenterAlias.GetReference()
+	; if CenterRef && CenterRef != none && CenterRef != ActorRef as ObjectReference && ActorRef.GetDistance(CenterRef) > 3000
+	; 	ActorRef.MoveTo(CenterRef)
+	; endIf
 	; Remove any unwanted combat effects
 	ClearEffects()
 	; Stop whatever they are doing
 	; SendDefaultAnimEvent()
 	; Start DoNothing package
-	ActorUtil.AddPackageOverride(ActorRef, Config.DoNothing, 100, 1)
 	ActorRef.SetFactionRank(AnimatingFaction, 1)
-	ActorRef.EvaluatePackage()
+	; ActorUtil.AddPackageOverride(ActorRef, Config.DoNothing, 100, 1)
+	; ActorRef.SetFactionRank(AnimatingFaction, 1)
+	; ActorRef.EvaluatePackage()
 	; Disable movement
 	ActorRef.StopTranslation()
 	if IsPlayer
@@ -1338,8 +1382,9 @@ function LockActor()
 			Game.ForceThirdPerson()
 		endIf
 		; abMovement = true, abFighting = true, abCamSwitch = false, abLooking = false, abSneaking = false, abMenu = true, abActivate = true, abJournalTabs = false, aiDisablePOVType = 0
-		Game.DisablePlayerControls(true, true, false, false, false, false, false, false, 0)
+		; Game.DisablePlayerControls(true, true, false, false, false, false, false, false, 0)	; Unnecessary
 		Game.SetPlayerAIDriven()
+		; UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", false)								; COMEBACK: Not sure if we want this or nah
 		; Enable hotkeys if needed, and disable autoadvance if not needed
 		if IsVictim && Config.DisablePlayer
 			Thread.AutoAdvance = true
@@ -1349,24 +1394,28 @@ function LockActor()
 		endIf
 	else
 		ActorRef.SetRestrained(true)
-		ActorRef.SetDontMove(true)
+		; ActorRef.SetDontMove(true)		; unnecessary
+		; Start DoNothing package	-- Dont do this for the player
+		ActorUtil.AddPackageOverride(ActorRef, Config.DoNothing, 100, 1)
+		ActorRef.EvaluatePackage()
 	endIf
-	; Attach positioning marker
-	if !MarkerRef
-		MarkerRef = ActorRef.PlaceAtMe(Config.BaseMarker)
-		int cycle
-		while !MarkerRef.Is3DLoaded() && cycle < 50
-			Utility.Wait(0.1)
-			cycle += 1
-		endWhile
-		if cycle
-			Log("Waited ["+cycle+"] cycles for MarkerRef["+MarkerRef+"]")
-		endIf
-	endIf
-	MarkerRef.Enable()
-	ActorRef.StopTranslation()
-	MarkerRef.MoveTo(ActorRef)
-	AttachMarker()
+	; _Positions_var[i].SetAnimationVariableBool("bHumanoidFootIKDisable", true)	; COMEBACK: Necessary?
+	; Attach positioning marker				; Unified marker stored in main script
+	; if !MarkerRef
+	; 	MarkerRef = ActorRef.PlaceAtMe(Config.BaseMarker)
+	; 	int cycle											; All this is pointless
+	; 	while !MarkerRef.Is3DLoaded() && cycle < 50
+	; 		Utility.Wait(0.1)
+	; 		cycle += 1
+	; 	endWhile
+	; 	if cycle
+	; 		Log("Waited ["+cycle+"] cycles for MarkerRef["+MarkerRef+"]")
+	; 	endIf
+	; endIf
+	; MarkerRef.Enable()					; Done by main script
+	; ActorRef.StopTranslation()	; We already did this
+	; MarkerRef.MoveTo(ActorRef)	; Done by main script
+	; AttachMarker()
 endFunction
 
 function UnlockActor()
@@ -1375,25 +1424,27 @@ function UnlockActor()
 		return
 	endIf
 	; Detach positioning marker
-	ActorRef.StopTranslation()
-	ActorRef.SetVehicle(none)
-	; Remove from animation faction
+	; ActorRef.StopTranslation()
+	; ActorRef.SetVehicle(none)
+	; Remove from animation faction	-- ???? Remove and then add again? COMEBACK: Find out tf is going on here
 	ActorRef.RemoveFromFaction(AnimatingFaction)
-	ActorUtil.RemovePackageOverride(ActorRef, Config.DoNothing)
 	ActorRef.SetFactionRank(AnimatingFaction, 0)
-	ActorRef.EvaluatePackage()
 	; Enable movement
 	if IsPlayer
 		Thread.RemoveFade()
 		Thread.DisableHotkeys()
 		MiscUtil.SetFreeCameraState(false)
-		Game.EnablePlayerControls(true, true, false, false, false, false, false, false, 0)
+		; Game.EnablePlayerControls(true, true, false, false, false, false, false, false, 0)
 		Game.SetPlayerAIDriven(false)
+    ; UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", true)	; COMEBACK: Not sure if we want this or nah
 	else
+		ActorUtil.RemovePackageOverride(ActorRef, Config.DoNothing)
+		ActorRef.EvaluatePackage()
 		ActorRef.SetRestrained(false)
-		ActorRef.SetDontMove(false)
+		; ActorRef.SetDontMove(false)
 	endIf
-;	Log(ActorName +"- Angle:[X:"+ActorRef.GetAngleX()+"Y:"+ActorRef.GetAngleY()+"Z:"+ActorRef.GetAngleZ()+"] Position:[X:"+ActorRef.GetPositionX()+"Y:"+ActorRef.GetPositionY()+"Z:"+ActorRef.GetPositionZ()+"]", "UnlockActor()")
+	; _Positions_var[i].SetAnimationVariableBool("bHumanoidFootIKDisable", false)	; COMEBACK: Necessary?
+	;	Log(ActorName +"- Angle:[X:"+ActorRef.GetAngleX()+"Y:"+ActorRef.GetAngleY()+"Z:"+ActorRef.GetAngleZ()+"] Position:[X:"+ActorRef.GetPositionX()+"Y:"+ActorRef.GetPositionY()+"Z:"+ActorRef.GetPositionZ()+"]", "UnlockActor()")
 endFunction
 
 function RestoreActorDefaults()
@@ -1483,7 +1534,7 @@ bool function IsVictim()
 endFunction
 
 string function GetActorKey()
-	return ActorKey
+	return ActorKeyStr
 endFunction
 
 function SetAdjustKey(string KeyVar)
@@ -1606,9 +1657,10 @@ endFunction
 
 function ResolveStrapon(bool force = false)
 	if Strapon
-		if UseStrapon && !ActorRef.IsEquipped(Strapon)
+		bool equipped = ActorRef.IsEquipped(Strapon)
+		if UseStrapon && !equipped
 			ActorRef.EquipItem(Strapon, true, true)
-		elseIf !UseStrapon && ActorRef.IsEquipped(Strapon)
+		elseIf !UseStrapon && equipped
 			ActorRef.UnequipItem(Strapon, true, true)
 		endIf
 	endIf
@@ -1874,9 +1926,7 @@ function ClearEffects()
 			Game.ForceThirdPerson()
 		endIf
 	endIf
-	if ActorRef.IsInCombat()
-		ActorRef.StopCombat()
-	endIf
+	ActorRef.StopCombat()
 	if ActorRef.IsWeaponDrawn()
 		ActorRef.SheatheWeapon()
 	endIf
@@ -1975,7 +2025,7 @@ function Initialize()
 	; Strings
 	EndAnimEvent   = "IdleForceDefaultState"
 	StartAnimEvent = ""
-	ActorKey       = ""
+	ActorKeyStr    = ""
 	PlayingSA      = ""
 	CurrentSA      = ""
 	PlayingAE      = ""
@@ -2062,8 +2112,8 @@ event OrgasmStage()
 	OrgasmEffect()
 endEvent
 
-function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global native
-bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global native
+function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global native													; NOTE: DO NOT USE
+bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global native		; NOTE: DO NOT USE
 int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, bool IsFemaleActor, float Timer, int OnStage, int MaxStage) global native
 
 int function IntIfElse(bool check, int isTrue, int isFalse)

@@ -47,8 +47,8 @@ ScriptName sslActorKey Hidden
 ; aiKey is at least aiCmps gender
 ; if aiCmp is a Victim, then aiKey is a victim too
 bool Function IsKeyAccepted(int aiKey, int aiCmp) global
-  If(Math.RightShift(aiKey, 31))
-    return true    
+  If(IsBlankKey(aiKey))
+    return true
   ElseIf(GetRawKey_Creature(aiKey) != GetRawKey_Creature(aiCmp))
     return false
   ElseIf(Math.LogicalAND(GetRawKey_Gender(aiKey), GetRawKey_Gender(aiCmp)) != aiCmp)
@@ -93,6 +93,10 @@ EndFunction
 
 int[] Function BuildSortedActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
   return SortActorKeyArray(BuildActorKeyArray(akActors, aiVictimIdx))
+EndFunction
+
+int Function BuildBlankKey() global
+  return Math.LeftShift(1, 31)
 EndFunction
 
 int[] Function SortActorKeyArray(int[] aiKeys) global
@@ -196,12 +200,20 @@ int Function AddLegacyGenderToKey(int aiKey, int aiLegacyGender) global
   return AddGenderToKey(aiKey, GetGenderByLegacyGender(aiLegacyGender))
 EndFunction
 
+bool Function IsBlankKey(int aiKey) global
+  return Math.RightShift(aiKey, 31)
+EndFunction
+
 bool Function IsVictim(int aiKey) global
   return Math.LogicalAnd(aiKey, 65536) ; 1 << 16
 EndFunction
 
 bool Function IsMale(int aiKey) global
   return Math.LogicalAnd(aiKey, 2)
+EndFunction
+
+bool Function IsFemalePure(int aiKey) global
+  return Math.LogicalAnd(aiKey, 0xFF) == 1
 EndFunction
 
 bool Function IsFemale(int aiKey) global
@@ -246,7 +258,7 @@ EndFunction
 
 ; No docs on what sslCreatureAnimationSlots.GetRaceKeys() does so I just gotta improvise for the time being, sigh...
 String[] Function GetAllRaceKeys() global
-  String[] ret = new String[51]
+  String[] ret = new String[52]
   ret[0] = "Ashhoppers"
 	ret[1] = "Bears"
 	ret[2] = "Boars"
@@ -300,6 +312,6 @@ String[] Function GetAllRaceKeys() global
 	ret[50] = "Wisps"
 	ret[51] = "Wolves"
   String[] other = sslCreatureAnimationSlots.GetAllRaceKeys()
-  Debug.Trace("[SLPP] GetAllCreatureKeys => " + other + " | Is same as ret = " + ret == other)
+  Debug.Trace("[SLPP] GetAllCreatureKeys => " + other + " | Is same as ret = " + (ret == other))
   return ret
 EndFunction

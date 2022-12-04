@@ -20,42 +20,34 @@ sslThreadLibrary property ThreadLib auto
 ; --- Animation Filtering                             --- ;
 ; ------------------------------------------------------- ;
 
-;/
-TODO: Rework Tag parsing using prefixes:
-- NoPrefix	-> Required
-- 	"~"			-> Optional (but at least 1)
-- 	"-"			-> Disabled
-/;
-sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, String asTagsSuppressed, bool abAllTags, Actor akVictim, bool abAggressive, bool abUseBed)
-	; Get keys to quickly filter animations based on their key data
+sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, Actor akVictim, bool abUseBed = false)
 	int[] keys = sslActorKey.BuildSortedActorKeyArray(akPositions, akPositions.Find(akVictim))
 	String[] tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTags))
-	String[] tagss = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTagsSuppressed))
-	return _GetAnimations(keys, tags, tagss, abAllTags, abUseBed, abAggressive)
+	If(!abUseBed)
+		tags = PapyrusUtil.PushString(tags, "-BedOnly")
+	Else
+		tags = PapyrusUtil.PushString(tags, "-Furniture")
+		If(Config.BedRemoveStanding)
+			tags = PapyrusUtil.PushString(tags, "-Standing")
+		EndIf
+	EndIf
+	return _GetAnimations(keys, tags)
 EndFunction
 
-sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String[] asTagsSuppressed, bool abAllTags, bool abAggressive, bool abUseBed)
-	; Initiate the array directly, simple slice it later
+sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 	sslBaseAnimation[] ret = new sslBaseAnimation[128]
-	int i = 0	; Cycle front to back since animations are registered from the beginning
+	int i = 0
 	int ii = 0
 	While(i < Slotted)
 		If(Objects[i])
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			; Check for appropiate enabled aniamtion, position & race
-			If(Slot.Enabled && Slot.MatchKeys(aiKeys)) ; && Slot.MatchTags(asTags)
-				String[] tags = Slot.GetRawTags()
-				; Suppress or ignore aggressive animation tags
-				; COMEBACK: When improving Tag matching, majority of this can be removed by simply adding them as required tags !IMPORTANT
-				If((!abAggressive || tags.Find("Aggressive") > -1) && Slot.TagSearch(asTags, asTagsSuppressed, abAllTags) && \
-					((!abUseBed && tags.Find("BedOnly") == -1) || (abUseBed && tags.Find("Furniture") == -1 && (!Config.BedRemoveStanding || tags.Find("Standing") == -1))))
-					ret[ii] = Slot
-					If(ii == 127)	; Array is full
-						Log("_GetAnimations returned 128 Animations")
-						return ret
-					EndIf
-					ii += 1
+			If(Slot.Enabled && Slot.MatchKeys(aiKeys) && Slot.MatchTags(asTags))
+				ret[ii] = Slot
+				If(ii == 127)	; Array is full
+					Log("_GetAnimations returned 128 Animations")
+					return ret
 				EndIf
+				ii += 1
 			EndIf
 		EndIf
 		i += 1
@@ -68,139 +60,6 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags, String
 	EndWhile
 	Log("_GetAnimations returned " + _ret.Length + " animations")
 	return _ret
-EndFunction
-
-sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	sslBaseAnimation[] ret
-	float gt
-	If(Game.GetPlayer().IsWeaponDrawn())
-		Utility.Wait(0.1)
-		gt = Utility.GetCurrentRealTime()
-		ret = GetByTags_Legacy(ActorCount, Tags, TagsSuppressed, RequireAll)
-	Else
-		Utility.Wait(0.1)
-		gt = Utility.GetCurrentRealTime()
-		int[] keys = Utility.CreateIntArray(ActorCount)
-		int n = 0
-		While(n < ActorCount)
-			keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(-1)
-			n += 1
-		EndWhile
-		; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-		String[] _tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
-		String[] _tagss = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(TagsSuppressed))
-		; return _GetAnimations(keys, _tags, _tagss, RequireAll, false, false)
-		ret = _GetAnimations(keys, _tags, _tagss, RequireAll, false, false)
-	EndIf
-	return ret
-endFunction
-
-sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	; Function is a bit messy as basically need 2 searches here, one to look for the CommonTags specifically and another one to look for those containing the common tags
-	; Maybe I want to expand this to a default param? Sounds quite useful to enforce a few tags while keeping the rest optional
-	If(CommonTags == "")
-		return GetByTags(ActorCount, Tags, TagsSuppressed, RequireAll)
-	EndIf
-	sslBaseAnimation[] search = GetByTags(ActorCount, CommonTags, TagsSuppressed, true)
-	String[] _tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
-	int i = 0
-	int ii = 0
-	While(i < search.Length)
-		If(RequireAll && search[i].HasAllTag(_tags) || !RequireAll && search[i].HasOneTag(_tags))
-			ii += 1
-		Else
-			search[i] = none
-		EndIf
-		i += 1
-	EndWhile
-	If(ii == i)
-		return search
-	EndIf
-	sslBaseAnimation[] ret = sslUtility.AnimationArray(ii)
-	int j = 0
-	int jj = 0
-	While(j < ret.Length)
-		If(search[j])
-			ret[jj] = search[j]
-			jj += 1
-		EndIf
-		j += 1
-	EndWhile
-	return ret
-EndFunction
-
-sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
-	int[] keys = Utility.CreateIntArray(ActorCount)
-	int i = 0
-	While(i < Females)
-		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(1)
-		i += 1
-	EndWhile
-	While(i < Females + Males)
-		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(0)
-		i += 1
-	EndWhile
-	While(i < ActorCount)
-		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(-1)
-		i += 1
-	EndWhile
-	String[] tags = Utility.CreateStringArray(0)
-	String[] tagss
-	If(Sexual)
-		tagss = Utility.CreateStringArray(1, "LeadIn")
-	Else
-		tagss = Utility.CreateStringArray(0)
-	EndIf
-	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags, tagss, false, Aggressive, false)
-endFunction
-
-sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
-	return GetAnimations(Positions, "", "", false, none, Aggressive, false)
-EndFunction
-
-sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
-	int[] keys = Utility.CreateIntArray(Males + Females)
-	int n = 0
-	While(n < Females)
-		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
-		n += 1
-	EndWhile
-	int i = 0
-	While(i < Males)
-		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
-		i += 1
-	EndWhile
-	String[] tags = Utility.CreateStringArray(0)
-	String[] tagss
-	If(RestrictAggressive)
-		tagss = Utility.CreateStringArray(1, "Aggressive")
-	Else
-		tagss = Utility.CreateStringArray(0)
-	EndIf
-	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags, tagss, false, IsAggressive, UsingBed)
-EndFunction
-
-sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	int[] keys = Utility.CreateIntArray(Males + Females)
-	int n = 0
-	While(n < Females)
-		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
-		n += 1
-	EndWhile
-	int i = 0
-	While(i < Males)
-		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
-		i += 1
-	EndWhile
-	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	String[] _tags = PapyrusUtil.StringSplit(Tags)
-	String[] _tagss = PapyrusUtil.StringSplit(TagsSuppressed)
-	If(RestrictAggressive && _tagss.Find("Aggressive") == -1)
-		PapyrusUtil.PushString(_tagss, "Aggressive")
-	EndIf
-	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), _tags, _tagss, RequireAll, IsAggressive, UsingBed)
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -352,343 +211,6 @@ string[] function GetAllTags(int ActorCount = -1, bool IgnoreDisabled = true)
 	endwhile
 	SortStringArray(Output)
 	return RemoveString(Output, "")
-endFunction
-
-; ------------------------------------------------------- ;
-; --- Cached Tag Search
-; ------------------------------------------------------- ;
-
-
-int SlottedCache
-string[] FilterCache
-float[] CacheTimes
-sslBaseAnimation[] AnimCache0
-sslBaseAnimation[] AnimCache1
-sslBaseAnimation[] AnimCache2
-sslBaseAnimation[] AnimCache3
-sslBaseAnimation[] AnimCache4
-sslBaseAnimation[] AnimCache5
-sslBaseAnimation[] AnimCache6
-sslBaseAnimation[] AnimCache7
-sslBaseAnimation[] AnimCache8
-sslBaseAnimation[] AnimCache9
-sslBaseAnimation[] AnimCache10
-sslBaseAnimation[] AnimCache11
-sslBaseAnimation[] AnimCache12
-sslBaseAnimation[] AnimCache13
-sslBaseAnimation[] AnimCache14
-sslBaseAnimation[] AnimCache15
-sslBaseAnimation[] AnimCache16
-sslBaseAnimation[] AnimCache17
-sslBaseAnimation[] AnimCache18
-sslBaseAnimation[] AnimCache19
-sslBaseAnimation[] AnimCache20
-sslBaseAnimation[] AnimCache21
-sslBaseAnimation[] AnimCache22
-sslBaseAnimation[] AnimCache23
-sslBaseAnimation[] AnimCache24
-sslBaseAnimation[] AnimCache25
-sslBaseAnimation[] AnimCache26
-sslBaseAnimation[] AnimCache27
-sslBaseAnimation[] AnimCache28
-sslBaseAnimation[] AnimCache29
-
-function ClearAnimCache()
-	SlottedCache = Slotted
-	FilterCache = new string[30]
-	CacheTimes = new float[30]
-	AnimCache0 = sslUtility.EmptyAnimationArray()
-	AnimCache1 = sslUtility.EmptyAnimationArray()
-	AnimCache2 = sslUtility.EmptyAnimationArray()
-	AnimCache3 = sslUtility.EmptyAnimationArray()
-	AnimCache4 = sslUtility.EmptyAnimationArray()
-	AnimCache5 = sslUtility.EmptyAnimationArray()
-	AnimCache6 = sslUtility.EmptyAnimationArray()
-	AnimCache7 = sslUtility.EmptyAnimationArray()
-	AnimCache8 = sslUtility.EmptyAnimationArray()
-	AnimCache9 = sslUtility.EmptyAnimationArray()
-	AnimCache10 = sslUtility.EmptyAnimationArray()
-	AnimCache11 = sslUtility.EmptyAnimationArray()
-	AnimCache12 = sslUtility.EmptyAnimationArray()
-	AnimCache13 = sslUtility.EmptyAnimationArray()
-	AnimCache14 = sslUtility.EmptyAnimationArray()
-	AnimCache15 = sslUtility.EmptyAnimationArray()
-	AnimCache16 = sslUtility.EmptyAnimationArray()
-	AnimCache17 = sslUtility.EmptyAnimationArray()
-	AnimCache18 = sslUtility.EmptyAnimationArray()
-	AnimCache19 = sslUtility.EmptyAnimationArray()
-	AnimCache20 = sslUtility.EmptyAnimationArray()
-	AnimCache21 = sslUtility.EmptyAnimationArray()
-	AnimCache22 = sslUtility.EmptyAnimationArray()
-	AnimCache23 = sslUtility.EmptyAnimationArray()
-	AnimCache24 = sslUtility.EmptyAnimationArray()
-	AnimCache25 = sslUtility.EmptyAnimationArray()
-	AnimCache26 = sslUtility.EmptyAnimationArray()
-	AnimCache27 = sslUtility.EmptyAnimationArray()
-	AnimCache28 = sslUtility.EmptyAnimationArray()
-	AnimCache29 = sslUtility.EmptyAnimationArray()
-	Log("AnimCache: Cleared!")
-endFunction
-
-bool function ValidateCache()
-	if SlottedCache != Slotted
-		Log("AnimCache: INVALIDATED! "+SlottedCache+" -> "+Slotted)
-		ClearAnimCache()
-		return false
-	endIf
-	; SlottedCache = Slotted
-	return true
-endFunction
-
-bool function IsCached(string CacheName)
-	return ValidateCache() && FilterCache.Find(CacheName) != -1
-endFunction
-
-sslBaseAnimation[] function CheckCache(string CacheName)
-	sslBaseAnimation[] Output
-	if ValidateCache() && CacheName
-		int i = FilterCache.Find(CacheName)
-		if i != -1
-			Output = GetCacheSlot(i)
-			Log("AnimCache: HIT["+i+"] -- "+CacheName+" -- Count["+Output.Length+"]")
-			if Output.Length >= 125 ; To prevent the same list be used more than 2 times if have more animations avalible
-				InvalidateBySlot(i)
-			else
-				CacheTimes[i] = Utility.GetCurrentGameTime()
-			endIf
-		else
-			Log("AnimCache: MISS -- "+CacheName)
-		endIf
-	endIf
-	return Output
-endFunction
-
-function CacheAnims(string CacheName, sslBaseAnimation[] Anims)
-	if !CacheName || !Anims
-		return
-	endIf
-	; Pick cache slot
-	int i = FilterCache.Find(CacheName)
-	if i != -1
-		Log("AnimCache: Refreshing slot: "+i)
-	else
-		i = FilterCache.Find("")
-		if i != -1
-			Log("AnimCache: Using slot: "+i)
-		else
-			i = OldestCache()
-			Log("AnimCache: Replacing oldest slot: "+i)
-		endIf
-	endIf
-	; Set cache slot
-	if i <= 9 && i >= 0
-		if i == 0
-			AnimCache0 = Anims
-		elseIf i == 1
-			AnimCache1 = Anims
-		elseIf i == 2
-			AnimCache2 = Anims
-		elseIf i == 3
-			AnimCache3 = Anims
-		elseIf i == 4
-			AnimCache4 = Anims
-		elseIf i == 5
-			AnimCache5 = Anims
-		elseIf i == 6
-			AnimCache6 = Anims
-		elseIf i == 7
-			AnimCache7 = Anims
-		elseIf i == 8
-			AnimCache8 = Anims
-		elseIf i == 9
-			AnimCache9 = Anims
-		endIf
-	elseIf i <= 19
-		if i == 10
-			AnimCache10 = Anims
-		elseIf i == 11
-			AnimCache11 = Anims
-		elseIf i == 12
-			AnimCache12 = Anims
-		elseIf i == 13
-			AnimCache13 = Anims
-		elseIf i == 14
-			AnimCache14 = Anims
-		elseIf i == 15
-			AnimCache15 = Anims
-		elseIf i == 16
-			AnimCache16 = Anims
-		elseIf i == 17
-			AnimCache17 = Anims
-		elseIf i == 18
-			AnimCache18 = Anims
-		elseIf i == 19
-			AnimCache19 = Anims
-		endIf
-	elseIf i <= 29
-		if i == 20
-			AnimCache20 = Anims
-		elseIf i == 21
-			AnimCache21 = Anims
-		elseIf i == 22
-			AnimCache22 = Anims
-		elseIf i == 23
-			AnimCache23 = Anims
-		elseIf i == 24
-			AnimCache24 = Anims
-		elseIf i == 25
-			AnimCache25 = Anims
-		elseIf i == 26
-			AnimCache26 = Anims
-		elseIf i == 27
-			AnimCache27 = Anims
-		elseIf i == 28
-			AnimCache28 = Anims
-		elseIf i == 29
-			AnimCache29 = Anims
-		endIf
-	else
-		Log("AnimCache: Invalid cache slot. This shouldn't be possible!")
-		return
-	endIf
-	FilterCache[i] = CacheName
-	CacheTimes[i] = Utility.GetCurrentGameTime()
-endFunction
-
-sslBaseAnimation[] function GetCacheSlot(int i)
-	if i <= 9 && i >= 0
-		if i == 0
-			return AnimCache0
-		elseIf i == 1
-			return AnimCache1
-		elseIf i == 2
-			return AnimCache2
-		elseIf i == 3
-			return AnimCache3
-		elseIf i == 4
-			return AnimCache4
-		elseIf i == 5
-			return AnimCache5
-		elseIf i == 6
-			return AnimCache6
-		elseIf i == 7
-			return AnimCache7
-		elseIf i == 8
-			return AnimCache8
-		elseIf i == 9
-			return AnimCache9
-		endIf
-	elseIf i <= 19
-		if i == 10
-			return AnimCache10
-		elseIf i == 11
-			return AnimCache11
-		elseIf i == 12
-			return AnimCache12
-		elseIf i == 13
-			return AnimCache13
-		elseIf i == 14
-			return AnimCache14
-		elseIf i == 15
-			return AnimCache15
-		elseIf i == 16
-			return AnimCache16
-		elseIf i == 17
-			return AnimCache17
-		elseIf i == 18
-			return AnimCache18
-		elseIf i == 19
-			return AnimCache19
-		endIf
-	elseIf i <= 29
-		if i == 20
-			return AnimCache20
-		elseIf i == 21
-			return AnimCache21
-		elseIf i == 22
-			return AnimCache22
-		elseIf i == 23
-			return AnimCache23
-		elseIf i == 24
-			return AnimCache24
-		elseIf i == 25
-			return AnimCache25
-		elseIf i == 26
-			return AnimCache26
-		elseIf i == 27
-			return AnimCache27
-		elseIf i == 28
-			return AnimCache28
-		elseIf i == 29
-			return AnimCache29
-		endIf
-	endIf
-	Log("AnimCache: GetCacheSlot("+i+") - INVALID CACHE SLOT")
-	return sslUtility.EmptyAnimationArray()
-endFunction
-
-int function OldestCache()
-	float var = CacheTimes[0]
-	int index = 0
-	int i = 1
-	while i < CacheTimes.Length
-		if CacheTimes[i] < var
-			var = CacheTimes[i]
-			index = i
-		endIf
-		i += 1
-	endWhile
-	return index
-endFunction
-
-function InvalidateByAnimation(sslBaseAnimation removing)
-	int i = 0
-	while i < FilterCache.Length
-		sslBaseAnimation[] arr = GetCacheSlot(i)
-		if arr && FilterCache[i] != "" && arr.Find(removing) != -1
-			Log("InvalidateByAnimation: Found invalid animation in slot["+i+"]: "+FilterCache[i])
-			InvalidateBySlot(i)
-		endIf
-		i += 1
-	endWhile
-endFunction
-
-function InvalidateByTags(string Tags)
-	string[] Search   = StringSplit(Tags)
-	Search = ClearEmpty(Search)
-	if Tags == "" || Search.Length == 0
-		return
-	endIf
-	int i = 0
-	int n = 0
-	while n < Search.Length
-		while i < FilterCache.Length
-			if FilterCache[i] != "" && StringUtil.Find(FilterCache[i], "\""+Search[n]+"\"") >= 0
-				Log("InvalidateByTags: Found invalid tag in slot["+i+"]: "+FilterCache[i])
-				InvalidateBySlot(i)
-			endIf
-			i += 1
-		endWhile
-		n += 1
-	endWhile
-endFunction
-
-function InvalidateBySlot(int i)
-	FilterCache[i] = ""
-	CacheTimes[i] = 0.0
-endFunction
-
-string function CacheInfo(int i)
-	sslBaseAnimation[] arr = GetCacheSlot(i)
-	return "["+i+"] -- Name: "+FilterCache[i]+" -- Timestamp: "+CacheTimes[i]+" -- Count: "+arr.Length
-endfunction
-
-function OutputCacheLog()
-	int i = 0
-	while i < FilterCache.Length
-		Log(CacheInfo(i))
-		i += 1
-	endWhile
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -1069,7 +591,170 @@ endState
 ;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
 ;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
 ;																																											;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+
+; This is only intended to be used as wrapper to link legacy animation getters to the new one
+String[] Function BuildArgTags(String[] asTags, String[] asTagsSuppress, bool abRequireAll)
+	String[] ret = Utility.ResizeStringArray(asTags, asTagsSuppress.Length)
+	int i = 0
+	If(!abRequireAll)
+		While(i < asTags.Length)
+			ret[i] = "~" + asTags[i]
+			i += 1
+		EndWhile
+	EndIf
+	int k = 0
+	While(k < asTagsSuppress.Length)
+		ret[i + k] = "-" + asTagsSuppress[k]
+		k += 1
+	EndWhile
+	return ret
+EndFunction
+
+
+sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	int[] keys = Utility.CreateIntArray(ActorCount)
+	int n = 0
+	While(n < ActorCount)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(-1)
+		n += 1
+	EndWhile
+	String[] required = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
+	String[] suppressed = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(TagsSuppressed))
+	return _GetAnimations(keys, BuildArgTags(required, suppressed, RequireAll))
+endFunction
+
+sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	If(CommonTags == "")
+		return GetByTags(ActorCount, Tags, TagsSuppressed, RequireAll)
+	EndIf
+	int[] keys = Utility.CreateIntArray(ActorCount)
+	int n = 0
+	While(n < ActorCount)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(-1)
+		n += 1
+	EndWhile
+	String[] required = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
+	String[] suppressed = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(TagsSuppressed))
+	String[] argTags = BuildArgTags(required, suppressed, RequireAll)
+	String[] common = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(CommonTags))
+	return _GetAnimations(keys, sslpp.MergeStringArrayEx(argTags, common, true))
+EndFunction
+
+sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
+	int[] keys = Utility.CreateIntArray(ActorCount)
+	int i = 0
+	While(i < Females)
+		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		i += 1
+	EndWhile
+	While(i < Females + Males)
+		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(0)
+		i += 1
+	EndWhile
+	While(i < ActorCount)
+		keys[i] = sslActorKey.BuildBlankKeyByLegacyGender(-1)
+		i += 1
+	EndWhile
+	String[] tags
+	If(Sexual)
+		tags = new String[1]
+		tags[0] = "-LeadIn"
+	EndIf
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags)
+endFunction
+
+sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
+	String tags = ""
+	If(Aggressive)
+		tags += "Aggressive"
+	EndIf
+	return GetAnimations(Positions, tags, none, false)
+EndFunction
+
+sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
+	int[] keys = Utility.CreateIntArray(Males + Females)
+	int n = 0
+	While(n < Females)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		n += 1
+	EndWhile
+	int i = 0
+	While(i < Males)
+		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
+		i += 1
+	EndWhile
+	String[] tags
+	If(RestrictAggressive)
+		tags = new String[1]
+		tags[0] = "-Aggressive"
+	ElseIf(IsAggressive)
+		tags = new String[1]
+		tags[0] = "Aggressive"
+	EndIf
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), tags)
+EndFunction
+
+sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	If(Males + Females == 0)
+		return none
+	EndIf
+	int[] keys = Utility.CreateIntArray(Males + Females)
+	int n = 0
+	While(n < Females)
+		keys[n] = sslActorKey.BuildBlankKeyByLegacyGender(1)
+		n += 1
+	EndWhile
+	int i = 0
+	While(i < Males)
+		keys[i + n] = sslActorKey.BuildBlankKeyByLegacyGender(0) 
+		i += 1
+	EndWhile
+	String[] required = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
+	String[] suppressed = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(TagsSuppressed))
+	String[] argTags = BuildArgTags(required, suppressed, RequireAll)
+	If(RestrictAggressive)
+		int where = argTags.Find("Aggressive")
+		If(where > -1)
+			argTags[where] = "-Aggressive"
+		Else
+			argTags.Find("~Aggressive")
+			If(where > -1)
+				argTags[where] = "-Aggressive"
+			Else
+				argTags = PapyrusUtil.PushString(argTags, "-Aggressive")
+			EndIf
+		EndIf
+	ElseIf(IsAggressive)
+		int where = argTags.Find("-Aggressive")
+		If(where > -1)
+			argTags[where] = "Aggressive"
+		Else
+			argTags.Find("~Aggressive")
+			If(where > -1)
+				argTags[where] = "Aggressive"
+			Else
+				argTags = PapyrusUtil.PushString(argTags, "Aggressive")
+			EndIf
+		EndIf
+	EndIf
+	If(!UsingBed)
+		If(argTags.Find("-BedOnly") == -1)
+			argTags = PapyrusUtil.PushString(argTags, "-BedOnly")
+		EndIf
+	Else
+		If(argTags.Find("-Furniture") == -1)
+			argTags = PapyrusUtil.PushString(argTags, "-Furniture")
+		EndIf
+		If(Config.BedRemoveStanding && argTags.Find("-Standing") == -1)
+			argTags = PapyrusUtil.PushString(argTags, "-Standing")
+		EndIf
+	EndIf
+	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
+	return _GetAnimations(sslActorKey.SortActorKeyArray(keys), argTags)
+EndFunction
 
 sslBaseAnimation[] function GetList(bool[] Valid)
 	; Debug.Trace("GetList() - "+Valid)
@@ -1176,7 +861,7 @@ sslBaseAnimation[] function GetByCommonTags_Legacy(int ActorCount, string Common
 	SortStringArray(SearchCommon)
 	; Check if this function is really required 
 	if !SearchCommon || SearchCommon.Length < 1
-		return GetByTags(ActorCount, Tags, TagsSuppressed, RequireAll)
+		return GetByTags_Legacy(ActorCount, Tags, TagsSuppressed, RequireAll)
 	endIf
 	string[] Suppress = StringSplit(TagsSuppressed)
 	Suppress = ClearEmpty(Suppress)
@@ -1242,7 +927,7 @@ endFunction
 sslBaseAnimation[] function PickByActors_Legacy(Actor[] Positions, int Limit = 64, bool Aggressive = false)
 	Log("PickByActors(Positions="+Positions+", Limit="+Limit+", Aggressive="+Aggressive+")")
 	int[] Genders = ActorLib.GenderCount(Positions)
-	sslBaseAnimation[] Matches = GetByDefault(Genders[0], Genders[1], Aggressive)
+	sslBaseAnimation[] Matches = GetByDefault_Legacy(Genders[0], Genders[1], Aggressive)
 	if Matches.Length <= Limit
 		return Matches
 	endIf
@@ -1379,3 +1064,340 @@ sslBaseAnimation[] function GetByDefaultTags_Legacy(int Males, int Females, bool
 	return Output
 endFunction
 
+
+; ------------------------------------------------------- ;
+; --- Cached Tag Search
+; ------------------------------------------------------- ;
+
+
+int SlottedCache
+string[] FilterCache
+float[] CacheTimes
+sslBaseAnimation[] AnimCache0
+sslBaseAnimation[] AnimCache1
+sslBaseAnimation[] AnimCache2
+sslBaseAnimation[] AnimCache3
+sslBaseAnimation[] AnimCache4
+sslBaseAnimation[] AnimCache5
+sslBaseAnimation[] AnimCache6
+sslBaseAnimation[] AnimCache7
+sslBaseAnimation[] AnimCache8
+sslBaseAnimation[] AnimCache9
+sslBaseAnimation[] AnimCache10
+sslBaseAnimation[] AnimCache11
+sslBaseAnimation[] AnimCache12
+sslBaseAnimation[] AnimCache13
+sslBaseAnimation[] AnimCache14
+sslBaseAnimation[] AnimCache15
+sslBaseAnimation[] AnimCache16
+sslBaseAnimation[] AnimCache17
+sslBaseAnimation[] AnimCache18
+sslBaseAnimation[] AnimCache19
+sslBaseAnimation[] AnimCache20
+sslBaseAnimation[] AnimCache21
+sslBaseAnimation[] AnimCache22
+sslBaseAnimation[] AnimCache23
+sslBaseAnimation[] AnimCache24
+sslBaseAnimation[] AnimCache25
+sslBaseAnimation[] AnimCache26
+sslBaseAnimation[] AnimCache27
+sslBaseAnimation[] AnimCache28
+sslBaseAnimation[] AnimCache29
+
+function ClearAnimCache()
+	SlottedCache = Slotted
+	FilterCache = new string[30]
+	CacheTimes = new float[30]
+	AnimCache0 = sslUtility.EmptyAnimationArray()
+	AnimCache1 = sslUtility.EmptyAnimationArray()
+	AnimCache2 = sslUtility.EmptyAnimationArray()
+	AnimCache3 = sslUtility.EmptyAnimationArray()
+	AnimCache4 = sslUtility.EmptyAnimationArray()
+	AnimCache5 = sslUtility.EmptyAnimationArray()
+	AnimCache6 = sslUtility.EmptyAnimationArray()
+	AnimCache7 = sslUtility.EmptyAnimationArray()
+	AnimCache8 = sslUtility.EmptyAnimationArray()
+	AnimCache9 = sslUtility.EmptyAnimationArray()
+	AnimCache10 = sslUtility.EmptyAnimationArray()
+	AnimCache11 = sslUtility.EmptyAnimationArray()
+	AnimCache12 = sslUtility.EmptyAnimationArray()
+	AnimCache13 = sslUtility.EmptyAnimationArray()
+	AnimCache14 = sslUtility.EmptyAnimationArray()
+	AnimCache15 = sslUtility.EmptyAnimationArray()
+	AnimCache16 = sslUtility.EmptyAnimationArray()
+	AnimCache17 = sslUtility.EmptyAnimationArray()
+	AnimCache18 = sslUtility.EmptyAnimationArray()
+	AnimCache19 = sslUtility.EmptyAnimationArray()
+	AnimCache20 = sslUtility.EmptyAnimationArray()
+	AnimCache21 = sslUtility.EmptyAnimationArray()
+	AnimCache22 = sslUtility.EmptyAnimationArray()
+	AnimCache23 = sslUtility.EmptyAnimationArray()
+	AnimCache24 = sslUtility.EmptyAnimationArray()
+	AnimCache25 = sslUtility.EmptyAnimationArray()
+	AnimCache26 = sslUtility.EmptyAnimationArray()
+	AnimCache27 = sslUtility.EmptyAnimationArray()
+	AnimCache28 = sslUtility.EmptyAnimationArray()
+	AnimCache29 = sslUtility.EmptyAnimationArray()
+	Log("AnimCache: Cleared!")
+endFunction
+
+bool function ValidateCache()
+	if SlottedCache != Slotted
+		Log("AnimCache: INVALIDATED! "+SlottedCache+" -> "+Slotted)
+		ClearAnimCache()
+		return false
+	endIf
+	; SlottedCache = Slotted
+	return true
+endFunction
+
+bool function IsCached(string CacheName)
+	return ValidateCache() && FilterCache.Find(CacheName) != -1
+endFunction
+
+sslBaseAnimation[] function CheckCache(string CacheName)
+	sslBaseAnimation[] Output
+	if ValidateCache() && CacheName
+		int i = FilterCache.Find(CacheName)
+		if i != -1
+			Output = GetCacheSlot(i)
+			Log("AnimCache: HIT["+i+"] -- "+CacheName+" -- Count["+Output.Length+"]")
+			if Output.Length >= 125 ; To prevent the same list be used more than 2 times if have more animations avalible
+				InvalidateBySlot(i)
+			else
+				CacheTimes[i] = Utility.GetCurrentGameTime()
+			endIf
+		else
+			Log("AnimCache: MISS -- "+CacheName)
+		endIf
+	endIf
+	return Output
+endFunction
+
+function CacheAnims(string CacheName, sslBaseAnimation[] Anims)
+	if !CacheName || !Anims
+		return
+	endIf
+	; Pick cache slot
+	int i = FilterCache.Find(CacheName)
+	if i != -1
+		Log("AnimCache: Refreshing slot: "+i)
+	else
+		i = FilterCache.Find("")
+		if i != -1
+			Log("AnimCache: Using slot: "+i)
+		else
+			i = OldestCache()
+			Log("AnimCache: Replacing oldest slot: "+i)
+		endIf
+	endIf
+	; Set cache slot
+	if i <= 9 && i >= 0
+		if i == 0
+			AnimCache0 = Anims
+		elseIf i == 1
+			AnimCache1 = Anims
+		elseIf i == 2
+			AnimCache2 = Anims
+		elseIf i == 3
+			AnimCache3 = Anims
+		elseIf i == 4
+			AnimCache4 = Anims
+		elseIf i == 5
+			AnimCache5 = Anims
+		elseIf i == 6
+			AnimCache6 = Anims
+		elseIf i == 7
+			AnimCache7 = Anims
+		elseIf i == 8
+			AnimCache8 = Anims
+		elseIf i == 9
+			AnimCache9 = Anims
+		endIf
+	elseIf i <= 19
+		if i == 10
+			AnimCache10 = Anims
+		elseIf i == 11
+			AnimCache11 = Anims
+		elseIf i == 12
+			AnimCache12 = Anims
+		elseIf i == 13
+			AnimCache13 = Anims
+		elseIf i == 14
+			AnimCache14 = Anims
+		elseIf i == 15
+			AnimCache15 = Anims
+		elseIf i == 16
+			AnimCache16 = Anims
+		elseIf i == 17
+			AnimCache17 = Anims
+		elseIf i == 18
+			AnimCache18 = Anims
+		elseIf i == 19
+			AnimCache19 = Anims
+		endIf
+	elseIf i <= 29
+		if i == 20
+			AnimCache20 = Anims
+		elseIf i == 21
+			AnimCache21 = Anims
+		elseIf i == 22
+			AnimCache22 = Anims
+		elseIf i == 23
+			AnimCache23 = Anims
+		elseIf i == 24
+			AnimCache24 = Anims
+		elseIf i == 25
+			AnimCache25 = Anims
+		elseIf i == 26
+			AnimCache26 = Anims
+		elseIf i == 27
+			AnimCache27 = Anims
+		elseIf i == 28
+			AnimCache28 = Anims
+		elseIf i == 29
+			AnimCache29 = Anims
+		endIf
+	else
+		Log("AnimCache: Invalid cache slot. This shouldn't be possible!")
+		return
+	endIf
+	FilterCache[i] = CacheName
+	CacheTimes[i] = Utility.GetCurrentGameTime()
+endFunction
+
+sslBaseAnimation[] function GetCacheSlot(int i)
+	if i <= 9 && i >= 0
+		if i == 0
+			return AnimCache0
+		elseIf i == 1
+			return AnimCache1
+		elseIf i == 2
+			return AnimCache2
+		elseIf i == 3
+			return AnimCache3
+		elseIf i == 4
+			return AnimCache4
+		elseIf i == 5
+			return AnimCache5
+		elseIf i == 6
+			return AnimCache6
+		elseIf i == 7
+			return AnimCache7
+		elseIf i == 8
+			return AnimCache8
+		elseIf i == 9
+			return AnimCache9
+		endIf
+	elseIf i <= 19
+		if i == 10
+			return AnimCache10
+		elseIf i == 11
+			return AnimCache11
+		elseIf i == 12
+			return AnimCache12
+		elseIf i == 13
+			return AnimCache13
+		elseIf i == 14
+			return AnimCache14
+		elseIf i == 15
+			return AnimCache15
+		elseIf i == 16
+			return AnimCache16
+		elseIf i == 17
+			return AnimCache17
+		elseIf i == 18
+			return AnimCache18
+		elseIf i == 19
+			return AnimCache19
+		endIf
+	elseIf i <= 29
+		if i == 20
+			return AnimCache20
+		elseIf i == 21
+			return AnimCache21
+		elseIf i == 22
+			return AnimCache22
+		elseIf i == 23
+			return AnimCache23
+		elseIf i == 24
+			return AnimCache24
+		elseIf i == 25
+			return AnimCache25
+		elseIf i == 26
+			return AnimCache26
+		elseIf i == 27
+			return AnimCache27
+		elseIf i == 28
+			return AnimCache28
+		elseIf i == 29
+			return AnimCache29
+		endIf
+	endIf
+	Log("AnimCache: GetCacheSlot("+i+") - INVALID CACHE SLOT")
+	return sslUtility.EmptyAnimationArray()
+endFunction
+
+int function OldestCache()
+	float var = CacheTimes[0]
+	int index = 0
+	int i = 1
+	while i < CacheTimes.Length
+		if CacheTimes[i] < var
+			var = CacheTimes[i]
+			index = i
+		endIf
+		i += 1
+	endWhile
+	return index
+endFunction
+
+function InvalidateByAnimation(sslBaseAnimation removing)
+	int i = 0
+	while i < FilterCache.Length
+		sslBaseAnimation[] arr = GetCacheSlot(i)
+		if arr && FilterCache[i] != "" && arr.Find(removing) != -1
+			Log("InvalidateByAnimation: Found invalid animation in slot["+i+"]: "+FilterCache[i])
+			InvalidateBySlot(i)
+		endIf
+		i += 1
+	endWhile
+endFunction
+
+function InvalidateByTags(string Tags)
+	string[] Search   = StringSplit(Tags)
+	Search = ClearEmpty(Search)
+	if Tags == "" || Search.Length == 0
+		return
+	endIf
+	int i = 0
+	int n = 0
+	while n < Search.Length
+		while i < FilterCache.Length
+			if FilterCache[i] != "" && StringUtil.Find(FilterCache[i], "\""+Search[n]+"\"") >= 0
+				Log("InvalidateByTags: Found invalid tag in slot["+i+"]: "+FilterCache[i])
+				InvalidateBySlot(i)
+			endIf
+			i += 1
+		endWhile
+		n += 1
+	endWhile
+endFunction
+
+function InvalidateBySlot(int i)
+	FilterCache[i] = ""
+	CacheTimes[i] = 0.0
+endFunction
+
+string function CacheInfo(int i)
+	sslBaseAnimation[] arr = GetCacheSlot(i)
+	return "["+i+"] -- Name: "+FilterCache[i]+" -- Timestamp: "+CacheTimes[i]+" -- Count: "+arr.Length
+endfunction
+
+function OutputCacheLog()
+	int i = 0
+	while i < FilterCache.Length
+		Log(CacheInfo(i))
+		i += 1
+	endWhile
+endFunction
