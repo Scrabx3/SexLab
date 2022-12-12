@@ -20,18 +20,22 @@ sslThreadLibrary property ThreadLib auto
 ; --- Animation Filtering                             --- ;
 ; ------------------------------------------------------- ;
 
-sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, Actor akVictim, bool abUseBed = false)
+sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, Actor akVictim, int aiUseBed = 0)
 	int[] keys = sslActorKey.BuildSortedActorKeyArray(akPositions, akPositions.Find(akVictim))
+	return GetAnimationsByKeys(keys, asTags, aiuseBed)
+EndFunction
+
+sslBaseAnimation[] Function GetAnimationsByKeys(int[] akPositions, String asTags, int aiUseBed = 0)
 	String[] tags = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTags))
-	If(!abUseBed)
+	If(aiUseBed == -1)
 		tags = PapyrusUtil.PushString(tags, "-BedOnly")
-	Else
+	ElseIf(aiUseBed == 1)
 		tags = PapyrusUtil.PushString(tags, "-Furniture")
 		If(Config.BedRemoveStanding)
 			tags = PapyrusUtil.PushString(tags, "-Standing")
 		EndIf
 	EndIf
-	return _GetAnimations(keys, tags)
+	return _GetAnimations(akPositions, tags)
 EndFunction
 
 sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
@@ -670,7 +674,7 @@ sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool
 	If(Aggressive)
 		tags += "Aggressive"
 	EndIf
-	return GetAnimations(Positions, tags, none, false)
+	return GetAnimations(Positions, tags, none)
 EndFunction
 
 sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)

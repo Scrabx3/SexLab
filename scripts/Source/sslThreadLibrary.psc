@@ -266,6 +266,240 @@ Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
 	return Sorted
 endFunction
 
+int function FindNext(Actor[] Positions, sslBaseAnimation Animation, int offset, bool FindCreature)
+	while offset
+		offset -= 1
+		if Animation.HasRace(Positions[offset].GetLeveledActorBase().GetRace()) == FindCreature
+			return offset
+		endIf
+	endwhile
+	return -1
+endFunction
+
+bool Function IsBedRoll(ObjectReference BedRef)
+	If(!BedRef)
+		return false
+	ElseIf(BedRef.HasKeyword(FurnitureBedRoll) || BedRollsList.HasForm(BedRef.GetBaseObject()))
+		return true
+	EndIf
+	String s = BedRef.GetDisplayName()
+	return StringUtil.Find(s, "roll") != -1 || StringUtil.Find(s, "pile") != -1
+EndFunction
+
+bool function IsDoubleBed(ObjectReference BedRef)
+	return BedRef && DoubleBedsList.HasForm(BedRef.GetBaseObject())
+endFunction
+
+bool function IsSingleBed(ObjectReference BedRef)
+	return BedRef && BedsList.HasForm(BedRef.GetBaseObject()) && !BedRollsList.HasForm(BedRef.GetBaseObject()) && !DoubleBedsList.HasForm(BedRef.GetBaseObject())
+endFunction
+
+int function GetBedType(ObjectReference BedRef)
+	If(!BedRef || !sslpp.IsBed(BedRef))
+		return 0
+	EndIf
+	Form BaseRef = BedRef.GetBaseObject()
+	If IsBedRoll(Bedref)
+		return 1
+	ElseIf DoubleBedsList.HasForm(BaseRef)
+		return 3
+	EndIf
+	return 2
+endFunction
+
+bool function IsBedAvailable(ObjectReference BedRef)
+	; Check furniture use
+	if !BedRef || BedRef.IsFurnitureInUse(true)
+		return false
+	endIf
+	; Check if used by a current thread
+	sslThreadController[] Threads = ThreadSlots.Threads
+	int i
+	while i < 15
+		if Threads[i].BedRef == BedRef
+			return false
+		endIf
+		i += 1
+	endwhile
+	; Bed is free for use
+	return true
+endFunction
+
+bool function CheckBed(ObjectReference BedRef, bool IgnoreUsed = true)
+	return BedRef && BedRef.IsEnabled() && BedRef.Is3DLoaded() && (!IgnoreUsed || (IgnoreUsed && IsBedAvailable(BedRef)))
+endFunction
+
+bool function LeveledAngle(ObjectReference ObjectRef, float Tolerance = 5.0)
+	return ObjectRef && Math.Abs(ObjectRef.GetAngleX()) <= Tolerance && Math.Abs(ObjectRef.GetAngleY()) <= Tolerance
+endFunction
+
+bool function SameFloor(ObjectReference BedRef, float Z, float Tolerance = 15.0)
+	return BedRef && Math.Abs(Z - BedRef.GetPositionZ()) <= Tolerance
+endFunction
+
+ObjectReference function FindBed(ObjectReference CenterRef, float Radius = 1000.0, bool IgnoreUsed = true, ObjectReference IgnoreRef1 = none, ObjectReference IgnoreRef2 = none)
+	if !CenterRef || CenterRef == none || Radius < 1.0
+		return none ; Invalid args
+	endIf
+	; Current elevation to determine bed being on same floor
+	float Z = CenterRef.GetPositionZ()
+	; Search a couple times for a nearby bed on the same elevation first before looking for random
+	ObjectReference BedRef = Game.FindClosestReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
+	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
+		return BedRef
+	endIf
+	ObjectReference NearRef
+	Form[] Suppressed = new Form[10]
+	Suppressed[9] = BedRef
+	Suppressed[8] = IgnoreRef1
+	Suppressed[7] = IgnoreRef2
+	int LastNull = Suppressed.RFind(none)
+	int i = BedsList.GetSize()
+	while i
+		i -= 1
+		Form BedType = BedsList.GetAt(i)
+		if BedType
+			BedRef = Game.FindClosestReferenceOfTypeFromRef(BedType, CenterRef, Radius)
+			if BedRef && Suppressed.Find(BedRef) == -1
+				if SameFloor(BedRef, Z, 200) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed)
+					if (!NearRef || BedRef.GetDistance(CenterRef) < NearRef.GetDistance(CenterRef))
+						NearRef = BedRef
+					endIf
+				elseIf LastNull >= 0
+					Suppressed[LastNull]
+					LastNull = Suppressed.RFind(none)
+				endIf
+			endIf
+		endIf
+	endWhile
+	if NearRef && NearRef != none
+		return NearRef
+	endIf
+;	BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
+;	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
+;		return BedRef
+;	endIf
+;	BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
+;	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
+;		return BedRef
+;	endIf
+	; Failover to any random useable bed
+	i = LastNull + 1
+	while i
+		i -= 1
+		BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
+		if !BedRef || (Suppressed.Find(BedRef) == -1 && SameFloor(BedRef, Z, Radius * 0.5) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
+			return BedRef ; Found valid bed or none nearby and we should give up
+		else
+			Suppressed[i] = BedRef ; Add to suppression list
+		endIf
+	endWhile
+	return none ; Nothing found in search loop
+endFunction
+
+; ------------------------------------------------------- ;
+; --- Actor Tracking                                  --- ;
+; ------------------------------------------------------- ;
+
+function TrackActor(Actor ActorRef, string Callback)
+	FormListAdd(Config, "TrackedActors", ActorRef, false)
+	StringListAdd(ActorRef, "SexLabEvents", Callback, false)
+endFunction
+
+function TrackFaction(Faction FactionRef, string Callback)
+	FormListAdd(Config, "TrackedFactions", FactionRef, false)
+	StringListAdd(FactionRef, "SexLabEvents", Callback, false)
+endFunction
+
+function UntrackActor(Actor ActorRef, string Callback)
+	StringListRemove(ActorRef, "SexLabEvents", Callback, true)
+	if StringListCount(ActorRef, "SexLabEvents") < 1
+		FormListRemove(Config, "TrackedActors", ActorRef, true)
+	endif
+endFunction
+
+function UntrackFaction(Faction FactionRef, string Callback)
+	StringListRemove(FactionRef, "SexLabEvents", Callback, true)
+	if StringListCount(FactionRef, "SexLabEvents") < 1
+		FormListRemove(Config, "TrackedFactions", FactionRef, true)
+	endif
+endFunction
+
+bool function IsActorTracked(Actor ActorRef)
+	if ActorRef == PlayerRef || StringListCount(ActorRef, "SexLabEvents") > 0
+		return true
+	endIf
+	int i = FormListCount(Config, "TrackedFactions")
+	while i
+		i -= 1
+		Faction FactionRef = FormListGet(Config, "TrackedFactions", i) as Faction
+		if FactionRef && ActorRef.IsInFaction(FactionRef)
+			return true
+		endIf
+	endWhile
+	return false
+endFunction
+
+function SendTrackedEvent(Actor ActorRef, string Hook = "", int id = -1)
+	; Append hook type, global if empty
+	if Hook != ""
+		Hook = "_"+Hook
+	endIf
+	; Send generic player callback event
+	if ActorRef == PlayerRef
+		SetupActorEvent(PlayerRef, "PlayerTrack"+Hook, id)
+	endIf
+	; Send actor callback events
+	int i = StringListCount(ActorRef, "SexLabEvents")
+	while i
+		i -= 1
+		SetupActorEvent(ActorRef, StringListGet(ActorRef, "SexLabEvents", i)+Hook, id)
+	endWhile
+	; Send faction callback events
+	i = FormListCount(Config, "TrackedFactions")
+	while i
+		i -= 1
+		Faction FactionRef = FormListGet(Config, "TrackedFactions", i) as Faction
+		if FactionRef && ActorRef.IsInFaction(FactionRef)
+			int n = StringListCount(FactionRef, "SexLabEvents")
+			while n
+				n -= 1
+				SetupActorEvent(ActorRef, StringListGet(FactionRef, "SexLabEvents", n)+Hook, id)
+			endwhile
+		endIf
+	endWhile
+endFunction
+
+function SetupActorEvent(Actor ActorRef, string Callback, int id = -1)
+	int eid = ModEvent.Create(Callback)
+	ModEvent.PushForm(eid, ActorRef)
+	ModEvent.PushInt(eid, id)
+	ModEvent.Send(eid)
+endFunction
+
+; ------------------------------------------------------- ;
+; --- System use only                                 --- ;
+; ------------------------------------------------------- ;
+
+function Setup()
+	parent.Setup()
+	BedsList       = Config.BedsList
+	DoubleBedsList = Config.DoubleBedsList
+	BedRollsList   = Config.BedRollsList
+	FurnitureBedRoll = Config.FurnitureBedRoll
+endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
 Actor[] function SortActorsByAnimation(actor[] Positions, sslBaseAnimation Animation = none)
 	int ActorCount = Positions.Length
 	if ActorCount < 2
@@ -393,16 +627,6 @@ Actor[] function SortActorsByAnimation(actor[] Positions, sslBaseAnimation Anima
 		Log("SortActorsByAnimation("+Positions+", "+Animation+") -- Failed to sort actors '"+Sorted+"' -- They were unable to fill an actor position","FATAL")
 		return Positions
 	endIf
-endFunction
-
-int function FindNext(Actor[] Positions, sslBaseAnimation Animation, int offset, bool FindCreature)
-	while offset
-		offset -= 1
-		if Animation.HasRace(Positions[offset].GetLeveledActorBase().GetRace()) == FindCreature
-			return offset
-		endIf
-	endwhile
-	return -1
 endFunction
 
 Actor[] function SortCreatures(actor[] Positions, sslBaseAnimation Animation = none)
@@ -663,229 +887,3 @@ Actor[] function SortCreatures(actor[] Positions, sslBaseAnimation Animation = n
 		return Positions
 	endIf
 endFunction
-
-bool function IsBedRoll(ObjectReference BedRef)
-	if BedRef 
-		return BedRef.HasKeyword(FurnitureBedRoll) || BedRollsList.HasForm(BedRef.GetBaseObject()) \
-			|| StringUtil.Find(BedRef.GetDisplayName(), "roll") != -1 || StringUtil.Find(BedRef.GetDisplayName(), "pile") != -1
-	endIf
-	return false
-endFunction
-
-bool function IsDoubleBed(ObjectReference BedRef)
-	return BedRef && DoubleBedsList.HasForm(BedRef.GetBaseObject())
-endFunction
-
-bool function IsSingleBed(ObjectReference BedRef)
-	return BedRef && BedsList.HasForm(BedRef.GetBaseObject()) && !BedRollsList.HasForm(BedRef.GetBaseObject()) && !DoubleBedsList.HasForm(BedRef.GetBaseObject())
-endFunction
-
-int function GetBedType(ObjectReference BedRef)
-	if BedRef
-		Form BaseRef = BedRef.GetBaseObject()
-		if !BedsList.HasForm(BaseRef)
-			return 0
-		elseIf IsBedRoll(Bedref);BedRollsList.HasForm(BedRef.GetBaseObject()) || BedRef.HasKeyword(FurnitureBedRoll)
-			return 1
-		elseIf DoubleBedsList.HasForm(BaseRef)
-			return 3
-		else
-			return 2
-		endIf
-	endIf
-	return 0
-endFunction
-
-bool function IsBedAvailable(ObjectReference BedRef)
-	; Check furniture use
-	if !BedRef || BedRef.IsFurnitureInUse(true)
-		return false
-	endIf
-	; Check if used by a current thread
-	sslThreadController[] Threads = ThreadSlots.Threads
-	int i
-	while i < 15
-		if Threads[i].BedRef == BedRef
-			return false
-		endIf
-		i += 1
-	endwhile
-	; Bed is free for use
-	return true
-endFunction
-
-bool function CheckBed(ObjectReference BedRef, bool IgnoreUsed = true)
-	return BedRef && BedRef.IsEnabled() && BedRef.Is3DLoaded() && (!IgnoreUsed || (IgnoreUsed && IsBedAvailable(BedRef)))
-endFunction
-
-bool function LeveledAngle(ObjectReference ObjectRef, float Tolerance = 5.0)
-	return ObjectRef && Math.Abs(ObjectRef.GetAngleX()) <= Tolerance && Math.Abs(ObjectRef.GetAngleY()) <= Tolerance
-endFunction
-
-bool function SameFloor(ObjectReference BedRef, float Z, float Tolerance = 15.0)
-	return BedRef && Math.Abs(Z - BedRef.GetPositionZ()) <= Tolerance
-endFunction
-
-ObjectReference function FindBed(ObjectReference CenterRef, float Radius = 1000.0, bool IgnoreUsed = true, ObjectReference IgnoreRef1 = none, ObjectReference IgnoreRef2 = none)
-	if !CenterRef || CenterRef == none || Radius < 1.0
-		return none ; Invalid args
-	endIf
-	; Current elevation to determine bed being on same floor
-	float Z = CenterRef.GetPositionZ()
-	; Search a couple times for a nearby bed on the same elevation first before looking for random
-	ObjectReference BedRef = Game.FindClosestReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-		return BedRef
-	endIf
-	ObjectReference NearRef
-	Form[] Suppressed = new Form[10]
-	Suppressed[9] = BedRef
-	Suppressed[8] = IgnoreRef1
-	Suppressed[7] = IgnoreRef2
-	int LastNull = Suppressed.RFind(none)
-	int i = BedsList.GetSize()
-	while i
-		i -= 1
-		Form BedType = BedsList.GetAt(i)
-		if BedType
-			BedRef = Game.FindClosestReferenceOfTypeFromRef(BedType, CenterRef, Radius)
-			if BedRef && Suppressed.Find(BedRef) == -1
-				if SameFloor(BedRef, Z, 200) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed)
-					if (!NearRef || BedRef.GetDistance(CenterRef) < NearRef.GetDistance(CenterRef))
-						NearRef = BedRef
-					endIf
-				elseIf LastNull >= 0
-					Suppressed[LastNull]
-					LastNull = Suppressed.RFind(none)
-				endIf
-			endIf
-		endIf
-	endWhile
-	if NearRef && NearRef != none
-		return NearRef
-	endIf
-;	BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-;	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-;		return BedRef
-;	endIf
-;	BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-;	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-;		return BedRef
-;	endIf
-	; Failover to any random useable bed
-	i = LastNull + 1
-	while i
-		i -= 1
-		BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-		if !BedRef || (Suppressed.Find(BedRef) == -1 && SameFloor(BedRef, Z, Radius * 0.5) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-			return BedRef ; Found valid bed or none nearby and we should give up
-		else
-			Suppressed[i] = BedRef ; Add to suppression list
-		endIf
-	endWhile
-	return none ; Nothing found in search loop
-endFunction
-
-; ------------------------------------------------------- ;
-; --- Actor Tracking                                  --- ;
-; ------------------------------------------------------- ;
-
-function TrackActor(Actor ActorRef, string Callback)
-	FormListAdd(Config, "TrackedActors", ActorRef, false)
-	StringListAdd(ActorRef, "SexLabEvents", Callback, false)
-endFunction
-
-function TrackFaction(Faction FactionRef, string Callback)
-	FormListAdd(Config, "TrackedFactions", FactionRef, false)
-	StringListAdd(FactionRef, "SexLabEvents", Callback, false)
-endFunction
-
-function UntrackActor(Actor ActorRef, string Callback)
-	StringListRemove(ActorRef, "SexLabEvents", Callback, true)
-	if StringListCount(ActorRef, "SexLabEvents") < 1
-		FormListRemove(Config, "TrackedActors", ActorRef, true)
-	endif
-endFunction
-
-function UntrackFaction(Faction FactionRef, string Callback)
-	StringListRemove(FactionRef, "SexLabEvents", Callback, true)
-	if StringListCount(FactionRef, "SexLabEvents") < 1
-		FormListRemove(Config, "TrackedFactions", FactionRef, true)
-	endif
-endFunction
-
-bool function IsActorTracked(Actor ActorRef)
-	if ActorRef == PlayerRef || StringListCount(ActorRef, "SexLabEvents") > 0
-		return true
-	endIf
-	int i = FormListCount(Config, "TrackedFactions")
-	while i
-		i -= 1
-		Faction FactionRef = FormListGet(Config, "TrackedFactions", i) as Faction
-		if FactionRef && ActorRef.IsInFaction(FactionRef)
-			return true
-		endIf
-	endWhile
-	return false
-endFunction
-
-function SendTrackedEvent(Actor ActorRef, string Hook = "", int id = -1)
-	; Append hook type, global if empty
-	if Hook != ""
-		Hook = "_"+Hook
-	endIf
-	; Send generic player callback event
-	if ActorRef == PlayerRef
-		SetupActorEvent(PlayerRef, "PlayerTrack"+Hook, id)
-	endIf
-	; Send actor callback events
-	int i = StringListCount(ActorRef, "SexLabEvents")
-	while i
-		i -= 1
-		SetupActorEvent(ActorRef, StringListGet(ActorRef, "SexLabEvents", i)+Hook, id)
-	endWhile
-	; Send faction callback events
-	i = FormListCount(Config, "TrackedFactions")
-	while i
-		i -= 1
-		Faction FactionRef = FormListGet(Config, "TrackedFactions", i) as Faction
-		if FactionRef && ActorRef.IsInFaction(FactionRef)
-			int n = StringListCount(FactionRef, "SexLabEvents")
-			while n
-				n -= 1
-				SetupActorEvent(ActorRef, StringListGet(FactionRef, "SexLabEvents", n)+Hook, id)
-			endwhile
-		endIf
-	endWhile
-endFunction
-
-function SetupActorEvent(Actor ActorRef, string Callback, int id = -1)
-	int eid = ModEvent.Create(Callback)
-	ModEvent.PushForm(eid, ActorRef)
-	ModEvent.PushInt(eid, id)
-	ModEvent.Send(eid)
-endFunction
-
-; ------------------------------------------------------- ;
-; --- System use only                                 --- ;
-; ------------------------------------------------------- ;
-
-function Setup()
-	parent.Setup()
-	BedsList       = Config.BedsList
-	DoubleBedsList = Config.DoubleBedsList
-	BedRollsList   = Config.BedRollsList
-	FurnitureBedRoll = Config.FurnitureBedRoll
-endFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
-;																																											;
-;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
-;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
-;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
-;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
-;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
-;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
-;																																											;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
-

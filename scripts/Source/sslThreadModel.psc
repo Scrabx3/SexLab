@@ -277,7 +277,7 @@ bool Property DebugMode auto hidden
 float Property t auto hidden
 
 int[] Function GetAllPositionKeys()
-	int[] ret = Utility.CreateintArray(Positions.Length)
+	int[] ret = Utility.CreateIntArray(Positions.Length)
 	int j = 0
 	While(j < Positions.Length)
 		ret[j] = ActorAlias[j].ActorKey
@@ -340,6 +340,20 @@ State Making
 		return true
 	EndFunction
 
+	bool Function SetAnimationsByTags(String asTags, int aiUseBed)
+		int[] keys = GetAllPositionKeys()
+		If(!keys.Length)
+			return false
+		EndIf
+		keys = sslActorKey.SortActorKeyArray(keys)
+		sslBaseAnimation[] anims = AnimSlots.GetAnimationsByKeys(keys, asTags, aiUseBed - 1)
+		If(anims.Length)
+			SetAnimations(anims)
+			return true
+		EndIf
+		return false
+	EndFunction
+
 	sslThreadController Function StartThread()
 		SendThreadEvent("AnimationStarting")
 		UnregisterForUpdate()
@@ -351,7 +365,8 @@ State Making
 		; --   Validate Thread   -- ;
 		; ------------------------- ;
 
-		If(ActorCount < 1 || ActorCount >= POSITION_COUNT_MAX)
+		Positions = PapyrusUtil.RemoveActor(Positions, none)
+		If(Positions.Length < 1 || Positions.Length >= POSITION_COUNT_MAX)
 			ReportAndFail("Failed to start Thread -- No valid actors available for animation")
 			return none
 		ElseIf(Positions.Find(none) != -1)
@@ -387,19 +402,18 @@ State Making
 		CustomAnimations = ValidateAnimations(CustomAnimations)
 		If(CustomAnimations.Length)
 			AddCommonTags(CustomAnimations)
-			if LeadIn
+			If(LeadIn)
 				Log("WARNING: LeadIn detected on custom Animations. Disabling LeadIn")
 				LeadIn = false
-			endIf
+			EndIf
 		Else
 			; No Custom Animations. If there were thered be no point validating these
 			PrimaryAnimations = ValidateAnimations(PrimaryAnimations)
 			If(LeadIn)
 				LeadAnimations = ValidateAnimations(LeadAnimations)
 				If(!LeadAnimations.Length)
-					; TODO: implement
-					; LeadAnimations = AnimSlots._GetAnimations(_ActorKeys)
-					; LeadIn = LeadAnimations.Length
+					LeadAnimations = AnimSlots._GetAnimations(GetAllPositionKeys(), Utility.CreateStringArray(0))
+					LeadIn = LeadAnimations.Length
 				EndIf
 			Else
 				; COMEBACK: This doesnt actually do anything, idk why its there or if I should remove it
@@ -448,46 +462,31 @@ State Making
 		if Config.ShowInMap && !HasPlayer && PlayerRef.GetDistance(CenterRef) > 750
 			SetObjectiveDisplayed(0, True)
 		endIf
-		
-		; if HasCreature
-		; 	Log("CreatureRef: "+CreatureRef)
-		; 	if ActorCount != Creatures
-		; 		Positions = ThreadLib.SortCreatures(Positions)
-		; 	endIf
-		; endIf
-		
-		if Config.ShowInMap && !HasPlayer && PlayerRef.GetDistance(CenterRef) > 750
-			SetObjectiveDisplayed(0, True)
-		endIf
-
-		; Get default foreplay if none and enabled
-		; if Config.ForeplayStage && LeadIn && LeadAnimations.Length == 0 && ActorCount > 1 ; && !IsAggressive 
-		; 	if !HasCreature
-		; 		SetLeadAnimations(AnimSlots.GetByType(ActorCount, Males, Females, -1, IsAggressive, False))
-		; 	else
-		; 		SetLeadAnimations(CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, SexLabUtil.StringIfElse(IsAggressive,"Aggressive,LeadIn","LeadIn")))
-		; 	endIf
-		; endIf
-		
-		; Filter animations based on user settings and scene
-		; if FilterAnimations() < 0
-		; 	return none
-		; endIf
-
-		; Forcibly sort actors if enabled and needed
-		; if ActorCount > 1 && Config.ForceSort
-		; 	Positions = ThreadLib.SortActorsByAnimation(Positions, Animations[0])
-		; endIf
 	
 		; ------------------------- ;
 		; --  Start Controller   -- ;
 		; ------------------------- ;
 
+		; NOTE: The below comment links to a thread that has been merged with this function,see below \o/
 		; COMEBACK: I dont understand why this isnt just part of this codeblock here directly
 		; Just massively harms readability and overcomplicates scene starting
 		; Not to mention that the actual code executed here is in the child script, not the parent, not even as abstract func
 		; see sslThreadController State 'Prepare'.OnBeginState() to see the second part of this function
-		GoToState("Prepare")
+		; GoToState("Prepare")
+		
+		; COMEBACK: Move this into some 'unsafe' startthread() func instead, to call with the new API which wont need above validation
+		HookAnimationPrepare()
+		; UpdateAdjustKey()	; COMEBACK: Position adjustements. Idk if theyre needed but we prolly wanna store them differently? idk
+		if StartingAnimation && Animations.Find(StartingAnimation) != -1
+			SetAnimation(Animations.Find(StartingAnimation))
+		else
+			SetAnimation()
+			StartingAnimation = none
+		endIf
+		Log(AdjustKey, "Adjustment Profile")
+		; Begin actor prep	; TODO: Relink this, idk. This is weird
+		SyncEvent(kPrepareActor, 40.0)
+
 		return self as sslThreadController
 	EndFunction
 EndState
@@ -1117,44 +1116,44 @@ Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
 	CenterLocation[3] = CenterOn.GetAngleX()
 	CenterLocation[4] = CenterOn.GetAngleY()
 	CenterLocation[5] = CenterOn.GetAngleZ()
-  If(sslpp.IsBed(CenterOn))
+	If(sslpp.IsBed(CenterOn))
 		BedStatus[1] = ThreadLib.GetBedType(CenterOn)
-    BedRef = CenterOn
+		BedRef = CenterOn
 		SetFurnitureIgnored(true)
-    float offsetX
-	  float offsetY
-	  float offsetZ
-    float offsAnZ
-    If(BedStatus[1] == 1)
-      offsetZ = 7.5 ; Average Z offset for bedrolls
-      offsAnZ = 180 ; bedrolls are usually rotated 180° on Z
-    Else
-      int offset = -31 ; + ((_Positions_var.find(playerref) > -1) as int) * 36
-      offsetX = Math.Cos(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
-      offsetY = Math.Sin(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
-      offsetZ = 45 ; Z offset for beds
-    EndIf
-    float scale = CenterOn.GetScale()
+		float offsetX
+		float offsetY
+		float offsetZ
+		float offsAnZ
+		If(BedStatus[1] == 1)
+			offsetZ = 7.5 ; Average Z offset for bedrolls
+			offsAnZ = 180 ; bedrolls are usually rotated 180° on Z
+		Else
+			int offset = -31 ; + ((_Positions_var.find(playerref) > -1) as int) * 36
+			offsetX = Math.Cos(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
+			offsetY = Math.Sin(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
+			offsetZ = 45 ; Z offset for beds
+		EndIf
+		float scale = CenterOn.GetScale()
 		If(scale != 1.0)
 			offsetX *= scale
 			offsetY *= scale
-      If(CenterLocation[2] < 0)
-        offsetZ *= (2 - scale) ; Assming Scale will always be in [0; 2)
-      Else
-        offsetZ *= scale
-      EndIf
-    EndIf
-    CenterLocation[0] = CenterLocation[0] + offsetX
+			If(CenterLocation[2] < 0)
+				offsetZ *= (2 - scale) ; Assming Scale will always be in [0; 2)
+			Else
+				offsetZ *= scale
+			EndIf
+		EndIf
+		CenterLocation[0] = CenterLocation[0] + offsetX
 		CenterLocation[1] = CenterLocation[1] + offsetY
 		CenterLocation[2] = CenterLocation[2] + offsetZ
 		CenterLocation[5] = CenterLocation[5] - offsAnZ
-    CenterRef.SetPosition(CenterLocation[0], CenterLocation[1], CenterLocation[2])
-    CenterRef.SetAngle(CenterLocation[3], CenterLocation[4], CenterLocation[5])
+		CenterRef.SetPosition(CenterLocation[0], CenterLocation[1], CenterLocation[2])
+		CenterRef.SetAngle(CenterLocation[3], CenterLocation[4], CenterLocation[5])
 	Else
 		BedStatus[1] = 0
 		BedRef = none
-  EndIf
-  Log("Creating new Center Ref from = " + CenterOn + " at Coordinates = " + CenterLocation + "( New Center is Bed Type = " + BedStatus[1] + " )")
+	EndIf
+	Log("Creating new Center Ref from = " + CenterOn + " at Coordinates = " + CenterLocation + "( New Center is Bed Type = " + BedStatus[1] + " )")
 EndFunction
 
 ; COMEBACK: This here should be completely pointless but might wanna check that it doesnt break anythin just to be sure
@@ -1168,48 +1167,34 @@ Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, fl
 EndFunction
 
 bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
+	If(BedStatus[0] == -1)
+		return false
+	EndIf
 	bool InStart = GetState() == "Making"
 	int AskBed = Config.AskBed
-	if BedStatus[0] == -1 || (InStart && (!HasPlayer && Config.NPCBed == 0) || (HasPlayer && AskBed == 0))
+	if InStart && (!HasPlayer && Config.NPCBed == 0) || (HasPlayer && AskBed == 0)
 		return false ; Beds forbidden by flag or starting bed check/prompt disabled
 	endIf
 	bool BedScene = BedStatus[0] == 1
  	ObjectReference FoundBed
-	int i = ActorCount
-	while i > 0
-		i -= 1
+	int i = 0
+	While (i < Positions.Length)
 		FoundBed = Positions[i].GetFurnitureReference()
-		if FoundBed
-			int BedType = ThreadLib.GetBedType(FoundBed)
-			if BedType > 0 && (ActorCount < 4 || BedType != 2)
-				CenterOnObject(FoundBed)
-				return true ; Bed found and approved for use
-			endIf
+		; This returns 0 if FoundBed isnt a Bed
+		int BedType = ThreadLib.GetBedType(FoundBed)
+		if BedType > 0 && (ActorCount < 4 || BedType != 2)
+			CenterOnObject(FoundBed)
+			return true ; Bed found and approved for use
 		endIf
-	endWhile
+		i += 1
+	EndWhile
+	; Double radius if bedscene is forced (BedStatus[0] == 1)
+	Radius *= 1 + BedStatus[0]
 	if HasPlayer && (!InStart || AskBed == 1 || (AskBed == 2 && (!IsVictim(PlayerRef) || UseNPCBed)))
-		if BedScene
-			FoundBed  = ThreadLib.FindBed(PlayerRef, Radius * 2) ; Check within radius of player
-		else
-			FoundBed  = ThreadLib.FindBed(PlayerRef, Radius) ; Check within radius of player
-			; Same Floor only
-		;	if FoundBed && !ThreadLib.SameFloor(FoundBed, PlayerRef.GetPositionZ(), 200)
-		;		Log("FoundBed: "+FoundBed+" is not in the same floor")
-		;		FoundBed = none
-		;	endIf
-		endIf
+		FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
 		AskPlayer = AskPlayer && (!InStart || !(AskBed == 2 && IsVictim(PlayerRef))) ; Disable prompt if bed found but shouldn't ask
 	elseIf !HasPlayer && UseNPCBed
-		if BedScene
-			FoundBed = ThreadLib.FindBed(Positions[0], Radius * 2) ; Check within radius of first position, if NPC beds are allowed
-		else
-			FoundBed = ThreadLib.FindBed(Positions[0], Radius) ; Check within radius of first position, if NPC beds are allowed
-			; Same Floor only
-		;	if FoundBed && !ThreadLib.SameFloor(FoundBed, PlayerRef.GetPositionZ(), 200)
-		;		Log("FoundBed: "+FoundBed+" is not in the same floor")
-		;		FoundBed = none
-		;	endIf
-		endIf
+		FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
 	endIf
 	; Found a bed AND EITHER forced use OR don't care about players choice OR or player approved
 	if FoundBed && (BedStatus[0] == 1 || (!AskPlayer || (AskPlayer && (Config.UseBed.Show() as bool))))
@@ -1831,6 +1816,8 @@ Function StartupDone()
 EndFunction
 Function SetAnimation(int aid = -1)
 EndFunction
+bool Function SetAnimationsByTags(String asTags, int aiUseBed)
+EndFunction
 ; Animating
 Event OnKeyDown(int keyCode)
 EndEvent
@@ -1898,32 +1885,32 @@ EndFunction
 
 Function PlaceActors()
 	int i = 0
-  While(i < Positions.Length)
+	While(i < Positions.Length)
 		ActorAlias[i].LockActor()
 		; COMEBACK: Might wanna move this someplace else
 		; NOTE: Currently this is in the Prepare() function on the alias script
 		; Wanna find some proper structure once Im done with all this zzzz
-    ; IDEA: if (!partial_strip)
-      ; ActorAlias[i].Strip()
+		; IDEA: if (!partial_strip)
+			; ActorAlias[i].Strip()
 		; else 
 		;		<do partial strip>
-    ; endif
+		; endif
 
-    Positions[i].SetVehicle(_Center)
-	  Debug.SendAnimationEvent(Positions[i], "sosfasterect")
-    i += 1
-  EndWhile
-  sslpp.SetPositions(Positions, _Center)
+		Positions[i].SetVehicle(_Center)
+		Debug.SendAnimationEvent(Positions[i], "sosfasterect")
+		i += 1
+	EndWhile
+	sslpp.SetPositions(Positions, _Center)
 EndFunction
 
 Function UnplaceActors()
-  int i = 0
-  While(i < Positions.Length)
-    Positions[i].SetVehicle(none)
+	int i = 0
+	While(i < Positions.Length)
+		Positions[i].SetVehicle(none)
 		ActorAlias[i].UnlockActor()
 		ActorAlias[i].SendDefaultAnimEvent()
-    i += 1
-  EndWhile
+		i += 1
+	EndWhile
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;

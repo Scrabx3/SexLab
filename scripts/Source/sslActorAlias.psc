@@ -471,57 +471,57 @@ state Ready
 			else
 				FirsStageTime = Config.StageTimer[0]
 			endIf
-			BaseEnjoyment -= Math.Abs(CalcEnjoyment(SkillBonus, Skills, LeadIn, IsFemale, FirsStageTime, 1, StageCount)) as int
-			if BaseEnjoyment < -5
-				BaseEnjoyment += 10
-			endIf
-			; Add Bonus Enjoyment
-			if IsVictim
-				BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
-				BaseEnjoyment += ((BestRelation - 3) + PapyrusUtil.ClampInt((OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure]) as int,-6,6)) * Utility.RandomInt(1, 10)
-			else
-				BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
-				if IsAggressor
-					BaseEnjoyment += (-1*((BestRelation - 4) + PapyrusUtil.ClampInt(((Skills[Stats.kLewd]-Skills[Stats.kPure])-(OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure])) as int,-6,6))) * Utility.RandomInt(1, 10)
-				else
-					BaseEnjoyment += (BestRelation + PapyrusUtil.ClampInt((((Skills[Stats.kLewd]+OwnSkills[Stats.kLewd])*0.5)-((Skills[Stats.kPure]+OwnSkills[Stats.kPure])*0.5)) as int,0,6)) * Utility.RandomInt(1, 10)
-				endIf
-			endIf
-		else
-			if IsVictim
-				BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
-				BaseEnjoyment += (BestRelation - 3) * Utility.RandomInt(1, 10)
-			else
-				BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
-				if IsAggressor
-					BaseEnjoyment += (-1*(BestRelation - 4)) * Utility.RandomInt(1, 10)
-				else
-					BaseEnjoyment += (BestRelation + 3) * Utility.RandomInt(1, 10)
-				endIf
-			endIf
+		; COMEBACK: Enjoyment should prolly get a full on rework or smth, i really dunno why or how or what here
+		; 	BaseEnjoyment -= Math.Abs(CalcEnjoyment(SkillBonus, Skills, LeadIn, IsFemale, FirsStageTime, 1, StageCount)) as int
+		; 	if BaseEnjoyment < -5
+		; 		BaseEnjoyment += 10
+		; 	endIf
+		; 	; Add Bonus Enjoyment
+		; 	if IsVictim
+		; 		BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
+		; 		BaseEnjoyment += ((BestRelation - 3) + PapyrusUtil.ClampInt((OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure]) as int,-6,6)) * Utility.RandomInt(1, 10)
+		; 	else
+		; 		BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
+		; 		if IsAggressor
+		; 			BaseEnjoyment += (-1*((BestRelation - 4) + PapyrusUtil.ClampInt(((Skills[Stats.kLewd]-Skills[Stats.kPure])-(OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure])) as int,-6,6))) * Utility.RandomInt(1, 10)
+		; 		else
+		; 			BaseEnjoyment += (BestRelation + PapyrusUtil.ClampInt((((Skills[Stats.kLewd]+OwnSkills[Stats.kLewd])*0.5)-((Skills[Stats.kPure]+OwnSkills[Stats.kPure])*0.5)) as int,0,6)) * Utility.RandomInt(1, 10)
+		; 		endIf
+		; 	endIf
+		; else
+		; 	if IsVictim
+		; 		BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
+		; 		BaseEnjoyment += (BestRelation - 3) * Utility.RandomInt(1, 10)
+		; 	else
+		; 		BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
+		; 		if IsAggressor
+		; 			BaseEnjoyment += (-1*(BestRelation - 4)) * Utility.RandomInt(1, 10)
+		; 		else
+		; 			BaseEnjoyment += (BestRelation + 3) * Utility.RandomInt(1, 10)
+		; 		endIf
+		; 	endIf
 		endIf
-		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
-		Log(LogInfo)
+		; LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
 		
 		; remember: This call is async and the below function is latent \o/
-		if DoPathToCenter
+		if DoPathToCenter && ActorRef.GetDistance(Thread.CenterRef) > 250.0
 			PathToCenter()
 		endIf
 
 		; Play custom starting animation event
 		; COMEBACK: Might want to remove this. Cant really make out why anyone would want to use this
 		; Perhaps this could be used to push a clean strip animation?
-		If(StartAnimEvent != "")
-			Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
-			If(StartWait < 0.1)
-				Utility.Wait(0.1)
-			Else
-				Utility.Wait(StartWait)
-			EndIf
-		EndIf
+		; If(StartAnimEvent != "")
+		; 	Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
+		; 	If(StartWait < 0.1)
+		; 		Utility.Wait(0.1)
+		; 	Else
+		; 		Utility.Wait(StartWait)
+		; 	EndIf
+		; EndIf
 
 		; COMEBACK: Not sure if this should be here or in the actual moving func
-		If(sslActorKey.IsCreature(_ActorKey))
+		If(!sslActorKey.IsCreature(_ActorKey))
 			If(Config.UseStrapons && sslActorKey.IsFemalePure(_ActorKey))
 				; COMEBACK: Idk why we use 2 variables here
 				HadStrapon = Config.WornStrapon(ActorRef)
@@ -533,14 +533,14 @@ state Ready
 			Strip()
 			ResolveStrapon()
 			Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
-			; Remove HDT High Heels
-			if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
-				HDTHeelSpell = Config.GetHDTSpell(ActorRef)
-				if HDTHeelSpell
-					Log(HDTHeelSpell, "RemoveHeelEffect (HDTHeelSpell)")
-					ActorRef.RemoveSpell(HDTHeelSpell)
-				endIf
-			endIf
+			; Remove HDT High Heels	 COMEBACK: This here should be moved into a dll func
+			; if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
+			; 	HDTHeelSpell = Config.GetHDTSpell(ActorRef)
+			; 	if HDTHeelSpell
+			; 		Log(HDTHeelSpell, "RemoveHeelEffect (HDTHeelSpell)")
+			; 		ActorRef.RemoveSpell(HDTHeelSpell)
+			; 	endIf
+			; endIf
 			; Pick an expression if needed
 			if !Expression && Config.UseExpressions
 				Expressions = Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim, IsType[0] && !IsVictim)
@@ -552,13 +552,14 @@ state Ready
 				LogInfo += "Expression["+Expression.Name+"] "
 			endIf
 		endIf
+		Log(LogInfo)
 		GoToState("Prepare")
 	endFunction
 
 	; COMEBACK: This one do be lookin kinda sketchy
 	function PathToCenter()
 		ObjectReference CenterRef = Thread.CenterAlias.GetReference()
-		if CenterRef && ActorRef && (Thread.ActorCount > 1 || CenterRef != ActorRef)
+		if CenterRef && (Thread.ActorCount > 1 || CenterRef != ActorRef)
 			ObjectReference WaitRef = CenterRef
 			if CenterRef == ActorRef
 				WaitRef = Thread.Positions[IntIfElse(Position != 0, 0, 1)]

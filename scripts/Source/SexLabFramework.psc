@@ -75,53 +75,37 @@ endProperty
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* NewThread 
-* * This function picks and returns a SexLab Thread, that is used to define with great details all the information about the "scene" to be played (Positions, Actors, Beds, Stripping, Events, Animations, etc.)
-* * See the file sslThreadModel.psc for a further description of this important element.
+;/* StartScene 
+* * This is the preferred way of calling a SexLab animation
+* * Set all your desired parameters and SexLab will do it all for you. No further interaction required
 * * 
-* * @param: TimeOut - number of seconds to hold a claim to on this thread without starting an animation before giving up.
-* * @return: sslThreadModel - the full definition of the SexLab Thread that can be used to configure, start, and stop the scene (a.k.a. the SexLab animation)
-*/;
-sslThreadModel function NewThread(float TimeOut = 30.0)
-	; Claim an available thread
-	return ThreadSlots.PickModel(TimeOut)
-endFunction
-
-;/* StartSex 
-* * This is an easy and quick function to start a Sexlab animation without requiring too much code.
-* * The difference between StartSex and QuickStart is that StartSex requires a list of animations (at least one), while QuickStart grabs the animations using animation Tags
-* * 
-* * @param: Positions, is an array of Actors that will be used in the animation, up to 5 actors are supported. The very first is considered to be the "Passive Position". If actors are unspecified this function will fail.
-* * @param: Anims, is an array of sslBaseAnimation, and it is used to specify which animations will play. In case the animations are empty, not valid, or the number of the actors expected by the animation is not equal to the specified number of actors, then the animations are picked automatically by the default animation. (See GetAnimationsByDefault)
-* * @param: Victim [OPTIONAL], if this Actor specified, then the specified actor (that should be one of the list of actors) will be considered as a victim.
-* * @param: CenterOn [OPTIONAL], if the ObjectReference is specified, then the animation will be centered on the specified object. It can be a marker, a furniture, or any other possible ObjectReference.
-* * @param: AllowBed, it is a boolean, if the value is false, then the animations requiring a bed will be filtered out
-* * @param: Hook, you can specify a Hook for the animation, to register for the animation events (AnimationStart, AnimationEnd, OrgasmStart, etc.) See the Hooks section for further description
+* * @param: akPositions - The Actors to animate
+* * @param: asTags			-	The tags to start the animation with (Can be empty). This supports prefixes (no prefix implies a tag to be required/mandatory):
+*	*												Prefix with '-' to disable this tag, '~' for OR conjunctions ("~A, ~B, ~C" <=> A or B or C <=> Animation has at least one of these tags)
+* * @param: akVictim 		- If specified, then the specified actor (that should be one of the list of actors) will be considered as a victim.
+* * @param: akCenter		- If specified, the animation will center around the given reference. Can be any reference
+*	*	@param: abAllowBed	- If false, animations using a bed will disabled for this animation and the animation wont center on a bed (unless given 'akCenter' is a bed)
+* * @param: asHook			- A callback ID-String to be notified about certain stages of the animation. See the 'Hooks' section for details
 * *
-* * @return: the tid of the thread that is allocated by the function, useable with GetController(). -1 if something went wrong and the animation will not start.
+* * @return: The thread used to start the animation; or none if something went wrong
 */;
-int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
-	; Claim a thread
-	sslThreadModel Thread = NewThread()
-	if !Thread
-		Log("StartSex() - Failed to claim an available thread")
-		return -1
-	; Add actors list to thread
-	elseIf !Thread.AddActors(Positions, Victim)
-		Log("StartSex() - Failed to add some actors to thread")
-		return -1
-	endIf
-	; Configure our thread with passed arguments
-	Thread.SetAnimations(Anims)
-	Thread.CenterOnObject(CenterOn)
-	Thread.DisableBedUse(!AllowBed)
-	Thread.SetHook(Hook)
-	; Start the animation
-	if Thread.StartThread()
-		return Thread.tid
-	endIf
-	return -1
-endFunction
+sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+	sslThreadModel thread = NewThread()
+	If(!thread)
+		LogConsole("StartScene() - Failed to claim an available thread")
+		return none
+	ElseIf(!thread.AddActors(akPositions, akVictim))
+		LogConsole("StartScene() - Failed to add some actors to thread")
+		return none
+	ElseIf(!thread.SetAnimationsByTags(asTags, abAllowBed as int))
+		LogConsole("StartScene() - Failed to find valid animations")
+		return none
+	EndIf
+	thread.CenterOnObject(akCenter)
+	thread.DisableBedUse(!abAllowBed)
+	thread.SetHook(asHook)
+	return thread.StartThread()
+EndFunction
 
 ;/* QuickStart 
 * * This is a very easy and quick function to start a Sexlab animation without requiring more than a single line of code.
@@ -136,18 +120,20 @@ endFunction
 * *
 * * @return: the thread instance that is allocated by the function. NONE if something went wrong and the animation will not start.
 */;
-sslThreadController function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
+sslThreadController Function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
 	Actor[] Positions = SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
-	sslBaseAnimation[] Anims
-	if AnimationTags != ""
-		int[] Genders = ActorLib.GenderCount(Positions)
-		if (Genders[2] + Genders[3]) < 1
-			Anims = AnimSlots.GetByTags(Positions.Length, AnimationTags, "", false)
-		else
-			Anims = CreatureSlots.GetByCreatureActorsTags(Positions.Length, Positions, AnimationTags, "", false)
-		endIf
-	endIf
-	return ThreadSlots.GetController(StartSex(Positions, Anims, Victim, none, true, Hook))
+	return StartScene(Positions, AnimationTags, Victim, asHook = Hook)
+EndFunction
+
+;/* NewThread 
+* *	For advanced users: This function picks and returns an (initialized) SexLab thread which can be used to define all details of the scene to be played (Actors,
+* * Beds, Events, Animations, etc). See sslThreadModel for more details
+* * 
+* * @param: TimeOut 				- number of seconds to hold a claim to on this thread without starting an animation before giving up.
+* * @return: sslThreadModel - the full definition of the SexLab Thread that can be used to configure, start, and stop the scene (a.k.a. the SexLab animation)
+*/;
+sslThreadModel function NewThread(float TimeOut = 30.0)
+	return ThreadSlots.PickModel(TimeOut)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -494,7 +480,7 @@ endFunction
 * * @param: sslBaseAnimation Animation [OPTIONAL] - Is the animation used as referece to sort the actors. In case the animation is none, not valid, or the number of the actors expected by the animation is not equal to the number of actors in the Positions array, then for the Position array without creatures the SortActors function will be executed instead.
 * * @return: Actor[] - The final sorted list of actors.
 */;
-Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)
+Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)	; TODO: Sort based on actor keys
 	return ThreadLib.SortActorsByAnimation(Positions, Animation)
 endFunction
 
@@ -506,7 +492,7 @@ endFunction
 * * @param: sslBaseAnimation Animation [OPTIONAL] - Is the animation used as referece to sort the actors. In case the animation is none, not valid, or the number of the actors or races expected by the animation is not equal to the number of actors or races in the Positions array, then for the Position array with creatures the humanoid actors will be listed first in a scene.
 * * @return: Actor[] - The final sorted list of actors.
 */;
-Actor[] function SortCreatures(Actor[] Positions, sslBaseAnimation Animation = none)
+Actor[] function SortCreatures(Actor[] Positions, sslBaseAnimation Animation = none)	; TODO: Sort based on actor keys
 	return ThreadLib.SortCreatures(Positions, Animation)
 endFunction
 
@@ -3205,6 +3191,29 @@ int function GetPlayerStatLevel(string Skill)
 	return Stats.GetSkillLevel(PlayerRef, Skill)
 endFunction
 
+;/* DEPRECATED! */;
+int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
+	; Claim a thread
+	sslThreadModel Thread = NewThread()
+	if !Thread
+		Log("StartSex() - Failed to claim an available thread")
+		return -1
+	; Add actors list to thread
+	elseIf !Thread.AddActors(Positions, Victim)
+		Log("StartSex() - Failed to add some actors to thread")
+		return -1
+	endIf
+	; Configure our thread with passed arguments
+	Thread.SetAnimations(Anims)
+	Thread.CenterOnObject(CenterOn)
+	Thread.DisableBedUse(!AllowBed)
+	Thread.SetHook(Hook)
+	; Start the animation
+	if Thread.StartThread()
+		return Thread.tid
+	endIf
+	return -1
+endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -3314,6 +3323,15 @@ function Log(string Log, string Type = "NOTICE")
 		Debug.Trace(Log)
 	endIf
 endFunction
+
+Function LogConsole(String asReport)
+	String msg = "[SEXLAB] - " + asReport
+	SexLabUtil.PrintConsole(msg)
+	If(IsExtension && ModName)
+		msg = "[" + ModName + "] - " + msg
+	EndIf
+	Debug.Trace(msg)
+EndFunction
 
 state Disabled
 	sslThreadModel function NewThread(float TimeOut = 30.0)
