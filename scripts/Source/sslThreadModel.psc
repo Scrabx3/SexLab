@@ -458,7 +458,7 @@ State Making
 				CenterOnObject(Positions[n])
 			EndIf
 		EndIf
-		
+
 		if Config.ShowInMap && !HasPlayer && PlayerRef.GetDistance(CenterRef) > 750
 			SetObjectiveDisplayed(0, True)
 		endIf
@@ -476,19 +476,53 @@ State Making
 		
 		; COMEBACK: Move this into some 'unsafe' startthread() func instead, to call with the new API which wont need above validation
 		HookAnimationPrepare()
-		; UpdateAdjustKey()	; COMEBACK: Position adjustements. Idk if theyre needed but we prolly wanna store them differently? idk
+		; UpdateAdjustKey()	; TODO: Set adjust key AFTER deciding the animation | BEFORE placing actors
+		; TODO: This here should be simplified. A lot
 		if StartingAnimation && Animations.Find(StartingAnimation) != -1
 			SetAnimation(Animations.Find(StartingAnimation))
 		else
 			SetAnimation()
 			StartingAnimation = none
 		endIf
-		Log(AdjustKey, "Adjustment Profile")
-		; Begin actor prep	; TODO: Relink this, idk. This is weird
+		; Log(AdjustKey, "Adjustment Profile")
+		; Begin actor prep
 		SyncEvent(kPrepareActor, 40.0)
+		If(HasPlayer)
+			Config.ApplyFade()
+		EndIf
 
 		return self as sslThreadController
 	EndFunction
+
+	; Invoked after kPrepareActor is done for all actors
+	Event PrepareDone()
+		; TODO: Position adjustments, should be part of actual placement
+		; int AdjustPos = Positions.Find(Config.TargetRef)
+		; if AdjustPos == -1
+		; 	AdjustPos   = (Positions.Length > 1) as int
+		; 	if Positions[AdjustPos] != PlayerRef
+		; 		Config.TargetRef = Positions[AdjustPos]
+		; 	endIf
+		; endIf
+		; AdjustAlias = PositionAlias(AdjustPos)
+		; Send starter events
+		SendThreadEvent("AnimationStart")
+		If(LeadIn)
+			SendThreadEvent("LeadInStart")
+		EndIf
+		; Start time trackers ; NOTE: This is part of the child rn. TODO: move to parent or remove entirely, idk
+		SetTimeThings()
+		; Start actor loops
+		int i = 0
+		While(i < Positions.Length)
+			ActorAlias[i].CompletePreperation()
+			i += 1
+		EndWhile
+		PlaceActors()
+		; TODO: Figure out where this goes and why it takes more than 0 seconds to start an animation from here
+		GoToState("Advancing")
+		Config.RemoveFade()
+	EndEvent
 EndState
 
 ; ------------------------------------------------------- ;
@@ -1339,9 +1373,16 @@ sslActorAlias Function PositionAlias(int Position)
 	return ActorAlias[FindSlot(Positions[Position])]
 EndFunction
 
-; ------------------------------------------------------- ;
-; --- Thread Events - SYSTEM USE ONLY                 --- ;
-; ------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; Unnecessary, just use OnBeginState()/OnEndState()
 Function Action(string FireState)
@@ -1591,23 +1632,6 @@ Function UpdateAdjustKey()
 		endWhile
 		AdjustKey = NewKey
 	endIf
-	ActorAlias[0].SetAdjustKey(AdjustKey)
-	ActorAlias[1].SetAdjustKey(AdjustKey)
-	ActorAlias[2].SetAdjustKey(AdjustKey)
-	ActorAlias[3].SetAdjustKey(AdjustKey)
-	ActorAlias[4].SetAdjustKey(AdjustKey)
-EndFunction
-
-Function RemoveFade()
-	if HasPlayer
-		Config.RemoveFade()
-	endIf
-EndFunction
-
-Function ApplyFade()
-	if HasPlayer
-		Config.ApplyFade()
-	endIf
 EndFunction
 
 sslActorAlias Function PickAlias(Actor ActorRef)
@@ -1825,17 +1849,9 @@ Function EnableHotkeys(bool forced = false)
 EndFunction
 Function RealignActors()
 EndFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
-;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
-;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
-;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
-;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
-;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; TEMPORARY
+Function SetTimeThings()
+EndFunction
 
 sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	If(!akAnimations.Length)
@@ -1887,6 +1903,12 @@ Function PlaceActors()
 	int i = 0
 	While(i < Positions.Length)
 		ActorAlias[i].LockActor()
+		; TODO: Move into some 'placeactor' func in sslActorAlias Script
+		If(Positions[i] == PlayerRef && Config.AutoTFC)
+			MiscUtil.SetFreeCameraState(true)
+			MiscUtil.SetFreeCameraSpeed(Config.AutoSUCSM)
+		EndIf
+
 		; COMEBACK: Might wanna move this someplace else
 		; NOTE: Currently this is in the Prepare() function on the alias script
 		; Wanna find some proper structure once Im done with all this zzzz
@@ -1911,6 +1933,10 @@ Function UnplaceActors()
 		ActorAlias[i].SendDefaultAnimEvent()
 		i += 1
 	EndWhile
+EndFunction
+
+Function LogRedundant(String asFunction)
+	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -1938,6 +1964,18 @@ float Function GetTime()
 endfunction
 Function SetBedding(int flag = 0)
 	SetBedFlag(flag)
+EndFunction
+
+Function RemoveFade()
+	if HasPlayer
+		Config.RemoveFade()
+	endIf
+EndFunction
+
+Function ApplyFade()
+	if HasPlayer
+		Config.ApplyFade()
+	endIf
 EndFunction
 
 bool Function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppress = false)
@@ -2175,4 +2213,3 @@ int Function FilterAnimations()
 	endIf
 	return 0
 EndFunction
-

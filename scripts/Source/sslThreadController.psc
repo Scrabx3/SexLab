@@ -9,7 +9,6 @@ import PapyrusUtil
 float SkillTime
 
 ; SFX
-float BaseDelay
 float SFXDelay
 float SFXTimer
 
@@ -70,7 +69,7 @@ state Animating
 		; Prepare loop
 		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
 		SoundFX  = Animation.GetSoundFX(Stage)
-		SFXDelay = ClampFloat(BaseDelay - ((Stage * 0.3) * ((Stage != 1) as int)), 0.5, 30.0)
+		SFXDelay = ClampFloat(Config.SFXDelay - ((Stage * 0.3) * ((Stage != 1) as int)), 0.5, 30.0)
 		ResolveTimers()
 		PlayStageAnimations()
 		; Send events
@@ -832,6 +831,25 @@ state Frozen
 	EndFunction
 endState
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+; TEMPORARY
+; TODO: Move this stuff into parent
+Function SetTimeThings()
+	RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
+	SkillTime = RealTime[0]
+	StartedAt = RealTime[0]
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- System Use Only                                 --- ;
 ; ------------------------------------------------------- ;
@@ -1067,64 +1085,14 @@ EndFunction /;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 State Prepare
-	Event OnBeginState()
-		HookAnimationPrepare()
-		if !CenterRef
-			CenterOnObject(Positions[0], false)
-		endIf
-		; Set important vars needed for actor prep
-		UpdateAdjustKey()
-		if StartingAnimation && Animations.Find(StartingAnimation) != -1
-			SetAnimation(Animations.Find(StartingAnimation))
-		else
-			SetAnimation()
-			StartingAnimation = none
-		endIf
-		Log(AdjustKey, "Adjustment Profile")
-		; Begin actor prep
-		SyncEvent(kPrepareActor, 40.0)
+	Event FireAction()
+		LogRedundant("FireAction")
 	EndEvent
-
-	; The SyncEvent() call will callback into this once all Sync calls have processed
 	Event PrepareDone()
-		; Reset loc, incase actor type center has moved during prep
-		;/ if CenterRef && CenterRef.Is3DLoaded() && SexLabUtil.IsActor(CenterRef) && Positions.Find(CenterRef as Actor) != -1
-			CenterLocation[0] = CenterRef.GetPositionX()
-			CenterLocation[1] = CenterRef.GetPositionY()
-			; CenterLocation[2] = CenterRef.GetPositionZ()
-			CenterLocation[3] = CenterRef.GetAngleX()
-			CenterLocation[4] = CenterRef.GetAngleY()
-			CenterLocation[5] = CenterRef.GetAngleZ()
-		endIf /;
-		; Set starting adjusted actor
-		int AdjustPos = Positions.Find(Config.TargetRef)
-		if AdjustPos == -1
-			AdjustPos   = (ActorCount > 1) as int
-			if Positions[AdjustPos] != PlayerRef
-				Config.TargetRef = Positions[AdjustPos]
-			endIf
-		endIf
-		AdjustAlias = PositionAlias(AdjustPos)
-		; Get localized config options
-		BaseDelay = Config.SFXDelay
-		; Send starter events
-		SendThreadEvent("AnimationStart")
-		if LeadIn
-			SendThreadEvent("LeadInStart")
-		endIf
-		; Start time trackers
-		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
-		SkillTime = RealTime[0]
-		StartedAt = RealTime[0]
-		; Start actor loops
-		SyncEvent(kStartup, 10.0)
+		LogRedundant("PrepareDone")
 	EndEvent
-
-	; Same as above, but this time for 'kStartup'
-	; Doing the actual placement here with animation being called in 'advancing'
 	Event StartupDone()
-		PlaceActors()
-		GoToState("Advancing")
+		LogRedundant("StartupDone")
 	EndEvent
 
 	Function PlayStageAnimations()
