@@ -8,6 +8,8 @@ bool Function MatchTags(String[] asTags, String[] asMatch) global native
 
 Ammo Function GetEquippedAmmo(Actor akActor) global native
 
+Spell Function GetHDTHeelSpell(Actor akActor) global native
+
 ;	Scan the area for bed furnitue objects and return all objects found
 ; --- Params
 ; akCenterRef: 	The center from which to search

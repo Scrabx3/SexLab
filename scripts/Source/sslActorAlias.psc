@@ -54,7 +54,6 @@ sslBaseExpression Expression
 sslBaseExpression[] Expressions
 
 ; Positioning
-ObjectReference MarkerRef
 float[] Offsets
 float[] Loc
 
@@ -85,11 +84,11 @@ Sound OrgasmFX
 Spell HDTHeelSpell
 Form HadBoots
 
-; Animation Position/Stage flags
+; Thread.Animation Position/Thread.Stage flags
 bool property ForceOpenMouth auto hidden
 bool property OpenMouth hidden
 	bool function get()
-		return Flags[1] == 1 || ForceOpenMouth == true ; This is for compatibility reasons because mods like DDi realy need it.
+		return Flags[1] == 1 || ForceOpenMouth ; This is for compatibility reasons because mods like DDi realy need it.
 	endFunction
 endProperty
 bool property IsSilent hidden
@@ -222,17 +221,13 @@ bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoic
 		float ActorScalePlus
 		if Config.RaceAdjustments
 			ActorScalePlus = BaseRef.GetHeight()
-		;	Log(self, "GetRaceScale("+ActorScalePlus+")")
 		else
 			ActorScalePlus = ActorRef.GetScale()
-		;	Log(self, "GetScale("+ActorScalePlus+")")
 		endIf
 		if NioScale > 0.0 && NioScale != 1.0
 			ActorScalePlus = ActorScalePlus * NioScale
 		endIf
-	;	Log(self, "ActorScalePlus("+ActorScalePlus+")")
 		ActorScalePlus = ((ActorScalePlus * 25) + 0.5) as int
-	;	Log(self, "ActorScalePlus("+ActorScalePlus+")")
 		if ActorScalePlus != 25.0
 			ActorKeyStr += ActorScalePlus as int
 		endIf
@@ -249,7 +244,7 @@ bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoic
 	ExpressionDelay = Config.ExpressionDelay * BaseDelay
 	; Init some needed arrays
 	Flags   = new int[5]
-	Offsets = new float[4]
+	; Offsets = new float[4]
 	Loc     = new float[6]
 	; Ready
 	RegisterEvents()
@@ -300,9 +295,7 @@ function ClearAlias()
 endFunction
 
 ; Thread/alias shares
-int Stage
-int StageCount
-sslBaseAnimation Animation
+sslBaseAnimation Thread.Animation
 
 ; ------------------------------------------------------- ;
 ; --- Actor Prepartion                                --- ;
@@ -331,33 +324,6 @@ State Ready
 		IsAggressor = Thread.VictimRef && Thread.Victims.Find(ActorRef) == -1
 		string LogInfo
 
-		; !IMPORTANT TODO: Move this into the actual starting code
-		; Calculate scales
-		; if !Config.DisableScale
-		; 	Thread.ApplyFade()
-		; 	float display = ActorRef.GetScale()
-		; 	ActorRef.SetScale(1.0)
-		; 	float base = ActorRef.GetScale()
-		; 	ActorScale = ( display / base )
-		; 	AnimScale  = ActorScale
-		; 	if ActorScale > 0.0 && ActorScale != 1.0
-		; 		ActorRef.SetScale(ActorScale)
-		; 	endIf
-		; 	float FixNioScale = 1.0
-		; 	if (Thread.ActorCount > 1 || Thread.BedStatus[1] >= 4) && Config.ScaleActors
-		; 		if Config.HasNiOverride && !IsCreature && NioScale > 0.0 && NioScale != 1.0
-		; 			FixNioScale = (FixNioScale / NioScale)
-		; 			NiOverride.AddNodeTransformScale(ActorRef, False, isRealFemale, "NPC", "SexLab.esm",FixNioScale)
-		; 			NiOverride.UpdateNodeTransform(ActorRef, False, isRealFemale, "NPC")
-		; 		endIf
-		; 		AnimScale = (1.0 / base)
-		; 	endIf
-		; 	LogInfo = "Scales["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"] "
-		; else
-		; 	AnimScale = 1.0
-		; 	LogInfo = "Scales["+ActorRef.GetScale()+"/DISABLED/DISABLED/DISABLED/DISABLED/"+NioScale+"] "
-		; endIf
-
 		; Pick a voice if needed
 		if !Voice && !IsForcedSilent
 			if IsCreature
@@ -380,17 +346,6 @@ State Ready
 					Strapon = Config.GetStrapon()
 				EndIf
 			EndIf
-			Strip()
-			ResolveStrapon()
-			Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
-			; Remove HDT High Heels	 COMEBACK: This here should be moved into a dll func
-			; if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
-			; 	HDTHeelSpell = Config.GetHDTSpell(ActorRef)
-			; 	if HDTHeelSpell
-			; 		Log(HDTHeelSpell, "RemoveHeelEffect (HDTHeelSpell)")
-			; 		ActorRef.RemoveSpell(HDTHeelSpell)
-			; 	endIf
-			; endIf
 			; Pick an expression if needed
 			if !Expression && Config.UseExpressions
 				Expressions = Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim, Thread.IsType[0] && !IsVictim)
@@ -409,17 +364,6 @@ State Ready
 		If(DoPathToCenter)
 			PathToCenter() ; latent until in position/timeout
 		EndIf
-		; Play custom starting animation event
-		; COMEBACK: Might want to remove this. Cant really make out why anyone would want to use this
-		; Perhaps this could be used to push a clean strip animation?
-		; If(StartAnimEvent != "")
-		; 	Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
-		; 	If(StartWait < 0.1)
-		; 		Utility.Wait(0.1)
-		; 	Else
-		; 		Utility.Wait(StartWait)
-		; 	EndIf
-		; EndIf
 		Thread.SyncEventDone(kPrepareActor)
 
 		; --- Ready to animate --- Misc Data below ---
@@ -447,7 +391,7 @@ State Ready
 				FirsStageTime = Config.StageTimer[0]
 			endIf
 			; COMEBACK: Enjoyment should prolly get a full on rework or smth, i really dunno why or how or what here
-			BaseEnjoyment -= Math.Abs(CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, IsFemale, FirsStageTime, 1, StageCount)) as int
+			BaseEnjoyment -= Math.Abs(CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, IsFemale, FirsStageTime, 1, Thread.Animation.StageCount)) as int
 			if BaseEnjoyment < -5
 				BaseEnjoyment += 10
 			endIf
@@ -579,31 +523,14 @@ State Ready
 endState
 
 ; ------------------------------------------------------- ;
-; --- Animation Loop                                  --- ;
+; --- Thread.Animation Loop                                  --- ;
 ; ------------------------------------------------------- ;
 
 
 function SendAnimation()
 endFunction
 
-function GetPositionInfo()
-	if ActorRef
-		Stage      = Thread.Stage
-		Animation  = Thread.Animation
-		StageCount = Animation.StageCount
-		if Stage > StageCount
-			return
-		endIf
-		;	Log("Animation:"+Animation.Name+" AdjustKey:"+Thread.AdjustKey+" Position:"+Position+" Stage:"+Stage)
-		Flags     = Animation.PositionFlags(Flags, Thread.AdjustKey, Position, Stage)
-		Offsets   = Animation.PositionOffsets(Offsets, Thread.AdjustKey, Position, Stage, Thread.BedStatus[1])
-		CurrentSA = Animation.Registry
-		; Thread.AnimEvents[Position] = Animation.FetchPositionStage(Position, Stage)
-	endIf
-endFunction
-
 string PlayingSA
-string CurrentSA
 string PlayingAE
 string CurrentAE
 float LoopDelay
@@ -613,8 +540,8 @@ state Animating
 		; StopAnimating(true)	; Why?
 		StartedAt  = SexLabUtil.GetCurrentGameRealTime()
 		LastOrgasm = StartedAt
-		PlayingSA = Animation.Registry
-		SyncAll(true)
+		PlayingSA = Thread.Animation.Registry
+		SyncThread()
 		RegisterForSingleUpdate(Utility.RandomFloat(1.0, 3.0))
 	EndEvent
 
@@ -623,26 +550,26 @@ state Animating
 	function SendAnimation()
 		CurrentAE = Thread.AnimEvents[Position]
 		; Reenter SA - On stage 1 while animation hasn't changed since last call
-		if Stage == 1 && (PlayingAE != CurrentAE || PlayingSA == CurrentSA)
+		if Thread.Stage == 1 && (PlayingAE != CurrentAE || PlayingSA == Thread.Animation.Registry)
 			SendDefaultAnimEvent()
 		;	Utility.WaitMenuMode(0.2)
-			Debug.SendAnimationEvent(ActorRef, Animation.FetchPositionStage(Position, 1))
-			; Debug.SendAnimationEvent(ActorRef, Animation.FetchPositionStage(Position, 1)+"_REENTER")
+			Debug.SendAnimationEvent(ActorRef, Thread.Animation.FetchPositionStage(Position, 1))
+			; Debug.SendAnimationEvent(ActorRef, Thread.Animation.FetchPositionStage(Position, 1)+"_REENTER")
 		else
 			; Enter a new SA - Not necessary on stage 1 since both events would be the same
-			if Stage != 1 && PlayingSA != CurrentSA
+			if Thread.Stage != 1 && PlayingSA != Thread.Animation.Registry
 				; SendDefaultAnimEvent() ; To unequip the AnimObject TODO: Find better solution ; ?????????
 				Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
-				Debug.SendAnimationEvent(ActorRef, Animation.FetchPositionStage(Position, 1))
+				Debug.SendAnimationEvent(ActorRef, Thread.Animation.FetchPositionStage(Position, 1))
 				Utility.Wait(0.2)
-				; Log("NEW SA - "+Animation.FetchPositionStage(Position, 1))
+				; Log("NEW SA - "+Thread.Animation.FetchPositionStage(Position, 1))
 			endIf
 			; Play the primary animation
 		 	Debug.SendAnimationEvent(ActorRef, CurrentAE)
 		 	; Log(CurrentAE)
 		endIf
 		; Save id of last SA played
-		PlayingSA = Animation.Registry
+		PlayingSA = Thread.Animation.Registry
 		; Save id of last AE played
 		PlayingAE  = CurrentAE
 	endFunction
@@ -688,7 +615,7 @@ state Animating
 					RefreshExpression()
 				endIf
 				; Trigger orgasm
-				If(!NoOrgasm && Config.SeparateOrgasms && Strength >= 100 && Stage < StageCount)
+				If(!NoOrgasm && Config.SeparateOrgasms && Strength >= 100 && Thread.Stage < Thread.Animation.StageCount)
 					int cmp
 					If(sslActorKey.IsMale(_ActorKey))
 						cmp = 20
@@ -708,39 +635,27 @@ state Animating
 		endIf
 	endEvent
 
+	; Basically just an "update for current animation stage"
 	function SyncThread()
-		; Sync with thread info
-		GetPositionInfo()
+		Flags = Thread.Animation.PositionFlags(Flags, Thread.AdjustKey, Position, Thread.Stage)
+
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
-		if !IsSilent && Stage > 1
-			VoiceDelay -= (Stage * 0.8) + Utility.RandomFloat(-0.2, 0.4)
+		if !IsSilent && Thread.Stage > 1
+			VoiceDelay -= (Thread.Stage * 0.8) + Utility.RandomFloat(-0.2, 0.4)
 		endIf
 		if VoiceDelay < 0.8
 			VoiceDelay = Utility.RandomFloat(0.8, 1.4) ; Can't have delay shorter than animation update loop
 		endIf
 		; Update alias info
-	;	GetEnjoyment()
+		; GetEnjoyment()
 		; Sync status
 		if !IsCreature
-			ResolveStrapon()
+			; ResolveStrapon()
 			RefreshExpression()
 		endIf
 		Debug.SendAnimationEvent(ActorRef, "SOSBend"+Schlong)
 		; SyncLocation(false)
-	endFunction
-
-	; Event called when animation is advancing to a new stage
-	function SyncActor()
-		SyncThread()
-		; SyncLocation(false)
-		Thread.SyncEventDone(kSyncActor)
-	endFunction
-
-	; TODO: Check when and why this is called. May want to call native SetPositions() from whatever calls this
-	function SyncAll(bool Force = false)
-		SyncThread()
-		; SyncLocation(Force)
 	endFunction
 
 	; TODO: Check when and why this is called. May want to call native SetPositions() from whatever calls this
@@ -749,15 +664,13 @@ state Animating
 		SyncThread()
 		StopAnimating(true)
 		; SyncLocation(false)
-		CurrentSA = "SexLabSequenceExit1"
 		CurrentAE = PlayingSA
 		Debug.SendAnimationEvent(ActorRef, CurrentAE)
 		SendDefaultAnimEvent()
 		Utility.WaitMenuMode(0.2)
-		CurrentSA = Animation.Registry
-		CurrentAE = Animation.FetchPositionStage(Position, 1)
+		CurrentAE = Thread.Animation.FetchPositionStage(Position, 1)
 		Debug.SendAnimationEvent(ActorRef, CurrentAE)
-		PlayingSA = CurrentSA
+		PlayingSA = Thread.Animation.Registry
 		PlayingAE = CurrentAE
 		; SyncLocation(true)
 		SendAnimation()
@@ -765,56 +678,10 @@ state Animating
 		Thread.SyncEventDone(kRefreshActor)
 	endFunction
 
-	function RefreshLoc()
-		Offsets = Animation.PositionOffsets(Offsets, Thread.AdjustKey, Position, Stage, Thread.BedStatus[1])
+	function RefreshLoc()	; COMEBACK: Call "SetPositions" again with the new offset data
+		; Offsets = Thread.Animation.PositionOffsets(Offsets, Thread.AdjustKey, Position, Thread.Stage, Thread.BedStatus[1])
 		; SyncLocation(true)
 	endFunction
-
-	; function SyncLocation(bool Force = false)
-	; 	OffsetCoords(Loc, Center, Offsets)
-	; 	MarkerRef.SetPosition(Loc[0], Loc[1], Loc[2])
-	; 	MarkerRef.SetAngle(Loc[3], Loc[4], Loc[5])
-	; 	; Avoid forcibly setting on player coords if avoidable - causes annoying graphical flickering
-	; 	if Force && IsPlayer && IsInPosition(ActorRef, MarkerRef, 40.0)
-	; 		AttachMarker()
-	; 		ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5], 50000, 0)
-	; 		return ; OnTranslationComplete() will take over when in place
-	; 	elseIf Force
-	; 		ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
-	; 		ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
-	; 	endIf
-	; 	AttachMarker()
-	; 	Snap()
-	; endFunction
-
-	; function Snap()
-	; 	if !(ActorRef && ActorRef.Is3DLoaded())
-	; 		return
-	; 	endIf
-	; 	; Quickly move into place and angle if actor is off by a lot
-	; 	float distance = ActorRef.GetDistance(MarkerRef)
-	; 	if distance > 125.0 || !IsInPosition(ActorRef, MarkerRef, 75.0)
-	; 		ActorRef.SetPosition(Loc[0], Loc[1], Loc[2])
-	; 		ActorRef.SetAngle(Loc[3], Loc[4], Loc[5])
-	; 		AttachMarker()
-	; 	elseIf distance > 2.0
-	; 		ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5], 50000, 0.0)
-	; 		return ; OnTranslationComplete() will take over when in place
-	; 	endIf
-	; 	; Begin very slowly rotating a small amount to hold position
-	; 	ActorRef.TranslateTo(Loc[0], Loc[1], Loc[2], Loc[3], Loc[4], Loc[5]+0.01, 500.0, 0.0001)
-	; endFunction
-
-	; TODO: Check when and why this is called. May want to call native SetPositions() from whatever calls this
-	event OnTranslationComplete()
-		; Log("OnTranslationComplete")
-		; Snap()
-	endEvent
-
-	;/ event OnTranslationFailed()
-		Log("OnTranslationFailed")
-		; SyncLocation(false)
-	endEvent /;
 
 	function OrgasmEffect()
 		DoOrgasm()
@@ -838,11 +705,11 @@ state Animating
 
 		; Check if the animation allow Orgasm. By default all the animations with a CumID>0 are type SEX and allow orgasm 
 		; But the Lesbian Animations usually don't have CumId assigned and still the orgasm should be allowed at least for Females.
-		bool CanOrgasm = Forced || ((IsFemale || IsFuta) && (Animation.HasTag("Lesbian") || Animation.Females == Animation.PositionCount))
+		bool CanOrgasm = Forced || ((IsFemale || IsFuta) && (Thread.Animation.HasTag("Lesbian") || Thread.Animation.Females == Thread.Animation.PositionCount))
 		int i = Thread.ActorCount
 		while !CanOrgasm && i > 0
 			i -= 1
-			CanOrgasm = Animation.GetCumID(i, Stage) > 0 || Animation.GetCum(i) > 0
+			CanOrgasm = Thread.Animation.GetCumID(i, Thread.Stage) > 0 || Thread.Animation.GetCum(i) > 0
 		endWhile
 		if !CanOrgasm
 			; Orgasm Disabled for the animation
@@ -851,7 +718,7 @@ state Animating
 
 		; Check Separate Orgasm conditions 
 		if !Forced && Config.SeparateOrgasms
-			if Enjoyment < 100 && (Stage < StageCount || Orgasms > 0)
+			if Enjoyment < 100 && (Thread.Stage < Thread.Animation.StageCount || Orgasms > 0)
 				; Prevent the orgasm with low enjoyment at least the last stage be reached without orgasms
 				return
 			endIf
@@ -859,14 +726,14 @@ state Animating
 			i = Thread.ActorCount
 			while !IsCumSource && i > 0
 				i -= 1
-				IsCumSource = Animation.GetCumSource(i, Stage) == Position
+				IsCumSource = Thread.Animation.GetCumSource(i, Thread.Stage) == Position
 			endWhile
 			if !IsCumSource
-				if IsFuta && !(Animation.HasTag("Anal") || Animation.HasTag("Vaginal") || Animation.HasTag("Pussy") || Animation.HasTag("Cunnilingus") || Animation.HasTag("Fisting") || Animation.HasTag("Handjob") || Animation.HasTag("Blowjob") || Animation.HasTag("Boobjob") || Animation.HasTag("Footjob") || Animation.HasTag("Penis"))
+				if IsFuta && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Pussy") || Thread.Animation.HasTag("Cunnilingus") || Thread.Animation.HasTag("Fisting") || Thread.Animation.HasTag("Handjob") || Thread.Animation.HasTag("Blowjob") || Thread.Animation.HasTag("Boobjob") || Thread.Animation.HasTag("Footjob") || Thread.Animation.HasTag("Penis"))
 					return
-				elseIf IsMale && !(Animation.HasTag("Anal") || Animation.HasTag("Vaginal") || Animation.HasTag("Handjob") || Animation.HasTag("Blowjob") || Animation.HasTag("Boobjob") || Animation.HasTag("Footjob") || Animation.HasTag("Penis"))
+				elseIf IsMale && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Handjob") || Thread.Animation.HasTag("Blowjob") || Thread.Animation.HasTag("Boobjob") || Thread.Animation.HasTag("Footjob") || Thread.Animation.HasTag("Penis"))
 					return
-				elseIf IsFemale && !(Animation.HasTag("Anal") || Animation.HasTag("Vaginal") || Animation.HasTag("Pussy") || Animation.HasTag("Cunnilingus") || Animation.HasTag("Fisting") || Animation.HasTag("Breast"))
+				elseIf IsFemale && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Pussy") || Thread.Animation.HasTag("Cunnilingus") || Thread.Animation.HasTag("Fisting") || Thread.Animation.HasTag("Breast"))
 					return
 				endIf
 			endIf
@@ -901,7 +768,7 @@ state Animating
 			else
 				while i > 0
 					i -= 1
-					if Position != i && Position < Animation.PositionCount && Animation.IsCumSource(Position, i, Stage)
+					if Position != i && Position < Thread.Animation.PositionCount && Thread.Animation.IsCumSource(Position, i, Thread.Stage)
 						Thread.PositionAlias(i).ApplyCum()
 					endIf
 				endWhile
@@ -958,12 +825,12 @@ state Animating
 			endIf
 		endIf
 		; Apply cum
-		;/ int CumID = Animation.GetCum(Position)
+		;/ int CumID = Thread.Animation.GetCum(Position)
 		if CumID > 0 && !Thread.FastEnd && Config.UseCum && (Thread.Males > 0 || Config.AllowFFCum || Thread.HasCreature)
 			ActorLib.ApplyCum(ActorRef, CumID)
 		endIf /;
 		; Make sure of play the last animation stage to prevet AnimObject issues
-		CurrentAE = Animation.FetchPositionStage(Position, StageCount)
+		CurrentAE = Thread.Animation.FetchPositionStage(Position, Thread.Animation.StageCount)
 		if PlayingAE != CurrentAE
 			Debug.SendAnimationEvent(ActorRef, CurrentAE)
 		;	Utility.WaitMenuMode(0.2)
@@ -998,6 +865,24 @@ state Animating
 		GoToState("")
 		Thread.SyncEventDone(kResetActor)
 	endEvent
+
+	; --- LEGACY
+	function SyncLocation(bool Force = false)	; COMEBACK: Add SetPositions() call in here
+	endFunction
+
+	function Snap()	; COMEBACK: Add SetPositions() call in here
+	endFunction
+	
+	event OnTranslationComplete()
+		Snap()
+	endEvent
+
+	function SyncActor()
+		SyncThread()
+	endFunction
+	function SyncAll(bool Force = false)
+		SyncThread()
+	endFunction
 endState
 
 state Resetting
@@ -1029,17 +914,17 @@ function StopAnimating(bool Quick = false, string ResetAnim = "IdleForceDefaultS
 	ActorRef.StopTranslation()
 	bool Resetting = GetState() == "Resetting" || !Quick
 	if Resetting
-		int StageOffset = Stage
-		if StageOffset > StageCount
-			StageOffset = StageCount
+		int StageOffset = Thread.Stage
+		if StageOffset > Thread.Animation.StageCount
+			StageOffset = Thread.Animation.StageCount
 		endIf
-		if Thread.AdjustKey != ""
-			Offsets    = Animation.PositionOffsets(Offsets, Thread.AdjustKey, Position, StageOffset, Thread.BedStatus[1])
-		endIf
-		float OffsetZ = 10.0
-		if Offsets[2] < 1.0 ; Fix for animation default missaligned 
-			Offsets[2] = OffsetZ ; hopefully prevents some users underground/teleport to giant camp problem?
-		endIf
+		; if Thread.AdjustKey != ""
+			; Offsets    = Thread.Animation.PositionOffsets(Offsets, Thread.AdjustKey, Position, StageOffset, Thread.BedStatus[1])
+		; endIf
+		; float OffsetZ = 10.0
+		; if Offsets[2] < 1.0 ; Fix for animation default missaligned 
+		; 	Offsets[2] = OffsetZ ; hopefully prevents some users underground/teleport to giant camp problem?
+		; endIf
 		; OffsetCoords(Loc, Center, Offsets)	; COMEBACK: Why
 		float PositionX = ActorRef.GetPositionX()
 		float PositionY = ActorRef.GetPositionY()
@@ -1100,17 +985,17 @@ function StopAnimating(bool Quick = false, string ResetAnim = "IdleForceDefaultS
 		elseIf Quick
 			Debug.SendAnimationEvent(ActorRef, ResetAnim)
 		elseIf !Quick && ResetAnim == "IdleForceDefaultState" && DoRagdoll && !usesfreecam
-			;TODO: Detect the real actor position based on Node property intead of the Animation Tags
+			;TODO: Detect the real actor position based on Node property intead of the Thread.Animation Tags
 			if ActorRef.IsDead() || ActorRef.IsUnconscious()
 				Debug.SendAnimationEvent(ActorRef, ResetAnim)
 				Utility.Wait(0.1)
 				Debug.SendAnimationEvent(ActorRef, "IdleSoupDeath")
 			elseIf ActorRef.GetActorValuePercentage("Health") < 0.1
 				ActorRef.KillSilent()
-			elseIf Animation && (Animation.HasTag("Furniture") || (Animation.HasTag("Standing") && !Thread.IsType[0]))
+			elseIf Thread.Animation && (Thread.Animation.HasTag("Furniture") || (Thread.Animation.HasTag("Standing") && !Thread.IsType[0]))
 				Debug.SendAnimationEvent(ActorRef, ResetAnim)
-			elseIf Thread.IsType[0] && IsVictim && Animation && Animation.HasTag("Rape") && !Animation.HasTag("Standing") && \
-				!usesfreecam && (Animation.HasTag("DoggyStyle") || Animation.HasTag("Missionary") || Animation.HasTag("Laying"))
+			elseIf Thread.IsType[0] && IsVictim && Thread.Animation && Thread.Animation.HasTag("Rape") && !Thread.Animation.HasTag("Standing") && \
+				!usesfreecam && (Thread.Animation.HasTag("DoggyStyle") || Thread.Animation.HasTag("Missionary") || Thread.Animation.HasTag("Laying"))
 				ActorRef.PushActorAway(ActorRef, 0.001)
 			else
 				Debug.SendAnimationEvent(ActorRef, ResetAnim)
@@ -1122,212 +1007,6 @@ function StopAnimating(bool Quick = false, string ResetAnim = "IdleForceDefaultS
 	;	Log(ActorName +"- Angle:[X:"+ActorRef.GetAngleX()+"Y:"+ActorRef.GetAngleY()+"Z:"+ActorRef.GetAngleZ()+"] Position:[X:"+ActorRef.GetPositionX()+"Y:"+ActorRef.GetPositionY()+"Z:"+ActorRef.GetPositionZ()+"]", "StopAnimating("+Quick+")")
 	PlayingSA = "SexLabSequenceExit1"
 	PlayingAE = "SexLabSequenceExit1"
-endFunction
-
-function SendDefaultAnimEvent(bool Exit = False)
-	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
-	if !IsCreature
-		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
-		Utility.Wait(0.1)
-	elseIf ActorRaceKey != ""
-		if ActorRaceKey == "Dragons"
-			Debug.SendAnimationEvent(ActorRef, "FlyStopDefault") ; for Dragons only
-			Utility.Wait(0.1)
-			Debug.SendAnimationEvent(ActorRef, "Reset") ; for Dragons only
-		elseIf ActorRaceKey == "Hagravens"
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; for Dragons only
-			Utility.Wait(0.1)
-			if Exit
-				Debug.SendAnimationEvent(ActorRef, "Reset") ; for Dragons only
-			endIf
-		elseIf ActorRaceKey == "Chaurus" || ActorRaceKey == "ChaurusReapers"
-			Debug.SendAnimationEvent(ActorRef, "FNISDefault") ; for dwarvenspider and chaurus without time bettwen.
-			Utility.Wait(0.1)
-			if Exit
-		;		Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-			endIf
-		elseIf ActorRaceKey == "DwarvenSpiders"
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-			Utility.Wait(0.1)
-			if Exit
-		;		Debug.SendAnimationEvent(ActorRef, "FNISDefault") ; for dwarvenspider and chaurus
-			endIf
-		elseIf ActorRaceKey == "Draugrs" || ActorRaceKey == "Seekers" || ActorRaceKey == "DwarvenBallistas" || ActorRaceKey == "DwarvenSpheres" || ActorRaceKey == "DwarvenCenturions"
-			Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; for draugr, trolls daedras and all dwarven exept spiders
-		elseIf ActorRaceKey == "Trolls"
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-			Utility.Wait(0.1)
-			if Exit
-				Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; the troll need this afther "ReturnToDefault" to allow the attack idles
-			endIf
-		elseIf ActorRaceKey == "Chickens" || ActorRaceKey == "Rabbits" || ActorRaceKey == "Slaughterfishes"
-			Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") ; for chicken, hare and slaughterfish
-			Utility.Wait(0.1)
-			if Exit
-				Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-			endIf
-		elseIf ActorRaceKey == "Werewolves" || ActorRaceKey == "VampireLords"
-			Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; for Werewolves and VampirwLords
-			Utility.Wait(0.1)
-		else
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; the rest creature-animal
-			Utility.Wait(0.1)
-		endIf
-	elseIf Exit
-		Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") ; for chicken, hare and slaughterfish before the "ReturnToDefault"
-		Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; the rest creature-animal
-		Debug.SendAnimationEvent(ActorRef, "FNISDefault") ; for dwarvenspider and chaurus
-		Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; for Werewolves and VampirwLords
-		Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; for Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
-		Debug.SendAnimationEvent(ActorRef, "Reset") ; for Hagravens afther the "ReturnToDefault" and Dragons
-		Utility.Wait(0.1)
-	endIf
-	; Utility.Wait(0.2)
-endFunction
-
-
-function LockActor()
-	if !ActorRef
-		Log(ActorName +"- WARNING: ActorRef if Missing or Invalid", "LockActor()")
-		return
-	endIf
-	; Move if actor out of cell
-	; ObjectReference CenterRef = Thread.CenterAlias.GetReference()
-	; if CenterRef && CenterRef != none && CenterRef != ActorRef as ObjectReference && ActorRef.GetDistance(CenterRef) > 3000
-	; 	ActorRef.MoveTo(CenterRef)
-	; endIf
-	; Remove any unwanted combat effects
-	ClearEffects()
-	; Stop whatever they are doing
-	; SendDefaultAnimEvent()
-	; Start DoNothing package
-	ActorRef.SetFactionRank(AnimatingFaction, 1)
-	; ActorUtil.AddPackageOverride(ActorRef, Config.DoNothing, 100, 1)
-	; ActorRef.SetFactionRank(AnimatingFaction, 1)
-	; ActorRef.EvaluatePackage()
-	; Disable movement
-	ActorRef.StopTranslation()
-	if ActorRef == PlayerRef
-		if Game.GetCameraState() == 0
-			Game.ForceThirdPerson()
-		endIf
-		; abMovement = true, abFighting = true, abCamSwitch = false, abLooking = false, abSneaking = false, abMenu = true, abActivate = true, abJournalTabs = false, aiDisablePOVType = 0
-		; Game.DisablePlayerControls(true, true, false, false, false, false, false, false, 0)	; Unnecessary
-		Game.SetPlayerAIDriven()
-		; UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", false)								; COMEBACK: Not sure if we want this or nah
-		; Enable hotkeys if needed, and disable autoadvance if not needed
-		if IsVictim && Config.DisablePlayer
-			Thread.AutoAdvance = true
-		else
-			Thread.AutoAdvance = Config.AutoAdvance
-			Thread.EnableHotkeys()
-		endIf
-	else
-		ActorRef.SetRestrained(true)
-		; ActorRef.SetDontMove(true)		; unnecessary
-		; Start DoNothing package	-- Dont do this for the player
-		ActorUtil.AddPackageOverride(ActorRef, Config.DoNothing, 100, 1)
-		ActorRef.EvaluatePackage()
-	endIf
-	; _Positions_var[i].SetAnimationVariableBool("bHumanoidFootIKDisable", true)	; COMEBACK: Necessary?
-	; Attach positioning marker				; Unified marker stored in main script
-	; if !MarkerRef
-	; 	MarkerRef = ActorRef.PlaceAtMe(Config.BaseMarker)
-	; 	int cycle											; All this is pointless
-	; 	while !MarkerRef.Is3DLoaded() && cycle < 50
-	; 		Utility.Wait(0.1)
-	; 		cycle += 1
-	; 	endWhile
-	; 	if cycle
-	; 		Log("Waited ["+cycle+"] cycles for MarkerRef["+MarkerRef+"]")
-	; 	endIf
-	; endIf
-	; MarkerRef.Enable()					; Done by main script
-	; ActorRef.StopTranslation()	; We already did this
-	; MarkerRef.MoveTo(ActorRef)	; Done by main script
-	; AttachMarker()
-endFunction
-
-function UnlockActor()
-	if !ActorRef
-		Log(ActorName +"- WARNING: ActorRef if Missing or Invalid", "UnlockActor()")
-		return
-	endIf
-	; Detach positioning marker
-	; ActorRef.StopTranslation()
-	; ActorRef.SetVehicle(none)
-	; Remove from animation faction	-- ???? Remove and then add again? COMEBACK: Find out tf is going on here
-	ActorRef.RemoveFromFaction(AnimatingFaction)
-	ActorRef.SetFactionRank(AnimatingFaction, 0)
-	; Enable movement
-	if ActorRef == PlayerRef
-		Thread.RemoveFade()
-		Thread.DisableHotkeys()
-		MiscUtil.SetFreeCameraState(false)
-		; Game.EnablePlayerControls(true, true, false, false, false, false, false, false, 0)
-		Game.SetPlayerAIDriven(false)
-    ; UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", true)	; COMEBACK: Not sure if we want this or nah
-	else
-		ActorUtil.RemovePackageOverride(ActorRef, Config.DoNothing)
-		ActorRef.EvaluatePackage()
-		ActorRef.SetRestrained(false)
-		; ActorRef.SetDontMove(false)
-	endIf
-	; _Positions_var[i].SetAnimationVariableBool("bHumanoidFootIKDisable", false)	; COMEBACK: Necessary?
-	;	Log(ActorName +"- Angle:[X:"+ActorRef.GetAngleX()+"Y:"+ActorRef.GetAngleY()+"Z:"+ActorRef.GetAngleZ()+"] Position:[X:"+ActorRef.GetPositionX()+"Y:"+ActorRef.GetPositionY()+"Z:"+ActorRef.GetPositionZ()+"]", "UnlockActor()")
-endFunction
-
-function RestoreActorDefaults()
-	; Make sure  have actor, can't afford to miss this block
-	if !ActorRef
-		ActorRef = GetReference() as Actor
-		if !ActorRef
-			Log(ActorName +"- WARNING: ActorRef if Missing or Invalid", "RestoreActorDefaults()")
-			return ; No actor, reset prematurely or bad call to alias
-		endIf
-	endIf	
-	; Reset to starting scale
-	if !Config.DisableScale && ActorScale > 0.0 && (ActorScale != 1.0 || AnimScale != 1.0)
-		ActorRef.SetScale(ActorScale)
-	endIf
-	if !IsCreature
-		; Reset voicetype
-		; if ActorVoice && ActorVoice != BaseRef.GetVoiceType()
-		; 	BaseRef.SetVoiceType(ActorVoice)
-		; endIf
-		; Remove strapon
-		if Strapon && !HadStrapon; && Strapon != HadStrapon
-			ActorRef.RemoveItem(Strapon, 1, true)
-		endIf
-		; Reset expression
-		if ActorRef.Is3DLoaded() && !(ActorRef.IsDisabled() || ActorRef.IsDead() || ActorRef.GetActorValue("Health") < 1.0)
-			if Expression
-				sslBaseExpression.CloseMouth(ActorRef)
-			elseIf sslBaseExpression.IsMouthOpen(ActorRef)
-				sslBaseExpression.CloseMouth(ActorRef)			
-			endIf
-			ActorRef.ClearExpressionOverride()
-			ActorRef.ResetExpressionOverrides()
-			sslBaseExpression.ClearMFG(ActorRef)
-		endIf
-	endIf
-	; Player specific actions
-	if ActorRef == PlayerRef
-		; Remove player from frostfall exposure exception
-		FormList FrostExceptions = Config.FrostExceptions
-		if FrostExceptions
-			FrostExceptions.RemoveAddedForm(Config.BaseMarker)
-		endIf
-		Thread.RemoveFade()
-	endIf
-	; Remove SOS erection
-	Debug.SendAnimationEvent(ActorRef, "SOSFlaccid")
-	; Clear from animating faction
-	ActorRef.SetFactionRank(AnimatingFaction, -1)
-	ActorRef.RemoveFromFaction(AnimatingFaction)
-	ActorUtil.RemovePackageOverride(ActorRef, Config.DoNothing)
-	ActorRef.EvaluatePackage()
-	;	Log(ActorName +"- Angle:[X:"+ActorRef.GetAngleX()+"Y:"+ActorRef.GetAngleY()+"Z:"+ActorRef.GetAngleZ()+"] Position:[X:"+ActorRef.GetPositionX()+"Y:"+ActorRef.GetPositionY()+"Z:"+ActorRef.GetPositionZ()+"]", "RestoreActorDefaults()")
 endFunction
 
 function RefreshActor()
@@ -1378,13 +1057,13 @@ int function GetEnjoyment()
 		FullEnjoyment = 0
 		return 0
 	elseif !IsSkilled
-		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((Thread.RealTime[0] - StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((Stage as float / StageCount as float) * 60.0)) as int
+		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((Thread.RealTime[0] - StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((Thread.Stage as float / Thread.Animation.StageCount as float) * 60.0)) as int
 	else
 		if Position == 0
 			Thread.RecordSkills()
 			Thread.SetBonuses()
 		endIf
-		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, IsFemale, (Thread.RealTime[0] - StartedAt), Stage, StageCount)
+		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, IsFemale, (Thread.RealTime[0] - StartedAt), Thread.Stage, Thread.Animation.StageCount)
 		; Log("FullEnjoyment["+FullEnjoyment+"] / BaseEnjoyment["+BaseEnjoyment+"] / Enjoyment["+(FullEnjoyment - BaseEnjoyment)+"]")
 	endIf
 
@@ -1423,7 +1102,7 @@ endFunction
 function ApplyCum()
 	if ActorRef && ActorRef.Is3DLoaded()
 		Cell ParentCell = ActorRef.GetParentCell()
-		int CumID = Animation.GetCumID(Position, Stage)
+		int CumID = Thread.Animation.GetCumID(Position, Thread.Stage)
 		if CumID > 0 && ParentCell && ParentCell.IsAttached() ; Error treatment for Spells out of Cell
 			ActorLib.ApplyCum(ActorRef, CumID)
 		endIf
@@ -1516,7 +1195,7 @@ Form function GetStrapon()
 endFunction
 
 bool function PregnancyRisk()
-	int cumID = Animation.GetCumID(Position, Stage)
+	int cumID = Thread.Animation.GetCumID(Position, Thread.Stage)
 	return cumID > 0 && (cumID == 1 || cumID == 4 || cumID == 5 || cumID == 7) && IsFemale && !MalePosition && Thread.IsVaginal
 endFunction
 
@@ -1760,7 +1439,6 @@ function ClearEffects()
 endFunction
 
 int property kPrepareActor = 0 autoreadonly hidden
-int property kSyncActor    = 1 autoreadonly hidden
 int property kResetActor   = 2 autoreadonly hidden
 int property kRefreshActor = 3 autoreadonly hidden
 int property kStartup      = 4 autoreadonly hidden
@@ -1806,14 +1484,8 @@ function Initialize()
 			ActorRef.RemoveItem(Config.NudeSuit, n, true)
 		endIf
 	endIf
-	; Delete positioning marker
-	if MarkerRef
-		MarkerRef.Disable()
-		MarkerRef.Delete()
-	endIf
 	; Forms
 	ActorRef       = none
-	MarkerRef      = none
 	HadStrapon     = none
 	Strapon        = none
 	HDTHeelSpell   = none
@@ -1842,13 +1514,12 @@ function Initialize()
 	ActorScale     = 1.0
 	AnimScale      = 1.0
 	NioScale       = 1.0
-	StartWait      = 0.1
+	StartWait      = 0.0
 	; Strings
 	EndAnimEvent   = "IdleForceDefaultState"
 	StartAnimEvent = ""
 	ActorKeyStr    = ""
 	PlayingSA      = ""
-	CurrentSA      = ""
 	PlayingAE      = ""
 	CurrentAE      = ""
 	; Storage
@@ -1907,8 +1578,6 @@ EndFunction
 ; Animating
 function StartAnimating()
 endFunction
-function SyncActor()
-endFunction
 function SyncThread()
 endFunction
 function SyncLocation(bool Force = false)
@@ -1925,8 +1594,6 @@ function DoOrgasm(bool Forced = false)
 endFunction
 event ResetActor()
 endEvent
-;/ function RefreshActor()
-endFunction /;
 event OnOrgasm()
 	OrgasmEffect()
 endEvent
@@ -1943,29 +1610,218 @@ int function IntIfElse(bool check, int isTrue, int isFalse)
 	return isFalse
 endfunction
 
-; function AdjustCoords(float[] Output, float[] CenterCoords, ) global native
-; function AdjustOffset(int i, float amount, bool backwards, bool adjustStage)
-; 	Animation.
-; endFunction
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; function OffsetBed(float[] Output, float[] BedOffsets, float CenterRot) global native
+function SendDefaultAnimEvent(bool Exit = False)
+	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
+	If(sslActorKey.IsCreature(_ActorKey))
+		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
+	ElseIf(ActorRaceKey != "")	; TODO: Relink this for ActorKey usage
+		if ActorRaceKey == "Dragons"
+			Debug.SendAnimationEvent(ActorRef, "FlyStopDefault") ; for Dragons only
+			Debug.SendAnimationEvent(ActorRef, "Reset") ; for Dragons only
+		elseIf ActorRaceKey == "Hagravens"
+			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; for Dragons only
+			if Exit
+				Debug.SendAnimationEvent(ActorRef, "Reset") ; for Dragons only
+			endIf
+		elseIf ActorRaceKey == "Chaurus" || ActorRaceKey == "ChaurusReapers"
+			Debug.SendAnimationEvent(ActorRef, "FNISDefault") ; for dwarvenspider and chaurus without time bettwen.
+		elseIf ActorRaceKey == "DwarvenSpiders"
+			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
+		elseIf ActorRaceKey == "Draugrs" || ActorRaceKey == "Seekers" || ActorRaceKey == "DwarvenBallistas" || ActorRaceKey == "DwarvenSpheres" || ActorRaceKey == "DwarvenCenturions"
+			Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; for draugr, trolls daedras and all dwarven exept spiders
+		elseIf ActorRaceKey == "Trolls"
+			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
+			if Exit
+				Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; the troll need this afther "ReturnToDefault" to allow the attack idles
+			endIf
+		elseIf ActorRaceKey == "Chickens" || ActorRaceKey == "Rabbits" || ActorRaceKey == "Slaughterfishes"
+			Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") ; for chicken, hare and slaughterfish
+			if Exit
+				Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
+			endIf
+		elseIf ActorRaceKey == "Werewolves" || ActorRaceKey == "VampireLords"
+			Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; for Werewolves and VampirwLords
+		else
+			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; the rest creature-animal
+		endIf
+	ElseIf(Exit)
+		Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") ; for chicken, hare and slaughterfish before the "ReturnToDefault"
+		Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; the rest creature-animal
+		Debug.SendAnimationEvent(ActorRef, "FNISDefault") ; for dwarvenspider and chaurus
+		Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; for Werewolves and VampirwLords
+		Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; for Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
+		Debug.SendAnimationEvent(ActorRef, "Reset") ; for Hagravens afther the "ReturnToDefault" and Dragons
+	EndIf
+endFunction
 
-; bool function _SetActor(Actor ProspectRef) native
-; function _ApplyExpression(Actor ProspectRef, int[] Presets) global native
+; Final preperations before an animation
+; Does NOT set the actors position, see main script for this
+float Function PlaceActor()
+	LockActor()
+	Strip()
+	ResolveStrapon()
+	Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
+	; Remove HDT High Heels
+	If(Config.RemoveHeelEffect)
+		HDTHeelSpell = sslpp.GetHDTHeelSpell(ActorRef)
+		If(HDTHeelSpell)
+			Log("Removing HDT Heel Effect: " + HDTHeelSpell)
+			ActorRef.RemoveSpell(HDTHeelSpell)
+		EndIf
+	EndIf
+	; Play custom starting animation event
+	If(StartAnimEvent != "")
+		Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
+	EndIf
+	return StartWait
+EndFunction
 
+; Main Script: PlaceActor() -> SetVehicle() -> ApplyScale()
+Function ApplyScale()
+	If(Config.DisableScale)
+		AnimScale = 1.0
+		return
+	EndIf
+	float display = ActorRef.GetScale()
+	ActorRef.SetScale(1.0)
+	float base = ActorRef.GetScale()
+	ActorScale = display / base
+	AnimScale  = ActorScale
+	If(ActorScale > 0.0 && ActorScale != 1.0)
+		ActorRef.SetScale(ActorScale)
+	EndIf
+	If(Thread.ActorCount > 1 && Config.ScaleActors)
+		If(Config.HasNiOverride && !IsCreature && NioScale > 0.0 && NioScale != 1.0)
+			bool purefemale = sslActorKey.IsFemalePure(_ActorKey)
+			float FixNioScale = FixNioScale / NioScale
+			NiOverride.AddNodeTransformScale(ActorRef, false, purefemale, "NPC", "SexLab.esm", FixNioScale)
+			NiOverride.UpdateNodeTransform(ActorRef, false, purefemale, "NPC")
+		EndIf
+		AnimScale = 1.0 / base
+	EndIf
+	Log("Applying Scale on Actor " + ActorRef + ": ["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"]")
+EndFunction
 
-; function GetVars()
-; 	IntShare = Thread.IntShare
-; 	FloatShare = Thread.FloatS1hare
-; 	StringShare = Thread.StringShare
-; 	BoolShare
-; endFunction
+Function UnplaceActor()
+	UnlockActor()
+	Unstrip()
+EndFunction
 
-; int[] property IntShare auto hidden ; Stage, ActorCount, Thread.BedStatus[1]
-; float[] property FloatShare auto hidden ; RealTime, StartedAt
-; string[] property StringShare auto hidden ; AdjustKey
-; bool[] property BoolShare auto hidden ; 
-; sslBaseAnimation[] property _Animation auto hidden ; Animation
+; Freeze this actor in place and stop them from moving
+Function LockActor()
+	ClearEffects()
+	ActorRef.StopTranslation()
+	ActorRef.SetFactionRank(AnimatingFaction, 1)
+	If(ActorRef == PlayerRef)
+		Game.SetPlayerAIDriven()
+		If(Game.GetCameraState() == 0)
+			Game.ForceThirdPerson()
+		EndIf
+		If(Config.AutoTFC)
+			MiscUtil.SetFreeCameraState(true)
+			MiscUtil.SetFreeCameraSpeed(Config.AutoSUCSM)
+		EndIf
+		; COMEBACK: Not sure if we want this or nah. Its a good way to disable the UI but also stops notifications from displaying
+		; UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", false)
+		; Enable hotkeys if needed, and disable autoadvance if not needed
+		If(IsVictim && Config.DisablePlayer)
+			Thread.AutoAdvance = true
+		Else
+			Thread.AutoAdvance = Config.AutoAdvance
+			Thread.EnableHotkeys()
+		EndIf
+	Else
+		ActorRef.SetRestrained(true)
+		; Start DoNothing package	-- Dont do this for the player
+		ActorUtil.AddPackageOverride(ActorRef, Config.DoNothing, 100, 1)
+		ActorRef.EvaluatePackage()
+	EndIf
+	ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", true)
+EndFunction
+
+; Undo "LockActor"
+Function UnlockActor()
+	ActorRef.SetFactionRank(AnimatingFaction, 0)
+	ActorRef.RemoveFromFaction(AnimatingFaction)
+	If(ActorRef == PlayerRef)
+		Game.SetPlayerAIDriven(false)
+		If(Config.AutoTFC)
+			MiscUtil.SetFreeCameraState(false)
+		EndIf
+		; COMEBACK: See LockActor()
+    ; UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", true)
+		Thread.DisableHotkeys()
+	Else
+		ActorUtil.RemovePackageOverride(ActorRef, Config.DoNothing)
+		ActorRef.EvaluatePackage()
+		ActorRef.SetRestrained(false)
+	endIf
+	ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", false)
+EndFunction
+
+function RestoreActorDefaults()
+	; Make sure  have actor, can't afford to miss this block
+	if !ActorRef
+		ActorRef = GetReference() as Actor
+		if !ActorRef
+			Log(ActorName +"- WARNING: ActorRef if Missing or Invalid", "RestoreActorDefaults()")
+			return ; No actor, reset prematurely or bad call to alias
+		endIf
+	endIf	
+	; Reset to starting scale
+	if !Config.DisableScale && ActorScale > 0.0 && (ActorScale != 1.0 || AnimScale != 1.0)
+		ActorRef.SetScale(ActorScale)
+	endIf
+	if !IsCreature
+		; Reset voicetype
+		; if ActorVoice && ActorVoice != BaseRef.GetVoiceType()
+		; 	BaseRef.SetVoiceType(ActorVoice)
+		; endIf
+		; Remove strapon
+		if Strapon && !HadStrapon; && Strapon != HadStrapon
+			ActorRef.RemoveItem(Strapon, 1, true)
+		endIf
+		; Reset expression
+		if ActorRef.Is3DLoaded() && !(ActorRef.IsDisabled() || ActorRef.IsDead() || ActorRef.GetActorValue("Health") < 1.0)
+			if Expression
+				sslBaseExpression.CloseMouth(ActorRef)
+			elseIf sslBaseExpression.IsMouthOpen(ActorRef)
+				sslBaseExpression.CloseMouth(ActorRef)			
+			endIf
+			ActorRef.ClearExpressionOverride()
+			ActorRef.ResetExpressionOverrides()
+			sslBaseExpression.ClearMFG(ActorRef)
+		endIf
+	endIf
+	; Player specific actions
+	if ActorRef == PlayerRef
+		; Remove player from frostfall exposure exception
+		FormList FrostExceptions = Config.FrostExceptions
+		if FrostExceptions
+			FrostExceptions.RemoveAddedForm(Config.BaseMarker)
+		endIf
+		Thread.RemoveFade()
+	endIf
+	; Remove SOS erection
+	Debug.SendAnimationEvent(ActorRef, "SOSFlaccid")
+	; Clear from animating faction
+	ActorRef.SetFactionRank(AnimatingFaction, -1)
+	ActorRef.RemoveFromFaction(AnimatingFaction)
+	ActorUtil.RemovePackageOverride(ActorRef, Config.DoNothing)
+	ActorRef.EvaluatePackage()
+	;	Log(ActorName +"- Angle:[X:"+ActorRef.GetAngleX()+"Y:"+ActorRef.GetAngleY()+"Z:"+ActorRef.GetAngleZ()+"] Position:[X:"+ActorRef.GetPositionX()+"Y:"+ActorRef.GetPositionY()+"Z:"+ActorRef.GetPositionZ()+"]", "RestoreActorDefaults()")
+endFunction
 
 Function LogRedundant(String asFunction)
 	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
@@ -1982,14 +1838,18 @@ EndFunction
 ;																																											;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
 
+int property kSyncActor = 1 autoreadonly hidden
+
 function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global native
 bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global native
 
-function AttachMarker()	; COMEBACK: The SetScale stuff needs to be reimplemented, prolly
-	ActorRef.SetVehicle(MarkerRef)
-	if !Config.DisableScale && AnimScale > 0.1 && AnimScale != 1.0
-		ActorRef.SetScale(AnimScale)
-	endIf
+function AttachMarker()
+endFunction
+function LoadShares()
+endFunction
+function GetPositionInfo()
+endFunction
+function SyncActor()
 endFunction
 
 function SetAdjustKey(string KeyVar)

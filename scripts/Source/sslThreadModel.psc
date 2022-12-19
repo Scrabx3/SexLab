@@ -297,7 +297,7 @@ State Making
 		; Action Events
 		RegisterForModEvent(Key("RealignActors"), "RealignActors") ; To be used by the ConfigMenu without the CloseConfig issue
 		RegisterForModEvent(Key(EventTypes[0]+"Done"), EventTypes[0]+"Done")
-		RegisterForModEvent(Key(EventTypes[1]+"Done"), EventTypes[1]+"Done")
+		; RegisterForModEvent(Key(EventTypes[1]+"Done"), EventTypes[1]+"Done")	; Sync
 		RegisterForModEvent(Key(EventTypes[2]+"Done"), EventTypes[2]+"Done")
 		RegisterForModEvent(Key(EventTypes[3]+"Done"), EventTypes[3]+"Done")
 		RegisterForModEvent(Key(EventTypes[4]+"Done"), EventTypes[4]+"Done")
@@ -393,7 +393,11 @@ State Making
 		EndWhile
 
 		; Legacy Data
-		Genders = Utility.ResizeIntArray(ActorLib.GetGendersAll(Positions), 4)
+		int[] g = ActorLib.GetGendersAll(Positions)
+		Genders[0] = PapyrusUtil.CountInt(g, 0)
+		Genders[1] = PapyrusUtil.CountInt(g, 1)
+		Genders[2] = PapyrusUtil.CountInt(g, 2)
+		Genders[3] = PapyrusUtil.CountInt(g, 3)
 
 		; ------------------------- ;
 		; -- Validate Animations -- ;
@@ -511,6 +515,7 @@ State Making
 			SendThreadEvent("LeadInStart")
 		EndIf
 		; Start time trackers ; NOTE: This is part of the child rn. TODO: move to parent or remove entirely, idk
+		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
 		SetTimeThings()
 		; Start actor loops
 		int i = 0
@@ -519,8 +524,8 @@ State Making
 			i += 1
 		EndWhile
 		PlaceActors()
-		; TODO: Figure out where this goes and why it takes more than 0 seconds to start an animation from here
-		GoToState("Advancing")
+		; assert(Stage == 1)
+		ProgressAnimationImpl()
 		Config.RemoveFade()
 	EndEvent
 EndState
@@ -1384,13 +1389,44 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; Unnecessary, just use OnBeginState()/OnEndState()
-Function Action(string FireState)
-	UnregisterForUpdate()
-	EndAction()
-	GoToState(FireState)
-	FireAction()
-endfunction
+Function ProgressAnimationImpl()
+	If(Stage < 1)
+		Stage = 1
+	ElseIf(Stage > Animation.StageCount)
+		If(LeadIn)
+			EndLeadInImpl()
+		Else
+			GoToState("Ending")
+		EndIf
+		return
+	EndIf
+	int i = 0
+	While(i < Positions.Length)
+		ActorAlias[i].SyncThread()
+		i += 1
+	EndWhile
+
+	SendThreadEvent("StageStart")
+	HookStageStart()
+
+	; TODO: Rewrite this as part of this function, playing all necessary Animations n stuff
+	Action("Animating")
+EndFunction
+
+; End leadin -> Start default animation
+Function EndLeadInImpl()
+	Stage  = 1
+	LeadIn = false
+	SetAnimation()
+	; Add runtime to foreplay skill xp
+	SkillXP[0] = SkillXP[0] + (TotalTime / 10.0)
+	; Restrip with new strip options
+	QuickEvent("Strip")
+	; Start primary animations at stage 1
+	StorageUtil.SetFloatValue(Config, "SexLab.LastLeadInEnd", SexLabUtil.GetCurrentGameRealTime())
+	SendThreadEvent("LeadInEnd")
+	ProgressAnimationImpl()
+EndFunction
 
 Function SendThreadEvent(string HookEvent)
 	Log(HookEvent, "Event Hook")
@@ -1885,7 +1921,7 @@ Function AddCommonTags(sslBaseAnimation[] akAnimations)
 	While(i < akAnimations.Length)
 		String[] animtags = akAnimations[i].GetTags()
 		int k = commons.Length
-		While(k < commons.Length)
+		While(k > 0)
 			k -= 1
 			If(animtags.Find(commons[k]))
 				commons = sslpp.RemoveStringEx(commons, commons[k])
@@ -1900,28 +1936,24 @@ Function AddCommonTags(sslBaseAnimation[] akAnimations)
 EndFunction
 
 Function PlaceActors()
+	float w = 0.0
 	int i = 0
 	While(i < Positions.Length)
-		ActorAlias[i].LockActor()
-		; TODO: Move into some 'placeactor' func in sslActorAlias Script
-		If(Positions[i] == PlayerRef && Config.AutoTFC)
-			MiscUtil.SetFreeCameraState(true)
-			MiscUtil.SetFreeCameraSpeed(Config.AutoSUCSM)
+		; Lock Actor in place & get them ready to animate
+		float ww = ActorAlias[i].PlaceActor()
+		If(ww > w)
+			w = ww
 		EndIf
-
-		; COMEBACK: Might wanna move this someplace else
-		; NOTE: Currently this is in the Prepare() function on the alias script
-		; Wanna find some proper structure once Im done with all this zzzz
-		; IDEA: if (!partial_strip)
-			; ActorAlias[i].Strip()
-		; else 
-		;		<do partial strip>
-		; endif
-
 		Positions[i].SetVehicle(_Center)
+		; Apply Scale after SetVehicle cuz SetVehicle norms ActorScale
+		ActorAlias[i].ApplyScale()
 		Debug.SendAnimationEvent(Positions[i], "sosfasterect")
 		i += 1
 	EndWhile
+	; If placing includes an animation, wait for longest to finish
+	If(w > 0)
+		Utility.Wait(w)
+	EndIf
 	sslpp.SetPositions(Positions, _Center)
 EndFunction
 
@@ -1965,6 +1997,14 @@ endfunction
 Function SetBedding(int flag = 0)
 	SetBedFlag(flag)
 EndFunction
+
+; Unnecessary, just use OnBeginState()/OnEndState()
+Function Action(string FireState)
+	UnregisterForUpdate()
+	EndAction()
+	GoToState(FireState)
+	FireAction()
+endfunction
 
 Function RemoveFade()
 	if HasPlayer
@@ -2213,3 +2253,15 @@ int Function FilterAnimations()
 	endIf
 	return 0
 EndFunction
+
+state Advancing
+	Event OnBeginState()
+		ProgressAnimationImpl()
+	EndEvent
+	Function SyncDone()
+		LogRedundant("SyncDone")
+	EndFunction
+	event OnUpdate()
+		LogRedundant("OnUpdate")
+	endEvent
+endState

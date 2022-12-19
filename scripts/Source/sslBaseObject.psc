@@ -1,36 +1,35 @@
 scriptname sslBaseObject extends ReferenceAlias hidden
 
-; Config accessor
-sslSystemConfig property Config auto hidden
+int Property SlotID Auto Hidden
+string Property Name Auto Hidden
+bool Property Enabled Auto Hidden
 
-; Object base info
-int property SlotID auto hidden
-string property Name auto hidden
-; string property DisplayName auto hidden
-bool property Enabled auto hidden
-
-string property Registry auto hidden
-bool property Registered hidden
-	bool function get()
+string Property Registry Auto Hidden
+bool Property Registered hidden
+	bool Function get()
 		return Registry != "" && Storage == none
-	endFunction
-endProperty
+	EndFunction
+EndProperty
 
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
 ; ------------------------------------------------------- ;
 
 string[] Tags
-string[] function GetRawTags()
-	return GetTags()
-endFunction
 string[] function GetTags()
 	return PapyrusUtil.ClearEmpty(Tags)
 endFunction
 
-bool function HasTag(string Tag)
+; Check if this BaseObject matches the given tag boundaries
+; Supports prefixes: [~A, ~B] = A or B | [-A] = not A
+; Ex: [A, ~B, ~C, -D] == true <=> Object has A, does not have D and has at least C or B
+bool Function MatchTags(String[] asTags)
+	return sslpp.MatchTags(Tags, asTags)
+EndFunction
+
+bool Function HasTag(string Tag)
 	return Tags.Find(Tag) != -1
-endFunction
+EndFunction
 
 bool function AddTag(string Tag)
 	if Tag != "" && Tags.Find(Tag) == -1
@@ -56,73 +55,13 @@ function AddTags(string[] TagList)
 	endWhile
 endFunction
 
-function SetTags(string TagList)
-	AddTags(PapyrusUtil.StringSplit(TagList))
-endFunction
-
-bool function ToggleTag(string Tag)
-	return (RemoveTag(Tag) || AddTag(Tag)) && HasTag(Tag)
-endFunction
-
-bool function AddTagConditional(string Tag, bool AddTag)
-	if Tag != ""
-		if AddTag
-			AddTag(Tag)
-		elseIf !AddTag
-			RemoveTag(Tag)
-		endIf
-	endIf
-	return AddTag
-endFunction
-
-bool function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppress = false)
-	; return RequireAll && HasAllTag(CheckTags) || RequireAll && HasAllTag(CheckTags)
-	bool Valid = ParseTags(CheckTags, RequireAll)
-	return (Valid && !Suppress) || (!Valid && Suppress)
-endFunction
-
-bool function ParseTags(string[] TagList, bool RequireAll = true)
-	return (RequireAll && HasAllTag(TagList)) || (!RequireAll && HasOneTag(TagList))
-endFunction
-
-bool function TagSearch(string[] TagList, string[] Suppress, bool RequireAll)
-	return ((RequireAll && HasAllTag(TagList)) || (!RequireAll && HasOneTag(TagList))) \ 
-		&& (!Suppress || !HasOneTag(Suppress))
-endFunction
-
-bool function HasOneTag(string[] TagList)
-	int i = TagList.Length
-	while i
-		i -= 1
-		if TagList[i] != "" && Tags.Find(TagList[i]) != -1
-			return true
-		endIf
-	endWhile
-	return false
-endFunction
-
-bool function HasAllTag(string[] TagList)
-	int i = TagList.Length
-	while i
-		i -= 1
-		if TagList[i] != "" && Tags.Find(TagList[i]) == -1
-			return false
-		endIf
-	endWhile
-	return true
-endFunction
-
-bool Function MatchTags(String[] asTags)
-	return sslpp.MatchTags(Tags, asTags)
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Phantom Slots                                   --- ;
 ; ------------------------------------------------------- ;
 
 ; Phantom slots owner
-Form property Storage auto hidden
-bool property Ephemeral hidden
+Form Property Storage Auto Hidden
+bool Property Ephemeral hidden
 	bool function get()
 		return Storage != none
 	endFunction
@@ -136,9 +75,18 @@ function MakeEphemeral(string Token, Form OwnerForm)
 	Log("Created Non-Global Object '"+Token+"'", Storage)
 endFunction
 
-; ------------------------------------------------------- ;
-; --- System Use                                      --- ;
-; ------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslSystemConfig Property Config Auto Hidden
 
 string function Key(string type = "")
 	return Registry+"."+type
@@ -153,7 +101,7 @@ function Log(string Log, string Type = "NOTICE")
 endFunction
 
 bool bSaved = false
-bool property Saved hidden
+bool Property Saved hidden
 	bool function get()
 		return bSaved
 	endFunction
@@ -179,4 +127,67 @@ function Initialize()
 	bSaved   = false
 	Storage  = none
 	Tags     = Utility.CreateStringArray(0)
+endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+string[] function GetRawTags()
+	return GetTags()
+endFunction
+
+; Below functions are technically fine to use
+; Most are legacy because their usage is ambiguous or go too complicated for basic access & manipulation
+
+bool function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppress = false)
+	bool Valid = ParseTags(CheckTags, RequireAll)
+	return (Valid && !Suppress) || (!Valid && Suppress)
+endFunction
+
+bool function ParseTags(string[] TagList, bool RequireAll = true)
+	return (RequireAll && HasAllTag(TagList)) || (!RequireAll && HasOneTag(TagList))
+endFunction
+
+bool function TagSearch(string[] TagList, string[] Suppress, bool RequireAll)
+	return ((RequireAll && HasAllTag(TagList)) || (!RequireAll && HasOneTag(TagList))) \ 
+		&& (!Suppress || !HasOneTag(Suppress))
+endFunction
+
+bool function HasOneTag(string[] TagList)
+	int i = TagList.Length
+	while i
+		i -= 1
+		if TagList[i] != "" && Tags.Find(TagList[i]) != -1
+			return true
+		endIf
+	endWhile
+	return false
+endFunction
+
+bool function HasAllTag(string[] TagList)
+	return sslpp.MatchTags(Tags, TagList)
+endFunction
+
+bool function AddTagConditional(string Tag, bool AddTag)
+	If(AddTag)
+		return AddTag(Tag)
+	Else
+		return RemoveTag(Tag)
+	EndIf
+endFunction
+
+function SetTags(string TagList)
+	AddTags(PapyrusUtil.StringSplit(TagList))
+endFunction
+
+bool function ToggleTag(string Tag)
+	return (RemoveTag(Tag) || AddTag(Tag)) && HasTag(Tag)
 endFunction

@@ -23,44 +23,8 @@ bool Adjusted
 bool hkReady
 
 ; ------------------------------------------------------- ;
-; --- Thread Starter                                  --- ;
-; ------------------------------------------------------- ;
-
-
-; ------------------------------------------------------- ;
 ; --- Animation Loop                                  --- ;
 ; ------------------------------------------------------- ;
-
-state Advancing
-	Event OnBeginState()
-		; Log("Stage: "+Stage, "Advancing")
-		if Stage < 1
-			Stage = 1
-		elseIf Stage > StageCount
-			if LeadIn
-				EndLeadIn()
-			else
-				EndAnimation()
-			endIf
-			return
-		endIf
-		SyncEvent(kSyncActor, 15.0)
-	EndEvent
-	Function SyncDone()
-		if Stage > 1 && Stage > (StageCount * 0.5)
-			string[] Tags = Animation.GetRawTags()
-			IsType[6]  = IsType[6] || Females > 0 && Tags.Find("Vaginal") != -1
-			IsType[7]  = IsType[7] || Tags.Find("Anal")   != -1 || (Females == 0 && Tags.Find("Vaginal") != -1)
-			IsType[8]  = IsType[8] || Tags.Find("Oral")   != -1
-		endIf
-		RegisterForSingleUpdate(0.1)
-	EndFunction
-	event OnUpdate()
-		HookStageStart()
-		Action("Animating")
-		SendThreadEvent("StageStart")
-	endEvent
-endState
 
 state Animating
 
@@ -591,12 +555,11 @@ state Animating
 
 	Function RealignActors()
 		UnregisterForUpdate()
-		ActorAlias[0].SyncAll(true)
-		ActorAlias[1].SyncAll(true)
-		ActorAlias[2].SyncAll(true)
-		ActorAlias[3].SyncAll(true)
-		ActorAlias[4].SyncAll(true)
-		Utility.Wait(0.1)
+		int i = 0
+		While(i < Positions.Length)
+			ActorAlias[i].SyncThread()
+			i += 1
+		EndWhile
 		RegisterForSingleUpdate(0.5)
 	EndFunction
 
@@ -688,12 +651,11 @@ Function SetAnimation(int aid = -1)
 		if Stage == 1
 			ResetPositions()
 		else
-			ActorAlias[0].SyncAll(true)
-			ActorAlias[1].SyncAll(true)
-			ActorAlias[2].SyncAll(true)
-			ActorAlias[3].SyncAll(true)
-			ActorAlias[4].SyncAll(true)
-			Utility.WaitMenuMode(0.2)
+			int i = 0
+			While(i < Positions.Length)
+				ActorAlias[i].SyncThread()
+				i += 1
+			EndWhile
 			PlayStageAnimations()
 		endIf
 	endIf
@@ -845,7 +807,6 @@ endState
 ; TEMPORARY
 ; TODO: Move this stuff into parent
 Function SetTimeThings()
-	RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
 	SkillTime = RealTime[0]
 	StartedAt = RealTime[0]
 EndFunction
@@ -938,7 +899,6 @@ Function Initialize()
 	SkillTime   = 0.0
 	TimedStage  = false
 	Adjusted    = false
-	; Prepared    = false
 	AdjustAlias = ActorAlias[0]
 	parent.Initialize()
 EndFunction

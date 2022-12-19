@@ -757,30 +757,6 @@ bool function SaveAdjustmentProfile() global native
 ; --- 3rd party compatibility                         --- ;
 ; ------------------------------------------------------- ;
 
-Spell function GetHDTSpell(Actor ActorRef)
-	if !HasHDTHeels || !HDTHeelEffect || !ActorRef; || !ActorRef.GetWornForm(Armor.GetMaskForSlot(37))
-		return none
-	endIf
-	int i = ActorRef.GetSpellCount()
-	while i
-		i -= 1
-		Spell SpellRef = ActorRef.GetNthSpell(i)
-		Log(SpellRef.GetName(), "Checking("+SpellRef+") for HDT HighHeels")
-		if SpellRef && StringUtil.Find(SpellRef.GetName(), "Heel") != -1
-			return SpellRef
-		endIf
-		int n = SpellRef.GetNumEffects()
-		while n
-			n -= 1
-			if SpellRef.GetNthEffectMagicEffect(n) == HDTHeelEffect
-				return SpellRef
-			endIf
-		endWhile
-	endWhile
-	return none
-endFunction
-
-
 Faction property BardExcludeFaction auto
 ReferenceAlias property BardBystander1 auto
 ReferenceAlias property BardBystander2 auto
@@ -2005,3 +1981,37 @@ bool property bOrgasmEffects hidden
 		return OrgasmEffects
 	endFunction
 endProperty
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+Spell function GetHDTSpell(Actor ActorRef)
+	if !HasHDTHeels || !HDTHeelEffect || !ActorRef; || !ActorRef.GetWornForm(Armor.GetMaskForSlot(37))
+		return none
+	endIf
+	int i = ActorRef.GetSpellCount()
+	while i
+		i -= 1
+		Spell SpellRef = ActorRef.GetNthSpell(i)
+		Log(SpellRef.GetName(), "Checking("+SpellRef+") for HDT HighHeels")
+		if SpellRef && StringUtil.Find(SpellRef.GetName(), "Heel") != -1
+			return SpellRef
+		endIf
+		int n = SpellRef.GetNumEffects()
+		while n
+			n -= 1
+			if SpellRef.GetNthEffectMagicEffect(n) == HDTHeelEffect
+				return SpellRef
+			endIf
+		endWhile
+	endWhile
+	return none
+endFunction
