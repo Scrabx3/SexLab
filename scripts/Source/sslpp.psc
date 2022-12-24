@@ -1,14 +1,15 @@
 ScriptName sslpp Hidden  
 
-String[] Function MergeStringArrayEx(String[] asArray1, String[] asArray2, bool abRemoveDupes) global native
-String[] Function RemoveStringEx(String[] asArray, String abRemove) global native
+String[] Function MergeStringArrayEx(String[] asArray1, String[] asArray2, bool abRemoveDupes) native global
+String[] Function RemoveStringEx(String[] asArray, String abRemove) native global
 
-Function SetPositions(Actor[] akReferences, ObjectReference akCenter) global native
-bool Function MatchTags(String[] asTags, String[] asMatch) global native
+Function SetPositions(Actor[] akReferences, ObjectReference akCenter) native global
+bool Function MatchTags(String[] asTags, String[] asMatch) native global
 
-Ammo Function GetEquippedAmmo(Actor akActor) global native
+Ammo Function GetEquippedAmmo(Actor akActor) native global
+Form[] Function StripActor(Actor akActor, int aiSlotMasks) native global
 
-Spell Function GetHDTHeelSpell(Actor akActor) global native
+Spell Function GetHDTHeelSpell(Actor akActor) native global
 
 ;	Scan the area for bed furnitue objects and return all objects found
 ; --- Params
@@ -17,10 +18,10 @@ Spell Function GetHDTHeelSpell(Actor akActor) global native
 ; afRadiusZ:		The maximum height difference between center and bed. Pass 0 to ignore
 ; --- Return
 ; An array of bed object refs, sorted by distance from center
-ObjectReference[] Function FindBeds(ObjectReference akCenterRef, float afRadius = 4096.0, float afRadiusZ = 512.0) global native
+ObjectReference[] Function FindBeds(ObjectReference akCenterRef, float afRadius = 4096.0, float afRadiusZ = 512.0) native global
 
 ; if the given reference is a bed. This operates on the 3d of the object directly. Does not check if the bed is used
-bool Function IsBed(ObjectReference akReference) global native
+bool Function IsBed(ObjectReference akReference) native global
 
 ObjectReference Function GetNearestUnusedBed(ObjectReference akCenterRef, float afRadius) global
 	ObjectReference[] beds = FindBeds(akCenterRef, afRadius)
