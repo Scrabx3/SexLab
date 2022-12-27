@@ -35,7 +35,7 @@ sslThreadModel function PickModel(float TimeOut = 30.0)
 		i = 0
 		while !Thread && i < Slots.Length
 			string ThreadState = Slots[i].GetState()
-			if ThreadState == "Frozen" || ThreadState == "Ending"
+			if ThreadState == "Ending"
 				Slots[i].ReportAndFail("Resetting possibly stuck thread: "+Slots[i], "PickModel")
 				Thread = Slots[i].Make()
 			endIf
@@ -96,10 +96,17 @@ endfunction
 function StopThread(sslThreadController Slot)
 	string SlotState = Slot.GetState()
 	if SlotState == "Making"
-		SexLabUtil.DebugLog("Making during StopAll - Initializing.", Slot, true)
-		Slot.Initialize()
-	elseIf SlotState == "Frozen"
-		Slot.Initialize()
+		; NOTE: This is bad. We might already have returned that the Animation starts successfully and are currently waiting for
+		; the prepare actor events to finish, this can break mods who are expecting the scene to start and the threadevent to properly be send
+		; Papyrus will save the current point of execution of a function, so if a save reloads during "making" of the animation, the animation
+		; will simply be "made" after the game reloaded without any issue
+		; ---
+		; SexLabUtil.DebugLog("Making during StopAll - Initializing.", Slot, true)
+		; Slot.Initialize()
+	elseIf SlotState == "Ending"
+		; NOTE: Will auto clear itself after Cooldown is done
+		; ---
+		; Slot.Initialize()
 	elseIf SlotState != "Unlocked"
 		SexLabUtil.DebugLog(SlotState+" during StopAll - EndAnimation.", Slot, true)
 		Slot.EndAnimation(true)

@@ -157,8 +157,10 @@ EndProperty
 
 ; Thread info
 float[] Property CenterLocation Auto Hidden
-ReferenceAlias Property CenterAlias Auto Hidden	; This is the Alias holding the object used as Center
-ObjectReference Property CenterRef							; This is the ObjectReference the above alias holds
+
+ObjectReference _Center													; the actual center object the animation is using
+ReferenceAlias Property CenterAlias Auto Hidden	; the alias holding the object used as center
+ObjectReference Property CenterRef							; the aliases reference
 	ObjectReference Function Get()
 		return CenterAlias.GetReference()
 	EndFunction
@@ -166,13 +168,12 @@ ObjectReference Property CenterRef							; This is the ObjectReference the above
 		CenterOnObject(akNewCenter)
 	EndFunction
 EndProperty
-ObjectReference _Center	; This is the actual center object the animation is using
 
-float[] Property RealTime auto hidden
+float[] Property RealTime auto hidden	; COMEBACK: This here might wanna be depreciated
 float Property StartedAt auto hidden
 float Property TotalTime hidden
 	float Function get()
-		return RealTime[0] - StartedAt
+		return SexLabUtil.GetCurrentGameRealTime() - StartedAt
 	EndFunction
 EndProperty
 
@@ -272,6 +273,9 @@ string[] Hooks
 string[] Tags
 string ActorKeys
 
+; Animating
+float SkillTime
+
 ; Debug testing
 bool Property DebugMode auto hidden
 float Property t auto hidden
@@ -295,12 +299,9 @@ State Making
 		Log("Entering Making State")
 		RegisterForSingleUpdate(60.0)
 		; Action Events
-		RegisterForModEvent(Key("RealignActors"), "RealignActors") ; To be used by the ConfigMenu without the CloseConfig issue
+		; COMEBACK: Realign Actors can be called rightaway after rewrite, this event should become unnecessary
+		RegisterForModEvent(Key("RealignActors"), "RealignActors") ; To be used by the ConfigMenu without the CloseConfig issue ; Just dont use Utility.Wait?
 		RegisterForModEvent(Key(EventTypes[0]+"Done"), EventTypes[0]+"Done")
-		; RegisterForModEvent(Key(EventTypes[1]+"Done"), EventTypes[1]+"Done")	; Sync
-		RegisterForModEvent(Key(EventTypes[2]+"Done"), EventTypes[2]+"Done")
-		RegisterForModEvent(Key(EventTypes[3]+"Done"), EventTypes[3]+"Done")
-		RegisterForModEvent(Key(EventTypes[4]+"Done"), EventTypes[4]+"Done")
 	EndEvent
 	Event OnUpdate()
 		ReportAndFail("Thread has timed out of the making process; resetting model for selection pool")
@@ -362,7 +363,7 @@ State Making
 		HookAnimationStarting()
 
 		; ------------------------- ;
-		; --   Validate Thread   -- ;
+		; --   Validate Actors   -- ;
 		; ------------------------- ;
 
 		Positions = PapyrusUtil.RemoveActor(Positions, none)
@@ -377,13 +378,13 @@ State Making
 		; Sort all positions
 		int i = 1
 		While(i < Positions.Length)
-			sslActorAlias it_s = ActorAlias[i]
+			sslActorAlias it = ActorAlias[i]
 			int n = i - 1
-			While(n >= 0 && !sslActorKey.IsLesserKey(ActorAlias[n].ActorKey, it_s.ActorKey))
+			While(n >= 0 && !sslActorKey.IsLesserKey(ActorAlias[n].ActorKey, it.ActorKey))
 				ActorAlias[n + 1] = ActorAlias[n]
 				n -= 1
 			EndWhile
-			ActorAlias[n + 1] = it_s
+			ActorAlias[n + 1] = it
 			i += 1
 		EndWhile
 		int k = 0
@@ -428,7 +429,7 @@ State Making
 				; ElseIf(Config.LeadInCoolDown > 0 && PrimaryAnimations && PrimaryAnimations.Length && AnimSlots.CountTag(PrimaryAnimations, "Anal,Vaginal") < 1)
 				; 	Log("None of the PrimaryAnimations have 'Anal' or 'Vaginal' tags. Disabling LeadIn")
 				; 	DisableLeadIn(True)
-				; endIf
+				; EndIf
 			EndIf
 			If(PrimaryAnimations.Length + LeadAnimations.Length == 0)
 				ReportAndFail("Failed to start Thread -- No valid animations for given actors")
@@ -438,7 +439,7 @@ State Making
 		EndIf
 		
 		; ------------------------- ;
-		; --    Locate Center    -- ;
+		; --   Validate Center   -- ;
 		; ------------------------- ;
 
 		If(!CenterRef)
@@ -462,73 +463,141 @@ State Making
 				CenterOnObject(Positions[n])
 			EndIf
 		EndIf
-
-		if Config.ShowInMap && !HasPlayer && PlayerRef.GetDistance(CenterRef) > 750
+		If(Config.ShowInMap && !HasPlayer && PlayerRef.GetDistance(CenterRef) > 750)
 			SetObjectiveDisplayed(0, True)
-		endIf
-	
+		EndIf
+
 		; ------------------------- ;
-		; --  Start Controller   -- ;
+		; --   Start Animatino   -- ;
 		; ------------------------- ;
 
-		; NOTE: The below comment links to a thread that has been merged with this function,see below \o/
-		; COMEBACK: I dont understand why this isnt just part of this codeblock here directly
-		; Just massively harms readability and overcomplicates scene starting
-		; Not to mention that the actual code executed here is in the child script, not the parent, not even as abstract func
-		; see sslThreadController State 'Prepare'.OnBeginState() to see the second part of this function
-		; GoToState("Prepare")
-		
-		; COMEBACK: Move this into some 'unsafe' startthread() func instead, to call with the new API which wont need above validation
 		HookAnimationPrepare()
-		; UpdateAdjustKey()	; TODO: Set adjust key AFTER deciding the animation | BEFORE placing actors
-		; TODO: This here should be simplified. A lot
-		if StartingAnimation && Animations.Find(StartingAnimation) != -1
-			SetAnimation(Animations.Find(StartingAnimation))
-		else
-			SetAnimation()
+		If(StartingAnimation && Animations.Find(StartingAnimation) != -1)
+			SetAnimationImpl(StartingAnimation)
+		Else
+			int r = Utility.RandomInt(0, Animations.Length - 1)
+			SetAnimationImpl(Animations[r])
 			StartingAnimation = none
-		endIf
-		; Log(AdjustKey, "Adjustment Profile")
-		; Begin actor prep
-		SyncEvent(kPrepareActor, 40.0)
+		EndIf
+		SyncEvent(kPrepareActor)
 		If(HasPlayer)
 			Config.ApplyFade()
 		EndIf
-
 		return self as sslThreadController
 	EndFunction
 
-	; Invoked after kPrepareActor is done for all actors
+	; Invoked after SyncEvent(kPrepareActor) is done for all actors
 	Event PrepareDone()
-		; TODO: Position adjustments, should be part of actual placement
-		; int AdjustPos = Positions.Find(Config.TargetRef)
-		; if AdjustPos == -1
-		; 	AdjustPos   = (Positions.Length > 1) as int
-		; 	if Positions[AdjustPos] != PlayerRef
-		; 		Config.TargetRef = Positions[AdjustPos]
-		; 	endIf
-		; endIf
-		; AdjustAlias = PositionAlias(AdjustPos)
-		; Send starter events
 		SendThreadEvent("AnimationStart")
 		If(LeadIn)
 			SendThreadEvent("LeadInStart")
 		EndIf
-		; Start time trackers ; NOTE: This is part of the child rn. TODO: move to parent or remove entirely, idk
-		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
-		SetTimeThings()
-		; Start actor loops
+		PlaceActors()
+		Stage = 1
+		GoToState("Animating")
+		If(HasPlayer)
+			Config.RemoveFade()
+		EndIf
+	EndEvent
+
+	; Can only be called between Alias setup & 1st sync call (no need to consider async calls)
+	Function ReportAndFail(string msg, string src = "", bool halt = true)
 		int i = 0
 		While(i < Positions.Length)
-			ActorAlias[i].CompletePreperation()
-			i += 1
+			ActorAlias[i].Clear()
 		EndWhile
-		PlaceActors()
-		; assert(Stage == 1)
-		ProgressAnimationImpl()
-		Config.RemoveFade()
+		GoToState("")
+		ReportAndFail(msg, src, true)
+	EndFunction
+EndState
+
+; ------------------------------------------------------- ;
+; --- Animation Loop		                              --- ;
+; ------------------------------------------------------- ;
+
+; SFX
+float SFXDelay
+float SFXTimer
+
+; Processing
+bool TimedStage
+float StageTimer
+
+State Animating
+	Event OnBeginState()
+		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
+		SkillTime = RealTime[0]
+		StartedAt = RealTime[0]
+		SFXDelay = Config.SFXDelay
+		PlayStageAnimations()
+		ResolveTimers()
+		RegisterForSingleUpdate(0.5)
+		SendThreadEvent("StageStart")
+		HookStageStart()
+	EndEvent
+
+	Function GoToStage(int ToStage)
+		SendThreadEvent("StageEnd")
+		HookStageEnd()
+		UnregisterForUpdate()
+		Stage = ToStage
+		If(Stage > Animation.StageCount)
+			If(LeadIn)
+				EndLeadInImpl()
+			Else
+				EndAnimation()
+			EndIf
+			return
+		EndIf
+		PlayStageAnimations()
+		If(!LeadIn && Stage >= Animation.StageCount && !DisableOrgasms)
+			SendThreadEvent("OrgasmStart")
+			TriggerOrgasm()
+		EndIf
+		SFXDelay = PapyrusUtil.ClampFloat(Config.SFXDelay - (Stage * 0.3), 0.5, 30.0)
+		ResolveTimers()
+		RegisterForSingleUpdate(0.5)
+		SendThreadEvent("StageStart")
+		HookStageStart()
+	EndFunction
+	
+	Event OnUpdate()
+		RealTime[0] = SexLabUtil.GetCurrentGameRealTime()
+		If((AutoAdvance || TimedStage || Animation.HasTimer(Stage)) && StageTimer < RealTime[0])
+			GoToStage(Stage + 1)
+			return
+		EndIf
+		; Play SFX	
+		; IDEA: Decouple from main loop and use actor specific ones instead
+		If(SoundFX && SFXTimer < RealTime[0])
+			SoundFX.Play(_Center)
+			SFXTimer = RealTime[0] + SFXDelay
+		EndIf
+		RegisterForSingleUpdate(0.5)
+	EndEvent
+
+
+	Function TriggerOrgasm()
+		UnregisterForUpdate()
+		if SoundFX
+			SoundFX.Play(_Center)
+		endIf
+		QuickEvent("Orgasm")
+		RegisterForSingleUpdate(0.5)
+	EndFunction
+
+	Event OnEndState()
+		UnregisterForUpdate()
+		If(!LeadIn && Stage >= Animation.StageCount && !DisableOrgasms)
+			SendThreadEvent("OrgasmEnd")
+		EndIF
 	EndEvent
 EndState
+
+Function TriggerOrgasm()
+EndFunction
+Function GoToStage(int ToStage)
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Actor Setup                                     --- ;
@@ -738,11 +807,15 @@ bool Function IsAggressor(Actor ActorRef)
 EndFunction
 
 int Function GetHighestPresentRelationshipRank(Actor ActorRef)
-	if ActorCount == 1
-		return SexLabUtil.IntIfElse(ActorRef == Positions[0], 0, ActorRef.GetRelationshipRank(Positions[0]))
+	if Positions.Length <= 1
+		If(ActorRef == Positions[0])
+			return 0
+		Else
+			return ActorRef.GetRelationshipRank(Positions[0])
+		EndIf
 	endIf
 	int out = -4 ; lowest possible
-	int i = ActorCount
+	int i = Positions.Length
 	while i > 0 && out < 4
 		i -= 1
 		if Positions[i] != ActorRef
@@ -756,11 +829,15 @@ int Function GetHighestPresentRelationshipRank(Actor ActorRef)
 EndFunction
 
 int Function GetLowestPresentRelationshipRank(Actor ActorRef)
-	if ActorCount == 1
-		return SexLabUtil.IntIfElse(ActorRef == Positions[0], 0, ActorRef.GetRelationshipRank(Positions[0]))
+	if Positions.Length <= 1
+		If(ActorRef == Positions[0])
+			return 0
+		Else
+			return ActorRef.GetRelationshipRank(Positions[0])
+		EndIf
 	endIf
 	int out = 4 ; highest possible
-	int i = ActorCount
+	int i = Positions.Length
 	while i > 0 && out > -4
 		i -= 1
 		if Positions[i] != ActorRef
@@ -773,9 +850,10 @@ int Function GetLowestPresentRelationshipRank(Actor ActorRef)
 	return out
 EndFunction
 
+; COMEBACK: This here needs some from-ground-up level rewrite !IMPORTANT Its used by DD fyi
 Function ChangeActors(Actor[] NewPositions)
 	NewPositions = PapyrusUtil.RemoveActor(NewPositions, none)
-	if NewPositions.Length < 1 || NewPositions.Length > 5 || GetState() == "Ending" || GetState() == "Frozen" ; || Positions == NewPositions
+	if NewPositions.Length < 1 || NewPositions.Length > 5 || GetState() == "Ending" ; || Positions == NewPositions
 		return
 	endIf
 	int[] NewGenders = ActorLib.GenderCount(NewPositions)
@@ -982,7 +1060,7 @@ Function ChangeActors(Actor[] NewPositions)
 		; Reposition actors
 		RealignActors()
 	endIf
-;	RegisterForSingleUpdate(0.1)
+	;	RegisterForSingleUpdate(0.1)
 	SendThreadEvent("ActorChangeEnd")
 EndFunction
 
@@ -991,7 +1069,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 Function SetForcedAnimations(sslBaseAnimation[] AnimationList)
-	if AnimationList && AnimationList.Length > 0
+	if AnimationList.Length
 		CustomAnimations = AnimationList
 	endIf
 EndFunction
@@ -1011,7 +1089,7 @@ Function ClearForcedAnimations()
 EndFunction
 
 Function SetAnimations(sslBaseAnimation[] AnimationList)
-	if AnimationList && AnimationList.Length > 0
+	if AnimationList.Length
 		PrimaryAnimations = AnimationList
 	endIf
 EndFunction
@@ -1079,35 +1157,7 @@ Function SetBedFlag(int flag = 0)
 	BedStatus[0] = flag
 EndFunction
 
-Function SetFurnitureIgnored(bool disabling = true)
-	If(!BedRef)
-		return
-	EndIf
-	BedRef.SetDestroyed(disabling)
-	;	CenterRef.ClearDestruction()
-	BedRef.BlockActivation(disabling)
-	BedRef.SetNoFavorAllowed(disabling)
-EndFunction
-
-Function SetTimers(float[] SetTimers)
-	if !SetTimers || SetTimers.Length < 1
-		Log("SetTimers() - Empty timers given.", "ERROR")
-	else
-		CustomTimers    = SetTimers
-		UseCustomTimers = true
-	endIf
-EndFunction
-
-float Function GetStageTimer(int maxstage)
-	int last = ( Timers.Length - 1 )
-	if stage == maxstage
-		return Timers[last]
-	elseIf stage < last
-		return Timers[(stage - 1)]
-	endIf
-	return Timers[(last - 1)]
-endfunction
-
+; COMEBACK: This here might wanna be legacy
 int Function AreUsingFurniture(Actor[] ActorList)
 	if !ActorList || ActorList.Length < 1
 		return -1
@@ -1128,119 +1178,13 @@ int Function AreUsingFurniture(Actor[] ActorList)
 	return -1
 EndFunction
 
+; ------------------------------------------------------- ;
+; --- Center			                                    --- ;
+; ------------------------------------------------------- ;
+
 Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
-	If(!CenterOn)
-		return
-	EndIf
-	_Center = CenterOn.PlaceAtMe(Config.BaseMarker)
-	CenterAlias.ForceRefTo(CenterOn)
-	; Check if center is one of our actors and lock them in place if so
-	int Pos = Positions.Find(CenterOn as Actor)
-	If(Pos >= 0)
-		int SlotID = FindSlot(Positions[Pos])
-		If(SlotID != -1)
-			ActorAlias[SlotID].LockActor()
-		EndIf
-		If(CenterOn == VictimRef as ObjectReference)
-			Log("CenterRef == VictimRef: " + VictimRef)
-		ElseIf CenterOn == PlayerRef as ObjectReference
-			Log("CenterRef == PlayerRef: " + PlayerRef)
-		Else
-			Log("CenterRef == Positions[" + Pos + "]: " + CenterRef)
-		EndIf
-	EndIf
-	CenterLocation[0] = CenterOn.GetPositionX()
-	CenterLocation[1] = CenterOn.GetPositionY()
-	CenterLocation[2] = CenterOn.GetPositionZ()
-	CenterLocation[3] = CenterOn.GetAngleX()
-	CenterLocation[4] = CenterOn.GetAngleY()
-	CenterLocation[5] = CenterOn.GetAngleZ()
-	If(sslpp.IsBed(CenterOn))
-		BedStatus[1] = ThreadLib.GetBedType(CenterOn)
-		BedRef = CenterOn
-		SetFurnitureIgnored(true)
-		float offsetX
-		float offsetY
-		float offsetZ
-		float offsAnZ
-		If(BedStatus[1] == 1)
-			offsetZ = 7.5 ; Average Z offset for bedrolls
-			offsAnZ = 180 ; bedrolls are usually rotated 180° on Z
-		Else
-			int offset = -31 ; + ((_Positions_var.find(playerref) > -1) as int) * 36
-			offsetX = Math.Cos(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
-			offsetY = Math.Sin(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
-			offsetZ = 45 ; Z offset for beds
-		EndIf
-		float scale = CenterOn.GetScale()
-		If(scale != 1.0)
-			offsetX *= scale
-			offsetY *= scale
-			If(CenterLocation[2] < 0)
-				offsetZ *= (2 - scale) ; Assming Scale will always be in [0; 2)
-			Else
-				offsetZ *= scale
-			EndIf
-		EndIf
-		CenterLocation[0] = CenterLocation[0] + offsetX
-		CenterLocation[1] = CenterLocation[1] + offsetY
-		CenterLocation[2] = CenterLocation[2] + offsetZ
-		CenterLocation[5] = CenterLocation[5] - offsAnZ
-		CenterRef.SetPosition(CenterLocation[0], CenterLocation[1], CenterLocation[2])
-		CenterRef.SetAngle(CenterLocation[3], CenterLocation[4], CenterLocation[5])
-	Else
-		BedStatus[1] = 0
-		BedRef = none
-	EndIf
-	Log("Creating new Center Ref from = " + CenterOn + " at Coordinates = " + CenterLocation + "( New Center is Bed Type = " + BedStatus[1] + " )")
-EndFunction
-
-; COMEBACK: This here should be completely pointless but might wanna check that it doesnt break anythin just to be sure
-Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
-	CenterLocation[0] = LocX
-	CenterLocation[1] = LocY
-	CenterLocation[2] = LocZ
-	CenterLocation[3] = RotX
-	CenterLocation[4] = RotY
-	CenterLocation[5] = RotZ
-EndFunction
-
-bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
-	If(BedStatus[0] == -1)
-		return false
-	EndIf
-	bool InStart = GetState() == "Making"
-	int AskBed = Config.AskBed
-	if InStart && (!HasPlayer && Config.NPCBed == 0) || (HasPlayer && AskBed == 0)
-		return false ; Beds forbidden by flag or starting bed check/prompt disabled
-	endIf
-	bool BedScene = BedStatus[0] == 1
- 	ObjectReference FoundBed
-	int i = 0
-	While (i < Positions.Length)
-		FoundBed = Positions[i].GetFurnitureReference()
-		; This returns 0 if FoundBed isnt a Bed
-		int BedType = ThreadLib.GetBedType(FoundBed)
-		if BedType > 0 && (ActorCount < 4 || BedType != 2)
-			CenterOnObject(FoundBed)
-			return true ; Bed found and approved for use
-		endIf
-		i += 1
-	EndWhile
-	; Double radius if bedscene is forced (BedStatus[0] == 1)
-	Radius *= 1 + BedStatus[0]
-	if HasPlayer && (!InStart || AskBed == 1 || (AskBed == 2 && (!IsVictim(PlayerRef) || UseNPCBed)))
-		FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
-		AskPlayer = AskPlayer && (!InStart || !(AskBed == 2 && IsVictim(PlayerRef))) ; Disable prompt if bed found but shouldn't ask
-	elseIf !HasPlayer && UseNPCBed
-		FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
-	endIf
-	; Found a bed AND EITHER forced use OR don't care about players choice OR or player approved
-	if FoundBed && (BedStatus[0] == 1 || (!AskPlayer || (AskPlayer && (Config.UseBed.Show() as bool))))
-		CenterOnObject(FoundBed)
-		return true ; Bed found and approved for use
-	endIf
-	return false ; No bed found
+	CenterOnObjectImpl(CenterOn)
+	; IDEA: use the resync parameter to call SetPosition here if currently in AnimationState 
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -1248,43 +1192,34 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 Function SetHook(string AddHooks)
-	string[] Setting = PapyrusUtil.StringSplit(AddHooks)
-	int i = Setting.Length
-	while i
-		i -= 1
-		if Setting[i] != "" && Hooks.Find(Setting[i]) == -1
-			AddTag(Setting[i])
-			Hooks = PapyrusUtil.PushString(Hooks, Setting[i])
-		endIf
-	endWhile
-EndFunction
-
-string Function GetHook()
-	return Hooks[0] ; v1.35 Legacy support, pre multiple hooks
+	string[] newHooks = PapyrusUtil.StringSplit(AddHooks)
+	Hooks = sslpp.MergeStringArrayEx(Hooks, newHooks, true)
 EndFunction
 
 string[] Function GetHooks()
-	return Hooks
+	return PapyrusUtil.ClearEmpty(Hooks)
 EndFunction
 
 Function RemoveHook(string DelHooks)
-	string[] Removing = PapyrusUtil.StringSplit(DelHooks)
-	string[] NewHooks
-	int i = Hooks.Length
-	while i
-		i -= 1
-		if Removing.Find(Hooks[i]) != -1
-			RemoveTag(Hooks[i])
-		else
-			NewHooks = PapyrusUtil.PushString(NewHooks, Hooks[i])
-		endIf
-	endWhile
-	Hooks = NewHooks
+	string[] remove = PapyrusUtil.StringSplit(DelHooks)
+	int i = 0
+	While(i < remove.Length)
+		int where = Hooks.Find(remove[i])
+		If(where > -1)
+			Hooks[where] = ""
+		EndIf
+		i += 1
+	EndWhile
+	Hooks = PapyrusUtil.ClearEmpty(Hooks)
 EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
 ; ------------------------------------------------------- ;
+
+string[] Function GetTags()
+	return PapyrusUtil.ClearEmpty(Tags)
+EndFunction
 
 bool Function HasTag(string Tag)
 	return Tags.Find(Tag) != -1
@@ -1308,41 +1243,6 @@ bool Function RemoveTag(string Tag)
 		return true
 	endIf
 	return false
-EndFunction
-
-bool Function ToggleTag(string Tag)
-	return (RemoveTag(Tag) || AddTag(Tag)) && HasTag(Tag)
-EndFunction
-
-bool Function AddTagConditional(string Tag, bool AddTag)
-	if AddTag
-		return AddTag(Tag)
-	else
-		return RemoveTag(Tag)
-	endIf
-EndFunction
-
-; Because PapyrusUtil don't Remove Dupes from the Array
-string[] Function AddString(string[] ArrayValues, string ToAdd, bool RemoveDupes = true)
-	if ToAdd != ""
-		string[] Output = ArrayValues
-		if !RemoveDupes || Output.length < 1
-			return PapyrusUtil.PushString(Output, ToAdd)
-		elseIf Output.Find(ToAdd) == -1
-			int i = Output.Find("")
-			if i != -1
-				Output[i] = ToAdd
-			else
-				Output = PapyrusUtil.PushString(Output, ToAdd)
-			endIf
-		endIf
-		return Output
-	endIf
-	return ArrayValues
-EndFunction
-
-string[] Function GetTags()
-	return PapyrusUtil.ClearEmpty(Tags)
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -1389,28 +1289,107 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-Function ProgressAnimationImpl()
-	If(Stage < 1)
-		Stage = 1
-	ElseIf(Stage > Animation.StageCount)
-		If(LeadIn)
-			EndLeadInImpl()
-		Else
-			GoToState("Ending")
-		EndIf
-		return
+; ------------------------------------------------------- ;
+; ---	Animation	Start                                 --- ;
+; ------------------------------------------------------- ;
+
+sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
+	If(!akAnimations.Length)
+		return akAnimations
 	EndIf
+	; Bit clunky but w/e do we do if Papyrus doesnt let us allocate arrays with dynamic size
+	int[] valids = Utility.CreateIntArray(akAnimations.Length, -1)
+	int[] pkeys = GetAllPositionKeys()
+	int n = 0
+	While(n < akAnimations.Length)
+		If(akAnimations[i] && akAnimations[i].MatchKeys(pkeys) && akAnimations[i].MatchTags(Tags))
+			valids[n] = n
+		EndIf
+		n += 1
+	EndWhile
+	valids = PapyrusUtil.RemoveInt(valids, -1)
+	If(valids.Length == akAnimations.Length)
+		return akAnimations
+	EndIf
+	sslBaseAnimation[] ret = sslUtility.AnimationArray(valids.Length)
+	int i = 0
+	While(i < ret.Length)
+		ret[i] = akAnimations[valids[i]]
+	EndWhile
+	return ret
+EndFunction
+
+; TODO: Recognize Animation Adjustments
+; Assume all Actors have all necessary data set
+Function PlaceActors()
+	float w = 0.0
+	int i = 0
+	While(i < Positions.Length)
+		float ww = ActorAlias[i].PlaceActor(_Center)
+		If(ww > w)
+			w = ww
+		EndIf
+		Debug.SendAnimationEvent(Positions[i], "sosfasterect")
+		i += 1
+	EndWhile
+	; If placing includes an animation, wait for longest to finish
+	If(w > 0)
+		Utility.Wait(w)
+	EndIf
+	sslpp.SetPositions(Positions, _Center)
+EndFunction
+
+; ------------------------------------------------------- ;
+; ---	Animation				                                --- ;
+; ------------------------------------------------------- ;
+
+; Set the Active Animation & update the stage
+; This should only be called from State "Animating"
+Function SetAnimation(int aid = -1)
+	; Randomize if -1
+	if aid < 0 || aid >= Animations.Length
+		aid = Utility.RandomInt(0, (Animations.Length - 1))
+	endIf
+	RecordSkills()
+	SetAnimationImpl(Animations[aid])
+	; Reset the currently playing animation
+	; ResetPositions()	; TODO: New Animation => Check Position Adjustments
+	If(Stage >= Animation.StageCount)
+		GoToStage(Animation.StageCount - 1)
+	Else
+		GoToStage(Stage)
+	EndIf
+EndFunction
+
+; Set active animation data only
+Function SetAnimationImpl(sslBaseAnimation akAnimation)
+	Animation = akAnimation
+	LogConsole("Setting Animation to " + Animation.Name)
+	String[] animtags = Animation.GetTags()
+	; IsType = [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty, [6] HadVaginal, [7] HadAnal, [8] HadOral
+	IsType[1] = Females && Tags.Find("Vaginal") != -1
+	IsType[2] = animtags.Find("Anal") 	!= -1 || !Females && Tags.Find("Vaginal") != -1
+	IsType[3] = animtags.Find("Oral") 	!= -1
+	IsType[4] = animtags.Find("Loving") != -1
+	IsType[5] = animtags.Find("Dirty") 	!= -1
+	SetBonuses()
+	SoundFX = Animation.GetSoundFX(Stage)
+	; TODO: Define Position Adjustment Data
+EndFunction
+
+Function PlayStageAnimations()
 	int i = 0
 	While(i < Positions.Length)
 		ActorAlias[i].SyncThread()
 		i += 1
 	EndWhile
-
-	SendThreadEvent("StageStart")
-	HookStageStart()
-
-	; TODO: Rewrite this as part of this function, playing all necessary Animations n stuff
-	Action("Animating")
+	; Wanna split this into 2 loops to minimize possible delays for anim event calls
+	Animation.GetAnimEvents(AnimEvents, Stage)
+	int n = 0
+	While(n < Positions.Length)
+		ActorAlias[i].PlayAnimation(AnimEvents[i])
+		n += 1
+	EndWhile
 EndFunction
 
 ; End leadin -> Start default animation
@@ -1421,37 +1400,314 @@ Function EndLeadInImpl()
 	; Add runtime to foreplay skill xp
 	SkillXP[0] = SkillXP[0] + (TotalTime / 10.0)
 	; Restrip with new strip options
+	; TODO: Get rid of this "QuickEvent" stuff
 	QuickEvent("Strip")
 	; Start primary animations at stage 1
 	StorageUtil.SetFloatValue(Config, "SexLab.LastLeadInEnd", SexLabUtil.GetCurrentGameRealTime())
 	SendThreadEvent("LeadInEnd")
-	ProgressAnimationImpl()
+	GoToStage(1)
 EndFunction
 
-Function SendThreadEvent(string HookEvent)
-	Log(HookEvent, "Event Hook")
-	SetupThreadEvent(HookEvent)
-	int i = Hooks.Length
-	while i
-		i -= 1
-		SetupThreadEvent(HookEvent+"_"+Hooks[i])
-	endWhile
-	; Legacy support for < v1.50 - To be removed eventually
-	if HasPlayer
-		SendModEvent("Player"+HookEvent, thread_id)
+; ------------------------------------------------------- ;
+; ---	Timers  				                                --- ;
+; ------------------------------------------------------- ;
+
+; COMEBACK: Check if this works as intended
+Function ResolveTimers()
+	TimedStage = Animation.HasTimer(Stage)
+	If(TimedStage)
+		Log("Stage has timer: "+Animation.GetTimer(Stage))
+	EndIf
+	If(!UseCustomTimers)
+		if LeadIn
+			ConfigTimers = Config.StageTimerLeadIn
+		elseIf IsAggressive
+			ConfigTimers = Config.StageTimerAggr
+		else
+			ConfigTimers = Config.StageTimer
+		endIf
+	EndIf
+EndFunction
+
+Function UpdateTimer(float AddSeconds = 0.0)
+	TimedStage = true
+	StageTimer += AddSeconds
+EndFunction
+
+Function SetTimers(float[] SetTimers)
+	if !SetTimers || SetTimers.Length < 1
+		Log("SetTimers() - Empty timers given.", "ERROR")
+	else
+		CustomTimers    = SetTimers
+		UseCustomTimers = true
 	endIf
 EndFunction
 
-Function SetupThreadEvent(string HookEvent)
-	int eid = ModEvent.Create("Hook"+HookEvent)
-	if eid
-		ModEvent.PushInt(eid, thread_id)
-		ModEvent.PushBool(eid, HasPlayer)
-		ModEvent.Send(eid)
-		; Log("Thread Hook Sent: "+HookEvent)
+float Function GetTimer()
+	TimedStage = Animation.HasTimer(Stage)
+	if TimedStage
+		return Animation.GetTimer(Stage)
 	endIf
-	SendModEvent(HookEvent, thread_id)
+	return GetStageTimer(Animation.StageCount)
 EndFunction
+
+float Function GetStageTimer(int maxstage)
+	int last = Timers.Length - 1
+	if Stage < last
+		return Timers[(Stage - 1)]
+	elseIf Stage >= maxstage
+		return Timers[last]
+	endIf
+	return Timers[(last - 1)]
+endfunction
+
+; ------------------------------------------------------- ;
+; ---	Animation	End		                                --- ;
+; ------------------------------------------------------- ;
+
+Function EndAnimation(bool Quickly = false)
+	GoToState("Ending")
+EndFunction
+
+State Ending
+	Event OnBeginState()
+		SendThreadEvent("AnimationEnding")
+		HookAnimationEnding()
+		Config.DisableThreadControl(self as sslThreadController)
+		UnregisterForAllKeys()
+		If(IsObjectiveDisplayed(0))
+			SetObjectiveDisplayed(0, False)
+		EndIf
+		RecordSkills()
+		UnplaceActors()
+		If(UsingBed && CenterRef.IsActivationBlocked())
+			SetFurnitureIgnored(false)
+		EndIf
+		SendThreadEvent("AnimationEnd")
+		HookAnimationEnd()
+		; Some time for Thread Events to finish running
+		RegisterForSingleUpdate(15)
+	EndEvent
+
+	Event OnUpdate()
+		int i = 0
+		While(i < Positions.Length)
+			ActorAlias[i].DoStatistics()
+			ActorAlias[i].Clear()
+			i += 1
+		EndWhile
+		Initialize()
+	EndEvent
+
+	Event OnEndState()
+		Log("Returning to thread pool...")
+	EndEvent
+
+	; Don't allow to be called twice
+	Function EndAnimation(bool Quickly = false)
+	EndFunction
+EndState
+
+; Only call on placed actors, will unplace all actors, allowing them to move freely again
+; Will take them out of the animation if currently animating
+Function UnplaceActors()
+	int i = 0
+	While(i < Positions.Length)
+		ActorAlias[i].UnplaceActor()
+		i += 1
+	EndWhile
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Tagging                                         --- ;
+; ------------------------------------------------------- ;
+
+Function AddCommonTags(sslBaseAnimation[] akAnimations)
+	String[] commons = akAnimations[0].GetTags()
+	int i = 1
+	While(i < akAnimations.Length)
+		String[] animtags = akAnimations[i].GetTags()
+		int k = commons.Length
+		While(k > 0)
+			k -= 1
+			If(animtags.Find(commons[k]))
+				commons = sslpp.RemoveStringEx(commons, commons[k])
+				If(!commons.Length)
+					return
+				EndIf
+			EndIf
+		EndWhile
+		i += 1
+	EndWhile
+	AddTags(commons)
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Center                                          --- ;
+; ------------------------------------------------------- ;
+
+Function CenterOnObjectImpl(ObjectReference akNewCenter)
+	If(!akNewCenter)
+		return
+	EndIf
+	_Center = akNewCenter.PlaceAtMe(Config.BaseMarker)
+	CenterAlias.ForceRefTo(akNewCenter)
+	CenterLocation[0] = akNewCenter.GetPositionX()
+	CenterLocation[1] = akNewCenter.GetPositionY()
+	CenterLocation[2] = akNewCenter.GetPositionZ()
+	CenterLocation[3] = akNewCenter.GetAngleX()
+	CenterLocation[4] = akNewCenter.GetAngleY()
+	CenterLocation[5] = akNewCenter.GetAngleZ()
+	If(sslpp.IsBed(akNewCenter))
+		BedStatus[1] = ThreadLib.GetBedType(akNewCenter)
+		BedRef = akNewCenter
+		SetFurnitureIgnored(true)
+		float offsetX
+		float offsetY
+		float offsetZ
+		float offsAnZ
+		If(BedStatus[1] == 1)
+			offsetZ = 7.5 ; Average Z offset for bedrolls
+			offsAnZ = 180 ; bedrolls are usually rotated 180° on Z
+		Else
+			int offset = -31 ; + ((_Positions_var.find(playerref) > -1) as int) * 36
+			offsetX = Math.Cos(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
+			offsetY = Math.Sin(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
+			offsetZ = 45 ; Z offset for beds
+		EndIf
+		float scale = akNewCenter.GetScale()
+		If(scale != 1.0)
+			offsetX *= scale
+			offsetY *= scale
+			If(CenterLocation[2] < 0)
+				offsetZ *= (2 - scale) ; Assming Scale will always be in [0; 2)
+			Else
+				offsetZ *= scale
+			EndIf
+		EndIf
+		CenterLocation[0] = CenterLocation[0] + offsetX
+		CenterLocation[1] = CenterLocation[1] + offsetY
+		CenterLocation[2] = CenterLocation[2] + offsetZ
+		CenterLocation[5] = CenterLocation[5] - offsAnZ
+		CenterRef.SetPosition(CenterLocation[0], CenterLocation[1], CenterLocation[2])
+		CenterRef.SetAngle(CenterLocation[3], CenterLocation[4], CenterLocation[5])
+	Else
+		BedStatus[1] = 0
+		BedRef = none
+	EndIf
+	Log("Creating new Center Ref from = " + akNewCenter + " at Coordinates = " + CenterLocation + "(New Center is Bed Type: " + BedStatus[1] + ")")
+EndFunction
+
+; COMEBACK: This here should be completely pointless but might wanna check that it doesnt break anythin just to be sure
+Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
+	; CenterLocation[0] = LocX
+	; CenterLocation[1] = LocY
+	; CenterLocation[2] = LocZ
+	; CenterLocation[3] = RotX
+	; CenterLocation[4] = RotY
+	; CenterLocation[5] = RotZ
+EndFunction
+
+bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
+	If(BedStatus[0] == -1)
+		return false
+	ElseIf(GetState() == "Making" && (!HasPlayer && Config.NPCBed == 0 || HasPlayer && Config.AskBed == 0))
+		return false
+	EndIf
+ 	ObjectReference FoundBed
+	int i = 0
+	While (i < Positions.Length)
+		FoundBed = Positions[i].GetFurnitureReference()
+		int BedType = ThreadLib.GetBedType(FoundBed)	; 0 if no bed
+		If(BedType > 0 && (Positions.Length <= 2 || BedType != 2))
+			CenterOnObject(FoundBed)
+			return true
+		Else
+			i += 1
+		EndIf
+	EndWhile
+	Radius *= 1 + BedStatus[0]	; Double r if forced (BedStatus[0] == 1)
+	If(HasPlayer)
+		; Config.AskBed: 0 - Never, 1 - Alwys, 2 - If not victim
+		If(;/ !InStart || /; Config.AskBed == 1 || Config.AskBed == 2 && (!IsVictim(PlayerRef) || UseNPCBed))
+			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
+			AskPlayer = AskPlayer && (;/ !InStart || /; Config.AskBed < 1 || !IsVictim(PlayerRef))
+		EndIf
+	Else
+		AskPlayer = false
+		If(!FoundBed && UseNPCBed)
+			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
+		EndIf
+	EndIf
+	If(FoundBed && (BedStatus[0] == 1 || !AskPlayer || Config.UseBed.Show() as bool))
+		CenterOnObject(FoundBed)
+		return true
+	endIf
+	return false
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Skill System			                              --- ;
+; ------------------------------------------------------- ;
+
+Function RecordSkills()
+	float TimeNow = RealTime[0]
+	float xp = ((TimeNow - SkillTime) / 8.0)
+	if xp >= 0.5
+		if IsType[1]
+			SkillXP[1] = SkillXP[1] + xp
+		endIf
+		if IsType[2]
+			SkillXP[2] = SkillXP[2] + xp
+		endIf
+		if IsType[3]
+			SkillXP[3] = SkillXP[3] + xp
+		endIf
+		if IsType[4]
+			SkillXP[4] = SkillXP[4] + xp
+		endIf
+		if IsType[5]
+			SkillXP[5] = SkillXP[5] + xp
+		endIf
+	endIf
+	SkillTime = TimeNow
+endfunction
+
+Function SetBonuses()
+	SkillBonus[0] = SkillXP[0]
+	if IsType[1]
+		SkillBonus[1] = SkillXP[1]
+	endIf
+	if IsType[2]
+		SkillBonus[2] = SkillXP[2]
+	endIf
+	if IsType[3]
+		SkillBonus[3] = SkillXP[3]
+	endIf
+	if IsType[4]
+		SkillBonus[4] = SkillXP[4]
+	endIf
+	if IsType[5]
+		SkillBonus[5] = SkillXP[5]
+	endIf
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Misc Utility					                          --- ;
+; ------------------------------------------------------- ;
+
+Function SetFurnitureIgnored(bool disabling = true)
+	If(!BedRef)
+		return
+	EndIf
+	BedRef.SetDestroyed(disabling)
+	BedRef.BlockActivation(disabling)
+	BedRef.SetNoFavorAllowed(disabling)
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Thread Hooks & Events                           --- ;
+; ------------------------------------------------------- ;
 
 sslThreadHook[] ThreadHooks
 Function HookAnimationStarting()
@@ -1528,68 +1784,63 @@ Function HookAnimationEnd()
 	endWhile
 EndFunction
 
+Function SendThreadEvent(string HookEvent)
+	Log(HookEvent, "Event Hook")
+	SetupThreadEvent(HookEvent)
+	int i = Hooks.Length
+	while i
+		i -= 1
+		SetupThreadEvent(HookEvent+"_"+Hooks[i])
+	endWhile
+	; Legacy support for < v1.50 - To be removed eventually
+	if HasPlayer
+		SendModEvent("Player"+HookEvent, thread_id)
+	endIf
+EndFunction
+
+Function SetupThreadEvent(string HookEvent)
+	int eid = ModEvent.Create("Hook"+HookEvent)
+	if eid
+		ModEvent.PushInt(eid, thread_id)
+		ModEvent.PushBool(eid, HasPlayer)
+		ModEvent.Send(eid)
+		; Log("Thread Hook Sent: "+HookEvent)
+	endIf
+	SendModEvent(HookEvent, thread_id)
+EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Alias Events - SYSTEM USE ONLY                  --- ;
+; --- Alias Events									                  --- ;
 ; ------------------------------------------------------- ;
 
 string[] EventTypes
-float[] AliasTimer
 int[] AliasDone
-float SyncTimer
-int SyncDone
 
 int Property kPrepareActor = 0 autoreadonly hidden
-int Property kSyncActor    = 1 autoreadonly hidden
-int Property kResetActor   = 2 autoreadonly hidden
-int Property kRefreshActor = 3 autoreadonly hidden
-int Property kStartup      = 4 autoreadonly hidden
 
 string Function Key(string Callback)
-	return "SSL_"+thread_id+"_"+Callback
+	return "SSL_" + thread_id + "_" + Callback
 EndFunction
 
 Function QuickEvent(string Callback)
 	ModEvent.Send(ModEvent.Create(Key(Callback)))
 endfunction
 
-Function SyncEvent(int id, float WaitTime)
-	if AliasTimer[id] <= 0 || AliasTimer[id] < Utility.GetCurrentRealTime()
-		AliasDone[id]  = 0
-		AliasTimer[id] = Utility.GetCurrentRealTime() + WaitTime
-		RegisterForSingleUpdate(WaitTime)
- 		ModEvent.Send(ModEvent.Create(Key(EventTypes[id])))
-	else
-		Log(EventTypes[id]+" sync Event attempting to start during previous wait sync")
-		RegisterForSingleUpdate(WaitTime * 0.25)
-	endIf
+Function SyncEvent(int id)
+	AliasDone[id]  = 0
+ 	ModEvent.Send(ModEvent.Create(Key(EventTypes[id])))
 EndFunction
 
 bool SyncLock
 Function SyncEventDone(int id)
 	while SyncLock
-		Log("SyncLock("+id+")")
 		Utility.WaitMenuMode(0.01)
 	endWhile
 	SyncLock = true
-	float TimeNow = Utility.GetCurrentRealTime()
-	if AliasTimer[id] > 0.0 && AliasDone[id] < ActorCount ; || AliasTimer[id] < TimeNow
-		AliasDone[id] = AliasDone[id] + 1
-		if AliasDone[id] >= ActorCount
-			UnregisterforUpdate()
-			if DebugMode
-				Log("Lag Timer: " + (AliasTimer[id] - TimeNow), "SyncDone("+EventTypes[id]+")")
-			endIf
-			AliasDone[id]  = 0
-			AliasTimer[id] = 0.0
-			if id >= kSyncActor && id <= kRefreshActor
-				RemoveFade()
-			endIf
-			ModEvent.Send(ModEvent.Create(Key(EventTypes[id]+"Done")))
-		endIf
-	else
-		Log("WARNING: SyncEventDone("+id+") OUT OF TURN")
-	endIf
+	AliasDone[id] = AliasDone[id] + 1
+	If(AliasDone[id] == Positions.Length)
+		ModEvent.Send(ModEvent.Create(Key(EventTypes[id]+"Done")))
+	EndIf
 	SyncLock = false
 EndFunction
 
@@ -1631,7 +1882,7 @@ Function SetupActorEvent(Actor ActorRef, string Callback)
 EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Thread Setup - SYSTEM USE ONLY                  --- ;
+; --- Thread Setup    								                --- ;
 ; ------------------------------------------------------- ;
 
 Function Log(string msg, string src = "")
@@ -1643,9 +1894,19 @@ Function Log(string msg, string src = "")
 	EndIf
 EndFunction
 
+Function LogConsole(String asReport)
+	String msg = "[SEXLAB] - Thread[" + thread_id + "]" + asReport
+	SexLabUtil.PrintConsole(msg)
+	Debug.Trace(msg)
+EndFunction
+
+Function LogRedundant(String asFunction)
+	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
+EndFunction
+
 Function ReportAndFail(string msg, string src = "", bool halt = true)
-	msg = "FATAL - Thread["+thread_id+"] "+src+" - "+msg
-	Debug.TraceStack("SEXLAB - " + msg)
+	msg = "SEXLAB - FATAL - Thread["+thread_id+"] " + src + " - " + msg
+	Debug.TraceStack(msg)
 	SexLabUtil.PrintConsole(msg)
 	If(DebugMode)
 		Debug.TraceUser("SexLabDebug", msg)
@@ -1681,18 +1942,6 @@ sslActorAlias Function PickAlias(Actor ActorRef)
 	return none
 EndFunction
 
-Function ResolveTimers()
-	if !UseCustomTimers
-		if LeadIn
-			ConfigTimers = Config.StageTimerLeadIn
-		elseIf IsAggressive
-			ConfigTimers = Config.StageTimerAggr
-		else
-			ConfigTimers = Config.StageTimer
-		endIf
-	endIf
-EndFunction
-
 Function SetTID(int id)
 	thread_id = id
 	PlayerRef = Game.GetPlayer()
@@ -1722,7 +1971,6 @@ Function SetTID(int id)
 			AnimSlots = SexLabQuestAnimations as sslAnimationSlots
 		endIf
 	endIf
-
 	
 	; Init thread info
 	EventTypes = new string[5]
@@ -1758,7 +2006,6 @@ Function InitShares()
 	BedStatus      = new int[2]
 	AliasDone      = new int[6]
 	RealTime       = new float[1]
-	AliasTimer     = new float[6]
 	SkillXP        = new float[6]
 	SkillBonus     = new float[6]
 	CenterLocation = new float[6]
@@ -1801,12 +2048,10 @@ Function Initialize()
 	UseCustomTimers= false
 	DisableOrgasms = false
 	; Floats
-	SyncTimer      = 0.0
 	StartedAt      = 0.0
+	SkillTime			 = 0.0
 	; Integers
-	SyncDone       = 0
 	Stage          = 1
-	; StartAID       = -1
 	; Storage Data
 	Genders           = new int[4]
 	Victims           = PapyrusUtil.ActorArray(0)
@@ -1874,8 +2119,6 @@ Function OrgasmDone()
 EndFunction
 Function StartupDone()
 EndFunction
-Function SetAnimation(int aid = -1)
-EndFunction
 bool Function SetAnimationsByTags(String asTags, int aiUseBed)
 EndFunction
 ; Animating
@@ -1884,91 +2127,6 @@ EndEvent
 Function EnableHotkeys(bool forced = false)
 EndFunction
 Function RealignActors()
-EndFunction
-; TEMPORARY
-Function SetTimeThings()
-EndFunction
-
-sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
-	If(!akAnimations.Length)
-		return akAnimations
-	EndIf
-	; Bit clunky but w/e do we do if Papyrus doesnt let us allocate arrays with dynamic size
-	int[] valids = Utility.CreateIntArray(akAnimations.Length, -1)
-	int[] pkeys = GetAllPositionKeys()
-	int n = 0
-	While(n < akAnimations.Length)
-		If(akAnimations[i] && akAnimations[i].MatchKeys(pkeys) && akAnimations[i].MatchTags(Tags))
-			valids[n] = n
-		EndIf
-		n += 1
-	EndWhile
-	valids = PapyrusUtil.RemoveInt(valids, -1)
-	If(valids.Length == akAnimations.Length)
-		return akAnimations
-	EndIf
-	sslBaseAnimation[] ret = sslUtility.AnimationArray(valids.Length)
-	int i = 0
-	While(i < ret.Length)
-		ret[i] = akAnimations[valids[i]]
-	EndWhile
-	return ret
-EndFunction
-
-Function AddCommonTags(sslBaseAnimation[] akAnimations)
-	String[] commons = akAnimations[0].GetTags()
-	int i = 1
-	While(i < akAnimations.Length)
-		String[] animtags = akAnimations[i].GetTags()
-		int k = commons.Length
-		While(k > 0)
-			k -= 1
-			If(animtags.Find(commons[k]))
-				commons = sslpp.RemoveStringEx(commons, commons[k])
-				If(!commons.Length)
-					return
-				EndIf
-			EndIf
-		EndWhile
-		i += 1
-	EndWhile
-	AddTags(commons)
-EndFunction
-
-Function PlaceActors()
-	float w = 0.0
-	int i = 0
-	While(i < Positions.Length)
-		; Lock Actor in place & get them ready to animate
-		float ww = ActorAlias[i].PlaceActor()
-		If(ww > w)
-			w = ww
-		EndIf
-		Positions[i].SetVehicle(_Center)
-		; Apply Scale after SetVehicle cuz SetVehicle norms ActorScale
-		ActorAlias[i].ApplyScale()
-		Debug.SendAnimationEvent(Positions[i], "sosfasterect")
-		i += 1
-	EndWhile
-	; If placing includes an animation, wait for longest to finish
-	If(w > 0)
-		Utility.Wait(w)
-	EndIf
-	sslpp.SetPositions(Positions, _Center)
-EndFunction
-
-Function UnplaceActors()
-	int i = 0
-	While(i < Positions.Length)
-		Positions[i].SetVehicle(none)
-		ActorAlias[i].UnlockActor()
-		ActorAlias[i].SendDefaultAnimEvent()
-		i += 1
-	EndWhile
-EndFunction
-
-Function LogRedundant(String asFunction)
-	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -2031,10 +2189,10 @@ bool Function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppres
 			endIf
 		endIf
 	endWhile
-	; If still here than we require all and had all
 	return true
 EndFunction
 
+; Might want to come back to this just to check that we actually consider all configs in the DataKey \o/
 int Function FilterAnimations()
 	; Filter animations based on user settings and scene
 	if !CustomAnimations || CustomAnimations.Length < 1
@@ -2254,9 +2412,31 @@ int Function FilterAnimations()
 	return 0
 EndFunction
 
+bool Function ToggleTag(string Tag)
+	return (RemoveTag(Tag) || AddTag(Tag)) && HasTag(Tag)
+EndFunction
+
+bool Function AddTagConditional(string Tag, bool AddTag)
+	if AddTag
+		return AddTag(Tag)
+	else
+		return RemoveTag(Tag)
+	endIf
+EndFunction
+
+; Because PapyrusUtil don't Remove Dupes from the Array
+string[] Function AddString(string[] ArrayValues, string ToAdd, bool RemoveDupes = true)
+	String[] add = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(ToAdd, ","))
+	return sslpp.MergeStringArrayEx(ArrayValues, add, true)
+EndFunction
+
+string Function GetHook()
+	return Hooks[0] ; v1.35 Legacy support, pre multiple hooks
+EndFunction
+
 state Advancing
 	Event OnBeginState()
-		ProgressAnimationImpl()
+		GoToStage(Stage + 1)
 	EndEvent
 	Function SyncDone()
 		LogRedundant("SyncDone")
