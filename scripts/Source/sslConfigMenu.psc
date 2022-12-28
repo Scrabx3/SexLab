@@ -3315,8 +3315,10 @@ function TimersStripping()
 		AddHeaderOption("$SSL_FemaleStripFrom")
 		AddHeaderOption("$SSL_MaleStripFrom")
 	endIf
+	; Weapon
 	AddToggleOptionST("Stripping_1_32", Biped[32], Strip1[32])
 	AddToggleOptionST("Stripping_0_32", Biped[32], Strip0[32])
+	; Armor
 	int i
 	while i < 32
 		AddToggleOptionST("Stripping_1_"+i, Biped[i], Strip1[i])

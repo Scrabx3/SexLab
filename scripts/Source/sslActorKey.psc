@@ -154,14 +154,14 @@ int function BuildGenderKey(Actor akActor) global
   return GetGenderByLegacyGender(SexLabUtil.GetGender(akActor))
 endFunction
 
-int Function GetLegacyGenderByGender(int aiGenderKey) global
-  If(Math.LogicalAnd(aiGenderKey, 2))      ; Male
+int Function GetLegacyGenderByKey(int aiKey) global
+  If(Math.LogicalAnd(aiKey, 2))      ; Male
     return 0
-  ElseIf(Math.LogicalAnd(aiGenderKey, 5))  ; Female | Futa
+  ElseIf(Math.LogicalAnd(aiKey, 5))  ; Female | Futa
     return 1
-  ElseIf(Math.LogicalAnd(aiGenderKey, 8))  ; FCr
+  ElseIf(Math.LogicalAnd(aiKey, 8))  ; FCr
     return 3
-  ElseIf(Math.LogicalAnd(aiGenderKey, 16)) ; MCr
+  ElseIf(Math.LogicalAnd(aiKey, 16)) ; MCr
     return 2
   EndIf
 EndFunction

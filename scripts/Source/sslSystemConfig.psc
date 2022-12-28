@@ -1865,48 +1865,6 @@ event OnInit()
 	SetDefaults()
 endEvent
 
-function ReloadData()
-	; ActorTypeNPC =            Game.GetForm(0x13794)
-	; AnimatingFaction =        Game.GetFormFromFile(0xE50F, "SexLab.esm")
-	; AudioSFX =                Game.GetFormFromFile(0x61428, "SexLab.esm")
-	; AudioVoice =              Game.GetFormFromFile(0x61429, "SexLab.esm")
-	; BaseMarker =              Game.GetFormFromFile(0x45A93 "SexLab.esm")
-	; BedRollsList =            Game.GetFormFromFile(0x6198C, "SexLab.esm")
-	; BedsList =                Game.GetFormFromFile(0x181B1, "SexLab.esm")
-	; CalypsStrapon =           Game.GetFormFromFile(0x1A22A, "SexLab.esm")
-	; CheckFNIS =               Game.GetFormFromFile(0x70C38, "SexLab.esm")
-	; CheckPapyrusUtil =        Game.GetFormFromFile(0x70C3B, "SexLab.esm")
-	; CheckSKSE =               Game.GetFormFromFile(0x70C39, "SexLab.esm")
-	; CheckSkyrim =             Game.GetFormFromFile(0x70C3A, "SexLab.esm")
-	; CheckSkyUI =              Game.GetFormFromFile(0x70C3C, "SexLab.esm")
-	; CleanSystemFinish =       Game.GetFormFromFile(0x6CB9E, "SexLab.esm")
-	; CumAnalKeyword =          Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumAnalSpell =            Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumOralAnalSpell =        Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumOralKeyword =          Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumOralSpell =            Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumVaginalAnalSpell =     Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumVaginalKeyword =       Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumVaginalOralAnalSpell = Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumVaginalOralSpell =     Game.GetFormFromFile(0x, "SexLab.esm")
-	; CumVaginalSpell =         Game.GetFormFromFile(0x, "SexLab.esm")
-	; DoNothing =               Game.GetFormFromFile(0x, "SexLab.esm")
-	; DummyWeapon =             Game.GetFormFromFile(0x, "SexLab.esm")
-	; ForbiddenFaction =        Game.GetFormFromFile(0x, "SexLab.esm")
-	; GenderFaction =           Game.GetFormFromFile(0x, "SexLab.esm")
-	; LipSync =                 Game.GetFormFromFile(0x, "SexLab.esm")
-	; LocationMarker =          Game.GetFormFromFile(0x, "SexLab.esm")
-	; NudeSuit =                Game.GetFormFromFile(0x, "SexLab.esm")
-	; OrgasmFX =                Game.GetFormFromFile(0x, "SexLab.esm")
-	; SexLabVoiceF =            Game.GetFormFromFile(0x, "SexLab.esm")
-	; SexLabVoiceM =            Game.GetFormFromFile(0x, "SexLab.esm")
-	; SexMixedFX =              Game.GetFormFromFile(0x, "SexLab.esm")
-	; SquishingFX =             Game.GetFormFromFile(0x, "SexLab.esm")
-	; SuckingFX =               Game.GetFormFromFile(0x, "SexLab.esm")
-	; UseBed =                  Game.GetFormFromFile(0x, "SexLab.esm")
-	; VoicesPlayer =            Game.GetFormFromFile(0x, "SexLab.esm")
-endFunction
-
 ; ------------------------------------------------------- ;
 ; --- Pre 1.50 Config Accessors                       --- ;
 ; ------------------------------------------------------- ;
@@ -1992,6 +1950,9 @@ endProperty
 ;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
 ;																																											;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+function ReloadData()
+endFunction
 
 Spell function GetHDTSpell(Actor ActorRef)
 	if !HasHDTHeels || !HDTHeelEffect || !ActorRef; || !ActorRef.GetWornForm(Armor.GetMaskForSlot(37))

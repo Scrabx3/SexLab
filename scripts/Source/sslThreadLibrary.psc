@@ -407,8 +407,10 @@ function TrackActor(Actor ActorRef, string Callback)
 endFunction
 
 function TrackFaction(Faction FactionRef, string Callback)
-	FormListAdd(Config, "TrackedFactions", FactionRef, false)
-	StringListAdd(FactionRef, "SexLabEvents", Callback, false)
+	If(FactionRef)
+		FormListAdd(Config, "TrackedFactions", FactionRef, false)
+		StringListAdd(FactionRef, "SexLabEvents", Callback, false)
+	EndIf
 endFunction
 
 function UntrackActor(Actor ActorRef, string Callback)
@@ -429,14 +431,14 @@ bool function IsActorTracked(Actor ActorRef)
 	if ActorRef == PlayerRef || StringListCount(ActorRef, "SexLabEvents") > 0
 		return true
 	endIf
-	int i = FormListCount(Config, "TrackedFactions")
-	while i
-		i -= 1
-		Faction FactionRef = FormListGet(Config, "TrackedFactions", i) as Faction
-		if FactionRef && ActorRef.IsInFaction(FactionRef)
+	Form[] f = FormListToArray(Config, "TrackedFactions")
+	int i = 0
+	While(i < f.Length)
+		If(ActorRef.IsInFaction(f[i] as Faction))
 			return true
-		endIf
-	endWhile
+		EndIf
+		i += 1
+	EndWhile
 	return false
 endFunction
 
