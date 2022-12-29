@@ -201,7 +201,6 @@ endFunction
 bool function IsSkilled(Actor ActorRef) global native
 
 function _SeedActor(Actor ActorRef, float RealTime, float GameTime) global native
-; function _SeedActor2(Actor ActorRef, float RealTime, float GameTime) global native
 function SeedActor(Actor ActorRef)
 	if ActorRef && ActorRef != PlayerRef && !IsSkilled(ActorRef)
 		if Config.SeedNPCStats && ActorRef.HasKeyword(ActorTypeNPC)

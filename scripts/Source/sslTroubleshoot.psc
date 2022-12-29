@@ -164,7 +164,7 @@ state ThreadSlots
 				sslActorAlias ActorAlias = Thread.ActorAlias[n]
 				if ActorAlias.GetReference() != none
 					Error(153, "Actor Alias ("+n+") is not empty, attempting to correct this error now...")
-					ActorAlias.ClearAlias()
+					ActorAlias.Clear()
 				endIf
 				; if ActorAlias.TestAlias()
 				; 	Error(154, "Actor Alias ("+n+") failed to load a resource, something may be wrong with your SexLab.esm or you may have missing scripts. Attempting to correct this error now...")

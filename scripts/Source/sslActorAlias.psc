@@ -161,14 +161,14 @@ Auto State Empty
 	bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoice, bool abSilent)
 		if !akReference || akReference != GetReference()
 			Log("ERROR: SetActor("+akReference+") on State:'Ready' is not allowed")
-			return false ; Failed to set prospective actor into alias
+			return false
 		endIf
 		_ActorKey = sslActorKey.BuildActorKey(akReference, abIsVictim)
 		ActorRef = akReference
 
 		ActorBase b = ActorRef.GetLeveledActorBase()
 		; ActorVoice = BaseRef.GetVoiceType()
-		int Gender     = ActorLib.GetGender(ActorRef)
+		int Gender = ActorLib.GetGender(ActorRef)
 		IsFemale   = Gender == 1
 		IsCreature = Gender >= 2
 		IsFuta     = ActorLib.GetTrans(ActorRef) != -1
@@ -176,7 +176,7 @@ Auto State Empty
 		String r = MiscUtil.GetRaceEditorID(b.GetRace())
 		; Player and creature specific
 		If(sslActorKey.IsCreature(_ActorKey))
-			Thread.CreatureRef = b.GetRace()
+			; Thread.CreatureRef = b.GetRace()
 			if sslCreatureAnimationSlots.HasRaceKey("Canines") && sslCreatureAnimationSlots.HasRaceID("Canines", r)
 				ActorRaceKey = "Canines"
 			else
@@ -409,30 +409,21 @@ State Ready
 		If(ActorRef == _center)
 			return
 		EndIf
-		float d = ActorRef.GetDistance(_center)
+		; float d = ActorRef.GetDistance(_center)
 		; Only do pathing if we are reasonably close, otherwise thisd slow down too much
-		If(d > 6144.0)
+		If(ActorRef.GetDistance(_center) > 6144.0)
 			return
 		EndIf
-		float t = SexLabUtil.GetCurrentGameRealTime() + 30.0
+		float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
 		ActorRef.SetFactionRank(AnimatingFaction, 2)
 		ActorRef.EvaluatePackage()
-		bool stuck = false
-		While (d > 248.0 && SexLabUtil.GetCurrentGameRealTime() < t)
-			Utility.Wait(1)
-			float dd = d
-			d = ActorRef.GetDistance(_center)
-			If(d - dd > -16.0)
-				; If we dont move 16 units closer within 2 seconds, consider actor stuck & tp
-				If(!stuck)
-					stuck = true
-				Else
-					Log("Alias got stuck attempting to path to center. Progressing without path completion...")
-					d = 0.0
-				EndIf
-			Else
-				stuck = false
-			EndIf
+		While (ActorRef.GetDistance(_center) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
+			Utility.Wait(0.035)
+			; float dd = d
+			; d = ActorRef.GetDistance(_center)
+			; If(d - dd > -0.1)
+			; 	Log("Alias got stuck attempting to path to center. Progressing without path completion...")
+			; EndIf
 		EndWhile
 		ActorRef.SetFactionRank(AnimatingFaction, 1)
 		ActorRef.EvaluatePackage()
@@ -525,6 +516,7 @@ state Animating
 
 	Event OnUpdate()
 		If(Thread.GetState() != "Animating")
+			Error("OnUpdate() call but my thread is no longer animating")
 			return
 		EndIf
 		; TODO: Review this block below
@@ -562,7 +554,7 @@ state Animating
 			ElseIf(sslActorKey.IsMaleCreature(_ActorKey))
 				cmp = 30
 			EndIf
-			If(Thread.RealTime[0] - LastOrgasm > cmp)
+			If(SexLabUtil.GetCurrentGameRealTime() - LastOrgasm > cmp)
 				OrgasmEffect()
 			EndIf
 		EndIf
@@ -629,7 +621,7 @@ state Animating
 		elseIf !Forced && Enjoyment < 1
 			; Actor have the orgasm few seconds ago or is in pain and can't orgasm
 			return
-		elseIf Math.Abs(Thread.RealTime[0] - LastOrgasm) < 5.0
+		elseIf Math.Abs(SexLabUtil.GetCurrentGameRealTime() - LastOrgasm) < 5.0
 			Log("Excessive OrgasmEffect Triggered")
 			return
 		endIf
@@ -670,7 +662,7 @@ state Animating
 			endIf
 		endIf
 		UnregisterForUpdate()
-		LastOrgasm = Thread.RealTime[0]
+		LastOrgasm = SexLabUtil.GetCurrentGameRealTime()
 		Orgasms   += 1
 		; Send an orgasm event hook with actor and orgasm count
 		int eid = ModEvent.Create("SexLabOrgasm")
@@ -770,13 +762,13 @@ EndState
 
 int function GetEnjoyment()
 	if !IsSkilled
-		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((Thread.RealTime[0] - StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((Thread.Stage as float / Thread.Animation.StageCount as float) * 60.0)) as int
+		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((SexLabUtil.GetCurrentGameRealTime() - StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((Thread.Stage as float / Thread.Animation.StageCount as float) * 60.0)) as int
 	else
 		if Position == 0	; COMEBACK: ???
 			Thread.RecordSkills()
 			Thread.SetBonuses()
 		endIf
-		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorKey.IsFemale(_ActorKey), (Thread.RealTime[0] - StartedAt), Thread.Stage, Thread.Animation.StageCount)
+		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorKey.IsFemale(_ActorKey), (SexLabUtil.GetCurrentGameRealTime() - StartedAt), Thread.Stage, Thread.Animation.StageCount)
 		; Log("FullEnjoyment["+FullEnjoyment+"] / BaseEnjoyment["+BaseEnjoyment+"] / Enjoyment["+(FullEnjoyment - BaseEnjoyment)+"]")
 	endIf
 
@@ -1141,6 +1133,7 @@ EndFunction
 ; Reset this Actor into a pre-animation state, allowing them to freely move etc
 ; Is overwritten by the Animation State to consider animation exclusive statuses, eg expression
 Function UnplaceActor()
+	SendDefaultAnimEvent(true)
 	UnlockActor()
 	If(!sslActorKey.IsCreature(_ActorKey))
 		Unstrip()
@@ -1193,7 +1186,8 @@ Function DoStatistics()
 		VictimRef = ActorRef
 	endIf
 	int g = sslActorKey.GetLegacyGenderByKey(_ActorKey)
-	sslActorStats.RecordThread(ActorRef, g, BestRelation, StartedAt, Thread.RealTime[0], Utility.GetCurrentGameTime(), Thread.HasPlayer, VictimRef, Thread.Genders, Thread.SkillXP)
+	float rt = SexLabUtil.GetCurrentGameRealTime()
+	sslActorStats.RecordThread(ActorRef, g, BestRelation, StartedAt, rt, Utility.GetCurrentGameTime(), Thread.HasPlayer, VictimRef, Thread.Genders, Thread.SkillXP)
 	Stats.AddPartners(ActorRef, Thread.Positions, Thread.Victims)
 	if Thread.IsVaginal
 		Stats.AdjustSkill(ActorRef, "VaginalCount", 1)
@@ -1212,20 +1206,21 @@ EndFunction
 
 float Function Strip()
 	int[] Strip
-	if StripOverride.Length == 33
+	If(StripOverride.Length == 2)
 		Strip = StripOverride
-	else
+	Else
 		; COMEBACK: Config Menu is too much of an unreadable nightmare to do this properly but eventually Ill have to, eh
 		bool[] s = Config.GetStrip(IsFemale, Thread.UseLimitedStrip(), Thread.IsType[0], IsVictim())
-		StripOverride[0] = 0
+		Strip = new int[2]
 		int i = 0
 		While(i < 32)
 			If(s[i])
-				i += Math.LeftShift(1, i)
-			EndIF
+				Strip[0] = Strip[0] + Math.LeftShift(1, i)
+			EndIf
+			i += 1
 		EndWhile
-		StripOverride[1] = s[32] as int
-	endIf
+		Strip[1] = s[32] as int
+	EndIf
 	; Weapons
 	If(Strip[1])
 		RightHand = ActorRef.GetEquippedObject(1)
@@ -1244,7 +1239,7 @@ float Function Strip()
 	Equipment = sslpp.StripActor(ActorRef, Strip[0])
 	Log("<Strip> Left Weapon: " + LeftHand + " | Right Weapon: " + RightHand + " | Equipment: " + Equipment)
 	; Equip the nudesuit
-	if Strip[2] && (sslActorKey.IsMale(_ActorKey) && Config.UseMaleNudeSuit || sslActorKey.IsFemale(_ActorKey) && Config.UseFemaleNudeSuit)
+	if Math.LogicalAnd(Strip[0], 4) && (sslActorKey.IsMale(_ActorKey) && Config.UseMaleNudeSuit || sslActorKey.IsFemale(_ActorKey) && Config.UseFemaleNudeSuit)
 		ActorRef.EquipItem(Config.NudeSuit, true, true)
 	endIf
 	; Suppress NiOverride High Heels
@@ -1349,7 +1344,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Log(string msg, string src = "")
-	msg = "ActorAlias["+GetActorName()+"] "+src+" - "+msg
+	msg = "Thread[" + Thread.tid + "] ActorAlias["+GetActorName()+"] "+src+" - "+msg
 	Debug.Trace("SEXLAB - " + msg)
 	if Config.DebugMode
 		SexLabUtil.PrintConsole(msg)

@@ -1,5 +1,11 @@
 scriptname sslThreadController extends sslThreadModel
-{ Animation Thread Controller: Runs manipulation logic of thread based on information from model. Access only through functions; NEVER create a property directly to this. }
+{
+	Class to access and write scene data
+	Use the functions listed here to manipulate a running scene or retrieve data from it, to get a valid
+	instance of this API use SexLabFramework.GetController(tid). The 'tid' or thread-id can be obtained through
+	a variety of functions also found in the main API. It is also (and most commonly) accessed by listening to one
+	of the various events invoked by a running thread. There is NEVER a reason to link to this via a direct property
+}
 
 ; TODO: SetFirstAnimation() - allow custom defined starter anims instead of random
 

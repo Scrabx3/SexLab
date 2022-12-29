@@ -870,7 +870,7 @@ function Save(int id = -1)
 	FinalizePositionsAndAnimations()
 	int i = 0
 	While(i < _ActorKeys.Length)
-		int g = sslActorKey.GetLegacyGenderByGender(_ActorKeys[i])
+		int g = sslActorKey.GetLegacyGenderByKey(_ActorKeys[i])
 		string gs = GetGenderString(g)
 		Genders[g] 		= Genders[g] + 1
 		Positions[i] 	= g

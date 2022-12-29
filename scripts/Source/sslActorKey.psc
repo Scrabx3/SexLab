@@ -1,10 +1,6 @@
 ScriptName sslActorKey Hidden
 { Fancy bitflag magic to store actor data }
 
-; COMEBACK: It might be worth pushing this entire Script into a .dll
-; none of the operations here are overly expensive but its a lot of arithmetic and they are called quite a lot
-; and cpp syntax + compiler might be able to optimize this code quite significantly
-
 ;/ Bit flags are defined as follows:
 0  - Female
 1  - Male
@@ -311,7 +307,5 @@ String[] Function GetAllRaceKeys() global
 	ret[49] = "WispMothers"
 	ret[50] = "Wisps"
 	ret[51] = "Wolves"
-  String[] other = sslCreatureAnimationSlots.GetAllRaceKeys()
-  Debug.Trace("[SLPP] GetAllCreatureKeys => " + other + " | Is same as ret = " + (ret == other))
   return ret
 EndFunction
