@@ -335,7 +335,7 @@ State Making
 		If(!keys.Length)
 			return false
 		EndIf
-		keys = sslActorKey.SortActorKeyArray(keys)
+		keys = sslActorData.SortActorKeyArray(keys)
 		sslBaseAnimation[] anims = AnimSlots.GetAnimationsByKeys(keys, asTags, aiUseBed - 1)
 		If(anims.Length)
 			PrimaryAnimations = anims
@@ -375,7 +375,7 @@ State Making
 		While(i < Positions.Length)
 			sslActorAlias it = ActorAlias[i]
 			int n = i - 1
-			While(n >= 0 && !sslActorKey.IsLesserKey(ActorAlias[n].ActorKey, it.ActorKey))
+			While(n >= 0 && !sslActorData.IsLesserKey(ActorAlias[n].ActorKey, it.ActorKey))
 				ActorAlias[n + 1] = ActorAlias[n]
 				n -= 1
 			EndWhile

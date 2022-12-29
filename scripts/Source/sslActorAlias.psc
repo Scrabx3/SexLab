@@ -53,8 +53,9 @@ Actor PlayerRef
 ; TODO: Remove these 3453462342634 local vars for readabilities sake
 
 ; Actor Info
+int vanilla_sex
+
 String ActorRaceKey
-bool IsFemale
 bool IsCreature
 bool IsFuta
 bool IsSkilled
@@ -163,19 +164,20 @@ Auto State Empty
 			Log("ERROR: SetActor("+akReference+") on State:'Ready' is not allowed")
 			return false
 		endIf
-		_ActorKey = sslActorKey.BuildActorKey(akReference, abIsVictim)
+		_ActorKey = sslActorData.BuildActorKey(akReference, abIsVictim)
 		ActorRef = akReference
-
+		
 		ActorBase b = ActorRef.GetLeveledActorBase()
+		vanilla_sex = b.GetSex()
+
 		; ActorVoice = BaseRef.GetVoiceType()
 		int Gender = ActorLib.GetGender(ActorRef)
-		IsFemale   = Gender == 1
 		IsCreature = Gender >= 2
 		IsFuta     = ActorLib.GetTrans(ActorRef) != -1
 
 		String r = MiscUtil.GetRaceEditorID(b.GetRace())
 		; Player and creature specific
-		If(sslActorKey.IsCreature(_ActorKey))
+		If(sslActorData.IsCreature(_ActorKey))
 			; Thread.CreatureRef = b.GetRace()
 			if sslCreatureAnimationSlots.HasRaceKey("Canines") && sslCreatureAnimationSlots.HasRaceID("Canines", r)
 				ActorRaceKey = "Canines"
@@ -188,7 +190,7 @@ Auto State Empty
 		; Actor's Adjustment Key
 		ActorKeyStr = r
 		if !Config.RaceAdjustments
-			if IsCreature
+			if sslActorData.IsCreature(_ActorKey)
 				if ActorRaceKey
 					ActorKeyStr = ActorRaceKey
 				endIf
@@ -196,11 +198,11 @@ Auto State Empty
 				ActorKeyStr = "Humanoid"
 			endIf
 		endIf
-		if IsCreature
+		if sslActorData.IsCreature(_ActorKey)
 			ActorKeyStr += "C"
 		endIf
-		if !IsCreature || Config.UseCreatureGender
-			If sslActorKey.IsFemale(_ActorKey)
+		if !sslActorData.IsCreature(_ActorKey) || Config.UseCreatureGender
+			If sslActorData.IsFemale(_ActorKey)
 				ActorKeyStr += "F"
 			else
 				ActorKeyStr += "M"
@@ -224,7 +226,7 @@ Auto State Empty
 		endIf
 		
 		if Config.HasNiOverride && !IsCreature
-			bool female = sslActorKey.IsFemale(_ActorKey)
+			bool female = sslActorData.IsFemale(_ActorKey)
 			string[] MOD_OVERRIDE_KEY = NiOverride.GetNodeTransformKeys(ActorRef, False, female, "NPC")
 			int idx = 0
 			While idx < MOD_OVERRIDE_KEY.Length
@@ -259,13 +261,13 @@ Auto State Empty
 			endIf
 		endIf
 		; Set base voice/loop delay
-		if IsCreature
-			BaseDelay  = 3.0
-		elseIf IsFemale
-			BaseDelay  = Config.FemaleVoiceDelay
-		else
-			BaseDelay  = Config.MaleVoiceDelay
-		endIf
+		If(sslActorData.IsCreature(_ActorKey))
+			BaseDelay = 3.0
+		ElseIf(vanilla_sex == 1)
+			BaseDelay = Config.FemaleVoiceDelay
+		Else
+			BaseDelay = Config.MaleVoiceDelay
+		EndIf
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
 		; Init some needed arrays
@@ -317,8 +319,8 @@ State Ready
 		endIf
 		LogInfo += "Voice[" + Voice.Name + "] "
 		; Strapon & Expression (for NPC only)
-		If(!sslActorKey.IsCreature(_ActorKey))
-			If(Config.UseStrapons && sslActorKey.IsFemalePure(_ActorKey))
+		If(!sslActorData.IsCreature(_ActorKey))
+			If(Config.UseStrapons && sslActorData.IsFemalePure(_ActorKey))
 				HadStrapon = Config.WornStrapon(ActorRef)
 				If(!HadStrapon)
 					Strapon = Config.GetStrapon()
@@ -370,7 +372,7 @@ State Ready
 			else
 				FirsStageTime = Config.StageTimer[0]
 			endIf
-			BaseEnjoyment -= Math.Abs(CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, IsFemale, FirsStageTime, 1, Thread.Animation.StageCount)) as int
+			BaseEnjoyment -= Math.Abs(CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorData.IsFemale(_ActorKey), FirsStageTime, 1, Thread.Animation.StageCount)) as int
 			if BaseEnjoyment < -5
 				BaseEnjoyment += 10
 			endIf
@@ -549,9 +551,9 @@ state Animating
 		; Trigger orgasm
 		If(!NoOrgasm && Config.SeparateOrgasms && Strength >= 100 && Thread.Stage < Thread.Animation.StageCount)
 			int cmp
-			If(sslActorKey.IsMale(_ActorKey))
+			If(sslActorData.IsMale(_ActorKey))
 				cmp = 20
-			ElseIf(sslActorKey.IsMaleCreature(_ActorKey))
+			ElseIf(sslActorData.IsMaleCreature(_ActorKey))
 				cmp = 30
 			EndIf
 			If(SexLabUtil.GetCurrentGameRealTime() - LastOrgasm > cmp)
@@ -628,7 +630,7 @@ state Animating
 
 		; Check if the animation allow Orgasm. By default all the animations with a CumID>0 are type SEX and allow orgasm 
 		; But the Lesbian Animations usually don't have CumId assigned and still the orgasm should be allowed at least for Females.
-		bool CanOrgasm = Forced || (sslActorKey.IsFemale(_ActorKey) && (Thread.Animation.HasTag("Lesbian") || Thread.Animation.Females == Thread.Animation.PositionCount))
+		bool CanOrgasm = Forced || (sslActorData.IsFemale(_ActorKey) && (Thread.Animation.HasTag("Lesbian") || Thread.Animation.Females == Thread.Animation.PositionCount))
 		int i = Thread.ActorCount
 		while !CanOrgasm && i > 0
 			i -= 1
@@ -654,9 +656,9 @@ state Animating
 			if !IsCumSource
 				if IsFuta && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Pussy") || Thread.Animation.HasTag("Cunnilingus") || Thread.Animation.HasTag("Fisting") || Thread.Animation.HasTag("Handjob") || Thread.Animation.HasTag("Blowjob") || Thread.Animation.HasTag("Boobjob") || Thread.Animation.HasTag("Footjob") || Thread.Animation.HasTag("Penis"))
 					return
-				elseIf sslActorKey.IsMale(_ActorKey) && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Handjob") || Thread.Animation.HasTag("Blowjob") || Thread.Animation.HasTag("Boobjob") || Thread.Animation.HasTag("Footjob") || Thread.Animation.HasTag("Penis"))
+				elseIf sslActorData.IsMale(_ActorKey) && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Handjob") || Thread.Animation.HasTag("Blowjob") || Thread.Animation.HasTag("Boobjob") || Thread.Animation.HasTag("Footjob") || Thread.Animation.HasTag("Penis"))
 					return
-				elseIf sslActorKey.IsFemale(_ActorKey) && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Pussy") || Thread.Animation.HasTag("Cunnilingus") || Thread.Animation.HasTag("Fisting") || Thread.Animation.HasTag("Breast"))
+				elseIf sslActorData.IsFemale(_ActorKey) && !(Thread.Animation.HasTag("Anal") || Thread.Animation.HasTag("Vaginal") || Thread.Animation.HasTag("Pussy") || Thread.Animation.HasTag("Cunnilingus") || Thread.Animation.HasTag("Fisting") || Thread.Animation.HasTag("Breast"))
 					return
 				endIf
 			endIf
@@ -684,7 +686,7 @@ state Animating
 			PlayLouder(OrgasmFX, ActorRef, Config.SFXVolume)
 		EndIf
 		; Apply cum to female positions from male position orgasm
-		if Thread.ActorCount > 1 && Config.UseCum && (MalePosition || IsCreature) && (Config.AllowFFCum || !sslActorKey.IsFemalePure(_ActorKey) && !sslActorKey.IsFemaleCreature(_ActorKey))
+		if Thread.ActorCount > 1 && Config.UseCum && (MalePosition || IsCreature) && (Config.AllowFFCum || !sslActorData.IsFemalePure(_ActorKey) && !sslActorData.IsFemaleCreature(_ActorKey))
 			if Thread.ActorCount == 2
 				Thread.PositionAlias(1 - Position).ApplyCum()
 			else
@@ -768,7 +770,7 @@ int function GetEnjoyment()
 			Thread.RecordSkills()
 			Thread.SetBonuses()
 		endIf
-		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorKey.IsFemale(_ActorKey), (SexLabUtil.GetCurrentGameRealTime() - StartedAt), Thread.Stage, Thread.Animation.StageCount)
+		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorData.IsFemale(_ActorKey), (SexLabUtil.GetCurrentGameRealTime() - StartedAt), Thread.Stage, Thread.Animation.StageCount)
 		; Log("FullEnjoyment["+FullEnjoyment+"] / BaseEnjoyment["+BaseEnjoyment+"] / Enjoyment["+(FullEnjoyment - BaseEnjoyment)+"]")
 	endIf
 
@@ -891,7 +893,7 @@ endFunction
 
 bool function PregnancyRisk()
 	int cumID = Thread.Animation.GetCumID(Position, Thread.Stage)
-	return cumID > 0 && (cumID == 1 || cumID == 4 || cumID == 5 || cumID == 7) && IsFemale && !MalePosition && Thread.IsVaginal
+	return cumID > 0 && (cumID == 1 || cumID == 4 || cumID == 5 || cumID == 7) && vanilla_sex == 1 && !MalePosition && Thread.IsVaginal
 endFunction
 
 Function UnStrip()
@@ -977,14 +979,14 @@ function RefreshExpression()
 		Utility.Wait(1.0)
 		if Config.RefreshExpressions && Expression && Expression != none && !ActorRef.IsDead() && !ActorRef.IsUnconscious() && ActorRef.GetActorValue("Health") > 1.0
 			int Strength = CalcReaction()
-			Expression.Apply(ActorRef, Strength, ActorRef.GetLeveledActorBase().GetSex())
+			Expression.Apply(ActorRef, Strength, vanilla_sex)
 			Log("Expression.Applied("+Expression.Name+") Strength:"+Strength+"; OpenMouth:"+OpenMouth)
 		endIf
 	else
 		if Expression && Expression != none && !ActorRef.IsDead() && !ActorRef.IsUnconscious() && ActorRef.GetActorValue("Health") > 1.0
 			int Strength = CalcReaction()
 			sslBaseExpression.CloseMouth(ActorRef)
-			Expression.Apply(ActorRef, Strength, ActorRef.GetLeveledActorBase().GetSex())
+			Expression.Apply(ActorRef, Strength, vanilla_sex)
 			Log("Expression.Applied("+Expression.Name+") Strength:"+Strength+"; OpenMouth:"+OpenMouth)
 		elseIf sslBaseExpression.IsMouthOpen(ActorRef)
 			sslBaseExpression.CloseMouth(ActorRef)			
@@ -1032,11 +1034,11 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 ; Return duration for the pre-placement starting animation, if any
 float Function PlaceActor(ObjectReference akCenter)
 	LockActor()
-	If(!sslActorKey.IsCreature(_ActorKey))
+	If(!sslActorData.IsCreature(_ActorKey))
 		If(StartAnimEvent == "")
 			; Set intro animation to undressing if none defined & undress anim requested
 			If(DoUndress)
-				Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G" + (sslActorKey.IsFemale(_ActorKey) as int))
+				Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G" + (sslActorData.IsFemale(_ActorKey) as int))
 				StartWait = 1.0
 			EndIf
 		Else
@@ -1071,10 +1073,9 @@ float Function PlaceActor(ObjectReference akCenter)
 		EndIf
 		If(Thread.ActorCount > 1 && Config.ScaleActors)
 			If(Config.HasNiOverride && !IsCreature && NioScale > 0.0 && NioScale != 1.0)
-				bool female = sslActorKey.IsFemale(_ActorKey)
 				float FixNioScale = FixNioScale / NioScale
-				NiOverride.AddNodeTransformScale(ActorRef, false, female, "NPC", "SexLab.esm", FixNioScale)
-				NiOverride.UpdateNodeTransform(ActorRef, false, female, "NPC")
+				NiOverride.AddNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm", FixNioScale)
+				NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
 			EndIf
 			AnimScale = 1.0 / base
 		EndIf
@@ -1135,7 +1136,7 @@ EndFunction
 Function UnplaceActor()
 	SendDefaultAnimEvent(true)
 	UnlockActor()
-	If(!sslActorKey.IsCreature(_ActorKey))
+	If(!sslActorData.IsCreature(_ActorKey))
 		Unstrip()
 		If(Strapon && !HadStrapon)
 			ActorRef.RemoveItem(Strapon, 1, true)
@@ -1150,11 +1151,10 @@ Function UnplaceActor()
 		ActorRef.SetScale(ActorScale)
 	EndIf
 	If(Config.HasNiOverride)
-		bool female = sslActorKey.IsFemale(_ActorKey)
-		bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, female, "NPC", "SexLab.esm")
-		bool UpdateNiOScale = NiOverride.RemoveNodeTransformScale(ActorRef, false, female, "NPC", "SexLab.esm")
+		bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
+		bool UpdateNiOScale = NiOverride.RemoveNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
 		if UpdateNiOPosition || UpdateNiOScale
-			NiOverride.UpdateNodeTransform(ActorRef, false, female, "NPC")
+			NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
 		endIf
 	EndIf
 	Debug.SendAnimationEvent(ActorRef, "SOSFlaccid")
@@ -1185,7 +1185,7 @@ Function DoStatistics()
 	if IsVictim()
 		VictimRef = ActorRef
 	endIf
-	int g = sslActorKey.GetLegacyGenderByKey(_ActorKey)
+	int g = sslActorData.GetLegacyGenderByKey(_ActorKey)
 	float rt = SexLabUtil.GetCurrentGameRealTime()
 	sslActorStats.RecordThread(ActorRef, g, BestRelation, StartedAt, rt, Utility.GetCurrentGameTime(), Thread.HasPlayer, VictimRef, Thread.Genders, Thread.SkillXP)
 	Stats.AddPartners(ActorRef, Thread.Positions, Thread.Victims)
@@ -1210,7 +1210,7 @@ float Function Strip()
 		Strip = StripOverride
 	Else
 		; COMEBACK: Config Menu is too much of an unreadable nightmare to do this properly but eventually Ill have to, eh
-		bool[] s = Config.GetStrip(IsFemale, Thread.UseLimitedStrip(), Thread.IsType[0], IsVictim())
+		bool[] s = Config.GetStrip(vanilla_sex == 1, Thread.UseLimitedStrip(), Thread.IsType[0], IsVictim())
 		Strip = new int[2]
 		int i = 0
 		While(i < 32)
@@ -1239,26 +1239,24 @@ float Function Strip()
 	Equipment = sslpp.StripActor(ActorRef, Strip[0])
 	Log("<Strip> Left Weapon: " + LeftHand + " | Right Weapon: " + RightHand + " | Equipment: " + Equipment)
 	; Equip the nudesuit
-	if Math.LogicalAnd(Strip[0], 4) && (sslActorKey.IsMale(_ActorKey) && Config.UseMaleNudeSuit || sslActorKey.IsFemale(_ActorKey) && Config.UseFemaleNudeSuit)
+	if Math.LogicalAnd(Strip[0], 4) && (vanilla_sex == 0 && Config.UseMaleNudeSuit || vanilla_sex == 1 && Config.UseFemaleNudeSuit)
 		ActorRef.EquipItem(Config.NudeSuit, true, true)
 	endIf
 	; Suppress NiOverride High Heels
 	if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
 		if Config.HasNiOverride
-			bool female = sslActorKey.IsFemale(_ActorKey)
-			; Remove NiOverride SexLab High Heels
-			bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, female, "NPC", "SexLab.esm")
 			; Remove NiOverride High Heels
-			if NiOverride.HasNodeTransformPosition(ActorRef, false, female, "NPC", "internal")
-				float[] pos = NiOverride.GetNodeTransformPosition(ActorRef, false, female, "NPC", "internal")
+			bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
+			if NiOverride.HasNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
+				float[] pos = NiOverride.GetNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
 				Log(pos, "RemoveHeelEffect (NiOverride)")
 				pos[0] = -pos[0]
 				pos[1] = -pos[1]
 				pos[2] = -pos[2]
-				NiOverride.AddNodeTransformPosition(ActorRef, false, female, "NPC", "SexLab.esm", pos)
-				NiOverride.UpdateNodeTransform(ActorRef, false, female, "NPC")
+				NiOverride.AddNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm", pos)
+				NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
 			elseIf UpdateNiOPosition
-				NiOverride.UpdateNodeTransform(ActorRef, false, female, "NPC")
+				NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
 			endIf
 		endIf
 	endIf
@@ -1266,11 +1264,11 @@ endFunction
 
 Function SendDefaultAnimEvent(bool Exit = False)
 	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
-	If(!sslActorKey.IsCreature(_ActorKey))
+	If(!sslActorData.IsCreature(_ActorKey))
 		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
 		return
 	EndIf
-	String racekey = sslActorKey.GetRaceKeyByKey(_ActorKey)
+	String racekey = sslActorData.GetRaceKeyByKey(_ActorKey)
 	If(racekey != "")
 		if racekey == "Dragons"
 			Debug.SendAnimationEvent(ActorRef, "FlyStopDefault") ; for Dragons only

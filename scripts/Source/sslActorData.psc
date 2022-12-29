@@ -1,4 +1,4 @@
-ScriptName sslActorKey Hidden
+ScriptName sslActorData Hidden
 { Fancy bitflag magic to store actor data }
 
 ;/ Bit flags are defined as follows:

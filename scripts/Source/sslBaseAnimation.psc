@@ -46,7 +46,7 @@ float[] BedOffset ; = forward, side, up, rotate
 
 bool property GenderedCreatures auto hidden
 
-int[] _ActorKeys	; See sslActorKey.psc
+int[] _ActorKeys	; See sslActorData.psc
 int[] Property ActorKeys
 	int[] Function Get()
 		return _ActorKeys
@@ -60,7 +60,7 @@ bool Function MatchKeys(int[] aiActorKeys)
 	EndIf
 	int i = 0
 	While(i < _ActorKeys.Length)
-		If(!sslActorKey.IsKeyAccepted(aiActorKeys[i], _ActorKeys[i]))
+		If(!sslActorData.IsKeyAccepted(aiActorKeys[i], _ActorKeys[i]))
 			return false
 		EndIf
 		i += 1
@@ -780,7 +780,7 @@ int function AddPosition(int Gender = 0, int AddCum = -1)
 	oid = 0
 	fid = 0
 
-	_ActorKeys[Actors] = sslActorKey.BuildBlankKeyByLegacyGender(Gender)
+	_ActorKeys[Actors] = sslActorData.BuildBlankKeyByLegacyGender(Gender)
 
 	InitArrays(Actors)
 	FlagsArray(Actors)[kCumID] = AddCum
@@ -801,7 +801,7 @@ int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1
 
 	int pid = AddPosition(Gender, AddCum)
 	If(pid != -1 && RaceKey != "")
-		_ActorKeys[pid] = _ActorKeys[pid] + sslActorKey.CreateRaceKeyIdByRaceKey(RaceKey)
+		_ActorKeys[pid] = _ActorKeys[pid] + sslActorData.CreateRaceKeyIdByRaceKey(RaceKey)
 		; Technically its possible and supported to mix different creature races in an animation now
 		; so only set this one the first creature. Not ideal but w/e do I do
 		If(!RaceType)
@@ -870,11 +870,11 @@ function Save(int id = -1)
 	FinalizePositionsAndAnimations()
 	int i = 0
 	While(i < _ActorKeys.Length)
-		int g = sslActorKey.GetLegacyGenderByKey(_ActorKeys[i])
+		int g = sslActorData.GetLegacyGenderByKey(_ActorKeys[i])
 		string gs = GetGenderString(g)
 		Genders[g] 		= Genders[g] + 1
 		Positions[i] 	= g
-		RaceTypes[i] 	= sslActorKey.GetRaceKeyByKey(_ActorKeys[i])
+		RaceTypes[i] 	= sslActorData.GetRaceKeyByKey(_ActorKeys[i])
 		GenderTags[0] = GenderTags[0] + gs
 		GenderTags[1] = gs + GenderTags[1]
 		i += 1
@@ -949,7 +949,7 @@ Function FinalizePositionsAndAnimations()
 		int it = _ActorKeys[i]
 		int idx = og_anim[i]
 		int n = i - 1
-		While(n >= 0 && !sslActorKey.IsLesserKey(_ActorKeys[n], it))
+		While(n >= 0 && !sslActorData.IsLesserKey(_ActorKeys[n], it))
 			_ActorKeys[n + 1] = _ActorKeys[n]
 			og_anim[n + 1] = og_anim[n]
 			n -= 1
@@ -975,10 +975,10 @@ Function FinalizePositionsAndAnimations()
 EndFunction
 
 bool function IsInterspecies()
-	int k = sslActorKey.GetRawKey_Creature(_ActorKeys[0])
+	int k = sslActorData.GetRawKey_Creature(_ActorKeys[0])
 	int i = 1
 	While(i < _ActorKeys.Length)
-		int nk = sslActorKey.GetRawKey_Creature(_ActorKeys[i])
+		int nk = sslActorData.GetRawKey_Creature(_ActorKeys[i])
 		If(nk != k)
 			return true
 		EndIf
