@@ -572,11 +572,6 @@ EndFunction
 ; --- State Restricted                                --- ;
 ; ------------------------------------------------------- ;
 
-auto state Unlocked
-	Function EndAnimation(bool Quickly = false)
-	EndFunction
-endState
-
 ; State Animating
 Function AdvanceStage(bool backwards = false)
 EndFunction

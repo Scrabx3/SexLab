@@ -269,11 +269,11 @@ float SkillTime
 bool Property DebugMode auto hidden
 float Property t auto hidden
 
-int[] Function GetAllPositionKeys()
+int[] Function GetPositionData()
 	int[] ret = Utility.CreateIntArray(Positions.Length)
 	int j = 0
 	While(j < Positions.Length)
-		ret[j] = ActorAlias[j].ActorKey
+		ret[j] = ActorAlias[j].ActorData
 		j += 1
 	EndWhile
 	return ret
@@ -331,7 +331,7 @@ State Making
 	EndFunction
 
 	bool Function SetAnimationsByTags(String asTags, int aiUseBed)
-		int[] keys = GetAllPositionKeys()
+		int[] keys = GetPositionData()
 		If(!keys.Length)
 			return false
 		EndIf
@@ -375,7 +375,7 @@ State Making
 		While(i < Positions.Length)
 			sslActorAlias it = ActorAlias[i]
 			int n = i - 1
-			While(n >= 0 && !sslActorData.IsLesserKey(ActorAlias[n].ActorKey, it.ActorKey))
+			While(n >= 0 && !sslActorData.IsLesserKey(ActorAlias[n].ActorData, it.ActorData))
 				ActorAlias[n + 1] = ActorAlias[n]
 				n -= 1
 			EndWhile
@@ -412,7 +412,7 @@ State Making
 			If(LeadIn)
 				LeadAnimations = ValidateAnimations(LeadAnimations)
 				If(!LeadAnimations.Length)
-					LeadAnimations = AnimSlots._GetAnimations(GetAllPositionKeys(), Utility.CreateStringArray(0))
+					LeadAnimations = AnimSlots._GetAnimations(GetPositionData(), Utility.CreateStringArray(0))
 					LeadIn = LeadAnimations.Length
 				EndIf
 			Else
@@ -1299,7 +1299,7 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	EndIf
 	; Bit clunky but w/e do we do if Papyrus doesnt let us allocate arrays with dynamic size
 	int[] valids = Utility.CreateIntArray(akAnimations.Length, -1)
-	int[] pkeys = GetAllPositionKeys()
+	int[] pkeys = GetPositionData()
 	int n = 0
 	While(n < akAnimations.Length)
 		If(akAnimations[i] && akAnimations[i].MatchKeys(pkeys) && akAnimations[i].MatchTags(Tags))
@@ -1875,46 +1875,24 @@ Function SyncEventDone(int id)
 	SyncLock = false
 EndFunction
 
-Function SendTrackedEvent(Actor ActorRef, string Hook = "")
-	; Append hook type, global if empty
-	if Hook != ""
-		Hook = "_"+Hook
-	endIf
-	; Send generic player callback Event
-	if ActorRef == PlayerRef
-		SetupActorEvent(PlayerRef, "PlayerTrack"+Hook)
-	endIf
-	; Send actor callback events
-	int i = StorageUtil.StringListCount(ActorRef, "SexLabEvents")
-	while i
-		i -= 1
-		SetupActorEvent(ActorRef, StorageUtil.StringListGet(ActorRef, "SexLabEvents", i)+Hook)
-	endWhile
-	; Send faction callback events
-	i = StorageUtil.FormListCount(Config, "TrackedFactions")
-	while i
-		i -= 1
-		Faction FactionRef = StorageUtil.FormListGet(Config, "TrackedFactions", i) as Faction
-		if FactionRef && ActorRef.IsInFaction(FactionRef)
-			int n = StorageUtil.StringListCount(FactionRef, "SexLabEvents")
-			while n
-				n -= 1
-				SetupActorEvent(ActorRef, StorageUtil.StringListGet(FactionRef, "SexLabEvents", n)+Hook)
-			endwhile
-		endIf
-	endWhile
-EndFunction
-
-Function SetupActorEvent(Actor ActorRef, string Callback)
-	int eid = ModEvent.Create(Callback)
-	ModEvent.PushForm(eid, ActorRef)
-	ModEvent.PushInt(eid, thread_id)
-	ModEvent.Send(eid)
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Thread Setup    								                --- ;
 ; ------------------------------------------------------- ;
+
+Auto State Unlocked
+	sslThreadModel Function Make()
+		InitShares()
+		if !Initialized
+			Initialize()
+		endIf
+		Initialized = false
+		GoToState("Making")
+		return self
+	EndFunction
+	
+	Function EndAnimation(bool Quickly = false)
+	EndFunction
+EndState
 
 Function Log(string msg, string src = "")
 	msg = "Thread["+thread_id+"] "+src+" - "+msg
@@ -2066,18 +2044,6 @@ EndFunction
 ; ------------------------------------------------------- ;
 ; --- State Restricted                                --- ;
 ; ------------------------------------------------------- ;
-
-State Unlocked
-	sslThreadModel Function Make()
-		InitShares()
-		if !Initialized
-			Initialize()
-		endIf
-		Initialized = false
-		GoToState("Making")
-		return self
-	EndFunction
-EndState
 
 ; Making
 sslThreadModel Function Make()
@@ -2445,6 +2411,14 @@ bool Function AddTagConditional(string Tag, bool AddTag)
 	else
 		return RemoveTag(Tag)
 	endIf
+EndFunction
+
+Function SendTrackedEvent(Actor ActorRef, string Hook = "")
+	ThreadLib.SendTrackedEvent(ActorRef, Hook, thread_id)
+EndFunction
+
+Function SetupActorEvent(Actor ActorRef, string Callback)
+	ThreadLib.SetupActorEvent(ActorRef, Callback, thread_id)
 EndFunction
 
 ; Because PapyrusUtil don't Remove Dupes from the Array

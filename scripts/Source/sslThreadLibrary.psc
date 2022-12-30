@@ -443,34 +443,32 @@ bool function IsActorTracked(Actor ActorRef)
 endFunction
 
 function SendTrackedEvent(Actor ActorRef, string Hook = "", int id = -1)
-	; Append hook type, global if empty
-	if Hook != ""
-		Hook = "_"+Hook
-	endIf
-	; Send generic player callback event
-	if ActorRef == PlayerRef
-		SetupActorEvent(PlayerRef, "PlayerTrack"+Hook, id)
-	endIf
-	; Send actor callback events
-	int i = StringListCount(ActorRef, "SexLabEvents")
-	while i
-		i -= 1
-		SetupActorEvent(ActorRef, StringListGet(ActorRef, "SexLabEvents", i)+Hook, id)
-	endWhile
-	; Send faction callback events
-	i = FormListCount(Config, "TrackedFactions")
-	while i
-		i -= 1
-		Faction FactionRef = FormListGet(Config, "TrackedFactions", i) as Faction
-		if FactionRef && ActorRef.IsInFaction(FactionRef)
-			int n = StringListCount(FactionRef, "SexLabEvents")
-			while n
-				n -= 1
-				SetupActorEvent(ActorRef, StringListGet(FactionRef, "SexLabEvents", n)+Hook, id)
-			endwhile
-		endIf
-	endWhile
-endFunction
+	If(Hook)
+		Hook = "_" + Hook
+	EndIf
+	If(ActorRef == PlayerRef)
+		SetupActorEvent(PlayerRef, "PlayerTrack" + Hook, id)
+	EndIf
+	String[] genericcallbacks = StorageUtil.StringListToArray(ActorRef, "SexLabEvents")
+	int i = 0
+	While(i < genericcallbacks.Length)
+		SetupActorEvent(PlayerRef, genericcallbacks[i] + Hook, id)
+		i += 1
+	EndWhile
+	Form[] factioncallbacks = StorageUtil.FormListToArray(Config, "TrackedFactions")
+	int n = 0
+	While(n < factioncallbacks.Length)
+		If(ActorRef.IsInFaction(factioncallbacks[n] as Faction))
+			String[] factionevents = StorageUtil.StringListToArray(factioncallbacks[n], "SexLabEvents")
+			int k = 0
+			While(k < factionevents.Length)
+				SetupActorEvent(PlayerRef, factionevents[k] + Hook, id)
+				k += 1
+			EndWhile
+		EndIf
+		n += 1
+	EndWhile
+EndFunction
 
 function SetupActorEvent(Actor ActorRef, string Callback, int id = -1)
 	int eid = ModEvent.Create(Callback)
