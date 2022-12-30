@@ -501,16 +501,28 @@ State Animating
 endState
 
 ; ------------------------------------------------------- ;
-; --- Context Sensitive Info                          --- ;
+; --- Hotkeys								                          --- ;
 ; ------------------------------------------------------- ;
 
-float Function GetAnimationRunTime()
-	return Animation.GetTimersRunTime(Timers)
-EndFunction
+bool HOTKEYLOCK
+int[] Hotkeys
+int property kAdvanceAnimation = 0  autoreadonly hidden
+int property kChangeAnimation  = 1  autoreadonly hidden
+int property kChangePositions  = 2  autoreadonly hidden
+int property kAdjustChange     = 3  autoreadonly hidden
+int property kAdjustForward    = 4  autoreadonly hidden
+int property kAdjustSideways   = 5  autoreadonly hidden
+int property kAdjustUpward     = 6  autoreadonly hidden
+int property kRealignActors    = 7  autoreadonly hidden
+int property kRestoreOffsets   = 8  autoreadonly hidden
+int property kMoveScene        = 9  autoreadonly hidden
+int property kRotateScene      = 10 autoreadonly hidden
+int property kEndAnimation     = 11 autoreadonly hidden
+int property kAdjustSchlong    = 12 autoreadonly hidden
 
 Function EnableHotkeys(bool forced = false)
-	if HasPlayer || forced
-		; Prepare bound keys
+	If(HasPlayer || forced)
+		HOTKEYLOCK = true
 		Hotkeys = new int[13]
 		Hotkeys[kAdvanceAnimation] = Config.AdvanceAnimation
 		Hotkeys[kChangeAnimation]  = Config.ChangeAnimation
@@ -530,10 +542,12 @@ Function EnableHotkeys(bool forced = false)
 			RegisterForKey(Hotkeys[i])
 			i += 1
 		endwhile
-		; Prepare soundfx
-		HotkeyUp   = Config.HotkeyUp
-		HotkeyDown = Config.HotkeyDown
-	endIf
+		HOTKEYLOCK = false
+	EndIf
+EndFunction
+
+Function DisableHotkeys()
+	UnregisterForAllKeys()
 EndFunction
 
 Function Initialize()
@@ -544,6 +558,7 @@ Function Initialize()
 	parent.Initialize()
 EndFunction
 
+; COMEBACK: This here should become redundant
 int Function GetAdjustPos()
 	int AdjustPos = -1
 	if AdjustAlias && AdjustAlias.ActorRef
@@ -562,11 +577,13 @@ int Function GetAdjustPos()
 	return AdjustPos
 EndFunction
 
-; ------------------------------------------------------- ;
-; --- Thread Events - SYSTEM USE ONLY                 --- ;
-; ------------------------------------------------------- ;
-
-
+Function PlayHotkeyFX(int i, bool backwards)
+	if backwards
+		Config.HotkeyDown[i].Play(PlayerRef)
+	else
+		Config.HotkeyUp[i].Play(PlayerRef)
+	endIf
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- State Restricted                                --- ;
@@ -604,36 +621,6 @@ EndFunction
 Function ResetPositions()
 EndFunction
 
-int[] Hotkeys
-int property kAdvanceAnimation = 0  autoreadonly hidden
-int property kChangeAnimation  = 1  autoreadonly hidden
-int property kChangePositions  = 2  autoreadonly hidden
-int property kAdjustChange     = 3  autoreadonly hidden
-int property kAdjustForward    = 4  autoreadonly hidden
-int property kAdjustSideways   = 5  autoreadonly hidden
-int property kAdjustUpward     = 6  autoreadonly hidden
-int property kRealignActors    = 7  autoreadonly hidden
-int property kRestoreOffsets   = 8  autoreadonly hidden
-int property kMoveScene        = 9  autoreadonly hidden
-int property kRotateScene      = 10 autoreadonly hidden
-int property kEndAnimation     = 11 autoreadonly hidden
-int property kAdjustSchlong    = 12 autoreadonly hidden
-
-Sound[] HotkeyDown
-Sound[] HotkeyUp
-Function PlayHotkeyFX(int i, bool backwards)
-	int AdjustPos = GetAdjustPos()
-	if backwards
-		HotkeyDown[i].Play(Positions[AdjustPos])
-	else
-		HotkeyUp[i].Play(Positions[AdjustPos])
-	endIf
-EndFunction
-
-event OnKeyDown(int keyCode)
-	; StateCheck()
-endEvent
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
@@ -645,8 +632,8 @@ endEvent
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-Function DisableHotkeys()
-	UnregisterForAllKeys()
+float Function GetAnimationRunTime()
+	return Animation.GetTimersRunTime(Timers)
 EndFunction
 
 ObjectReference Function GetCenterFX()

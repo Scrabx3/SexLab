@@ -11,6 +11,11 @@ scriptname sslActorAlias extends ReferenceAlias
 
 Actor Property ActorRef Auto Hidden
 
+int _ActorData
+int Function GetActorData()
+	return _ActorData
+EndFunction
+
 String Function GetActorName()
 	return ActorRef.GetLeveledActorBase().GetName()
 EndFunction
@@ -50,16 +55,9 @@ Actor PlayerRef
 
 ; Actor Info
 int vanilla_sex
-
 String ActorRaceKey
 bool IsSkilled
 Faction AnimatingFaction
-
-; COMEBACK: This here prbly wants to be redundant
-string ActorKey
-string function GetActorKey()
-	return ActorKey
-endFunction
 
 ; Current Thread state
 sslThreadController Thread
@@ -142,14 +140,6 @@ bool property MalePosition hidden
 	endFunction
 endProperty
 
-
-int _ActorData
-int Property ActorData
-	int Function Get()
-		return _ActorData
-	EndFunction
-EndProperty
-
 ; ------------------------------------------------------- ;
 ; --- Load Alias For Use                              --- ;
 ; ------------------------------------------------------- ;
@@ -160,51 +150,16 @@ Auto State Empty
 	; TODO: Review
 	bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoice, bool abSilent)
 		if !akReference || akReference != GetReference()
-			Log("ERROR: SetActor("+akReference+") on State:'Ready' is not allowed")
+			Error("Reference mismatch on SetActor, expected " + GetReference() + " but got " + akReference)
 			return false
 		endIf
-		_ActorData = sslActorData.BuildActorKey(akReference, abIsVictim)
 		ActorRef = akReference
-		
-		ActorBase b = ActorRef.GetLeveledActorBase()
-		vanilla_sex = b.GetSex()
-
+		_ActorData = sslActorData.BuildActorKey(akReference, abIsVictim)
+		vanilla_sex = ActorRef.GetLeveledActorBase().GetSex()
 		; ActorVoice = BaseRef.GetVoiceType()
-		int Gender = ActorLib.GetGender(ActorRef)
-
-		String r = MiscUtil.GetRaceEditorID(b.GetRace())
-		; Player and creature specific
-		If(sslActorData.IsCreature(_ActorData))
-			; Thread.CreatureRef = b.GetRace()
-			if sslCreatureAnimationSlots.HasRaceKey("Canines") && sslCreatureAnimationSlots.HasRaceID("Canines", r)
-				ActorRaceKey = "Canines"
-			else
-				ActorRaceKey = sslCreatureAnimationSlots.GetRaceKeyByID(r)
-			endIf
-		ElseIf(ActorRef == PlayerRef)
+		If(ActorRef == PlayerRef)
 			Stats.SeedActor(ActorRef)
 		EndIf
-		; Actor's Adjustment Key
-		ActorKey = r
-		if !Config.RaceAdjustments
-			if sslActorData.IsCreature(_ActorData)
-				if ActorRaceKey
-					ActorKey = ActorRaceKey
-				endIf
-			else
-				ActorKey = "Humanoid"
-			endIf
-		endIf
-		if sslActorData.IsCreature(_ActorData)
-			ActorKey += "C"
-		endIf
-		if !sslActorData.IsCreature(_ActorData) || Config.UseCreatureGender
-			If sslActorData.IsFemale(_ActorData)
-				ActorKey += "F"
-			else
-				ActorKey += "M"
-			endIf
-		endIf
 		NioScale = 1.0
 		float TempScale
 		String Node = "NPC"
@@ -221,41 +176,23 @@ Auto State Empty
 				NioScale = NioScale * TempScale
 			endIf
 		endIf
-		
+
 		if Config.HasNiOverride && !sslActorData.IsCreature(_ActorData)
-			bool female = sslActorData.IsFemale(_ActorData)
-			string[] MOD_OVERRIDE_KEY = NiOverride.GetNodeTransformKeys(ActorRef, False, female, "NPC")
+			string[] MOD_OVERRIDE_KEY = NiOverride.GetNodeTransformKeys(ActorRef, False, vanilla_sex == 1, "NPC")
 			int idx = 0
 			While idx < MOD_OVERRIDE_KEY.Length
 				if MOD_OVERRIDE_KEY[idx] != "SexLab.esm"
-					TempScale = NiOverride.GetNodeTransformScale(ActorRef, False, female, "NPC", MOD_OVERRIDE_KEY[idx])
+					TempScale = NiOverride.GetNodeTransformScale(ActorRef, False, vanilla_sex == 1, "NPC", MOD_OVERRIDE_KEY[idx])
 					if TempScale > 0
 						NioScale = NioScale * TempScale
 					endIf
 				else ; Remove SexLab Node if present by error
-					if NiOverride.RemoveNodeTransformScale(ActorRef, False, female, "NPC", MOD_OVERRIDE_KEY[idx])
-						NiOverride.UpdateNodeTransform(ActorRef, False, female, "NPC")
+					if NiOverride.RemoveNodeTransformScale(ActorRef, False, vanilla_sex == 1, "NPC", MOD_OVERRIDE_KEY[idx])
+						NiOverride.UpdateNodeTransform(ActorRef, False, vanilla_sex == 1, "NPC")
 					endIf
 				endIf
 				idx += 1
 			endWhile
-		;	Log(self, "NioScale("+NioScale+")")
-		endIf
-
-		if !Config.ScaleActors
-			float ActorScalePlus
-			if Config.RaceAdjustments
-				ActorScalePlus = b.GetHeight()
-			else
-				ActorScalePlus = ActorRef.GetScale()
-			endIf
-			if NioScale > 0.0 && NioScale != 1.0
-				ActorScalePlus = ActorScalePlus * NioScale
-			endIf
-			ActorScalePlus = ((ActorScalePlus * 25) + 0.5) as int
-			if ActorScalePlus != 25.0
-				ActorKey += ActorScalePlus as int
-			endIf
 		endIf
 		; Set base voice/loop delay
 		If(sslActorData.IsCreature(_ActorData))
@@ -268,14 +205,18 @@ Auto State Empty
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
 		; Init some needed arrays
-		Flags   = new int[5]
+		Flags = new int[5]
 		; Ready
 		RegisterEvents()
 		TrackedEvent("Added")
 		GoToState("Ready")
-		Log(self, "SetActor("+ActorRef+")")
 		return true
 	endFunction
+
+	; No Actor to get a key from
+	String function GetActorKey()
+		return ""
+	EndFunction
 EndState
 
 ; ------------------------------------------------------- ;
@@ -408,8 +349,6 @@ State Ready
 		If(ActorRef == _center)
 			return
 		EndIf
-		; float d = ActorRef.GetDistance(_center)
-		; Only do pathing if we are reasonably close, otherwise thisd slow down too much
 		If(ActorRef.GetDistance(_center) > 6144.0)
 			return
 		EndIf
@@ -418,11 +357,6 @@ State Ready
 		ActorRef.EvaluatePackage()
 		While (ActorRef.GetDistance(_center) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
 			Utility.Wait(0.035)
-			; float dd = d
-			; d = ActorRef.GetDistance(_center)
-			; If(d - dd > -0.1)
-			; 	Log("Alias got stuck attempting to path to center. Progressing without path completion...")
-			; EndIf
 		EndWhile
 		ActorRef.SetFactionRank(AnimatingFaction, 1)
 		ActorRef.EvaluatePackage()
@@ -893,27 +827,6 @@ bool function PregnancyRisk()
 	return cumID > 0 && (cumID == 1 || cumID == 4 || cumID == 5 || cumID == 7) && vanilla_sex == 1 && !MalePosition && Thread.IsVaginal
 endFunction
 
-Function UnStrip()
-	int suit_count = ActorRef.GetItemCount(Config.NudeSuit)
-	If(suit_count)
-		ActorRef.RemoveItem(Config.NudeSuit, suit_count, true)
-	EndIf
- 	If(!DoRedress)
- 		return
-	EndIf
-	If(LeftHand)
-		ActorRef.EquipItemEx(LeftHand, ActorRef.EquipSlot_LeftHand)
-	EndIf
-	If(RightHand)
-		ActorRef.EquipItemEx(RightHand, ActorRef.EquipSlot_RightHand)
-	EndIf
- 	int i = 0
- 	While(i < Equipment.Length)
-	 	ActorRef.EquipItemEx(Equipment[i], ActorRef.EquipSlot_Default)
-		i += 1
- 	EndWhile
-EndFunction
-
 bool NoRagdoll
 bool property DoRagdoll hidden
 	bool function get()
@@ -1201,7 +1114,7 @@ EndFunction
 ; --- Misc Utility					                          --- ;
 ; ------------------------------------------------------- ;
 
-float Function Strip()
+Function Strip()
 	int[] Strip
 	If(StripOverride.Length == 2)
 		Strip = StripOverride
@@ -1257,7 +1170,28 @@ float Function Strip()
 			endIf
 		endIf
 	endIf
-endFunction
+EndFunction
+
+Function UnStrip()
+	int suit_count = ActorRef.GetItemCount(Config.NudeSuit)
+	If(suit_count)
+		ActorRef.RemoveItem(Config.NudeSuit, suit_count, true)
+	EndIf
+ 	If(!DoRedress)
+ 		return
+	EndIf
+	If(LeftHand)
+		ActorRef.EquipItemEx(LeftHand, ActorRef.EquipSlot_LeftHand)
+	EndIf
+	If(RightHand)
+		ActorRef.EquipItemEx(RightHand, ActorRef.EquipSlot_RightHand)
+	EndIf
+ 	int i = 0
+ 	While(i < Equipment.Length)
+	 	ActorRef.EquipItemEx(Equipment[i], ActorRef.EquipSlot_Default)
+		i += 1
+ 	EndWhile
+EndFunction
 
 Function SendDefaultAnimEvent(bool Exit = False)
 	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
@@ -1265,46 +1199,88 @@ Function SendDefaultAnimEvent(bool Exit = False)
 		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
 		return
 	EndIf
-	String racekey = sslActorData.GetRaceKeyByKey(_ActorData)
+	String racekey = sslActorData.GetRaceKeyString(_ActorData)
 	If(racekey != "")
 		if racekey == "Dragons"
-			Debug.SendAnimationEvent(ActorRef, "FlyStopDefault") ; for Dragons only
-			Debug.SendAnimationEvent(ActorRef, "Reset") ; for Dragons only
+			Debug.SendAnimationEvent(ActorRef, "FlyStopDefault")
+			Debug.SendAnimationEvent(ActorRef, "Reset")
 		elseIf racekey == "Hagravens"
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; for Dragons only
+			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
 			if Exit
-				Debug.SendAnimationEvent(ActorRef, "Reset") ; for Dragons only
+				Debug.SendAnimationEvent(ActorRef, "Reset")
 			endIf
 		elseIf racekey == "Chaurus" || racekey == "ChaurusReapers"
-			Debug.SendAnimationEvent(ActorRef, "FNISDefault") ; for dwarvenspider and chaurus without time bettwen.
+			Debug.SendAnimationEvent(ActorRef, "FNISDefault")
 		elseIf racekey == "DwarvenSpiders"
 			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
 		elseIf racekey == "Draugrs" || racekey == "Seekers" || racekey == "DwarvenBallistas" || racekey == "DwarvenSpheres" || racekey == "DwarvenCenturions"
-			Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; for draugr, trolls daedras and all dwarven exept spiders
+			Debug.SendAnimationEvent(ActorRef, "ForceFurnExit")
 		elseIf racekey == "Trolls"
 			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
 			if Exit
-				Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; the troll need this afther "ReturnToDefault" to allow the attack idles
+				Debug.SendAnimationEvent(ActorRef, "ForceFurnExit")
 			endIf
 		elseIf racekey == "Chickens" || racekey == "Rabbits" || racekey == "Slaughterfishes"
-			Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") ; for chicken, hare and slaughterfish
+			Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState")
 			if Exit
 				Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
 			endIf
 		elseIf racekey == "Werewolves" || racekey == "VampireLords"
-			Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; for Werewolves and VampirwLords
+			Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault")
 		Else
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; the rest creature-animal
+			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
 		EndIf
 	ElseIf(Exit)
-		Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") ; for chicken, hare and slaughterfish before the "ReturnToDefault"
-		Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") ; the rest creature-animal
-		Debug.SendAnimationEvent(ActorRef, "FNISDefault") ; for dwarvenspider and chaurus
-		Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; for Werewolves and VampirwLords
-		Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") ; for Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
-		Debug.SendAnimationEvent(ActorRef, "Reset") ; for Hagravens afther the "ReturnToDefault" and Dragons
+		Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") 	; chicken, hare and slaughterfish before the "ReturnToDefault"
+		Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") 		; rest creature-animal
+		Debug.SendAnimationEvent(ActorRef, "FNISDefault") 				; dwarvenspider and chaurus
+		Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; Werewolves and VampirwLords
+		Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") 			; Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
+		Debug.SendAnimationEvent(ActorRef, "Reset") 							; Hagravens afther the "ReturnToDefault" and Dragons
 	EndIf
 EndFunction
+
+; NOTE: Im not very confident that the idea aimed at here is really beneficial, even with the changes o+
+; makes to SL this key seems to be contrustred so strictly that it will rarely actually save anything reusable
+; users might have to manually readjust things with every animation (unnecessarily) due to this complexity here
+String function GetActorKey()
+	ActorBase base = ActorRef.GetLeveledActorBase()
+	String ActorKey = MiscUtil.GetRaceEditorID(base.GetRace())
+	If(!Config.RaceAdjustments)	; Based on RaceKey instead of Race
+		If(sslCreatureAnimationSlots.HasRaceID("Canines", ActorKey))
+			ActorKey = "Canines"
+		Else
+			ActorKey = sslActorData.GetRaceKeyString(_ActorData)
+		EndIf
+	EndIf
+	If(sslActorData.IsCreature(_ActorData))
+		ActorKey += "C"
+		If(Config.useCreatureGender)
+			If(sslActorData.IsFemaleCreature(_ActorData))
+				ActorKey += "F"
+			Else
+				ActorKey += "M"
+			EndIf
+		EndIf
+	ElseIf(sslActorData.IsFemale(_ActorData))
+		ActorKey += "F"
+	Else
+		ActorKey += "M"
+	EndIf
+	If(!Config.ScaleActors)
+		float ActorScalePlus
+		If(Config.RaceAdjustments)
+			ActorScalePlus = base.GetHeight()
+		Else
+			ActorScalePlus = ActorRef.GetScale()
+		EndIf
+		If(NioScale)
+			ActorScalePlus = ActorScalePlus * NioScale
+		EndIf
+		ActorKey += ((ActorScalePlus * 25) + 0.5) as int
+	EndIf
+	return ActorKey
+endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Thread Events           				                --- ;
@@ -1313,7 +1289,6 @@ EndFunction
 function TrackedEvent(string EventName)
 	If(Thread.ThreadLib.IsActorTracked(ActorRef))
 		Thread.ThreadLib.SendTrackedEvent(ActorRef, EventName, Thread.tid)
-		; Thread.SendTrackedEvent(ActorRef, EventName)
 	EndIf
 endFunction
 
@@ -1340,7 +1315,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Log(string msg, string src = "")
-	msg = "Thread[" + Thread.tid + "] ActorAlias["+GetActorName()+"] "+src+" - "+msg
+	msg = "Thread[" + Thread.tid + "] ActorAlias[" + GetActorName() + "] " + src + " - " + msg
 	Debug.Trace("SEXLAB - " + msg)
 	if Config.DebugMode
 		SexLabUtil.PrintConsole(msg)
@@ -1392,7 +1367,6 @@ Function Initialize()
 	; Strings
 	EndAnimEvent   = "IdleForceDefaultState"
 	StartAnimEvent = ""
-	ActorKey    = ""
 	PlayingSA      = ""
 	PlayingAE      = ""
 	; Storage

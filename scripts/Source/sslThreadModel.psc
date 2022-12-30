@@ -46,27 +46,26 @@ EndProperty
 
 bool Property AutoAdvance auto hidden
 bool Property LeadIn auto hidden
-bool Property FastEnd auto hidden
 
 ; Animation Info
 Sound Property SoundFX auto hidden
 string Property AdjustKey auto hidden
 string[] Property AnimEvents auto hidden
 
-sslBaseAnimation Property Animation auto hidden
-sslBaseAnimation Property StartingAnimation auto hidden
-sslBaseAnimation[] CustomAnimations
-sslBaseAnimation[] PrimaryAnimations
-sslBaseAnimation[] LeadAnimations
-sslBaseAnimation[] Property Animations hidden
+sslBaseAnimation Property Animation auto hidden						; The currently playing Animation
+sslBaseAnimation Property StartingAnimation auto hidden		; The first animation this thread player
+sslBaseAnimation[] CustomAnimations												; animation overrides (will always be used if not empty)
+sslBaseAnimation[] PrimaryAnimations											; set of valid animations
+sslBaseAnimation[] LeadAnimations													; set of valid lead-in (intro) animations
+sslBaseAnimation[] Property Animations hidden							; currently active set of animation
 	sslBaseAnimation[] Function get()
-		if CustomAnimations.Length > 0
+		If(CustomAnimations.Length > 0)
 			return CustomAnimations
-		elseIf LeadIn
+		ElseIf(LeadIn)
 			return LeadAnimations
-		else
+		Else
 			return PrimaryAnimations
-		endIf
+		EndIf
 	EndFunction
 EndProperty
 
@@ -74,7 +73,7 @@ EndProperty
 float[] Property SkillBonus auto hidden ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
 float[] Property SkillXP auto hidden    ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
 
-bool[] Property IsType auto hidden ; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty, [6] HadVaginal, [7] HadAnal, [8] HadOral
+bool[] Property IsType auto hidden ; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty
 bool Property IsAggressive hidden
 	bool Function get()
 		return IsType[0] || Victims.Length || Tags.Find("Aggressive")
@@ -273,7 +272,7 @@ int[] Function GetPositionData()
 	int[] ret = Utility.CreateIntArray(Positions.Length)
 	int j = 0
 	While(j < Positions.Length)
-		ret[j] = ActorAlias[j].ActorData
+		ret[j] = ActorAlias[j].GetActorData()
 		j += 1
 	EndWhile
 	return ret
@@ -375,7 +374,7 @@ State Making
 		While(i < Positions.Length)
 			sslActorAlias it = ActorAlias[i]
 			int n = i - 1
-			While(n >= 0 && !sslActorData.IsLesserKey(ActorAlias[n].ActorData, it.ActorData))
+			While(n >= 0 && !sslActorData.IsLesserKey(ActorAlias[n].GetActorData(), it.GetActorData()))
 				ActorAlias[n + 1] = ActorAlias[n]
 				n -= 1
 			EndWhile
@@ -2018,7 +2017,6 @@ Function Initialize()
 	; Boolean
 	AutoAdvance    = true
 	LeadIn         = false
-	FastEnd        = false
 	UseCustomTimers= false
 	DisableOrgasms = false
 	; Floats
@@ -2117,6 +2115,8 @@ endfunction
 Function SetBedding(int flag = 0)
 	SetBedFlag(flag)
 EndFunction
+
+bool Property FastEnd auto hidden
 
 ; Unnecessary, just use OnBeginState()/OnEndState()
 Function Action(string FireState)

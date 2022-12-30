@@ -240,7 +240,7 @@ int Function GetRawKey_Gender(int aiKey) global
   return Math.LogicalAND(aiKey, 0xFF)
 EndFunction
 
-String Function GetRaceKeyByKey(int aiKey) global
+String Function GetRaceKeyString(int aiKey) global
   int idx = GetRawKey_Creature(aiKey)
   If(idx > 0)
     return GetAllRaceKeys()[idx - 1]
