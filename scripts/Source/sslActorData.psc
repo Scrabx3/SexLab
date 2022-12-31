@@ -1,258 +1,149 @@
 ScriptName sslActorData Hidden
-{ Fancy bitflag magic to store actor data }
+{
+  ActorData are integer keys storing a large quantity of for SexLab important data, such as Gender and Race of an Actor, as well as various
+  extra data (victim, vampire, ...). These keys excell at comparison, sorting and accessing an actors meta data, but beware that they 
+  do not keep any ownership information, so you need to keep track of which key belongs to which actor yourself
 
-;/ Bit flags are defined as follows:
-0  - Female
-1  - Male
-2  - Futa
-3  - FCr
-4  - MCr
-5  - Pad6
-6  - Pad7
-7  - Pad8
-8  - CreatureType Bit  0 - 1
-9  - CreatureType Bit  2 - 3
-10 - CreatureType Bit  4 - 7
-11 - CreatureType Bit  8 - 15
-12 - CreatureType Bit 16 - 31
-13 - CreatureType Bit 32 - 63
-14 - Pad15
-15 - Pad16
-16 - Prefer as Victim
-17 - Pad18
-18 - Pad19
-19 - Pad20
-20 - Pad21
-21 - Pad22
-22 - Pad23
-23 - Pad24
-24 - Pad25
-25 - Pad26
-26 - Pad27
-27 - Pad28
-28 - Pad29
-29 - Pad30
-30 - Pad31
-31 - Blank Key
-/;
+  Interaction through these keys should only be done through the listed functions, as key definition may change internally
+}
 
+; ------------------------------------------------------- ;
+; --- Building                				                --- ;
+; ------------------------------------------------------- ;
+; TODO: Convince Ashal to hand me over the dll sources so I can move most of the key building into a dll and stabilize creature integration
 
-; Return if aiCmp accepts aiKey, this mans:
-; aiKey is a blank key and thus always accepted
-; aiKey and aiCmp represent the same Race
-; aiKey is at least aiCmps gender
-; if aiCmp is a Victim, then aiKey is a victim too
-bool Function IsKeyAccepted(int aiKey, int aiCmp) global
-  If(IsBlankKey(aiKey))
-    return true
-  ElseIf(GetRawKey_Creature(aiKey) != GetRawKey_Creature(aiCmp))
-    return false
-  ElseIf(Math.LogicalAND(GetRawKey_Gender(aiKey), GetRawKey_Gender(aiCmp)) != aiCmp)
-    return false
-  ElseIf(IsVictim(aiCmp) && !IsVictim(aiKey))
-    return false
+; Build a DataKey from the given Actor, see flag definition above for more information
+; return 0 if the key cannot be created for some reason
+int Function BuildDataKey(Actor akActor, bool abIsVictim) global
+  If(!akActor)
+    return 0
   EndIf
-  return true
+  int racekeyidx = GetAllRaceKeys().Find(sslCreatureAnimationSlots.GetRaceKey(akActor.GetRace()))
+  If(racekeyidx == -1)
+    return 0
+  EndIf
+  return BuildDataKeyNative(akActor, abIsVictim, racekeyidx)
 EndFunction
 
-int Function BuildActorKey(Actor akActor, bool abIsVictim) global
-  int genderid = BuildGenderKey(akActor)
-  int raceidx = CreateRaceKeyId(akActor)
-  int ret = Math.LogicalOr(raceidx, genderid)
-  If(abIsVictim)
-    ret += 65536  ; 1 << 16
+; Build an array of data keys from the given Actors Order is unchanged (return[i] is the key for akActors[i])
+int[] Function BuildDataKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
+  bool[] victims = Utility.CreateBoolArray(akActors.Length, false)
+  If(aiVictimIdx > -1 && aiVictimIdx < akActors.Length)
+    victims[aiVictimIdx] = true
   EndIf
-  return ret
+  return BuildDataKeyArrayEx(akActors, victims)
 EndFunction
 
-int Function BuildBlankKeyByLegacyGender(int aiLegacyGender) global
-  If(aiLegacyGender < 0)
-    return Math.LeftShift(1, 31)
+int[] Function BuildDataKeyArrayEx(Actor[] akActors, bool[] abIsVictim) global
+  int[] ret = Utility.CreateIntArray(akActors.Length, 0)
+  If(akActors.Length != abIsVictim.Length)
+    return ret
   EndIf
-  int ret = GetGenderByLegacyGender(aiLegacyGender)
-  If(IsCreature(ret))
-    ; Set every creature bit
-    ret += 0xFF00
-  EndIf
-  return ret
-EndFunction
-
-int[] Function BuildActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
-  int[] ret = Utility.CreateIntArray(akActors.Length)
   int i = 0
   While(i < akActors.Length)
-    ret[i] = BuildActorKey(akActors[i], i == aiVictimIdx)
+    ret[i] = BuildDataKey(akActors[i], abIsVictim[i])
     i += 1
   EndWhile
   return ret
 EndFunction
 
+; Builds a sorted array of Keys, the given Actor array will NOT be changed
 int[] Function BuildSortedActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
-  return SortActorKeyArray(BuildActorKeyArray(akActors, aiVictimIdx))
+  return SortDataKeys(BuildDataKeyArray(akActors, aiVictimIdx))
+EndFunction
+int[] Function BuildSortedActorKeyArrayEx(Actor[] akActors, bool[] abIsVictim) global
+  return SortDataKeys(BuildDataKeyArrayEx(akActors, abIsVictim))
 EndFunction
 
+; ------------------------------------------------------- ;
+; --- Comparing & Sorting      				                --- ;
+; ------------------------------------------------------- ;
+
+int[] Function SortDataKeys(int[] aiKeys) native global
+
+; Return if aiKey <= aiCmp
+bool Function IsLess(int aiKey, int aiCmp) native global
+
+; Return if aiKey matches aiCmp, that is
+; check if aiKey is a valid key to fill a position requiring aiCmp
+bool Function Match(int aiKey, int aiCmp) native global
+bool Function MatchArray(int[] aiKeys, int[] aiCmp) native global
+
+; ------------------------------------------------------- ;
+; --- Reading                 				                --- ;
+; ------------------------------------------------------- ;
+
+; Return the real gender of this actor, ie the gender without respect to overwrites
+; A futa is defined as a female with a schlong from SoS, a Creature is always gendered
+bool Function IsMale(int aiKey) native global
+bool Function IsFemale(int aiKey) native global
+bool Function IsPureFemale(int aiKey) native global ; assert(IsFemale() && !IsFuta())
+bool Function IsFuta(int aiKey) native global       ; assert(IsFemale() && !IsPureFemale())
+bool Function IsCreature(int aiKey) native global   ; assert(IsMaleCreature() || IsFemaleCreature())
+bool Function IsMaleCreature(int aiKey) native global
+bool Function IsFemaleCreature(int aiKey) native global
+
+bool Function IsVictim(int aiKey) native global
+bool Function IsVampire(int aiKey) native global
+
+; Gender overwrites are used to allow authors and users to manually assign a gender to an actor
+; These only support male and female overwrites and are primarily used for animation filtering
+bool Function HasOverwrite(int aiKey) native global
+bool Function IsMaleOverwrite(int aiKey) native global
+bool Function IsFemaleOverwrite(int aiKey) native global
+
+; The RaceID this Key uses. Will be 0 for humans and some positive integer for creatures
+; please beware there is no guarantee that the same race always uses the same integer ID
+; use the RaceKey (String) for bookmarking or comparing specific races
+; NOTE: This may currently seem like a bad joke if you analyze below function, but please dont try to be
+;       smart on me and hardcode ID comparisons. There is a chance your mod will break at some point due to it
+int Function GetRaceID(int aiKey) native global
+
+; Gets the RaceKey this DataKey represents. Every group of races uses a distinct RaceKey, see
+; SexlabFramework.psc for a short introduction on RaceKeys
+String Function GetRaceKey(int aiKey) global
+  int idx = GetRaceID(aiKey)
+  If(idx > 0)
+    return GetAllRaceKeys()[idx - 1]
+  EndIf
+  return "Humanoid"
+EndFunction
+
+; Get the ID from the given RaceKey
+int Function GetRaceIDByRaceKey(String asRaceKey) global
+  return GetAllRaceKeys().Find(asRaceKey)
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Legacy Support          				                --- ;
+; ------------------------------------------------------- ;
+
+; These functions only exists to ensure compatibility with legacy code. Avoid using them for any other reason
+
+int Function GetLegacyGenderByKey(int aiKey) native global
+
+; Animation registration function for pre SLAL2
+int Function BuildByLegacyGender(int aiLegacyGender, String asRaceKey = "Humanoid") global
+  int id = GetRaceIDByRaceKey(asRaceKey)
+  BuildByLegacyGenderNative(aiLegacyGender, id + 1)
+EndFunction
+int Function BuildByLegacyGenderNative(int aiLegacyGender, int aiRaceID) native global
+
+; Blank Keys are universal keys, primarily intended to support legacy content
+; Needless to say, they incredibly unreliable and should thus not be used
 int Function BuildBlankKey() global
   return Math.LeftShift(1, 31)
 EndFunction
 
-int[] Function SortActorKeyArray(int[] aiKeys) global
-  int i = 1
-	While(i < aiKeys.Length)
-		int it = aiKeys[i]
-		int n = i - 1
-		While(n >= 0 && !IsLesserKey(aiKeys[n], it))
-			aiKeys[n + 1] = aiKeys[n]
-			n -= 1
-		EndWhile
-		aiKeys[n + 1] = it
-		i += 1
-	EndWhile
-EndFunction
+; ------------------------------------------------------- ;
+; --- TEMPORARY                				                --- ;
+; ------------------------------------------------------- ;
 
-bool Function IsLesserKey(int aiKey, int aiCmp) global
-  int r1 = GetRawKey_Creature(aiKey)
-  If(r1 == 0)
-    return IsLesserKey_GenderAndVictim(aiKey, aiCmp)
-  Else
-    int r2 = GetRawKey_Creature(aiCmp)
-    If(r1 == r2)
-      return IsLesserKey_GenderAndVictim(aiKey, aiCmp)
-    Else
-      return r1 <= r2
-    EndIf
-  EndIf
-EndFunction
+; NOTE: ALL BELOW CODE IS TEMPORARY AND ONLY EXISTS AS I DO NOT OWN SEXLABS ORIGINAL DLL SOURCE
+; DO NOT USE ANY FUNCTION HERE AS IT WILL (hopefully) BE REMOVED AT ONE POINT WITHOUT WARNING
 
-bool Function IsLesserKey_Gender(int aiKey, int aiCmp) global
-  return GetRawKey_Gender(aiKey) <= GetRawKey_Gender(aiCmp)
-EndFunction
+int Function BuildDataKeyNative(Actor akActor, bool abIsVictim, int aiRaceID) native global
 
-bool Function IsLesserKey_Creature(int aiKey, int aiCmp) global
-  return GetRawKey_Creature(aiKey) <= GetRawKey_Creature(aiCmp)
-EndFunction
-
-bool Function IsLesserKey_GenderAndVictim(int aiKey, int aiCmp) global
-  int g1 = GetRawKey_Gender(aiKey) 
-  int g2 = GetRawKey_Gender(aiCmp)
-  If(g1 == g2)
-    If(IsVictim(aiKey))
-      return true
-    Else
-      return !IsVictim(aiCmp)
-    EndIf
-  Else
-    return g1 < g2
-  EndIf
-EndFunction
-
-; COMEBACK: This do be kinda hacky. Wanna rewrite eventually
-int function BuildGenderKey(Actor akActor) global
-  return GetGenderByLegacyGender(SexLabUtil.GetGender(akActor))
-endFunction
-
-int Function GetLegacyGenderByKey(int aiKey) global
-  If(Math.LogicalAnd(aiKey, 2))      ; Male
-    return 0
-  ElseIf(Math.LogicalAnd(aiKey, 5))  ; Female | Futa
-    return 1
-  ElseIf(Math.LogicalAnd(aiKey, 8))  ; FCr
-    return 3
-  ElseIf(Math.LogicalAnd(aiKey, 16)) ; MCr
-    return 2
-  EndIf
-EndFunction
-
-int Function GetGenderByLegacyGender(int aiLegacyGender) global
-  If(aiLegacyGender == 0)
-    return 2
-  ElseIf(aiLegacyGender == 1)
-    ; IDEA: If HasSchlong() return 5
-    return 1
-  ElseIf(aiLegacyGender == 2)
-    return 8
-  ElseIf(aiLegacyGender == 3)
-    return 16
-  EndIf
-  return 2
-EndFunction
-
-int Function CreateRaceKeyId(Actor akActor) global
-  return CreateRaceKeyIdByRaceKey(sslCreatureAnimationSlots.GetRaceKey(akActor.GetRace()))
-EndFunction
-
-int Function CreateRaceKeyIdByRaceKey(String asRaceKey) global
-  int racekey = GetRaceKeyId(asRaceKey)
-  If(racekey <= 0)
-    return 0
-  EndIf
-  return Math.LeftShift(racekey, 8)
-EndFunction
-
-int Function AddGenderToKey(int aiKey, int aiGender) global
-  return Math.LogicalOr(aiGender, aiKey)
-EndFunction
-
-int Function AddLegacyGenderToKey(int aiKey, int aiLegacyGender) global
-  return AddGenderToKey(aiKey, GetGenderByLegacyGender(aiLegacyGender))
-EndFunction
-
-bool Function IsBlankKey(int aiKey) global
-  return Math.RightShift(aiKey, 31)
-EndFunction
-
-bool Function IsVictim(int aiKey) global
-  return Math.LogicalAnd(aiKey, 65536) ; 1 << 16
-EndFunction
-
-bool Function IsMale(int aiKey) global
-  return Math.LogicalAnd(aiKey, 2)
-EndFunction
-
-bool Function IsFemalePure(int aiKey) global
-  return Math.LogicalAnd(aiKey, 0xFF) == 1
-EndFunction
-
-bool Function IsFemale(int aiKey) global
-  return Math.LogicalAnd(aiKey, 1)
-EndFunction
-
-bool Function IsFuta(int aiKey) global
-  return Math.LogicalAnd(aiKey, 4)
-EndFunction
-
-bool Function IsCreature(int aiKey) global
-  return Math.LogicalAnd(aiKey, 24)
-EndFunction
-
-bool Function IsMaleCreature(int aiKey) global
-  return Math.LogicalAnd(aiKey, 16)
-EndFunction
-
-bool Function IsFemaleCreature(int aiKey) global
-  return Math.LogicalAnd(aiKey, 8)
-EndFunction
-
-int Function GetRawKey_Creature(int aiKey) global
-  return Math.LogicalAND(Math.RightShift(aiKey, 8), 0xFF)
-EndFunction
-
-int Function GetRawKey_Gender(int aiKey) global
-  return Math.LogicalAND(aiKey, 0xFF)
-EndFunction
-
-String Function GetRaceKeyString(int aiKey) global
-  int idx = GetRawKey_Creature(aiKey)
-  If(idx > 0)
-    return GetAllRaceKeys()[idx - 1]
-  EndIf
-  return "human"
-EndFunction
-
-int Function GetRaceKeyId(String asRaceKey) global
-  return GetAllRaceKeys().Find(asRaceKey)
-EndFunction
-
-; No docs on what sslCreatureAnimationSlots.GetRaceKeys() does so I just gotta improvise for the time being, sigh...
 String[] Function GetAllRaceKeys() global
   String[] ret = new String[52]
   ret[0] = "Ashhoppers"

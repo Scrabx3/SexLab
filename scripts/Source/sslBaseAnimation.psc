@@ -58,14 +58,7 @@ bool Function MatchKeys(int[] aiActorKeys)
 	If(aiActorKeys.Length != _ActorKeys.Length)
 		return false
 	EndIf
-	int i = 0
-	While(i < _ActorKeys.Length)
-		If(!sslActorData.IsKeyAccepted(aiActorKeys[i], _ActorKeys[i]))
-			return false
-		EndIf
-		i += 1
-	EndWhile
-	return true
+	return sslActorData.MatchArray(aiActorKeys, _ActorKeys)
 EndFunction
 
 ; Check if this animation matches all of the given tags
@@ -780,7 +773,7 @@ int function AddPosition(int Gender = 0, int AddCum = -1)
 	oid = 0
 	fid = 0
 
-	_ActorKeys[Actors] = sslActorData.BuildBlankKeyByLegacyGender(Gender)
+	_ActorKeys[Actors] = sslActorData.BuildByLegacyGender(Gender)
 
 	InitArrays(Actors)
 	FlagsArray(Actors)[kCumID] = AddCum
@@ -801,7 +794,7 @@ int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1
 
 	int pid = AddPosition(Gender, AddCum)
 	If(pid != -1 && RaceKey != "")
-		_ActorKeys[pid] = _ActorKeys[pid] + sslActorData.CreateRaceKeyIdByRaceKey(RaceKey)
+		_ActorKeys[pid] = sslActorData.BuildByLegacyGender(gender, RaceKey)
 		; Technically its possible and supported to mix different creature races in an animation now
 		; so only set this one the first creature. Not ideal but w/e do I do
 		If(!RaceType)
@@ -874,7 +867,7 @@ function Save(int id = -1)
 		string gs = GetGenderString(g)
 		Genders[g] 		= Genders[g] + 1
 		Positions[i] 	= g
-		RaceTypes[i] 	= sslActorData.GetRaceKeyString(_ActorKeys[i])
+		RaceTypes[i] 	= sslActorData.GetRaceKey(_ActorKeys[i])
 		GenderTags[0] = GenderTags[0] + gs
 		GenderTags[1] = gs + GenderTags[1]
 		i += 1
@@ -949,7 +942,7 @@ Function FinalizePositionsAndAnimations()
 		int it = _ActorKeys[i]
 		int idx = og_anim[i]
 		int n = i - 1
-		While(n >= 0 && !sslActorData.IsLesserKey(_ActorKeys[n], it))
+		While(n >= 0 && sslActorData.IsLess(it, _ActorKeys[n]))
 			_ActorKeys[n + 1] = _ActorKeys[n]
 			og_anim[n + 1] = og_anim[n]
 			n -= 1
@@ -975,10 +968,10 @@ Function FinalizePositionsAndAnimations()
 EndFunction
 
 bool function IsInterspecies()
-	int k = sslActorData.GetRawKey_Creature(_ActorKeys[0])
+	int k = sslActorData.GetRaceID(_ActorKeys[0])
 	int i = 1
 	While(i < _ActorKeys.Length)
-		int nk = sslActorData.GetRawKey_Creature(_ActorKeys[i])
+		int nk = sslActorData.GetRaceID(_ActorKeys[i])
 		If(nk != k)
 			return true
 		EndIf

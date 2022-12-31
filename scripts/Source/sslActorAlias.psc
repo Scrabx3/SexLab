@@ -154,7 +154,7 @@ Auto State Empty
 			return false
 		endIf
 		ActorRef = akReference
-		_ActorData = sslActorData.BuildActorKey(akReference, abIsVictim)
+		_ActorData = sslActorData.BuildDataKey(akReference, abIsVictim)
 		vanilla_sex = ActorRef.GetLeveledActorBase().GetSex()
 		; ActorVoice = BaseRef.GetVoiceType()
 		If(ActorRef == PlayerRef)
@@ -258,7 +258,7 @@ State Ready
 		LogInfo += "Voice[" + Voice.Name + "] "
 		; Strapon & Expression (for NPC only)
 		If(!sslActorData.IsCreature(_ActorData))
-			If(Config.UseStrapons && sslActorData.IsFemalePure(_ActorData))
+			If(Config.UseStrapons && sslActorData.IsPureFemale(_ActorData))
 				HadStrapon = Config.WornStrapon(ActorRef)
 				If(!HadStrapon)
 					Strapon = Config.GetStrapon()
@@ -364,6 +364,7 @@ State Ready
 
 	; Called when the main thread wants to start the first animation
 	Function PlayAnimation(String asAnimation)
+		Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
 		Debug.SendAnimationEvent(ActorRef, asAnimation)
 		PlayingSA = Thread.Animation.Registry
 		PlayingAE = asAnimation
@@ -617,7 +618,7 @@ state Animating
 			PlayLouder(OrgasmFX, ActorRef, Config.SFXVolume)
 		EndIf
 		; Apply cum to female positions from male position orgasm
-		if Thread.ActorCount > 1 && Config.UseCum && (MalePosition || sslActorData.IsCreature(_ActorData)) && (Config.AllowFFCum || !sslActorData.IsFemalePure(_ActorData) && !sslActorData.IsFemaleCreature(_ActorData))
+		if Thread.ActorCount > 1 && Config.UseCum && (MalePosition || sslActorData.IsCreature(_ActorData)) && (Config.AllowFFCum || !sslActorData.IsPureFemale(_ActorData) && !sslActorData.IsFemaleCreature(_ActorData))
 			if Thread.ActorCount == 2
 				Thread.PositionAlias(1 - Position).ApplyCum()
 			else
@@ -1199,7 +1200,7 @@ Function SendDefaultAnimEvent(bool Exit = False)
 		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
 		return
 	EndIf
-	String racekey = sslActorData.GetRaceKeyString(_ActorData)
+	String racekey = sslActorData.GetRaceKey(_ActorData)
 	If(racekey != "")
 		if racekey == "Dragons"
 			Debug.SendAnimationEvent(ActorRef, "FlyStopDefault")
@@ -1250,7 +1251,7 @@ String function GetActorKey()
 		If(sslCreatureAnimationSlots.HasRaceID("Canines", ActorKey))
 			ActorKey = "Canines"
 		Else
-			ActorKey = sslActorData.GetRaceKeyString(_ActorData)
+			ActorKey = sslActorData.GetRaceKey(_ActorData)
 		EndIf
 	EndIf
 	If(sslActorData.IsCreature(_ActorData))
