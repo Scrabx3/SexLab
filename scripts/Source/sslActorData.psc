@@ -132,7 +132,7 @@ int Function BuildByLegacyGenderNative(int aiLegacyGender, int aiRaceID) native 
 ; Blank Keys are universal keys, primarily intended to support legacy content
 ; Needless to say, they incredibly unreliable and should thus not be used
 int Function BuildBlankKey() global
-  return Math.LeftShift(1, 31)
+  return 0
 EndFunction
 
 ; ------------------------------------------------------- ;

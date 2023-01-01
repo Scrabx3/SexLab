@@ -21,6 +21,7 @@ String Function GetActorName()
 EndFunction
 
 Function SetStripping(int aiSlots, bool abStripWeapons)
+	StripOverride = new int[2]
 	StripOverride[0] = aiSlots
 	StripOverride[1] = abStripWeapons as int
 EndFunction
@@ -231,6 +232,60 @@ State Ready
 	; This does NOT have any influence on the underlying actor instance
 	; The alias is considered "ready for animating" when done
 	Event PrepareActor()
+		SetData()
+		; Position
+		If(ActorRef.GetActorValue("Paralysis") > 0)
+			ActorRef.SetActorValue("Paralysis", 0.0)
+			SendDefaultAnimEvent()
+		EndIf
+		If(DoPathToCenter)
+			PathToCenter()
+		EndIf
+		Thread.SyncEventDone(Thread.kPrepareActor)
+	EndEvent
+
+	; Have the Actor path towards center. Latent
+	function PathToCenter()
+		ObjectReference _center = Thread.CenterRef
+		If(ActorRef == _center)
+			return
+		EndIf
+		If(ActorRef.GetDistance(_center) > 6144.0)
+			return
+		EndIf
+		float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
+		ActorRef.SetFactionRank(AnimatingFaction, 2)
+		ActorRef.EvaluatePackage()
+		While (ActorRef.GetDistance(_center) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
+			Utility.Wait(0.035)
+		EndWhile
+		ActorRef.SetFactionRank(AnimatingFaction, 1)
+		ActorRef.EvaluatePackage()
+	EndFunction
+
+	; Called when the main thread wants to start the first animation
+	Function PlayAnimation(String asAnimation)
+		Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
+		Debug.SendAnimationEvent(ActorRef, asAnimation)
+		PlayingSA = Thread.Animation.Registry
+		PlayingAE = asAnimation
+		GoToState("Animating")
+	EndFunction
+
+	; Can only be called before PrepareActor() is invoked
+	Function Clear()
+		ClearEvents()
+		If(ActorRef == PlayerRef)
+			FormList FrostExceptions = Config.FrostExceptions
+			If(FrostExceptions)
+				FrostExceptions.RemoveAddedForm(Config.BaseMarker)
+			EndIf
+		EndIf
+		Parent.Clear()
+		Initialize()
+	EndFunction
+
+	Function SetData()
 		If(ActorRef == PlayerRef)
 			Game.SetPlayerAIDriven()
 			sslThreadController Control = Config.GetThreadControlled()
@@ -275,18 +330,7 @@ State Ready
 			endIf
 			LogInfo += "Expression[" + Expression.Name + "] "
 		EndIf
-		; Position
-		If(ActorRef.GetActorValue("Paralysis") > 0)
-			ActorRef.SetActorValue("Paralysis", 0.0)
-			SendDefaultAnimEvent()
-		EndIf
-		If(DoPathToCenter)
-			PathToCenter()
-		EndIf
-		Thread.SyncEventDone(Thread.kPrepareActor)
-
-		; --- Ready to animate --- Misc Data below ---
-
+		
 		; COMEBACK: Everything below still needs reviewing
 		IsSkilled = !sslActorData.IsCreature(_ActorData) || sslActorStats.IsSkilled(ActorRef)
 		if IsSkilled
@@ -341,47 +385,6 @@ State Ready
 		endIf
 		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
 		Log(LogInfo)
-	EndEvent
-
-	; Have the Actor path towards center. Latent
-	function PathToCenter()
-		ObjectReference _center = Thread.CenterRef
-		If(ActorRef == _center)
-			return
-		EndIf
-		If(ActorRef.GetDistance(_center) > 6144.0)
-			return
-		EndIf
-		float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
-		ActorRef.SetFactionRank(AnimatingFaction, 2)
-		ActorRef.EvaluatePackage()
-		While (ActorRef.GetDistance(_center) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
-			Utility.Wait(0.035)
-		EndWhile
-		ActorRef.SetFactionRank(AnimatingFaction, 1)
-		ActorRef.EvaluatePackage()
-	EndFunction
-
-	; Called when the main thread wants to start the first animation
-	Function PlayAnimation(String asAnimation)
-		Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
-		Debug.SendAnimationEvent(ActorRef, asAnimation)
-		PlayingSA = Thread.Animation.Registry
-		PlayingAE = asAnimation
-		GoToState("Animating")
-	EndFunction
-
-	; Can only be called before PrepareActor() is invoked
-	Function Clear()
-		ClearEvents()
-		If(ActorRef == PlayerRef)
-			FormList FrostExceptions = Config.FrostExceptions
-			If(FrostExceptions)
-				FrostExceptions.RemoveAddedForm(Config.BaseMarker)
-			EndIf
-		EndIf
-		Parent.Clear()
-		Initialize()
 	EndFunction
 EndState
 
@@ -1359,6 +1362,7 @@ Function Initialize()
 	QuitEnjoyment  = 0
 	FullEnjoyment  = 0
 	PathingFlag    = 0
+	_ActorData		 = 0
 	; Floats
 	LastOrgasm     = 0.0
 	ActorScale     = 1.0
@@ -1404,10 +1408,12 @@ bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoic
 	return false
 endFunction
 ; Ready
-function PrepareActor()
-endFunction
+Event PrepareActor()
+EndEvent
 function PathToCenter()
 endFunction
+Function SetData()
+EndFunction
 ; Animating
 function SyncThread()
 endFunction
@@ -1454,6 +1460,7 @@ function OverrideStrip(bool[] SetStrip)
 	if SetStrip.Length != 33
 		Thread.Log("Invalid strip override bool[] - Must be length 33 - was "+SetStrip.Length, "OverrideStrip()")
 	else
+		StripOverride = new int[2]
 		StripOverride[0] = 0
 		int i = 0
 		While(i < 32)

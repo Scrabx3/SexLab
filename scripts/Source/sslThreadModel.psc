@@ -368,24 +368,7 @@ State Making
 			ReportAndFail("Failed to start Thread -- Positions array contains invalid values")
 			return none
 		EndIf
-
-		; Sort all positions
-		int i = 1
-		While(i < Positions.Length)
-			sslActorAlias it = ActorAlias[i]
-			int n = i - 1
-			While(n >= 0 && sslActorData.IsLess(it.GetActorData(), ActorAlias[n].GetActorData()))
-				ActorAlias[n + 1] = ActorAlias[n]
-				n -= 1
-			EndWhile
-			ActorAlias[n + 1] = it
-			i += 1
-		EndWhile
-		int k = 0
-		While(k < Positions.Length)
-			Positions[k] = ActorAlias[k].GetReference() as Actor
-			k +=1
-		EndWhile
+		ArrangePositions()
 
 		; Legacy Data
 		int[] g = ActorLib.GetGendersAll(Positions)
@@ -443,7 +426,7 @@ State Making
 				If(n == -1)
 					int j = 0
 					While(j < Positions.Length)
-						If(!Positions[j].GetFurnitureReference() && !Positions[i].IsSwimming() && !Positions[i].IsFlying())
+						If(!Positions[j].GetFurnitureReference() && !Positions[j].IsSwimming() && !Positions[j].IsFlying())
 							n = j
 							j = Positions.Length
 						Else
@@ -481,10 +464,6 @@ State Making
 
 	; Invoked after SyncEvent(kPrepareActor) is done for all actors
 	Event PrepareDone()
-		SendThreadEvent("AnimationStart")
-		If(LeadIn)
-			SendThreadEvent("LeadInStart")
-		EndIf
 		PlaceActors()
 		Stage = 1
 		GoToState("Animating")
@@ -518,6 +497,10 @@ float StageTimer
 
 State Animating
 	Event OnBeginState()
+		SendThreadEvent("AnimationStart")
+		If(LeadIn)
+			SendThreadEvent("LeadInStart")
+		EndIf
 		StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		SkillTime = SkillTime
 		SFXDelay = Config.SFXDelay
@@ -570,7 +553,6 @@ State Animating
 		RegisterForSingleUpdate(0.5)
 	EndEvent
 
-
 	Function TriggerOrgasm()
 		UnregisterForUpdate()
 		if SoundFX
@@ -580,6 +562,90 @@ State Animating
 		RegisterForSingleUpdate(0.5)
 	EndFunction
 
+	Function ChangeActors(Actor[] NewPositions)
+		NewPositions = PapyrusUtil.RemoveActor(NewPositions, none)
+		If(NewPositions.Length == Positions.Length)
+			int i = 0
+			While(i < NewPositions.Length)
+				If(Positions.Find(NewPositions[i]) == -1)
+					i = NewPositions.Length
+				EndIf
+				i += 1
+			EndWhile
+			If(i == NewPositions.Length)
+				return
+			EndIf
+		ElseIf(!NewPositions.Length || NewPositions.Length > POSITION_COUNT_MAX)
+			return
+		EndIf
+		UnregisterforUpdate()
+		SendThreadEvent("ActorChangeStart")
+		int i = 0
+		While(i < Positions.Length)
+			int w = NewPositions.Find(Positions[i])
+			If(w == -1)
+				ActorAlias[i].UnplaceActor()
+				ActorAlias[i].Clear()
+			EndIf
+			i += 1
+		EndWhile
+		int n = 0
+		While(n < NewPositions.Length)
+			int w = Positions.Find(NewPositions[n])
+			If(w == -1)
+				sslActorAlias slot = PickAlias(NewPositions[n])
+				If(slot.SetActor(NewPositions[n]))
+					slot.SetData()
+					If(NewPositions[n].GetActorValue("Paralysis") > 0)
+						NewPositions[n].SetActorValue("Paralysis", 0.0)
+						slot.SendDefaultAnimEvent()
+						slot.PlaceActor(_Center)
+					EndIf
+				EndIf
+			EndIf
+			n += 1
+		EndWhile
+		ArrangePositions()
+		sslpp.SetPositions(Positions, _Center)
+
+		int[] g = ActorLib.GetGendersAll(Positions)
+		Genders[0] = PapyrusUtil.CountInt(g, 0)
+		Genders[1] = PapyrusUtil.CountInt(g, 1)
+		Genders[2] = PapyrusUtil.CountInt(g, 2)
+		Genders[3] = PapyrusUtil.CountInt(g, 3)
+
+		int[] keys = GetPositionData()
+		If(!Animation.MatchKeys(keys))
+			If(Genders[2] || Genders[3])
+				; PrimaryAnimations = CreatureSlots._GetAnimations(keys, Tags)
+			Else
+				PrimaryAnimations = AnimSlots._GetAnimations(keys, Tags)
+			EndIf
+			If(!PrimaryAnimations.Length)
+				If(Genders[2] || Genders[3])
+					; PrimaryAnimations = CreatureSlots._GetAnimations(keys, none)
+				Else
+					PrimaryAnimations = AnimSlots._GetAnimations(keys, none)
+				EndIf
+			EndIf
+			If(PrimaryAnimations.Length)
+				int r = Utility.RandomInt(0, PrimaryAnimations.Length - 1)
+				Animation = PrimaryAnimations[r]
+				If(LeadIn)
+					EndLeadInImpl()
+				Else
+					GoToStage(Stage)
+				EndIf
+			Else
+				Log("ERROR - Changing Actors but no animations available to animate new Set. Ending animation...")
+				EndAnimation()
+			EndIf
+		Else
+			GoToStage(Stage)
+		EndIf
+		SendThreadEvent("ActorChangeEnd")
+	EndFunction
+
 	Event OnEndState()
 		UnregisterForUpdate()
 		If(!LeadIn && Stage >= Animation.StageCount && !DisableOrgasms)
@@ -587,11 +653,6 @@ State Animating
 		EndIF
 	EndEvent
 EndState
-
-Function TriggerOrgasm()
-EndFunction
-Function GoToStage(int ToStage)
-EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Actor Setup                                     --- ;
@@ -844,219 +905,6 @@ int Function GetLowestPresentRelationshipRank(Actor ActorRef)
 	return out
 EndFunction
 
-; COMEBACK: This here needs some from-ground-up level rewrite !IMPORTANT Its used by DD fyi
-Function ChangeActors(Actor[] NewPositions)
-	NewPositions = PapyrusUtil.RemoveActor(NewPositions, none)
-	if NewPositions.Length < 1 || NewPositions.Length > 5 || GetState() == "Ending" ; || Positions == NewPositions
-		return
-	endIf
-	int[] NewGenders = ActorLib.GenderCount(NewPositions)
-	if PapyrusUtil.AddIntValues(NewGenders) == 0 ; || HasCreature || NewGenders[2] > 0
-		return
-	endIf
-	int NewCreatures = NewGenders[2] + NewGenders[3]
-	; Enter making state for alterations
-	UnregisterforUpdate()
-	GoToState("Frozen")
-	SendThreadEvent("ActorChangeStart")
-	
-	; Remove actors no longer present
-	int i = ActorCount
-	while i > 0
-		i -= 1
-		sslActorAlias Slot = ActorAlias(Positions[i])
-		if Slot
-			if NewPositions.Find(Positions[i]) == -1
-				if Slot.GetState() == "Prepare" || Slot.GetState() == "Animating"
-					Slot.ResetActor()
-				else
-					Slot.ClearAlias()
-				endIf
-			else
-				Slot.StopAnimating(true)
-				Slot.UnlockActor()
-			endIf
-			UnregisterforUpdate()
-		endIf
-	endWhile
-	int aid = -1
-	; Select new animations for changed actor count
-	if CustomAnimations && CustomAnimations.Length > 0
-		if CustomAnimations[0].PositionCount != NewPositions.Length
-			Log("ChangeActors("+NewPositions+") -- Failed to force valid animation for the actors and now is trying to revert the changes if possible", "ERROR")
-			NewPositions = Positions
-			NewGenders = ActorLib.GenderCount(NewPositions)
-			NewCreatures = NewGenders[2] + NewGenders[3]
-		else
-			Actor[] OldPositions = Positions
-			int[] OldGenders = Genders
-			if Positions != NewPositions ; Temporaly changin the values to help FilterAnimations()
-				Positions  = NewPositions
-				Genders    = NewGenders
-			endIf
-			if Positions != OldPositions ; Temporaly changin the values to help FilterAnimations()
-				Positions  = OldPositions
-				Genders    = OldGenders
-			endIf
-			aid = Utility.RandomInt(0, (CustomAnimations.Length - 1))
-			Animation = CustomAnimations[aid]
-			if NewCreatures > 0
-				NewPositions = ThreadLib.SortCreatures(NewPositions) ; required even if is already on the SetAnimation fuction but just the general one
-		;	else ; not longer needed since is already on the SetAnimation fuction
-		;		NewPositions = ThreadLib.SortActorsByAnimation(NewPositions, Animation)
-			endIf
-		endIf
-	elseIf !PrimaryAnimations || PrimaryAnimations.Length < 1 || PrimaryAnimations[0].PositionCount != NewPositions.Length
-		if PrimaryAnimations.Length > 0
-			PrimaryAnimations[0].PositionCount
-		endIf
-		if NewCreatures > 0
-			SetAnimations(CreatureSlots.GetByCreatureActors(NewPositions.Length, NewPositions))
-		else
-			SetAnimations(AnimSlots.GetByDefault(NewGenders[0], NewGenders[1], IsAggressive, (BedRef != none), Config.RestrictAggressive))
-		endIf
-		if !PrimaryAnimations || PrimaryAnimations.Length < 1
-			Log("ChangeActors("+NewPositions+") -- Failed to find valid animation for the actors", "FATAL")
-			Stage   = Animation.StageCount
-			FastEnd = true
-			if HasPlayer
-				MiscUtil.SetFreeCameraState(false)
-				if Game.GetCameraState() == 0
-					Game.ForceThirdPerson()
-				endIf
-			endIf
-			Utility.WaitMenuMode(0.5)
-			GoToState("Ending")
-			return
-		elseIf PrimaryAnimations[0].PositionCount != NewPositions.Length
-			Log("ChangeActors("+NewPositions+") -- Failed to find valid animation for the actors and now is trying to revert the changes if possible", "ERROR")
-			NewPositions = Positions
-			NewGenders = ActorLib.GenderCount(NewPositions)
-			NewCreatures = NewGenders[2] + NewGenders[3]
-		else
-			Actor[] OldPositions = Positions
-			int[] OldGenders = Genders
-			if Positions != NewPositions ; Temporaly changin the values to help FilterAnimations()
-				Positions  = NewPositions
-				Genders    = NewGenders
-			endIf
-			if FilterAnimations() < 0
-				Log("ChangeActors("+NewPositions+") -- Failed to filter the animations for the actors", "ERROR")
-				if Positions != OldPositions
-					Positions  = OldPositions
-					Genders    = OldGenders
-					if FilterAnimations() < 0
-						Log("ChangeActors("+NewPositions+") -- Failed to revert the changes", "FATAL")
-						Stage   = Animation.StageCount
-						FastEnd = true
-						if HasPlayer
-							MiscUtil.SetFreeCameraState(false)
-							if Game.GetCameraState() == 0
-								Game.ForceThirdPerson()
-							endIf
-						endIf
-						Utility.WaitMenuMode(0.5)
-						GoToState("Ending")
-						return
-					else
-						NewPositions  = OldPositions
-						NewGenders    = OldGenders
-					endIf
-				endIf
-			endIf
-			if Positions != OldPositions ; Temporaly changin the values to help FilterAnimations()
-				Positions  = OldPositions
-				Genders    = OldGenders
-			endIf
-			aid = Utility.RandomInt(0, (PrimaryAnimations.Length - 1))
-			Animation = PrimaryAnimations[aid]
-			if NewCreatures > 0
-				NewPositions = ThreadLib.SortCreatures(NewPositions) ; required even if is already on the SetAnimation fuction but just the general one
-		;	else ; not longer needed since is already on the SetAnimation fuction
-		;		NewPositions = ThreadLib.SortActorsByAnimation(NewPositions, Animation)
-			endIf
-		endIf
-	endIf
-	; Prepare actors who weren't present before
-	i = NewPositions.Length
-	while i > 0
-		i -= 1
-		int SlotID = FindSlot(NewPositions[i])
-		if SlotID == -1
-			if ActorLib.ValidateActor(NewPositions[i]) < 0
-				Log("ChangeActors("+NewPositions+") -- Failed to add new actor '"+NewPositions[i].GetLeveledActorBase().GetName()+"' -- The actor is not valid", "ERROR")
-				NewPositions = PapyrusUtil.RemoveActor(NewPositions, NewPositions[i])
-				int g      = ActorLib.GetGender(NewPositions[i])
-				NewGenders[g] = NewGenders[g] - 1
-			else
-				; Slot into alias
-				sslActorAlias Slot = PickAlias(NewPositions[i])
-				if !Slot || !Slot.SetActor(NewPositions[i])
-					Log("ChangeActors("+NewPositions+") -- Failed to add new actor '"+NewPositions[i].GetLeveledActorBase().GetName()+"' -- They were unable to fill an actor alias", "ERROR")
-					NewPositions = PapyrusUtil.RemoveActor(NewPositions, NewPositions[i])
-					int g      = Slot.GetGender()
-					NewGenders[g] = NewGenders[g] - 1
-				else
-					; Update position info
-					Positions  = PapyrusUtil.PushActor(Positions, NewPositions[i])
-					; Update gender counts
-					int g      = Slot.GetGender()
-					Genders[g] = Genders[g] + 1
-					; Flag as victim
-					Slot.SetVictim(False)
-					Slot.DoUndress = false
-					Slot.PrepareActor()
-					UnregisterforUpdate()
-				;	Slot.StartAnimating()
-				endIf
-			endIf
-		else
-			sslActorAlias Slot = ActorAlias[SlotID]
-			if Slot
-				Slot.LockActor()
-			endIf
-		endIf
-	endWhile
-	; Save new positions information
-	Positions  = NewPositions
-	; Double Checking the Positions for actors without Slots
-	i = NewPositions.Length
-	while i > 0
-		i -= 1
-		if FindSlot(NewPositions[i]) == -1
-			Positions = PapyrusUtil.RemoveActor(Positions, NewPositions[i])
-			Log("ChangeActors("+NewPositions+") -- Failed to add new actor '"+NewPositions[i].GetLeveledActorBase().GetName()+"' -- They were unable to fill an actor alias", "WARNING")
-		endIf
-	endWhile
-	
-	Genders    = NewGenders
-	UpdateAdjustKey()
-	Log(AdjustKey, "Adjustment Profile")
-	; Reset the animation for changed actor count
-	GoToState("Animating")
-	if aid >= 0
-		; End lead in if thread was in it and can't be now
-		if LeadIn && Positions.Length != 2
-			UnregisterForUpdate()
-			Stage  = 1
-			LeadIn = false
-			QuickEvent("Strip")
-			StorageUtil.SetFloatValue(Config,"SexLab.LastLeadInEnd", SexLabUtil.GetCurrentGameRealTime())
-			SendThreadEvent("LeadInEnd")
-			SetAnimation(aid)
-		;	Action("Advancing")
-		else
-			Stage  = 1
-			SetAnimation(aid)
-		;	Action("Advancing")
-		endIf
-	else
-		; Reposition actors
-		RealignActors()
-	endIf
-	;	RegisterForSingleUpdate(0.1)
-	SendThreadEvent("ActorChangeEnd")
-EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Animation Setup                                 --- ;
@@ -1695,6 +1543,25 @@ EndFunction
 ; --- Misc Utility					                          --- ;
 ; ------------------------------------------------------- ;
 
+Function ArrangePositions()
+	int i = 1
+	While(i < ActorAlias.Length)
+		sslActorAlias it = ActorAlias[i]
+		int n = i - 1
+		While(n >= 0 && sslActorData.IsLess(it.GetActorData(), ActorAlias[n].GetActorData()))
+			ActorAlias[n + 1] = ActorAlias[n]
+			n -= 1
+		EndWhile
+		ActorAlias[n + 1] = it
+		i += 1
+	EndWhile
+	int k = 0
+	While(k < Positions.Length)
+		Positions[k] = ActorAlias[k].GetReference() as Actor
+		k +=1
+	EndWhile
+EndFunction
+
 Function SetFurnitureIgnored(bool disabling = true)
 	If(!BedRef)
 		return
@@ -1888,7 +1755,7 @@ Auto State Unlocked
 		GoToState("Making")
 		return self
 	EndFunction
-	
+
 	Function EndAnimation(bool Quickly = false)
 	EndFunction
 EndState
@@ -2082,8 +1949,12 @@ EndFunction
 bool Function SetAnimationsByTags(String asTags, int aiUseBed)
 EndFunction
 ; Animating
-Event OnKeyDown(int keyCode)
-EndEvent
+Function TriggerOrgasm()
+EndFunction
+Function GoToStage(int ToStage)
+EndFunction
+Function ChangeActors(Actor[] NewPositions)
+EndFunction
 Function EnableHotkeys(bool forced = false)
 EndFunction
 Function RealignActors()
