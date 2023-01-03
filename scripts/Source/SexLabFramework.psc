@@ -77,7 +77,6 @@ endProperty
 
 ;/* StartScene 
 * * This is the preferred way of calling a SexLab animation
-* * Set all your desired parameters and SexLab will do it all for you. No further interaction required
 * * 
 * * @param: akPositions - The Actors to animate
 * * @param: asTags			-	The tags to start the animation with (Can be empty). This supports prefixes (no prefix implies a tag to be required/mandatory):
@@ -101,6 +100,28 @@ sslThreadController Function StartScene(Actor[] akPositions, String asTags, Acto
 		LogConsole("StartScene() - Failed to find valid animations")
 		return none
 	EndIf
+	thread.CenterOnObject(akCenter)
+	thread.DisableBedUse(!abAllowBed)
+	thread.SetHook(asHook)
+	return thread.StartThread()
+EndFunction
+
+;/* StartSceneEx 
+* * An optional wrapper to start a SexLab animation
+* * Useful if the for the animation desired animations have already been found
+*	*	
+* * Parameters and return value match with the "StartScene()" function above
+*/;
+sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+	sslThreadModel thread = NewThread()
+	If(!thread)
+		LogConsole("StartScene() - Failed to claim an available thread")
+		return none
+	ElseIf(!thread.AddActors(akPositions, akVictim))
+		LogConsole("StartScene() - Failed to add some actors to thread")
+		return none
+	EndIf
+	thread.SetAnimations(akAnimations)
 	thread.CenterOnObject(akCenter)
 	thread.DisableBedUse(!abAllowBed)
 	thread.SetHook(asHook)
@@ -136,6 +157,68 @@ sslThreadModel function NewThread(float TimeOut = 30.0)
 	return ThreadSlots.PickModel(TimeOut)
 endFunction
 
+
+;#-----------------------------------------------------------------------------------------------------------------------------------------#
+;#                                                                                                                                         #
+;#                                                            THREAD FUNCTIONS                                                             #
+;# 	              									  				Use these Functions to access a running thread 	              		 								  				 #
+;#                                                                                                                                         #
+;#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+;/* GetController
+* * Gets the thread associated with the given thread id number. Mostly used for getting the thread associated with a hook event.
+* * 
+* * @param: int tid - The thread id number of the thread you wish to retrieve. Should be a number between 0-14
+* * @return: sslThreadController - The thread that the given tid belongs to.
+*/;
+sslThreadController function GetController(int tid)
+	return ThreadSlots.GetController(tid)
+endFunction
+
+;/* FindActorController
+* * Finds any thread controller an actor is currently associated with and returns it's thread id number.
+* *
+* * @param: Actor ActorRef - The actor to search for.
+* * @return: int - The id of the ThreadController where the actor is currently in. -1 if the actor couldn't be found in any of the ThreadControllers.
+*/;
+int function FindActorController(Actor ActorRef)
+	return ThreadSlots.FindActorController(ActorRef)
+endFunction
+
+;/* FindActorController
+* * Finds any thread controller the player is currently associated with and returns it's thread id number
+* * @return: int - The id of the ThreadController where the player is currently in. -1 if the player couldn't be found in any of the ThreadControllers.
+*/;
+int function FindPlayerController()
+	return ThreadSlots.FindActorController(PlayerRef)
+endFunction
+
+;/* 
+* * Finds any thread controller an actor is currently associated with and returns it.
+* * 
+* * @param: Actor ActorRef - The actor to search for.
+* * @return: sslThreadController - The ThreadController the actor is currently part of. NONE if actor couldn't be found.
+*/;
+sslThreadController function GetActorController(Actor ActorRef)
+	return ThreadSlots.GetActorController(ActorRef)
+endFunction
+
+;/* GetPlayerController
+* * Finds any thread controller the player is currently associated with and returns it.
+* * 
+* * @return: sslThreadController - The ThreadController the player is currently part of. NONE if player couldn't be found.
+*/;
+sslThreadController function GetPlayerController()
+	return ThreadSlots.GetActorController(PlayerRef)
+endFunction
+
+;#-----------------------------------------------------------------------------------------------------------------------------------------#
+;#                                                                                                                                         #
+;#  ^^^                                                     END THREAD FUNCTIONS                                                      ^^^  #
+;#                                                                                                                                         #
+;#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;#                                                             ACTOR FUNCTIONS                                                             #
@@ -143,12 +226,23 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
+;/* GetActorKey 
+* * Build a data-key for the given Actor. Data keys carry a large amount of data about an actor which can be accessed
+* * through the "sslActorData.psc" script
+* *
+* * @param: akActor, the actor from which to build the key
+* * @return: an integer key to use for functions in sslActorData.psc
+*/;
+int Function GetActorKey(Actor akActor)
+	sslActorData.BuildDataKey(akActor)
+EndFunction
+
 ;/* GetGender 
 * * SexLab can mark an actor to be male or female without relying on the Sex specified in the Creation Kit for the actor.
 * * The "SexLab gender" may differ from their vanilla ActorBase.GetSex() if their gender has been overridden, or they are creatures.
 * * This function gives you the sex of the actor considering all SexLab modifications and also enabling sex for creatures.
 * * 
-* * @param: ActorRef, the actual actor you what to understand the gender
+* * @param: ActorRef, the actor whichs gender to obtain
 * * @return: an int with these possible values ("Human" is used as "Not a Creature"): 
 * *  0 - Human Male (also the default values if the actor is not existing)
 * *  1 - Human Female
@@ -202,8 +296,8 @@ endFunction
 * * 
 * * @param: Positions, is an array of actors to be used for the genders calculation.
 * * @return: int[] - An int array of Length 4 with the amount of actor of each gender;
-* *   [0] is the number of (Human, not creature) Males
-* *   [1] is the number of (Human, not creature) Females
+* *   [0] is the number of (human) Males
+* *   [1] is the number of (human) Females
 * *   [2] is the number of Male Creatures (or all the creatures if Creature Genders are disabled)
 * *   [3] is the number of Females Creatures (is always zero if Creature Genders are NOT enabled, contains the number of female creatures if Creature Genders ARE enabled)
 */;
@@ -460,42 +554,15 @@ Actor[] function FindAvailablePartners(Actor[] Positions, int TotalActors, int M
 	return ThreadLib.FindAvailablePartners(Positions, TotalActors, Males, Females, Radius)
 endFunction
 
-;/* SortActors
-* * Sorts a list of actors to include either female or male actors first in the array.
-* * SexLab animations generally expect the female actor to be listed first in a scene.
-* * 
-* * @param: Actor[] Positions - The list of actors to sort by gender
-* * @param: bool FemaleFirst [OPTIONAL] - If forced to FALSE, male actors will be sorted first instead of females.
-* * @return: Actor[] - The final sorted list of actors.
+;/* SortPositions
+* * Sort the given array of actors with SexLabs default sorting algorithm
+*	*	The algorithm is stable and in place. Both Creature and regular actors will be sorted
+*	*
+*	*	@param: akPositions	- The positons to sort
 */;
-Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
-	return ThreadLib.SortActors(Positions, FemaleFirst)
-endFunction
-
-;/* SortActorsByAnimation
-* * Sorts a list of actors to include either female, male or creature actors in the valid position based on the animation gender and race definition.
-* * This is a most general propoused function that fully cover standard and creature actors.
-* * 
-* * @param: Actor[] Positions - The list of humanoid and/or creature actors to sort
-* * @param: sslBaseAnimation Animation [OPTIONAL] - Is the animation used as referece to sort the actors. In case the animation is none, not valid, or the number of the actors expected by the animation is not equal to the number of actors in the Positions array, then for the Position array without creatures the SortActors function will be executed instead.
-* * @return: Actor[] - The final sorted list of actors.
-*/;
-Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)	; TODO: Sort based on actor keys
-	return ThreadLib.SortActorsByAnimation(Positions, Animation)
-endFunction
-
-;/* SortCreatures
-* * Sorts a list of creature actors to include either female or male standard actors in the valid position based on the animation gender and race definition.
-* * This is a creature oriented function that can handle "creature only animations", "humanoid & creature animations" and "multiple creature races on the same animation".
-* * 
-* * @param: Actor[] Positions - The list of creature and humanoid actors to sort
-* * @param: sslBaseAnimation Animation [OPTIONAL] - Is the animation used as referece to sort the actors. In case the animation is none, not valid, or the number of the actors or races expected by the animation is not equal to the number of actors or races in the Positions array, then for the Position array with creatures the humanoid actors will be listed first in a scene.
-* * @return: Actor[] - The final sorted list of actors.
-*/;
-Actor[] function SortCreatures(Actor[] Positions, sslBaseAnimation Animation = none)	; TODO: Sort based on actor keys
-	return ThreadLib.SortCreatures(Positions, Animation)
-endFunction
-
+Function SortPositions(Actor[] akPositions)
+	SortPositions(akPositions)
+EndFunction
 
 ;/* AddCum
 * * Applies the cum effect to an actor for the given locations
@@ -793,65 +860,6 @@ endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
-;#                                                         BEGIN THREAD FUNCTIONS                                                          #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;/* GetController
-* * Gets the thread associated with the given thread id number. Mostly used for getting the thread associated with a hook event.
-* * 
-* * @param: int tid - The thread id number of the thread you wish to retrieve. Should be a number between 0-14
-* * @return: sslThreadController - The thread that the given tid belongs to.
-*/;
-sslThreadController function GetController(int tid)
-	return ThreadSlots.GetController(tid)
-endFunction
-
-;/* FindActorController
-* * Finds any thread controller an actor is currently associated with and returns it's thread id number.
-* *
-* * @param: Actor ActorRef - The actor to search for.
-* * @return: int - The id of the ThreadController where the actor is currently in. -1 if the actor couldn't be found in any of the ThreadControllers.
-*/;
-int function FindActorController(Actor ActorRef)
-	return ThreadSlots.FindActorController(ActorRef)
-endFunction
-
-;/* FindActorController
-* * Finds any thread controller the player is currently associated with and returns it's thread id number
-* * @return: int - The id of the ThreadController where the player is currently in. -1 if the player couldn't be found in any of the ThreadControllers.
-*/;
-int function FindPlayerController()
-	return ThreadSlots.FindActorController(PlayerRef)
-endFunction
-
-;/* 
-* * Finds any thread controller an actor is currently associated with and returns it.
-* * 
-* * @param: Actor ActorRef - The actor to search for.
-* * @return: sslThreadController - The ThreadController the actor is currently part of. NONE if actor couldn't be found.
-*/;
-sslThreadController function GetActorController(Actor ActorRef)
-	return ThreadSlots.GetActorController(ActorRef)
-endFunction
-
-;/* GetPlayerController
-* * Finds any thread controller the player is currently associated with and returns it.
-* * 
-* * @return: sslThreadController - The ThreadController the player is currently part of. NONE if player couldn't be found.
-*/;
-sslThreadController function GetPlayerController()
-	return ThreadSlots.GetActorController(PlayerRef)
-endFunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                     END THREAD FUNCTIONS                                                      ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
 ;#                                                        BEGIN TRACKING FUNCTIONS                                                         #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -992,86 +1000,19 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* GetAnimationsByTags
-* * Get an array of animations that have a specified set of tags.
+;/* GetAnimations
+* * Retrieve a set of animations suitable for the given actors under the specific tag restrictions
+*	*	DO NOT USE to find Creature Animations. Use GetCreatureAnimations() instead (see 'Creature' section below)
 * * 
-* * @param: int ActorCount - The total number of actors that will participate in the animation, valid values are between 1 and 5. Each animation is specific for a defined number of actors.
-* * @param: string Tags - A comma separated list of animation tags you want to use as a filter for the returned animations. (E.g. "Leito,Vaginal,Missionary", to get the animation from Leito, in missionary position, where the mouth has some importance. All or just one of the tags? Depends on the value of the parameter RequireAll)
-* * @param: string TagSuppress [OPTIONAL] - A comma separated list of animation tags you DO NOT want present on any of the returned animations. (E.g. "Aggressive" will filter out all the animations that have the tag "Aggressive")
-* * @param: bool RequireAll [OPTIONAL True by default] - If TRUE, all tags in the provided "string Tags" list must be present in an animation to be returned. When FALSE only one tag in the list is needed. (E.g. If the tags are "oral,Vaginal" and RequireAll is set to TRUE, then the animations found will have BOTH Oral and Vaginal tags; if RequireAll is set to FALSE, then the animation swill have just one of the two tags, and also both together will be returned in the list.)
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments. Be aware that the maximum number of returned animations is 128. Also if more animations that 128 are valid for the parameters specified.
+* * @param: akPositions 	- The actors you wish to animate. MUST BE EXCLUSIVELY HUMAN
+* * @param: asTags				- The tags to constrain the animation with. Prefix a tag with '-' to disable them
+*	*													You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
+*	*	@param: akVictim			- The Victim of this animation. Some animations may require an explicit victim to be stated
+* * @return: sslBaseAnimation - The animation whose name matches, if found.
 */;
-sslBaseAnimation[] function GetAnimationsByTags(int ActorCount, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return AnimSlots.GetByTags(ActorCount, Tags, TagSuppress, RequireAll)
-endFunction
-
-;/* GetAnimationsByType
-* * Get an array of animations that fit a specified set of parameters based on the genders of the participants
-* *
-* * @param: int ActorCount - The total number of actors that will participate in the animation, valid values are between 1 and 5. Each animation is specific for a defined number of actors.
-* * @param: int Males [OPTIONAL] - The total number of males the returned animations should be intended for. Set to -1 for any amount.
-* * @param: int Females [OPTIONAL] - The total number of females the returned animations should be intended for. Set to -1 for any amount.
-* * @param: int StageCount [OPTIONAL] - The total number of stages the returned animations should contain. Set to -1 for any amount.
-* * @param: bool Aggressive [OPTIONAL false by default] - TRUE if you want the animations returned to include ones tagged as aggressive.
-* * @param: bool Sexual [OPTIONAL true by default] - FALSE if you want the animations returned to be LeadIn/Foreplay type tagged.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetAnimationsByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
-	return AnimSlots.GetByType(ActorCount, Males, Females, StageCount, Aggressive, Sexual)
-endFunction
-
-;/* PickAnimationsByActors
-* * Get an array of animations that fit the given array of actors using SexLab's default selection criteria.
-* *  
-* * @param: Actor[] Positions - An array of 1 to 5 actors you intend to use the resulting animations with.
-* * @param: int Limit [OPTIONAL 64 by default] - Limits the number of animations returned to this amount. Searches that result in more than this will randomize the results to fit within the limit.
-* * @param: bool Aggressive [OPTIONAL false by default] - TRUE if you want the animations returned to include ones tagged as aggressive.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function PickAnimationsByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
-	return AnimSlots.PickByActors(Positions, limit, aggressive)
-endFunction
-
-;/* GetAnimationsByDefault
-* * Get an array of animations that fit the given number of males and females using SexLab's default selection criteria.
-* *  
-* * @param: int Males - The total number of males the returned animations should be intended for. Set to -1 for any amount.
-* * @param: int Females - The total number of females the returned animations should be intended for. Set to -1 for any amount.
-* * @param: bool IsAggressive - TRUE if the animations to be played are considered aggressive.
-* * @param: bool UsingBed - TRUE if the animation is going to be played on a bed, which will filter out standing animations and allow BedOnly tagged animations.
-* * @param: bool RestrictAggressive - If TRUE, only return aggressive animations if IsAggressive=true and none if IsAggressive=false.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-* * Note about the parameters "IsAggressive" and "RestrictAggressive", they work together and the logic is the following one:
-* *  IsAggressive=True, RestrictAggressive=False  --> ONLY aggressive animations are used
-* *  IsAggressive=True, RestrictAggressive=True  --> Only animations that are NOT aggressive are used
-* *  IsAggressive=False, RestrictAggressive=False  --> Both aggressive and not aggressive animations are used
-* *  IsAggressive=False, RestrictAggressive=True  --> Only animations that are NOT aggressive are used
-*/;
-sslBaseAnimation[] function GetAnimationsByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
-	return AnimSlots.GetByDefault(Males, Females, IsAggressive, UsingBed, RestrictAggressive)
-endFunction
-
-;/* GetAnimationsByDefaultTags
-* * Get an array of animations that fit the given number of males and females using SexLab's default selection criteria.
-* *  
-* * @param: int Males - The total number of males the returned animations should be intended for. Set to -1 for any amount.
-* * @param: int Females - The total number of females the returned animations should be intended for. Set to -1 for any amount.
-* * @param: bool IsAggressive - TRUE if the animations to be played are considered aggressive.
-* * @param: bool UsingBed - TRUE if the animation is going to be played on a bed, which will filter out standing animations and allow BedOnly tagged animations.
-* * @param: bool RestrictAggressive - If TRUE, only return aggressive animations if IsAggressive=true and none if IsAggressive=false.
-* * @param: string Tags - A comma separated list of animation tags you want to use as a filter for the returned animations. (E.g. "Leito,Vaginal,Missionary", to get the animation from Leito, in missionary position, where the mouth has some importance. All or just one of the tags? Depends on the value of the parameter RequireAll). WARNING! To prevent issues don't add gender tags or the "Aggressive" tag to this parameter.
-* * @param: string TagSuppress [OPTIONAL] - A comma separated list of animation tags you DO NOT want present on any of the returned animations. (E.g. "LeadIn" will filter out all the animations that have the tag "LeadIn"). WARNING! To prevent issues don't add the "Aggressive" tag to this parameter.
-* * @param: bool RequireAll [OPTIONAL True by default] - If TRUE, all tags in the provided "string Tags" list must be present in an animation to be returned. When FALSE only one tag in the list is needed. (E.g. If the tags are "oral,Vaginal" and RequireAll is set to TRUE, then the animations found will have BOTH Oral and Vaginal tags; if RequireAll is set to FALSE, then the animation swill have just one of the two tags, and also both together will be returned in the list.)
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-* * Note about the parameters "IsAggressive" and "RestrictAggressive", they work together and the logic is the following one:
-* *  IsAggressive=True, RestrictAggressive=False  --> ONLY aggressive animations are used
-* *  IsAggressive=True, RestrictAggressive=True  --> Only animations that are NOT aggressive are used
-* *  IsAggressive=False, RestrictAggressive=False  --> Both aggressive and not aggressive animations are used
-* *  IsAggressive=False, RestrictAggressive=True  --> Only animations that are NOT aggressive are used
-*/;
-sslBaseAnimation[] function GetAnimationsByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	return AnimSlots.GetByDefaultTags(Males, Females, IsAggressive, UsingBed, RestrictAggressive, Tags, TagsSuppressed, RequireAll)
-endFunction
+sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags = "", Actor akVictim = none)
+	return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
+EndFunction
 
 ;/* GetAnimationByName
 * * Get a single animation by name. Ignores if a user has the animation enabled or not.
@@ -1113,30 +1054,6 @@ endFunction
 */;
 int function GetAnimationCount(bool IgnoreDisabled = true)
 	return AnimSlots.GetCount(IgnoreDisabled)
-endFunction
-
-;/* MakeAnimationGenderTag
-* * Create a gender tag from a list of actors, in order: F for female, M for male, C for creatures
-* * All animations in SexLab have this GenderTag automatically generated based on the animation definition.
-* * 
-* * @param: Actor[] Positions - A list of actors to create a tag for
-* * @return: string - A usable tag for filtering animations by tag and gender. If given an array with 1 male and 1 female, the return will be "FM"
-* *
-* * EXAMPLE: if the animation expects in the first position is Female, and in the next two positions are a Male, you will get "FMM" as result.
-*/;
-string function MakeAnimationGenderTag(Actor[] Positions)
-	return ActorLib.MakeGenderTag(Positions)
-endFunction
-
-;/* GetGenderTag
-* * Create a gender tag from specified amount of genders, in order: F for female, M for male, C for creatures
-* * @param: int Females - The number of females (F) for the gender tag.
-* * @param: int Males - The number of males (M) for the gender tag.
-* * @param: int Creatures - The number of creatures (C) for the gender tag.
-* * @return: string - A usable tag for filtering animations by tag and gender. If given an array with 2 male and 1 female, the return will be "FMM"
-*/;
-string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0)
-	return ActorLib.GetGenderTag(Females, Males, Creatures)
 endFunction
 
 ;/* MergeAnimationLists
@@ -1241,113 +1158,19 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-
-;/* GetCreatureAnimationsByRace
-* * Gets an array of creature animations for a provided creature's race.
-* *  
-* * @param: int ActorCount - The total number of actors, between 1 and 5 the returned animations should be intended for.
-* * @param: Race RaceRef - The Race the returned animations should be usable by.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetCreatureAnimationsByRace(int ActorCount, Race RaceRef)
-	return CreatureSlots.GetByRace(ActorCount, RaceRef)
-endFunction
-
-;/* GetCreatureAnimationsByRaceTags
-* * Gets an array of creature animations that have a specified set of tags AND are valid for a specific creatures race.
-* *
-* * @param: int ActorCount - The total number of actors, between 1-5 the returned animations should be intended for.
-* * @param: Race RaceRef - The race the returned animations should be usable by.
-* * @param: string Tags - A comma separated list of animation tags you want to use as a filter for the returned animations.
-* * @param: string TagSuppress - A comma separated list of animation tags you DO NOT want present on any of the returned animations.
-* * @param: bool RequireAll - If TRUE, all tags in the provided "string Tags" list must be present in an animation to be returned. When FALSE only one tag in the list is needed.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetCreatureAnimationsByRaceTags(int ActorCount, Race RaceRef, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByRaceTags(ActorCount, RaceRef, Tags, TagSuppress, RequireAll)
-endFunction
-
-;/* GetCreatureAnimationsByRaceGenders
-* * Gets an array of creature animations for a specific number of actors, creature race, and optionally gender.
+;/* GetCreatureAnimations
+* * Retrieve a set of animations suitable for the given actors under the specific tag restrictions
+*	*	DO NOT USE for human exclusive animations. Use "GetAnimations()" instead (see Animation section above)
 * * 
-* * @param: int ActorCount - The total number of actors, between 1 and 5 the returned animations should be intended for.
-* * @param: Race RaceRef - The race the returned animations should be usable by.
-* * @param: int MaleCreatures [OPTIONAL] - The number of male creatures the animation should use. Ignored if user does not have creature genders enabled or ForceUse is set to TRUE.
-* * @param: int FemaleCreatures [OPTIONAL] - The number of female creatures the animation should use. Ignored if user does not have creature genders enabled or ForceUse is set to TRUE.
-* * @param: bool ForceUse [OPTIONAL false by default] - If left as the default value of FALSE, the MaleCreatures and FemaleCreatures argument will be ignored when creature genders aren't enabled by user.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
+* * @param: akPositions 	- The actors you wish to animate, both human and creatures
+* * @param: asTags				- The tags to constrain the animation with. Prefix a tag with '-' to disable them
+*	*													You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
+*	*	@param: akVictim			- The Victim of this animation. Some animations may require an explicit victim to be stated
+* * @return: sslBaseAnimation - A list of animations fitting to the given tags
 */;
-sslBaseAnimation[] function GetCreatureAnimationsByRaceGenders(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, bool ForceUse = false)
-	return CreatureSlots.GetByRaceGenders(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, ForceUse)
-endFunction
-
-;/* GetCreatureAnimationsByRaceGendersTags
-* * Gets an array of creature animations for a specific number of actors, creature race, and optionally gender.
-* * 
-* * @param: int ActorCount - The total number of actors, between 1 and 5 the returned animations should be intended for.
-* * @param: Race RaceRef - The race the returned animations should be usable by.
-* * @param: int MaleCreatures [OPTIONAL] - The number of male creatures the animation should use. Ignored if user does not have creature genders enabled or ForceUse is set to TRUE.
-* * @param: int FemaleCreatures [OPTIONAL] - The number of female creatures the animation should use. Ignored if user does not have creature genders enabled or ForceUse is set to TRUE.
-* * @param: string Tags - A comma separated list of animation tags you want to use as a filter for the returned animations. WARNING! To prevent issues don't add gender tags to this parameter.
-* * @param: string TagSuppress - A comma separated list of animation tags you DO NOT want present on any of the returned animations.
-* * @param: bool RequireAll - If TRUE, all tags in the provided "string Tags" list must be present in an animation to be returned. When FALSE only one tag in the list is needed.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetCreatureAnimationsByRaceGendersTags(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByRaceGendersTags(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, Tags, TagSuppress, RequireAll)
-endFunction
-
-;/* GetCreatureAnimationsByRaceKey
-* * Gets an array of creature animations that require a specific number of actors and race type.
-* * 
-* * @param: int ActorCount - The total number of actors, between 1 and 5 the returned animations should be intended for.
-* * @param: string RaceKey - The creature race sexlab identifier used to identify animations meant for this race.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetCreatureAnimationsByRaceKey(int ActorCount, string RaceKey)
-	return CreatureSlots.GetByRaceKey(ActorCount, RaceKey)
-endFunction
-
-;/* GetCreatureAnimationsByRaceKeyTags
-** Gets an array of creature animations that have a specified set of tags AND are valid for a specific creature race type.
-* *
-* * @param: int ActorCount - The total number of actors, between 1-5 the returned animations should be intended for.
-* * @param: string RaceKey - The creature race sexlab identifier used to identify animations meant for this race.
-* * @param: string Tags - A comma separated list of animation tags you want to use as a filter for the returned animations.
-* * @param: string TagSuppress - A comma separated list of animation tags you DO NOT want present on any of the returned animations.
-* * @param: bool RequireAll - If TRUE, all tags in the provided "string Tags" list must be present in an animation to be returned. When FALSE only one tag in the list is needed.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetCreatureAnimationsByRaceKeyTags(int ActorCount, string RaceKey, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByRaceKeyTags(ActorCount, RaceKey, Tags, TagSuppress, RequireAll)
-endFunction
-
-;/* GetCreatureAnimationsByRaceKey
-* * Gets an array of creature animations that require a specific number of actors and race type.
-* * Can handle multiple creature races on the same animation
-* * 
-* * @param: int ActorCount - The total number of actors, between 1 and 5 the returned animations should be intended for.
-* * @param: Actor[] Positions - An array of 1 to 5 actors you intend to use the resulting animations with. At least one of the actor on the array must be creature type 
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetCreatureAnimationsByActors(int ActorCount, Actor[] Positions)
-	return CreatureSlots.GetByCreatureActors(ActorCount, Positions)
-endFunction
-
-;/* GetCreatureAnimationsByRaceKeyTags
-** Gets an array of creature animations that have a specified set of tags AND are valid for the specific actors in the Position parameter.
-* * Can handle multiple creature races on the same animation
-* *
-* * @param: int ActorCount - The total number of actors, between 1-5 the returned animations should be intended for.
-* * @param: Actor[] Positions - An array of 1 to 5 actors you intend to use the resulting animations with. At least one of the actor on the array must be creature type 
-* * @param: string Tags - A comma separated list of animation tags you want to use as a filter for the returned animations. WARNING! To prevent issues don't add Race tags to this parameter.
-* * @param: string TagSuppress - A comma separated list of animation tags you DO NOT want present on any of the returned animations.
-* * @param: bool RequireAll - If TRUE, all tags in the provided "string Tags" list must be present in an animation to be returned. When FALSE only one tag in the list is needed.
-* * @return: sslBaseAnimation[] - An array of animations that fit the provided search arguments.
-*/;
-sslBaseAnimation[] function GetCreatureAnimationsByActorsTags(int ActorCount, Actor[] Positions, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, Tags, TagSuppress, RequireAll)
-endFunction
+sslBaseAnimation[] Function GetCreatureAnimations(Actor[] akPositions, String asTags = "", Actor akVictim = none)
+	return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
+EndFunction
 
 ;/* GetCreatureAnimationByName
 ** Gets a single creature animation by name. Ignores if a user has the animation enabled or not.
@@ -3213,6 +3036,96 @@ int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim 
 		return Thread.tid
 	endIf
 	return -1
+endFunction
+
+;/* DEPRECATED! */;
+string function MakeAnimationGenderTag(Actor[] Positions)
+	return ActorLib.MakeGenderTag(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0)
+	return ActorLib.GetGenderTag(Females, Males, Creatures)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetAnimationsByTags(int ActorCount, string Tags, string TagSuppress = "", bool RequireAll = true)
+	return AnimSlots.GetByTags(ActorCount, Tags, TagSuppress, RequireAll)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetAnimationsByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
+	return AnimSlots.GetByType(ActorCount, Males, Females, StageCount, Aggressive, Sexual)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function PickAnimationsByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
+	return AnimSlots.PickByActors(Positions, limit, aggressive)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetAnimationsByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
+	return AnimSlots.GetByDefault(Males, Females, IsAggressive, UsingBed, RestrictAggressive)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetAnimationsByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	return AnimSlots.GetByDefaultTags(Males, Females, IsAggressive, UsingBed, RestrictAggressive, Tags, TagsSuppressed, RequireAll)
+endFunction
+
+;/* DEPRECATED! */;
+Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
+	return ThreadLib.SortActors(Positions, FemaleFirst)
+endFunction
+
+;/* DEPRECATED! */;
+Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)
+	return ThreadLib.SortActors(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+Actor[] function SortCreatures(Actor[] Positions, sslBaseAnimation Animation = none)
+	return ThreadLib.SortActors(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByRace(int ActorCount, Race RaceRef)
+	return CreatureSlots.GetByRace(ActorCount, RaceRef)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByRaceTags(int ActorCount, Race RaceRef, string Tags, string TagSuppress = "", bool RequireAll = true)
+	return CreatureSlots.GetByRaceTags(ActorCount, RaceRef, Tags, TagSuppress, RequireAll)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByRaceGenders(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, bool ForceUse = false)
+	return CreatureSlots.GetByRaceGenders(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, ForceUse)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByRaceGendersTags(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, string Tags, string TagSuppress = "", bool RequireAll = true)
+	return CreatureSlots.GetByRaceGendersTags(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, Tags, TagSuppress, RequireAll)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByRaceKey(int ActorCount, string RaceKey)
+	return CreatureSlots.GetByRaceKey(ActorCount, RaceKey)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByRaceKeyTags(int ActorCount, string RaceKey, string Tags, string TagSuppress = "", bool RequireAll = true)
+	return CreatureSlots.GetByRaceKeyTags(ActorCount, RaceKey, Tags, TagSuppress, RequireAll)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByActors(int ActorCount, Actor[] Positions)
+	return CreatureSlots.GetByCreatureActors(ActorCount, Positions)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetCreatureAnimationsByActorsTags(int ActorCount, Actor[] Positions, string Tags, string TagSuppress = "", bool RequireAll = true)
+	return CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, Tags, TagSuppress, RequireAll)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
