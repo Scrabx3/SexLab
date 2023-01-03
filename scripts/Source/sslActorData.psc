@@ -14,7 +14,7 @@ ScriptName sslActorData Hidden
 
 ; Build a DataKey from the given Actor, see flag definition above for more information
 ; return 0 if the key cannot be created for some reason
-int Function BuildDataKey(Actor akActor, bool abIsVictim) global
+int Function BuildDataKey(Actor akActor, bool abIsVictim = false) global
   If(!akActor)
     return 0
   EndIf
@@ -48,10 +48,10 @@ int[] Function BuildDataKeyArrayEx(Actor[] akActors, bool[] abIsVictim) global
 EndFunction
 
 ; Builds a sorted array of Keys, the given Actor array will NOT be changed
-int[] Function BuildSortedActorKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
+int[] Function BuildSortedDataKeyArray(Actor[] akActors, int aiVictimIdx = -1) global
   return SortDataKeys(BuildDataKeyArray(akActors, aiVictimIdx))
 EndFunction
-int[] Function BuildSortedActorKeyArrayEx(Actor[] akActors, bool[] abIsVictim) global
+int[] Function BuildSortedDataKeyArrayEx(Actor[] akActors, bool[] abIsVictim) global
   return SortDataKeys(BuildDataKeyArrayEx(akActors, abIsVictim))
 EndFunction
 
@@ -73,15 +73,23 @@ bool Function MatchArray(int[] aiKeys, int[] aiCmp) native global
 ; --- Reading                 				                --- ;
 ; ------------------------------------------------------- ;
 
+; Return an integer ID for the given key
+; 0 - Male
+; 1 - Female
+; 2 - Futa
+; 3 - M Crt
+; 4 - F Crt
+int Function GetGender(int aiKey) native global
+
 ; Return the real gender of this actor, ie the gender without respect to overwrites
 ; A futa is defined as a female with a schlong from SoS, a Creature is always gendered
 bool Function IsMale(int aiKey) native global
 bool Function IsFemale(int aiKey) native global
-bool Function IsPureFemale(int aiKey) native global ; assert(IsFemale() && !IsFuta())
-bool Function IsFuta(int aiKey) native global       ; assert(IsFemale() && !IsPureFemale())
-bool Function IsCreature(int aiKey) native global   ; assert(IsMaleCreature() || IsFemaleCreature())
-bool Function IsMaleCreature(int aiKey) native global
-bool Function IsFemaleCreature(int aiKey) native global
+bool Function IsPureFemale(int aiKey) native global			; assert(IsFemale() && !IsFuta())
+bool Function IsFuta(int aiKey) native global      			; assert(IsFemale() && !IsPureFemale())
+bool Function IsCreature(int aiKey) native global  			; assert(IsMaleCreature() || IsFemaleCreature())
+bool Function IsMaleCreature(int aiKey) native global		;	may return false positive if creature gender is disabled
+bool Function IsFemaleCreature(int aiKey) native global	;	may return false positive if creature gender is disabled
 
 bool Function IsVictim(int aiKey) native global
 bool Function IsVampire(int aiKey) native global
@@ -127,6 +135,7 @@ int Function BuildByLegacyGender(int aiLegacyGender, String asRaceKey = "Humanoi
   int id = GetRaceIDByRaceKey(asRaceKey)
   BuildByLegacyGenderNative(aiLegacyGender, id + 1)
 EndFunction
+; -1 for overloaded human gender, -2 for overloaded creature gender 
 int Function BuildByLegacyGenderNative(int aiLegacyGender, int aiRaceID) native global
 
 ; Blank Keys are universal keys, primarily intended to support legacy content
@@ -134,6 +143,17 @@ int Function BuildByLegacyGenderNative(int aiLegacyGender, int aiRaceID) native 
 int Function BuildBlankKey() global
   return 0
 EndFunction
+
+; ------------------------------------------------------- ;
+; --- Misc		                 				                --- ;
+; ------------------------------------------------------- ;
+
+; 0 - Male, 1 - Female, 2 - Futa, 3 - M Crt, 4 - F Crt
+int Function AddGenderToKey(int aiKey, int aiGender) native global
+int Function RemoveGenderFromKey(int aiKey, int aiGender) native global
+
+; Adds male and female gender to the multivariable gender definition
+Function NeutralizeCreatureGender(int[] aiKeys) native global
 
 ; ------------------------------------------------------- ;
 ; --- TEMPORARY                				                --- ;

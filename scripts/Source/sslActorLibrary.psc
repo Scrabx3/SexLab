@@ -523,7 +523,7 @@ function TreatAsGender(Actor ActorRef, bool AsFemale)
 endFunction
 
 int function GetTrans(Actor ActorRef)
-	if ActorRef && ActorRef != none && ActorRef.IsInFaction(Config.GenderFaction)
+	if ActorRef && ActorRef.IsInFaction(Config.GenderFaction)
 		ActorBase BaseRef = ActorRef.GetLeveledActorBase()
 		if !BaseRef || ActorRef.GetFactionRank(GenderFaction) == BaseRef.GetSex()
 			return -1

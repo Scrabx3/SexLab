@@ -21,7 +21,7 @@ sslThreadLibrary property ThreadLib auto
 ; ------------------------------------------------------- ;
 
 sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags, Actor akVictim, int aiUseBed = 0)
-	int[] keys = sslActorData.BuildSortedActorKeyArray(akPositions, akPositions.Find(akVictim))
+	int[] keys = sslActorData.BuildSortedDataKeyArray(akPositions, akPositions.Find(akVictim))
 	return GetAnimationsByKeys(keys, asTags, aiuseBed)
 EndFunction
 
@@ -58,7 +58,7 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 	EndWhile
 	sslBaseAnimation[] _ret = sslUtility.AnimationArray(ii)
 	int j = 0
-	While(j < _ret.Length)
+	While(j < ii)
 		_ret[j] = ret[j]
 		j += 1
 	EndWhile
@@ -120,10 +120,7 @@ string[] function GetNames(sslBaseAnimation[] SlotList)
 			Names[i] = SlotList[i].Name
 		endIf
 	endWhile
-	if Names.Find("") != -1
-		Names = RemoveString(Names, "")
-	endIf
-	return Names
+	return RemoveString(Names, "")
 endFunction
 
 int function CountTag(sslBaseAnimation[] Anims, string Tags)
@@ -155,9 +152,8 @@ int function GetCount(bool IgnoreDisabled = true)
 endFunction
 
 int function FindFirstTagged(string Tags, bool IgnoreDisabled = true, bool Reverse = false)
-	string[] Checking = StringSplit(Tags)
-	Checking = ClearEmpty(Checking)
-	if Tags == "" || Checking.Length == 0
+	string[] Checking = ClearEmpty(StringSplit(Tags))
+	if !Checking.Length
 		return -1
 	endIf
 	int count
@@ -183,19 +179,16 @@ int function FindFirstTagged(string Tags, bool IgnoreDisabled = true, bool Rever
 endFunction
 
 int function CountTagUsage(string Tags, bool IgnoreDisabled = true)
-	string[] Checking = StringSplit(Tags)
-	Checking = ClearEmpty(Checking)
-	if Tags == "" || Checking.Length == 0
+	string[] Checking = ClearEmpty(StringSplit(Tags))
+	if !Checking.Length
 		return 0
 	endIf
 	int count
 	int i = Slotted
 	while i
 		i -= 1
-		if Objects[i]
-			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			count += ((Slot.Enabled || !IgnoreDisabled) && Slot.HasAllTag(Checking)) as int
-		endIf
+		sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
+		count += (Slot && (Slot.Enabled || !IgnoreDisabled) && Slot.HasAllTag(Checking)) as int
 	endWhile
 	return count
 endfunction
@@ -206,60 +199,13 @@ string[] function GetAllTags(int ActorCount = -1, bool IgnoreDisabled = true)
 	int i = Slotted
 	while i
 		i -= 1
-		if Objects[i]
-			sslBaseAnimation Anim = Objects[i] as sslBaseAnimation
-			if Anim && (IgnoreDisabled || Anim.Enabled) && (ActorCount == -1 || Anim.PositionCount == ActorCount)
-				Output = MergeStringArray(Output, Anim.GetRawTags(), true)
-			endif
-		endIf
+		sslBaseAnimation Anim = Objects[i] as sslBaseAnimation
+		if Anim && (IgnoreDisabled || Anim.Enabled) && (ActorCount == -1 || Anim.PositionCount == ActorCount)
+			Output = MergeStringArray(Output, Anim.GetRawTags(), true)
+		endif
 	endwhile
-	SortStringArray(Output)
+	PapyrusUtil.SortStringArray(Output)
 	return RemoveString(Output, "")
-endFunction
-
-; ------------------------------------------------------- ;
-; --- Object MCM Pagination                               ;
-; ------------------------------------------------------- ;
-
-int function PageCount(int perpage = 125)
-	return ((Slotted as float / perpage as float) as int) + 1
-endFunction
-
-int function FindPage(string Registrar, int perpage = 125)
-	int i = Registry.Find(Registrar)
-	if i != -1
-		return ((i as float / perpage as float) as int) + 1
-	endIf
-	return -1
-endFunction
-
-string[] function GetSlotNames(int page = 1, int perpage = 125)
-	return GetNames(GetSlots(page, perpage))
-endfunction
-
-sslBaseAnimation[] function GetSlots(int page = 1, int perpage = 125)
-	perpage = ClampInt(perpage, 1, 128)
-	if page > PageCount(perpage) || page < 1
-		return sslUtility.AnimationArray(0)
-	endIf
-	int n
-	sslBaseAnimation[] PageSlots
-	if page == PageCount(perpage)
-		n = Slotted
-		PageSlots = sslUtility.AnimationArray((Slotted - ((page - 1) * perpage)))
-	else
-		n = page * perpage
-		PageSlots = sslUtility.AnimationArray(perpage)
-	endIf
-	int i = PageSlots.Length
-	while i
-		i -= 1
-		n -= 1
-		if Objects[n]
-			PageSlots[i] = Objects[n] as sslBaseAnimation
-		endIf
-	endWhile
-	return PageSlots
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -442,24 +388,64 @@ function PreloadCategoryLoaders()
 	endWhile
 endFunction
 
-;/ function RegisterJSONFolder()
-	string[] Files = JsonUtil.JsonInFolder(JLoaders)
-	if !Files
-		Log("No JSON Animations Found: "+JLoaders)
-		return
-	endIf
-	Log("JSON Files: "+Files)
-	; int fl = StringUtil.GetLength(Folder) - 1
-	int i = Files.Length
-	while i
-		i -= 1
-		string Registrar = StringUtil.Substring(Files[i], 0, StringUtil.GetLength(Files[i]) - 5)
-		RegisterJSON(JLoaders+Files[i], Registrar)
-	endWhile
-endFunction /;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; ------------------------------------------------------- ;
-; --- System Use Only                                 --- ;
+; --- Object MCM Pagination                               ;
+; ------------------------------------------------------- ;
+
+int function PageCount(int perpage = 125)
+	return ((Slotted as float / perpage as float) as int) + 1
+endFunction
+
+int function FindPage(string Registrar, int perpage = 125)
+	int i = Registry.Find(Registrar)
+	if i != -1
+		return ((i as float / perpage as float) as int) + 1
+	endIf
+	return -1
+endFunction
+
+string[] function GetSlotNames(int page = 1, int perpage = 125)
+	return GetNames(GetSlots(page, perpage))
+endfunction
+
+sslBaseAnimation[] function GetSlots(int page = 1, int perpage = 125)
+	perpage = ClampInt(perpage, 1, 128)
+	if page > PageCount(perpage) || page < 1
+		return sslUtility.AnimationArray(0)
+	endIf
+	int n
+	sslBaseAnimation[] PageSlots
+	if page == PageCount(perpage)
+		n = Slotted
+		PageSlots = sslUtility.AnimationArray((Slotted - ((page - 1) * perpage)))
+	else
+		n = page * perpage
+		PageSlots = sslUtility.AnimationArray(perpage)
+	endIf
+	int i = PageSlots.Length
+	while i
+		i -= 1
+		n -= 1
+		if Objects[n]
+			PageSlots[i] = Objects[n] as sslBaseAnimation
+		endIf
+	endWhile
+	return PageSlots
+endFunction
+
+; ------------------------------------------------------- ;
+; --- Setup	& Misc					                              ;
 ; ------------------------------------------------------- ;
 
 string property JLoaders auto hidden
@@ -513,16 +499,6 @@ function ClearTagCache()
 	StorageUtil.StringListClear(Config, CacheID)
 	StorageUtil.UnsetIntValue(Config, CacheID)
 endFunction
-
-; function CacheTags()
-; 	DoCache()
-; endFunction
-
-; event OnUpdate()
-; 	if ((Utility.GetCurrentRealTime() as int) - StorageUtil.GetIntValue(Config, CacheID, 0)) > 60
-; 		CacheTags()
-; 	endIf
-; endEvent
 
 function DoCache()
 	if !CacheID
@@ -826,248 +802,6 @@ endFunction
 bool[] function FindTagged(sslBaseAnimation[] Anims, string Tags)
 	return sslUtility.FindTaggedAnimations(Anims, StringSplit(Tags))
 endFunction
-
-sslBaseAnimation[] function GetByTags_Legacy(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	; Log("GetByTags(ActorCount="+ActorCount+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
-	; Making the tags lists and optimize for CACHE
-	string[] Suppress = StringSplit(TagsSuppressed)
-	Suppress = ClearEmpty(Suppress)
-	SortStringArray(Suppress)
-	string[] Search   = StringSplit(Tags)
-	Search = ClearEmpty(Search)
-	SortStringArray(Search)
-	; Check Cache
-	string CacheName = ActorCount+":"+Search+":"+Suppress+":"+RequireAll
-	sslBaseAnimation[] Output = CheckCache(CacheName)
-	if Output
-		return Output
-	endIf
-	; Search
-	bool[] Valid      = Utility.CreateBoolArray(Slotted)
-	int i = Slotted
-	while i
-		i -= 1
-		if Objects[i]
-			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			Valid[i] = Slot.Enabled && ActorCount == Slot.PositionCount && Slot.TagSearch(Search, Suppress, RequireAll)
-		endIf
-	endWhile
-	Output = GetList(Valid)
-	CacheAnims(CacheName, Output)
-	return Output
-endFunction
-
-sslBaseAnimation[] function GetByCommonTags_Legacy(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	Log("GetByCommonTags(ActorCount="+ActorCount+", CommonTags="+CommonTags+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
-	; Making the tags lists and optimize for CACHE
-	string[] SearchCommon   = StringSplit(CommonTags)
-	SearchCommon = ClearEmpty(SearchCommon)
-	SortStringArray(SearchCommon)
-	; Check if this function is really required 
-	if !SearchCommon || SearchCommon.Length < 1
-		return GetByTags_Legacy(ActorCount, Tags, TagsSuppressed, RequireAll)
-	endIf
-	string[] Suppress = StringSplit(TagsSuppressed)
-	Suppress = ClearEmpty(Suppress)
-	SortStringArray(Suppress)
-	string[] Search   = StringSplit(Tags)
-	Search = ClearEmpty(Search)
-	SortStringArray(Search)
-	int i = SearchCommon.Length
-	while i
-		i -= 1
-		if Search.Length > 0
-			Search = RemoveString(Search, SearchCommon[i])
-		endIf
-	endWhile
-	; Check Cache
-	string CacheName = ActorCount+":"+SearchCommon+":"+Search+":"+Suppress+":"+RequireAll
-	sslBaseAnimation[] Output = CheckCache(CacheName)
-	if Output
-		return Output
-	endIf
-	; Search
-	bool[] Valid      = Utility.CreateBoolArray(Slotted)
-	i = Slotted
-	while i
-		i -= 1
-		if Objects[i]
-			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			Valid[i] = Slot.Enabled && ActorCount == Slot.PositionCount && Slot.HasAllTag(SearchCommon) && Slot.TagSearch(Search, Suppress, RequireAll)
-		endIf
-	endWhile
-	Output = GetList(Valid)
-	CacheAnims(CacheName, Output)
-	return Output
-endFunction
-
-sslBaseAnimation[] function GetByType_Legacy(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
-	; Log("GetByType(ActorCount="+ActorCount+", Males="+Males+", Females="+Females+", StageCount="+StageCount+", Aggressive="+Aggressive+", Sexual="+Sexual+")")
-	; Check Cache
-	string CacheName = ActorCount+":"+Males+":"+Females+":"+StageCount+":"+Aggressive+":"+Sexual
-	sslBaseAnimation[] Output = CheckCache(CacheName)
-	if Output
-		return Output
-	endIf
-	; Search
-	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	bool RestrictAggressive = Config.RestrictAggressive
-	string GenderTag = ActorLib.GetGenderTag(Females, Males)
-	int i = Slotted
-	while i
-		i -= 1
-		if Objects[i]
-			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			Valid[i] = Slot.Enabled && ActorCount == Slot.PositionCount && (!RestrictAggressive || Aggressive == Slot.HasTag("Aggressive")) \
-			&& (((Males == -1 || Males == Slot.Males) && (Females == -1 || Females == Slot.Females)) || Slot.HasTag(GenderTag)) && (StageCount == -1 || StageCount == Slot.StageCount) \
-			&& Sexual != Slot.HasTag("LeadIn")
-		endIf
-	endWhile
-	Output = GetList(Valid)
-	CacheAnims(CacheName, Output)
-	return Output
-endFunction
-
-sslBaseAnimation[] function PickByActors_Legacy(Actor[] Positions, int Limit = 64, bool Aggressive = false)
-	Log("PickByActors(Positions="+Positions+", Limit="+Limit+", Aggressive="+Aggressive+")")
-	int[] Genders = ActorLib.GenderCount(Positions)
-	sslBaseAnimation[] Matches = GetByDefault_Legacy(Genders[0], Genders[1], Aggressive)
-	if Matches.Length <= Limit
-		return Matches
-	endIf
-	; Select random from within limit
-	sslBaseAnimation[] Picked = sslUtility.AnimationArray(Limit)
-	int i = Matches.Length
-	while i && Limit
-		i -= 1
-		Limit -= 1
-		; Check random index between 0 and before current
-		int r = Utility.RandomInt(0, (i - 1))
-		if Picked.Find(Matches[r]) == -1
-			Picked[Limit] = Matches[r] ; Use random index
-		else
-			Picked[Limit] = Matches[i] ; Random index was used, use current index
-		endIf
-	endWhile
-	return Matches
-endFunction
-
-sslBaseAnimation[] function GetByDefault_Legacy(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
-	Log("GetByDefault(Males="+Males+", Females="+Females+", IsAggressive="+IsAggressive+", UsingBed="+UsingBed+", RestrictAggressive="+RestrictAggressive+")")
-	if Males == 0 && Females == 0
-		return none ; No actors passed or creatures present
-	endIf
-	; Info
-	int ActorCount = (Males + Females)
-	bool SameSex = (Females == 2 && Males == 0) || (Males == 2 && Females == 0)
-	bool BedRemoveStanding = Config.BedRemoveStanding
-	; Check Cache
-	string CacheName = Males+":"+Females+":"+IsAggressive+":"+UsingBed+":"+BedRemoveStanding+":"+RestrictAggressive
-	sslBaseAnimation[] Output = CheckCache(CacheName)
-	if Output
-		return Output
-	endIf
-	; Search
-	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	string GenderTag = ActorLib.GetGenderTag(Females, Males)
-	int i = Slotted
-	while i
-		i -= 1
-		if Objects[i]
-			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			; Check for appropiate enabled aniamtion
-			Valid[i] = Slot.Enabled && ActorCount == Slot.PositionCount
-			if Valid[i]
-				string[] RawTags = Slot.GetRawTags()
-				int[] Genders = Slot.Genders
-				; Suppress standing animations if on a bed
-				Valid[i] = Valid[i] && ((!UsingBed && RawTags.Find("BedOnly") == -1) || (UsingBed && RawTags.Find("Furniture") == -1 && (!BedRemoveStanding || RawTags.Find("Standing") == -1)))
-				; Suppress or ignore aggressive animation tags
-				Valid[i] = Valid[i] && (!RestrictAggressive || IsAggressive == (RawTags.Find("Aggressive") != -1))
-				; Get SameSex + Non-SameSex
-				if SameSex
-					Valid[i] = Valid[i] && (RawTags.Find("FM") != -1 || (((Males == -1 || Males == Genders[0]) && (Females == -1 || Females == Genders[1])) || Slot.HasTag(GenderTag)))
-				; Ignore genders for 3P+
-				elseIf ActorCount < 3
-					Valid[i] = Valid[i] && (((Males == -1 || Males == Genders[0]) && (Females == -1 || Females == Genders[1])) || Slot.HasTag(GenderTag))
-				endIf
-			endIf
-		endIf
-	endWhile
-	Output = GetList(Valid)
-	CacheAnims(CacheName, Output)
-	return Output
-endFunction
-
-sslBaseAnimation[] function GetByDefaultTags_Legacy(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	Log("GetByDefaultTags(Males="+Males+", Females="+Females+", IsAggressive="+IsAggressive+", UsingBed="+UsingBed+", RestrictAggressive="+RestrictAggressive+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
-	if Males == 0 && Females == 0
-		return none ; No actors passed or creatures present
-	endIf
-	; Info
-	int ActorCount = (Males + Females)
-	bool SameSex = (Females == 2 && Males == 0) || (Males == 2 && Females == 0)
-	bool BedRemoveStanding = Config.BedRemoveStanding
-	; Making the tags lists and optimize for CACHE
-	string[] Suppress = StringSplit(TagsSuppressed)
-	Suppress = ClearEmpty(Suppress)
-	SortStringArray(Suppress)
-	string[] Search   = StringSplit(Tags)
-	Search = ClearEmpty(Search)
-	SortStringArray(Search)
-	; Cleaning the tags
-	if UsingBed
-		Search = RemoveString(Search, "Furniture")
-		if BedRemoveStanding
-			Search = RemoveString(Search, "Standing")
-		endIf
-	else
-		Search = RemoveString(Search, "BedOnly")
-	endIf
-	if RestrictAggressive
-		Search = RemoveString(Search, "Aggressive")
-		Suppress = RemoveString(Suppress, "Aggressive")
-	endIf
-	Suppress = RemoveString(Suppress, GenderTag)
-	; Check Cache
-	string CacheName = Males+":"+Females+":"+IsAggressive+":"+UsingBed+":"+BedRemoveStanding+":"+RestrictAggressive+":"+Search+":"+Suppress+":"+RequireAll
-	sslBaseAnimation[] Output = CheckCache(CacheName)
-	if Output
-		return Output
-	endIf
-	; Search
-	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	string GenderTag = ActorLib.GetGenderTag(Females, Males)
-
-	int i = Slotted
-	while i
-		i -= 1
-		if Objects[i]
-			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			; Check for appropiate enabled aniamtion
-			Valid[i] = Slot.Enabled && ActorCount == Slot.PositionCount
-			if Valid[i]
-				string[] RawTags = Slot.GetRawTags()
-				int[] Genders = Slot.Genders
-				; Suppress standing animations if on a bed
-				Valid[i] = Valid[i] && ((!UsingBed && RawTags.Find("BedOnly") == -1) || (UsingBed && RawTags.Find("Furniture") == -1 && (!BedRemoveStanding || RawTags.Find("Standing") == -1)))
-				; Suppress or ignore animation tags
-				Valid[i] = Valid[i] && Slot.TagSearch(Search, Suppress, RequireAll) && (!RestrictAggressive || IsAggressive == (RawTags.Find("Aggressive") != -1))
-				; Get SameSex + Non-SameSex
-				if SameSex
-					Valid[i] = Valid[i] && (RawTags.Find("FM") != -1 || (((Males == -1 || Males == Genders[0]) && (Females == -1 || Females == Genders[1])) || Slot.HasTag(GenderTag)))
-				; Ignore genders for 3P+
-				elseIf ActorCount < 3
-					Valid[i] = Valid[i] && (((Males == -1 || Males == Genders[0]) && (Females == -1 || Females == Genders[1])) || Slot.HasTag(GenderTag))
-				endIf
-			endIf
-		endIf
-	endWhile
-	Output = GetList(Valid)
-	CacheAnims(CacheName, Output)
-	return Output
-endFunction
-
 
 ; ------------------------------------------------------- ;
 ; --- Cached Tag Search
