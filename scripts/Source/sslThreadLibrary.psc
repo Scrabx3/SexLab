@@ -231,6 +231,24 @@ Actor[] function FindAnimationPartners(sslBaseAnimation Animation, ObjectReferen
 	return PapyrusUtil.RemoveActor(Positions, none)
 endFunction
 
+Function SortPositions(Actor[] akPositions)
+	int[] keys = sslActorData.BuildDataKeyArray(akPositions)
+	int i = 1
+	While(i < keys.Length)
+		int it = keys[i]
+		Actor it_p = akPositions[i]
+		int n = i - 1
+		While(n >= 0 && sslActorData.IsLess(it, keys[n]))
+			keys[n + 1] = keys[n]
+			akPositions[n + 1] = akPositions[n]
+			n -= 1
+		EndWhile
+		keys[n + 1] = it
+		akPositions[n + 1] = it_p
+		i += 1
+	EndWhile
+EndFunction
+
 Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
 	int ActorCount = Positions.Length
 	int Priority   = FemaleFirst as int
