@@ -156,10 +156,6 @@ Auto State Empty
 		endIf
 		ActorRef = akReference
 		_ActorData = sslActorData.BuildDataKey(akReference, abIsVictim)
-		If(!Config.UseCreatureGender)
-			_ActorData = sslActorData.AddGenderToKey(_ActorData, 3)
-			_ActorData = sslActorData.AddGenderToKey(_ActorData, 4)
-		EndIf
 		vanilla_sex = ActorRef.GetLeveledActorBase().GetSex()
 		; ActorVoice = BaseRef.GetVoiceType()
 		If(ActorRef == PlayerRef)

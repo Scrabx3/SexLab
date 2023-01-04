@@ -18,10 +18,17 @@ int Function BuildDataKey(Actor akActor, bool abIsVictim = false) global
   If(!akActor)
     return 0
   EndIf
-  int racekeyidx = GetAllRaceKeys().Find(sslCreatureAnimationSlots.GetRaceKey(akActor.GetRace()))
-  If(racekeyidx == -1)
-    return 0
-  EndIf
+	int racekeyidx
+	If(AkActor.HasKeywordString("ActorTypeNPC"))
+		racekeyidx = 0
+	Else
+		Race actorrace = akActor.GetRace()
+		racekeyidx = GetAllRaceKeys().Find(sslCreatureAnimationSlots.GetRaceKey(actorrace)) + 1
+		If(racekeyidx == -1)
+			Debug.Trace("SEXLAB - ERROR -Actor " + akActor + " is not using a recognized Race: " + actorrace)
+			return 0
+		EndIf
+	EndIf
   return BuildDataKeyNative(akActor, abIsVictim, racekeyidx)
 EndFunction
 
@@ -62,6 +69,7 @@ EndFunction
 int[] Function SortDataKeys(int[] aiKeys) native global
 
 ; Return if aiKey <= aiCmp
+; Note that empty keys (0) and blank keys are considered equal here and are both sorted at the end of the array
 bool Function IsLess(int aiKey, int aiCmp) native global
 
 ; Return if aiKey matches aiCmp, that is
@@ -133,16 +141,14 @@ int Function GetLegacyGenderByKey(int aiKey) native global
 ; Animation registration function for pre SLAL2
 int Function BuildByLegacyGender(int aiLegacyGender, String asRaceKey = "Humanoid") global
   int id = GetRaceIDByRaceKey(asRaceKey)
-  BuildByLegacyGenderNative(aiLegacyGender, id + 1)
+  return BuildByLegacyGenderNative(aiLegacyGender, id + 1)
 EndFunction
 ; -1 for overloaded human gender, -2 for overloaded creature gender 
 int Function BuildByLegacyGenderNative(int aiLegacyGender, int aiRaceID) native global
 
 ; Blank Keys are universal keys, primarily intended to support legacy content
 ; Needless to say, they incredibly unreliable and should thus not be used
-int Function BuildBlankKey() global
-  return 0
-EndFunction
+int Function BuildBlankKey() native global
 
 ; ------------------------------------------------------- ;
 ; --- Misc		                 				                --- ;

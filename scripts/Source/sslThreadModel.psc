@@ -278,6 +278,23 @@ int[] Function GetPositionData()
 	return ret
 EndFunction
 
+; Same as GetPositionData() but will account for gender specific configurations
+; Mostly a wrapper to loosely match animation keys/validate animations
+; Remember that GetAnimation() functions have their own backups in place
+int[] Function GetPositionDataConfig()
+	int[] ret = GetPositionData()
+	If(!Config.UseCreatureGender)
+		sslActorData.NeutralizeCreatureGender(ret)
+	EndIf
+	int k = 0
+	While(k < ret.Length)
+		If(Config.UseStrapons && sslActorData.IsPureFemale(ret[k]) || sslActorData.IsFuta(ret[k]))
+			sslActorData.AddGenderToKey(ret[k], 0)
+		EndIf
+		k += 1
+	EndWhile
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Thread Making API                               --- ;
 ; ------------------------------------------------------- ;
@@ -408,11 +425,12 @@ State Making
 				; 	DisableLeadIn(True)
 				; EndIf
 			EndIf
-			If(PrimaryAnimations.Length + LeadAnimations.Length == 0)
+			If(PrimaryAnimations.Length)
+				AddCommonTags(PrimaryAnimations)
+			ElseIf(!LeadAnimations.Length)
 				ReportAndFail("Failed to start Thread -- No valid animations for given actors")
 				return none
 			EndIf
-			AddCommonTags(PrimaryAnimations)
 		EndIf
 		
 		; ------------------------- ;
@@ -475,8 +493,9 @@ State Making
 	; Can only be called between Alias setup & 1st sync call (no need to consider async calls)
 	Function ReportAndFail(string msg, string src = "", bool halt = true)
 		int i = 0
-		While(i < Positions.Length)
-			ActorAlias[i].Clear()
+		While(i < ActorAlias.Length)
+			ActorAlias[i].TryToClear()
+			i += 1
 		EndWhile
 		GoToState("")
 		ReportAndFail(msg, src, true)
@@ -614,7 +633,7 @@ State Animating
 		Genders[2] = PapyrusUtil.CountInt(g, 2)
 		Genders[3] = PapyrusUtil.CountInt(g, 3)
 
-		int[] keys = GetPositionData()
+		int[] keys = GetPositionDataConfig()
 		If(!Animation.MatchKeys(keys))
 			If(Genders[2] || Genders[3])
 				; PrimaryAnimations = CreatureSlots._GetAnimations(keys, Tags)
@@ -1144,18 +1163,25 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	If(!akAnimations.Length)
 		return akAnimations
 	EndIf
-	; Bit clunky but w/e do we do if Papyrus doesnt let us allocate arrays with dynamic size
 	int[] valids = Utility.CreateIntArray(akAnimations.Length, -1)
-	int[] pkeys = GetPositionData()
+	int[] pkeys = GetPositionDataConfig()
+	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
 	int n = 0
 	While(n < akAnimations.Length)
-		If(akAnimations[i] && akAnimations[i].MatchKeys(pkeys) && akAnimations[i].MatchTags(Tags))
-			valids[n] = n
+		If(akAnimations[n])
+			If(!akAnimations[n].MatchKeys(pkeys))
+				Log("Key mismatch on animation Nr " + n + ". Animation Keys are: " + akAnimations[n].ActorKeys)
+			ElseIf(!akAnimations[n].MatchTags(Tags))
+				Log("Tag mismatch on animation Nr " + n + ". Animation Tags are: " + akAnimations[n].GetTags())
+			Else
+				valids[n] = n
+			EndIf
 		EndIf
 		n += 1
 	EndWhile
 	valids = PapyrusUtil.RemoveInt(valids, -1)
 	If(valids.Length == akAnimations.Length)
+		Log("Post Validation, Animations left: " + akAnimations.Length)
 		return akAnimations
 	EndIf
 	sslBaseAnimation[] ret = sslUtility.AnimationArray(valids.Length)
@@ -1163,6 +1189,7 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	While(i < ret.Length)
 		ret[i] = akAnimations[valids[i]]
 	EndWhile
+	Log("Post Validation, Animations left: " + ret.Length)
 	return ret
 EndFunction
 
@@ -1544,6 +1571,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 Function ArrangePositions()
+	Log("Arranging Positions - Pre Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
 	int i = 1
 	While(i < ActorAlias.Length)
 		sslActorAlias it = ActorAlias[i]
@@ -1560,6 +1588,7 @@ Function ArrangePositions()
 		Positions[k] = ActorAlias[k].GetReference() as Actor
 		k +=1
 	EndWhile
+	Log("Arranging Positions - Post Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
 EndFunction
 
 Function SetFurnitureIgnored(bool disabling = true)
