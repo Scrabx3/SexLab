@@ -289,10 +289,11 @@ int[] Function GetPositionDataConfig()
 	int k = 0
 	While(k < ret.Length)
 		If(Config.UseStrapons && sslActorData.IsPureFemale(ret[k]) || sslActorData.IsFuta(ret[k]))
-			sslActorData.AddGenderToKey(ret[k], 0)
+			ret[k] = sslActorData.AddGenderToKey(ret[k], 0)
 		EndIf
 		k += 1
 	EndWhile
+	return ret
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -1168,14 +1169,9 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
 	int n = 0
 	While(n < akAnimations.Length)
-		If(akAnimations[n])
-			If(!akAnimations[n].MatchKeys(pkeys))
-				Log("Key mismatch on animation Nr " + n + ". Animation Keys are: " + akAnimations[n].ActorKeys)
-			ElseIf(!akAnimations[n].MatchTags(Tags))
-				Log("Tag mismatch on animation Nr " + n + ". Animation Tags are: " + akAnimations[n].GetTags())
-			Else
-				valids[n] = n
-			EndIf
+		Log("Compare key on animation Nr " + n + ". Animation Keys are: " + akAnimations[n].ActorKeys)
+		If(akAnimations[n] && akAnimations[n].MatchKeys(pkeys) && akAnimations[n].MatchTags(Tags))
+			valids[n] = n
 		EndIf
 		n += 1
 	EndWhile
@@ -1188,6 +1184,7 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	int i = 0
 	While(i < ret.Length)
 		ret[i] = akAnimations[valids[i]]
+		i += 1
 	EndWhile
 	Log("Post Validation, Animations left: " + ret.Length)
 	return ret

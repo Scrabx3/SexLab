@@ -536,7 +536,7 @@ int[] function GetPositionFlags(string AdjustKey, int Position, int Stage)
 endFunction
 
 int[] function PositionFlags(int[] Output, string AdjustKey, int Position, int Stage)
-	if !Output || Output.Length < 5
+	if !Output.Length || Output.Length < 5
 		Output = new int[5]
 	endIf
 	int i = FlagIndex(Stage, 0)
@@ -941,14 +941,17 @@ Function FinalizePositionsAndAnimations()
 	While(i < _ActorKeys.Length)
 		int it = _ActorKeys[i]
 		int idx = og_anim[i]
+		int[] it_f = FlagsArray(i)
 		int n = i - 1
 		While(n >= 0 && sslActorData.IsLess(it, _ActorKeys[n]))
 			_ActorKeys[n + 1] = _ActorKeys[n]
 			og_anim[n + 1] = og_anim[n]
+			FlagsSave(n + 1, FlagsArray(n))
 			n -= 1
 		EndWhile
 		_ActorKeys[n + 1] = it
 		og_anim[n + 1] = idx
+		FlagsSave(n + 1, it_f)
 		i += 1
 	EndWhile
 	; Log("Sorting Post Sort -> Anim Stages = " + og_anim)

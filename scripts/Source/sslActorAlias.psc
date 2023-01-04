@@ -526,7 +526,7 @@ state Animating
 
 	; Basically just an "update for current animation stage"
 	function SyncThread()
-		Flags = Thread.Animation.PositionFlags(Flags, Thread.AdjustKey, Position, Thread.Stage)
+		Flags = Thread.Animation.PositionFlags(Flags, "Global", Position, Thread.Stage)
 
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
@@ -792,9 +792,11 @@ endFunction
 function ResolveStrapon(bool force = false)
 	if Strapon
 		bool equipped = ActorRef.IsEquipped(Strapon)
-		if UseStrapon && !equipped
-			ActorRef.EquipItem(Strapon, true, true)
-		elseIf !UseStrapon && equipped
+		if UseStrapon || Thread.Animation.GetGender(Position) != 1
+			If(!equipped)
+				ActorRef.EquipItem(Strapon, true, true)
+			EndIf
+		ElseIf(equipped)
 			ActorRef.UnequipItem(Strapon, true, true)
 		endIf
 	endIf
