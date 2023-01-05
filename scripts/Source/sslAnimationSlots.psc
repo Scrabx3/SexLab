@@ -44,28 +44,29 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 		Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
 		return ret
 	EndIf
-	; Work on a copy to not disrupt caller array
-	; Copying has to do manually as keys may be any integer
-	int[] copy = Utility.CreateIntArray(aiKeys.Length, 0)
-	int j = 0
-	While(j < copy.Length)
-		copy[j] = aiKeys[j]
-		j += 1
+	; TODO: Base fallback for futas on config, turn them female or male first
+	int n = aiKeys.Length
+	While(n > 0)
+		n -= 1
+		If(sslActorData.IsFuta(aiKeys[n]))
+			sslActorData.AddGenderToKey(aiKeys[n], 5)
+			aiKeys = sslActorData.SortDataKeys(aiKeys)
+			ret = _GetAnimationsImpl(aiKeys, asTags)
+			If(ret.Length)
+				Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
+				return ret
+			EndIf
+		EndIf
 	EndWhile
-	; TODO: Fallback for Futa Actors. Based on config, turn them female or male first
-	; If that yields no result, begin treating all females as males until we are at a full male array
-
-	; Fallback for Females if allowed to use Strapons
 	If(Config.UseStrapons)
-		; Cycle backwards to edit the Victim last
-		int i = copy.Length
+		int i = aiKeys.Length
 		While(i > 0)
 			i -= 1
 			Log("Looking for backup animations: " + i)
-			If(sslActorData.IsFemale(copy[i]))
-				sslActorData.AddGenderToKey(copy[i], 0)
-				copy = sslActorData.SortDataKeys(copy)
-				ret = _GetAnimationsImpl(copy, asTags)
+			If(sslActorData.IsFemale(aiKeys[i]))
+				sslActorData.AddGenderToKey(aiKeys[i], 5)
+				aiKeys = sslActorData.SortDataKeys(aiKeys)
+				ret = _GetAnimationsImpl(aiKeys, asTags)
 				If(ret.Length)
 					Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
 					return ret

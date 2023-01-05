@@ -154,7 +154,7 @@ int Function BuildBlankKey() native global
 ; --- Misc		                 				                --- ;
 ; ------------------------------------------------------- ;
 
-; 0 - Male, 1 - Female, 2 - Futa, 3 - M Crt, 4 - F Crt
+; 0 - Male, 1 - Female, 2 - Futa, 3 - M Crt, 4 - F Crt, 5 - Overwrite Male, 6 - Overwrite Female
 int Function AddGenderToKey(int aiKey, int aiGender) native global
 int Function RemoveGenderFromKey(int aiKey, int aiGender) native global
 

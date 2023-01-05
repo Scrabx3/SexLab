@@ -2188,11 +2188,9 @@ state AnimationTest
 
 			sslThreadModel Thread = SexLab.NewThread()
 			if Thread
-				; Add single animation to thread
 				sslBaseAnimation[] Anims = new sslBaseAnimation[1]
 				Anims[0] = Animation
 				Thread.SetForcedAnimations(Anims)
-				; Disable extra effects, this is a test - keep it simple
 				Thread.DisableBedUse(true)
 				Thread.DisableLeadIn(true)
 				; select a solo actor

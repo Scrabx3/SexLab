@@ -17,11 +17,11 @@ string[] function GetAllRaceKeys(Race RaceRef = none) global native
 string[] function GetAllRaceIDs(string RaceKey) global native
 Race[] function GetAllRaces(string RaceKey) global native
 
-sslBaseAnimation[] Function GetAnimationsByKeys(int[] akPositions, String asTags, int aiUseBed = 0)
+sslBaseAnimation[] Function _GetAnimations(int[] akPositions, String[] asTags)
 	If(!Config.UseCreatureGender)
 		sslActorData.NeutralizeCreatureGender(akPositions)
 	EndIf
-	return Parent.GetAnimationsByKeys(akPositions, asTags, aiuseBed)
+	return Parent._GetAnimations(akPositions, asTags)
 EndFunction
 
 bool function RaceHasAnimation(Race RaceRef, int ActorCount = -1, int Gender = -1)

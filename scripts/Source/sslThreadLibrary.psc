@@ -219,7 +219,6 @@ Actor[] function FindAnimationPartners(sslBaseAnimation Animation, ObjectReferen
 			endIf
 		endIf
 		
-		
 		if !Positions[i] || Positions[i] == none
 			return PapyrusUtil.RemoveActor(Positions, none)
 		elseIf IncludedActors.Length > 0
@@ -231,7 +230,7 @@ Actor[] function FindAnimationPartners(sslBaseAnimation Animation, ObjectReferen
 	return PapyrusUtil.RemoveActor(Positions, none)
 endFunction
 
-Function SortPositions(Actor[] akPositions)
+Function SortPositions(Actor[] akPositions) global
 	int[] keys = sslActorData.BuildDataKeyArray(akPositions)
 	int i = 1
 	While(i < keys.Length)
@@ -249,40 +248,46 @@ Function SortPositions(Actor[] akPositions)
 	EndWhile
 EndFunction
 
-Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
-	int ActorCount = Positions.Length
-	int Priority   = FemaleFirst as int
-	if ActorCount < 2 || (ActorCount == 2 && ActorLib.GetGender(Positions[0]) == Priority)
-		return Positions ; No need to sort actors.
-	endIf
-	; Check first occurance of priority gender.
-	int[] GendersAll = ActorLib.GetGendersAll(Positions)
-	int i = GendersAll.Find(Priority)
-	if i == -1 ;|| (i == 0 && GendersAll.RFind(Priority) == 0)
-		return Positions ; Prefered gender not present
-	endIf
-	; Sort actors of priority gender into start of array
-	Actor[] Sorted
-	while i < ActorCount
-		; Priority gender or last actor, just add them.
-		if GendersAll[i] == Priority
-			GendersAll[i] = -1
-			Sorted = PapyrusUtil.PushActor(Sorted, Positions[i])
-		endIf
+Function SortPositionsByKeys(Actor[] akPositions, int[] aiKeys) global
+	int i = 1
+	While(i < aiKeys.Length)
+		int it = aiKeys[i]
+		Actor it_p = akPositions[i]
+		int n = i - 1
+		While(n >= 0 && sslActorData.IsLess(it, aiKeys[n]))
+			aiKeys[n + 1] = aiKeys[n]
+			akPositions[n + 1] = akPositions[n]
+			n -= 1
+		EndWhile
+		aiKeys[n + 1] = it
+		akPositions[n + 1] = it_p
 		i += 1
-	endwhile
-	; Insert remaining actors
-	i = 0
-	while i < ActorCount
-		if GendersAll[i] != -1
-			Sorted = PapyrusUtil.PushActor(Sorted, Positions[i])
-		endIf
+	EndWhile
+EndFunction
+
+Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
+	Log("Sort Actors | Original Array = " + Positions)
+	int[] genders = ActorLib.GetGendersAll(Positions)
+	int i = 1
+	While(i < Positions.Length)
+		Actor it = Positions[i]
+		int _it = genders[i]
+		int n = i - 1
+		While(n >= 0 && !IsLesserGender(genders[n], _it, FemaleFirst))
+			Positions[n + 1] = Positions[n]
+			genders[n + 1] = genders[n]
+			n -= 1
+		EndWhile
+		Positions[n + 1] = it
+		genders[n + 1] = _it
 		i += 1
-	endWhile
-	; Return sorted actor array
-	Log("SortActors("+Positions+") -- Return:"+Sorted)
-	return Sorted
-endFunction
+	EndWhile
+	Log("Sort Actors | Sorted Array = " + Positions)
+	return Positions
+EndFunction
+bool Function IsLesserGender(int i, int n, bool abFemaleFirst)
+	return n != i && (i == (abFemaleFirst as int) || i == 3 && n == 2 || i < n)
+EndFunction
 
 int function FindNext(Actor[] Positions, sslBaseAnimation Animation, int offset, bool FindCreature)
 	while offset
@@ -317,29 +322,25 @@ int function GetBedType(ObjectReference BedRef)
 		return 0
 	EndIf
 	Form BaseRef = BedRef.GetBaseObject()
-	If IsBedRoll(Bedref)
+	If(IsBedRoll(Bedref))
 		return 1
-	ElseIf DoubleBedsList.HasForm(BaseRef)
+	ElseIf(DoubleBedsList.HasForm(BaseRef) || StringUtil.Find(sslpp.GetEditorID(BaseRef), "Double") > -1)
 		return 3
 	EndIf
 	return 2
 endFunction
 
 bool function IsBedAvailable(ObjectReference BedRef)
-	; Check furniture use
 	if !BedRef || BedRef.IsFurnitureInUse(true)
 		return false
 	endIf
-	; Check if used by a current thread
-	sslThreadController[] Threads = ThreadSlots.Threads
-	int i
-	while i < 15
-		if Threads[i].BedRef == BedRef
+	int i = 0
+	while i < ThreadSlots.Threads.Length
+		if ThreadSlots.Threads[i].BedRef == BedRef
 			return false
 		endIf
 		i += 1
 	endwhile
-	; Bed is free for use
 	return true
 endFunction
 
@@ -356,63 +357,18 @@ bool function SameFloor(ObjectReference BedRef, float Z, float Tolerance = 15.0)
 endFunction
 
 ObjectReference function FindBed(ObjectReference CenterRef, float Radius = 1000.0, bool IgnoreUsed = true, ObjectReference IgnoreRef1 = none, ObjectReference IgnoreRef2 = none)
-	if !CenterRef || CenterRef == none || Radius < 1.0
-		return none ; Invalid args
+	if !CenterRef || Radius < 1.0
+		return none
 	endIf
-	; Current elevation to determine bed being on same floor
-	float Z = CenterRef.GetPositionZ()
-	; Search a couple times for a nearby bed on the same elevation first before looking for random
-	ObjectReference BedRef = Game.FindClosestReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-		return BedRef
-	endIf
-	ObjectReference NearRef
-	Form[] Suppressed = new Form[10]
-	Suppressed[9] = BedRef
-	Suppressed[8] = IgnoreRef1
-	Suppressed[7] = IgnoreRef2
-	int LastNull = Suppressed.RFind(none)
-	int i = BedsList.GetSize()
-	while i
-		i -= 1
-		Form BedType = BedsList.GetAt(i)
-		if BedType
-			BedRef = Game.FindClosestReferenceOfTypeFromRef(BedType, CenterRef, Radius)
-			if BedRef && Suppressed.Find(BedRef) == -1
-				if SameFloor(BedRef, Z, 200) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed)
-					if (!NearRef || BedRef.GetDistance(CenterRef) < NearRef.GetDistance(CenterRef))
-						NearRef = BedRef
-					endIf
-				elseIf LastNull >= 0
-					Suppressed[LastNull]
-					LastNull = Suppressed.RFind(none)
-				endIf
-			endIf
-		endIf
-	endWhile
-	if NearRef && NearRef != none
-		return NearRef
-	endIf
-;	BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-;	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-;		return BedRef
-;	endIf
-;	BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-;	if !BedRef || (BedRef != IgnoreRef1 && BedRef != IgnoreRef2 && SameFloor(BedRef, Z) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-;		return BedRef
-;	endIf
-	; Failover to any random useable bed
-	i = LastNull + 1
-	while i
-		i -= 1
-		BedRef = Game.FindRandomReferenceOfAnyTypeInListFromRef(BedsList, CenterRef, Radius)
-		if !BedRef || (Suppressed.Find(BedRef) == -1 && SameFloor(BedRef, Z, Radius * 0.5) && LeveledAngle(BedRef) && CheckBed(BedRef, IgnoreUsed))
-			return BedRef ; Found valid bed or none nearby and we should give up
-		else
-			Suppressed[i] = BedRef ; Add to suppression list
-		endIf
-	endWhile
-	return none ; Nothing found in search loop
+	ObjectReference[] beds = sslpp.FindBeds(CenterRef, Radius)
+	int i = 0
+	While(i < beds.Length)
+		If(beds[i] != IgnoreRef1 && beds[i] != IgnoreRef2 && (IgnoreUsed || !beds[i].IsFurnitureInUse()))
+			return beds[i]
+		EndIf
+		i += 1
+	EndWhile
+	return none
 endFunction
 
 ; ------------------------------------------------------- ;

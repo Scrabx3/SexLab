@@ -268,6 +268,10 @@ float SkillTime
 bool Property DebugMode auto hidden
 float Property t auto hidden
 
+; During validation, where positions shifted to adjust to the given animations?
+; This is only allowed once, so mark it here if they were shifted once before
+bool positions_shifted
+
 int[] Function GetPositionData()
 	int[] ret = Utility.CreateIntArray(Positions.Length)
 	int j = 0
@@ -286,13 +290,6 @@ int[] Function GetPositionDataConfig()
 	If(!Config.UseCreatureGender)
 		sslActorData.NeutralizeCreatureGender(ret)
 	EndIf
-	int k = 0
-	While(k < ret.Length)
-		If(Config.UseStrapons && sslActorData.IsPureFemale(ret[k]) || sslActorData.IsFuta(ret[k]))
-			ret[k] = sslActorData.AddGenderToKey(ret[k], 0)
-		EndIf
-		k += 1
-	EndWhile
 	return ret
 EndFunction
 
@@ -637,13 +634,13 @@ State Animating
 		int[] keys = GetPositionDataConfig()
 		If(!Animation.MatchKeys(keys))
 			If(Genders[2] || Genders[3])
-				; PrimaryAnimations = CreatureSlots._GetAnimations(keys, Tags)
+				PrimaryAnimations = CreatureSlots._GetAnimations(keys, Tags)
 			Else
 				PrimaryAnimations = AnimSlots._GetAnimations(keys, Tags)
 			EndIf
 			If(!PrimaryAnimations.Length)
 				If(Genders[2] || Genders[3])
-					; PrimaryAnimations = CreatureSlots._GetAnimations(keys, none)
+					PrimaryAnimations = CreatureSlots._GetAnimations(keys, none)
 				Else
 					PrimaryAnimations = AnimSlots._GetAnimations(keys, none)
 				EndIf
@@ -1169,25 +1166,57 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
 	int n = 0
 	While(n < akAnimations.Length)
-		Log("Compare key on animation Nr " + n + ". Animation Keys are: " + akAnimations[n].ActorKeys)
-		If(akAnimations[n] && akAnimations[n].MatchKeys(pkeys) && akAnimations[n].MatchTags(Tags))
+		If(akAnimations[n] && akAnimations[n].MatchTags(Tags) && (akAnimations[n].MatchKeys(pkeys) || ValidateShift(pkeys, akAnimations[n])))
 			valids[n] = n
+			n += 1
+		Else
+			n = akAnimations.Length
 		EndIf
-		n += 1
 	EndWhile
+	sslBaseAnimation[] ret
 	valids = PapyrusUtil.RemoveInt(valids, -1)
-	If(valids.Length == akAnimations.Length)
-		Log("Post Validation, Animations left: " + akAnimations.Length)
-		return akAnimations
+	If(valids.Length != akAnimations.Length)
+		ret = sslUtility.AnimationArray(valids.Length)
+		int i = 0
+		While(i < ret.Length)
+			ret[i] = akAnimations[valids[i]]
+			i += 1
+		EndWhile
+	Else
+		ret = akAnimations
 	EndIf
-	sslBaseAnimation[] ret = sslUtility.AnimationArray(valids.Length)
-	int i = 0
-	While(i < ret.Length)
-		ret[i] = akAnimations[valids[i]]
-		i += 1
-	EndWhile
 	Log("Post Validation, Animations left: " + ret.Length)
+	positions_shifted = true
 	return ret
+EndFunction
+
+bool Function ValidateShift(int[] aiKeys, sslBaseAnimation akValidate)
+	If(positions_shifted)
+		return false
+	EndIf
+	positions_shifted = true
+	; TODO: Consider Config to validate, let futas be female first then male or so
+	int k = aiKeys.Length
+	While(k > 0)
+		If(sslActorData.IsFuta(aiKeys[k]))
+			sslActorData.AddGenderToKey(aiKeys[k], 5)
+			ArrangePositionsByKeys(aiKeys)
+			If(akValidate.MatchKeys(aiKeys))
+				return true
+			EndIf
+		EndIf
+	EndWhile
+	int j = aiKeys.Length
+	While(j > 0)
+		If(sslActorData.IsFemale(aiKeys[j]))
+			sslActorData.AddGenderToKey(aiKeys[j], 5)
+			ArrangePositionsByKeys(aiKeys)
+			If(akValidate.MatchKeys(aiKeys))
+				return true
+			EndIf
+		EndIf
+	EndWhile
+	return false
 EndFunction
 
 ; TODO: Recognize Animation Adjustments
@@ -1588,6 +1617,30 @@ Function ArrangePositions()
 	Log("Arranging Positions - Post Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
 EndFunction
 
+Function ArrangePositionsByKeys(int[] aiKeys)
+	Log("Arranging Positions - Pre Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
+	int i = 1
+	While(i < aiKeys.Length)
+		sslActorAlias it_a = ActorAlias[i]
+		int it = aiKeys[i]
+		int n = i - 1
+		While(n >= 0 && sslActorData.IsLess(it, aiKeys[n]))
+			aiKeys[n + 1] = aiKeys[n]
+			ActorAlias[n + 1] = ActorAlias[n]
+			n -= 1
+		EndWhile
+		ActorAlias[n + 1] = it_a
+		aiKeys[n + 1] = it
+		i += 1
+	EndWhile
+	int k = 0
+	While(k < Positions.Length)
+		Positions[k] = ActorAlias[k].GetReference() as Actor
+		k +=1
+	EndWhile
+	Log("Arranging Positions by Keys - Post Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
+EndFunction
+
 Function SetFurnitureIgnored(bool disabling = true)
 	If(!BedRef)
 		return
@@ -1902,31 +1955,32 @@ Function Initialize()
 		CenterAlias.Clear()
 	endIf
 	; Forms
-	Animation      = none
-	CenterRef      = none
-	SoundFX        = none
-	BedRef         = none
+	Animation = none
+	CenterRef = none
+	SoundFX = none
+	BedRef = none
 	StartingAnimation = none
 	; Boolean
-	AutoAdvance    = true
-	LeadIn         = false
-	UseCustomTimers= false
+	positions_shifted = false
+	UseCustomTimers = false
 	DisableOrgasms = false
+	AutoAdvance = true
+	LeadIn = false
 	; Floats
-	StartedAt      = 0.0
-	SkillTime			 = 0.0
+	StartedAt = 0.0
+	SkillTime = 0.0
 	; Integers
-	Stage          = 1
+	Stage = 1
 	; Storage Data
-	Genders           = new int[4]
-	Victims           = PapyrusUtil.ActorArray(0)
-	Positions         = PapyrusUtil.ActorArray(0)
-	CustomAnimations  = sslUtility.AnimationArray(0)
+	Genders = new int[4]
+	Victims = PapyrusUtil.ActorArray(0)
+	Positions = PapyrusUtil.ActorArray(0)
+	CustomAnimations = sslUtility.AnimationArray(0)
 	PrimaryAnimations = sslUtility.AnimationArray(0)
-	LeadAnimations    = sslUtility.AnimationArray(0)
-	Hooks             = Utility.CreateStringArray(0)
-	Tags              = Utility.CreateStringArray(0)
-	CustomTimers      = Utility.CreateFloatArray(0)
+	LeadAnimations = sslUtility.AnimationArray(0)
+	Hooks = Utility.CreateStringArray(0)
+	Tags = Utility.CreateStringArray(0)
+	CustomTimers = Utility.CreateFloatArray(0)
 	; Enter thread selection pool
 	GoToState("Unlocked")
 	Initialized = true

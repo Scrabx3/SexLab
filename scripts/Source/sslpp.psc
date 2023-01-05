@@ -11,6 +11,8 @@ Form[] Function StripActor(Actor akActor, int aiSlotMasks) native global
 
 Spell Function GetHDTHeelSpell(Actor akActor) native global
 
+String Function GetEditorID(Form akForm) native global
+
 ;	Scan the area for bed furnitue objects and return all objects found
 ; --- Params
 ; akCenterRef: 	The center from which to search
