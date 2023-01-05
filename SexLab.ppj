@@ -46,6 +46,7 @@
             <Include>Interface</Include>
             <Include>meshes</Include> -->
             <Include>Scripts</Include>
+            <Include>SKSE/Plugins/SexLabpp.dll</Include>
             <!-- <Include>SEQ</Include>
             <Include>SKSE</Include>
             <Include>Sound</Include>
