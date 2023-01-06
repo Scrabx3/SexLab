@@ -3,7 +3,9 @@ ScriptName sslpp Hidden
 String[] Function MergeStringArrayEx(String[] asArray1, String[] asArray2, bool abRemoveDupes) native global
 String[] Function RemoveStringEx(String[] asArray, String abRemove) native global
 
+; Offsets is a [akReferences.Lenth] x 4 - matrix, each row containing data in the following order: [x offset, y offset, z offset, z angle offset]
 Function SetPositions(Actor[] akReferences, ObjectReference akCenter) native global
+Function SetPositionsEx(Actor[] akReferences, ObjectReference akCenter, float[] afOffsets) native global
 bool Function MatchTags(String[] asTags, String[] asMatch) native global
 
 Ammo Function GetEquippedAmmo(Actor akActor) native global
