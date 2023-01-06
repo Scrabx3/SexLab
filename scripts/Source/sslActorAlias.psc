@@ -70,7 +70,6 @@ EndProperty
 
 float StartWait
 string StartAnimEvent
-string EndAnimEvent
 bool NoOrgasm
 
 ; Voice
@@ -154,6 +153,7 @@ Auto State Empty
 			Error("Reference mismatch on SetActor, expected " + GetReference() + " but got " + akReference)
 			return false
 		endIf
+		Initialize()
 		ActorRef = akReference
 		_ActorData = sslActorData.BuildDataKey(akReference, abIsVictim)
 		vanilla_sex = ActorRef.GetLeveledActorBase().GetSex()
@@ -282,7 +282,7 @@ State Ready
 			EndIf
 		EndIf
 		Parent.Clear()
-		Initialize()
+		GoToState("Empty")
 	EndFunction
 
 	Function SetData()
@@ -310,7 +310,9 @@ State Ready
 				Voice = Config.VoiceSlots.PickVoice(ActorRef)
 			endIf
 		endIf
-		LogInfo += "Voice[" + Voice.Name + "] "
+		If(Voice)
+			LogInfo += "Voice[" + Voice.Name + "] "
+		EndIf
 		; Strapon & Expression (for NPC only)
 		If(!sslActorData.IsCreature(_ActorData))
 			If(Config.UseStrapons && sslActorData.IsPureFemale(_ActorData))
@@ -328,7 +330,9 @@ State Ready
 					Expression = Expressions[Utility.RandomInt(0, (Expressions.Length - 1))]
 				endIf
 			endIf
-			LogInfo += "Expression[" + Expression.Name + "] "
+			If(Expression)
+				LogInfo += "Expression[" + Expression.Name + "] "
+			EndIf
 		EndIf
 		
 		; COMEBACK: Everything below still needs reviewing
@@ -453,7 +457,6 @@ state Animating
 
 	Event OnUpdate()
 		If(Thread.GetState() != "Animating")
-			Error("OnUpdate() call but my thread is no longer animating")
 			return
 		EndIf
 		; TODO: Review this block below
@@ -689,7 +692,7 @@ State Idling
 		ActorRef.RemoveFromFaction(AnimatingFaction)
 		TrackedEvent("End")
 		Parent.Clear()
-		Initialize()
+		GoToState("Empty")
 	EndFunction
 EndState
 
@@ -779,10 +782,6 @@ endFunction
 function SetStartAnimationEvent(string EventName, float PlayTime)
 	StartAnimEvent = EventName
 	StartWait = PapyrusUtil.ClampFloat(PlayTime, 0.1, 10.0)
-endFunction
-
-function SetEndAnimationEvent(string EventName)
-	EndAnimEvent = EventName
 endFunction
 
 bool function IsUsingStrapon()
@@ -1289,6 +1288,15 @@ String function GetActorKey()
 endFunction
 
 ; ------------------------------------------------------- ;
+; --- Key Manipulation         				                --- ;
+; ------------------------------------------------------- ;
+
+int Function OverwriteMyGender(bool abToFemale)
+	_ActorData = sslActorData.AddGenderToKey(_ActorData, 4 + abToFemale as int)
+	return _ActorData
+EndFunction
+
+; ------------------------------------------------------- ;
 ; --- Thread Events           				                --- ;
 ; ------------------------------------------------------- ;
 
@@ -1372,7 +1380,6 @@ Function Initialize()
 	NioScale       = 1.0
 	StartWait      = 0.0
 	; Strings
-	EndAnimEvent   = "IdleForceDefaultState"
 	StartAnimEvent = ""
 	PlayingSA      = ""
 	PlayingAE      = ""
@@ -1396,6 +1403,7 @@ function Setup()
 	Thread    = GetOwningQuest() as sslThreadController
 	OrgasmFX  = Config.OrgasmFX
 	AnimatingFaction = Config.AnimatingFaction
+	Initialize()
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -1452,12 +1460,6 @@ EndFunction
 ; --- Legacy Content Supported                        --- ;
 ; ------------------------------------------------------- ;
 
-function SetAdjustKey(string KeyVar)
-	if ActorRef
-		Thread.AdjustKey = KeyVar
-	endIf
-endfunction
-
 function OverrideStrip(bool[] SetStrip)
 	if SetStrip.Length != 33
 		Thread.Log("Invalid strip override bool[] - Must be length 33 - was "+SetStrip.Length, "OverrideStrip()")
@@ -1491,6 +1493,10 @@ event OrgasmStage()
 	OrgasmEffect()
 endEvent
 
+function SetEndAnimationEvent(string EventName)
+	; EndAnimEvent = EventName
+endFunction
+
 ; ------------------------------------------------------- ;
 ; --- Internal Redundant                              --- ;
 ; ------------------------------------------------------- ;
@@ -1520,6 +1526,9 @@ int function IntIfElse(bool check, int isTrue, int isFalse)
 	return isFalse
 endfunction
 
+function SetAdjustKey(string KeyVar)
+	LogRedundant("SetAdjustKey")
+endfunction
 function AttachMarker()
 	LogRedundant("AttachMarker")
 endFunction

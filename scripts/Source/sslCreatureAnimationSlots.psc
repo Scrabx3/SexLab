@@ -463,7 +463,6 @@ bool function HasAnimation(Race RaceRef, int Gender = -1)
 endFunction
 
 sslBaseAnimation[] function GetByRace(int ActorCount, Race RaceRef)
-	Log("GetByRace(ActorCount="+ActorCount+", RaceRef="+RaceRef+")")
 	return GetByRaceTags(ActorCount, RaceRef, "")
 endFunction
 
@@ -499,7 +498,6 @@ sslBaseAnimation[] function GetByRaceTags(int ActorCount, Race RaceRef, string T
 endFunction
 
 sslBaseAnimation[] function GetByRaceKey(int ActorCount, string RaceKey)
-	Log("GetByRaceKey(ActorCount="+ActorCount+", RaceKey="+RaceKey+")")
 	return GetByRaceKeyTags(ActorCount, RaceKey, "")
 endFunction
 
@@ -534,17 +532,16 @@ sslBaseAnimation[] function GetByRaceKeyTags(int ActorCount, string RaceKey, str
 endFunction
 
 sslBaseAnimation[] function GetByCreatureActors(int ActorCount, Actor[] Positions)
-	Log("GetByCreatureActors(ActorCount="+ActorCount+", Positions="+Positions+")")
 	return GetByCreatureActorsTags(ActorCount, Positions, "")
 endFunction
 
 sslBaseAnimation[] function GetByCreatureActorsTags(int ActorCount, Actor[] Positions, string Tags, string TagsSuppressed = "", bool RequireAll = true)
 	Log("GetByCreatureActorsTags(ActorCount="+ActorCount+", Positions="+Positions+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
-	if !Positions || Positions.Length < 1 || Positions.Length > ActorCount
+	if !Positions.Length || Positions.Length > ActorCount
 		return sslUtility.AnimationArray(0)
 	endIf
 	int[] keys = Utility.CreateIntArray(ActorCount, 0)
-	int[] data = sslActorData.BuildSortedDataKeyArray(Positions)
+	int[] data = sslActorData.BuildDataKeyArray(Positions)
 	If(!Config.UseCreatureGender)
 		sslActorData.NeutralizeCreatureGender(data)
 	EndIf
@@ -564,72 +561,14 @@ sslBaseAnimation[] function GetByCreatureActorsTags(int ActorCount, Actor[] Posi
 	return _GetAnimations(keys, t)
 endFunction
 
-
-; NOTE: Below functions do not wrap into the updated functions
-
-
-;	TO DO: Enhace FilterCreatureGenders to allow CxC animations
-; Theres no longer any point in this as the functions is no longer used
-sslBaseAnimation[] function FilterCreatureGenders(sslBaseAnimation[] Anims, int MaleCreatures = 0, int FemaleCreatures = 0)
-	if !Config.UseCreatureGender || !Anims
-		return Anims
-	endIf
-	int Del
-	int i = Anims.Length
-	while i
-		i -= 1
-		if Anims[i] && Anims[i].GenderedCreatures && (MaleCreatures != Anims[i].MaleCreatures || FemaleCreatures != Anims[i].FemaleCreatures)
-			Anims[i] = none
-			Del += 1
-		endIf
-	endWhile
-	if Del == 0
-		return Anims
-	endIf
-	i = Anims.Length
-	int n = (i - Del)
-	sslBaseAnimation[] Output = sslUtility.AnimationArray(n)
-	while i && n
-		i -= 1
-		if Anims[i] != none
-			n -= 1
-			Output[n] = Anims[i]
-		endIf
-	endWhile
-	return Output
-endFunction
-
 sslBaseAnimation[] function GetByRaceGenders(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, bool ForceUse = false)
-	Log("GetByRaceGenders(ActorCount="+ActorCount+", RaceRef="+RaceRef+", MaleCreatures="+MaleCreatures+", FemaleCreatures="+FemaleCreatures+", ForceUse="+ForceUse+")")
-	if !Config.UseCreatureGender && ActorCount <= 2 && (MaleCreatures + FemaleCreatures) < 2 ;&& !ForceUse
-		return GetByRace(ActorCount, RaceRef)
-	endIf
-	string[] RaceTypes = GetAllRaceKeys(RaceRef)
-	if RaceTypes.Length < 1
-		return sslUtility.AnimationArray(0)
-	endIf
-	sslBaseAnimation[] Output
-	bool[] Valid  = Utility.CreateBoolArray(Slotted)
-	int i = Slotted
-	while i
-		i -= 1
-		sslBaseAnimation Slot = GetBySlot(i)
-		Valid[i] = Slot && Slot.Enabled && RaceTypes.Find(Slot.RaceType) != -1 && ActorCount == Slot.PositionCount 
-		if Valid[i]
-			if Config.UseCreatureGender && Slot.GenderedCreatures
-				Valid[i] = MaleCreatures == Slot.MaleCreatures && FemaleCreatures == Slot.FemaleCreatures
-			else
-				Valid[i] = (MaleCreatures + FemaleCreatures) == Slot.Creatures
-			endIf
-		endIf
-	endWhile
-	Output = GetList(Valid)
-	return Output
+	return GetByRaceGendersTags(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, "")
 endFunction
 
+; NOTE: only loosely reviewed
 sslBaseAnimation[] function GetByRaceGendersTags(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, string Tags, string TagsSuppressed = "", bool RequireAll = true)
 	Log("GetByRaceGenders(ActorCount="+ActorCount+", RaceRef="+RaceRef+", MaleCreatures="+MaleCreatures+", FemaleCreatures="+FemaleCreatures+", Tags="+Tags+", TagsSuppressed="+TagsSuppressed+", RequireAll="+RequireAll+")")
-	if !Config.UseCreatureGender && ActorCount <= 2 && (MaleCreatures + FemaleCreatures) < 2 ;&& !ForceUse
+	if !Config.UseCreatureGender && ActorCount <= 2 && (MaleCreatures + FemaleCreatures) < 2
 		return GetByRaceTags(ActorCount, RaceRef, Tags, TagsSuppressed, RequireAll)
 	endIf
 	string[] RaceTypes = GetAllRaceKeys(RaceRef)
@@ -658,3 +597,34 @@ sslBaseAnimation[] function GetByRaceGendersTags(int ActorCount, Race RaceRef, i
 	Output = GetList(Valid)
 	return Output
 endFunction
+
+; No longer used
+sslBaseAnimation[] function FilterCreatureGenders(sslBaseAnimation[] Anims, int MaleCreatures = 0, int FemaleCreatures = 0)
+	if !Config.UseCreatureGender || !Anims.Length
+		return Anims
+	endIf
+	int Del
+	int i = Anims.Length
+	while i
+		i -= 1
+		if Anims[i] && Anims[i].GenderedCreatures && (MaleCreatures != Anims[i].MaleCreatures || FemaleCreatures != Anims[i].FemaleCreatures)
+			Anims[i] = none
+			Del += 1
+		endIf
+	endWhile
+	if Del == 0
+		return Anims
+	endIf
+	i = Anims.Length
+	int n = (i - Del)
+	sslBaseAnimation[] Output = sslUtility.AnimationArray(n)
+	while i && n
+		i -= 1
+		if Anims[i] != none
+			n -= 1
+			Output[n] = Anims[i]
+		endIf
+	endWhile
+	return Output
+endFunction
+

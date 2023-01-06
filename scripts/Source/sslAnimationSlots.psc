@@ -49,9 +49,8 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 	While(n > 0)
 		n -= 1
 		If(sslActorData.IsFuta(aiKeys[n]))
-			sslActorData.AddGenderToKey(aiKeys[n], 5)
-			aiKeys = sslActorData.SortDataKeys(aiKeys)
-			ret = _GetAnimationsImpl(aiKeys, asTags)
+			aiKeys[n] = sslActorData.AddGenderToKey(aiKeys[n], 5)
+			ret = _GetAnimationsImpl(sslActorData.SortDataKeys(aiKeys), asTags)
 			If(ret.Length)
 				Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
 				return ret
@@ -62,11 +61,9 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 		int i = aiKeys.Length
 		While(i > 0)
 			i -= 1
-			Log("Looking for backup animations: " + i)
-			If(sslActorData.IsFemale(aiKeys[i]))
-				sslActorData.AddGenderToKey(aiKeys[i], 5)
-				aiKeys = sslActorData.SortDataKeys(aiKeys)
-				ret = _GetAnimationsImpl(aiKeys, asTags)
+			If(sslActorData.IsPureFemale(aiKeys[i]))
+				aiKeys[n] = sslActorData.AddGenderToKey(aiKeys[i], 5)
+				ret = _GetAnimationsImpl(sslActorData.SortDataKeys(aiKeys), asTags)
 				If(ret.Length)
 					Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
 					return ret
@@ -84,6 +81,7 @@ sslBaseAnimation[] Function _GetAnimationsImpl(int[] aiKeys, String[] asTags)
 	While(i < Slotted)
 		If(Objects[i])
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
+			Log("Validating Animation Nr. " + i + " | Keys = " + Slot.ActorKeys + " | Tags = " + Slot.GetTags())
 			If(Slot.Enabled && Slot.MatchKeys(aiKeys) && Slot.MatchTags(asTags))
 				ret[ii] = Slot
 				If(ii == 127)	; Array is full
@@ -591,7 +589,7 @@ function Log(string msg)
 		MiscUtil.PrintConsole(msg)
 		Debug.TraceUser("SexLabDebug", msg)
 	endIf
-	Debug.Trace("SEXLAB - "+msg)
+	Debug.Trace("SEXLAB - " + Self + msg)
 endFunction
 
 state Locked
@@ -633,13 +631,12 @@ sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSu
 	int[] keys = Utility.CreateIntArray(ActorCount)
 	int n = 0
 	While(n < keys.Length)
-		keys[n] = sslActorData.BuildByLegacyGender(-1)
+		keys[n] = sslActorData.BuildBlankKey()
 		n += 1
 	EndWhile
 	String[] required = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
 	String[] suppressed = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(TagsSuppressed))
 	String[] t = BuildArgTags(required, suppressed, RequireAll)
-	Log("GetByTags -> Keys = " + keys + " | Tags = " + t)
 	return _GetAnimations(keys, t)
 endFunction
 
@@ -650,7 +647,7 @@ sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, s
 	int[] keys = Utility.CreateIntArray(ActorCount)
 	int n = 0
 	While(n < ActorCount)
-		keys[n] = sslActorData.BuildByLegacyGender(-1)
+		keys[n] = sslActorData.BuildBlankKey()
 		n += 1
 	EndWhile
 	String[] required = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags))
@@ -672,7 +669,7 @@ sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Female
 		i += 1
 	EndWhile
 	While(i < ActorCount)
-		keys[i] = sslActorData.BuildByLegacyGender(-1)
+		keys[i] = sslActorData.BuildBlankKey()
 		i += 1
 	EndWhile
 	String[] tags

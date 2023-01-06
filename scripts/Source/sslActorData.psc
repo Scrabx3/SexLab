@@ -111,8 +111,6 @@ bool Function IsFemaleOverwrite(int aiKey) native global
 ; The RaceID this Key uses. Will be 0 for humans and some positive integer for creatures
 ; please beware there is no guarantee that the same race always uses the same integer ID
 ; use the RaceKey (String) for bookmarking or comparing specific races
-; NOTE: This may currently seem like a bad joke if you analyze below function, but please dont try to be
-;       smart on me and hardcode ID comparisons. There is a chance your mod will break at some point due to it
 int Function GetRaceID(int aiKey) native global
 
 ; Gets the RaceKey this DataKey represents. Every group of races uses a distinct RaceKey, see

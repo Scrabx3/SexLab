@@ -1,19 +1,19 @@
 scriptname sslThreadController extends sslThreadModel
 {
 	Class to access and write scene data
-	Use the functions listed here to manipulate a running scene or retrieve data from it, to get a valid
-	instance of this API use SexLabFramework.GetController(tid). The 'tid' or thread-id can be obtained through
-	a variety of functions also found in the main API. It is also (and most commonly) accessed by listening to one
-	of the various events invoked by a running thread. There is NEVER a reason to link to this via a direct property
+	Use the functions listed here to manipulate a running scene or retrieve data from it, to get a (valid) instance
+	of this API use SexLabFramework.GetController(tid). The 'tid' or thread-id can be obtained through a variety of functions
+	also found in the main API. It is also (and most commonly) accessed by listening to one of the various events invoked by a running thread
+
+	Do NOT read or write a thread through any functions not listed here. There is no guarntee for backwards compatibility otherwise
+	There is NEVER a reason to link to this via a direct property
 }
 
-; TODO: SetFirstAnimation() - allow custom defined starter anims instead of random
-
-; Adjustment hotkeys
-sslActorAlias AdjustAlias		; COMEBACK: Adjustments will be remade from ground up, this will no longer be necessary
-bool Adjusted								; COMEBACK: Idk why that here is even a thing. Its only set, never read
-
 ; TODO: Add state-independent API
+
+; ------------------------------------------------------- ;
+; --- Animation End	                                  --- ;
+; ------------------------------------------------------- ;
 
 State Ending
 
@@ -44,48 +44,39 @@ State Animating
 	; --- Hotkey functions                                --- ;
 	; ------------------------------------------------------- ;
 
+	Function AdvanceStage(bool backwards = false)
+		If(!backwards)
+			GoToStage(Stage + 1)
+		Elseif(Config.IsAdjustStagePressed())
+			GoToStage(1)
+		ElseIf(Stage > 1)
+			GoToStage(Stage - 1)
+		EndIf
+	EndFunction
+
+	Function ChangeAnimation(bool backwards = false)
+		If(Animations.Length <= 1)
+			return
+		EndIf
+		UnregisterForUpdate()
+
+		If(!Config.AdjustStagePressed())	; Forward/Backward
+			SetAnimation(sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards))
+		Else	; Random
+			int current = Animations.Find(Animation)
+			int r = Utility.RandomInt(0, Animations.Length - 1)
+			While(r == current)
+				r = Utility.RandomInt(0, Animations.Length - 1)
+			EndWhile
+			SetAnimation(r)
+		endIf
+		SendThreadEvent("AnimationChange")
+		RegisterForSingleUpdate(0.2)
+	EndFunction
+
 	; TODO: Review all these Hotkey Functions. Esp the ones moving the Scene
-
-	; Function AdvanceStage(bool backwards = false)
-	; 	if !backwards
-	; 		GoToStage((Stage + 1))
-	; 	elseIf backwards && Stage > 1
-	; 		if Config.IsAdjustStagePressed()
-	; 			GoToStage(1)
-	; 		else
-	; 			GoToStage((Stage - 1))
-	; 		endIf
-	; 	endIf
-	; EndFunction
-
-	; Function ChangeAnimation(bool backwards = false)
-	; 	if Animations.Length < 2
-	; 		return ; Nothing to change
-	; 	endIf
-	; 	UnregisterForUpdate()
-		
-	; 	if !Config.AdjustStagePressed()
-	; 		; Forward/Backward
-	; 		SetAnimation(sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards))
-	; 	else
-	; 		; Random
-	; 		int current = Animations.Find(Animation)
-	; 		int r = Utility.RandomInt(0, (Animations.Length - 1))
-	; 		; Try to get something other than the current animation
-	; 		if r == current
-	; 			int tries = 10
-	; 			while r == current && tries > 0
-	; 				tries -= 1
-	; 				r = Utility.RandomInt(0, (Animations.Length - 1))
-	; 			endWhile
-	; 		endIf
-	; 		SetAnimation(r)
-	; 	endIf
-
-	; 	SendThreadEvent("AnimationChange")
-	; 	RegisterForSingleUpdate(0.2)
-	; EndFunction
-
+	; COMEBACK: For the time being leaving this disabled as I want to know how reliable the keys are and imrpove on them
+	; Rather have people complain about it than leaving bugs in silently decaying unnoticed by me
 	; Function ChangePositions(bool backwards = false)
 	; 	if ActorCount < 2 || HasCreature
 	; 		return ; Solo/Creature Animation, nobody to swap with
@@ -300,12 +291,12 @@ State Animating
 	; 			endIf
 	; 			i += 1
 	; 		endWhile
-			
+
 	; 		CenterAlias.TryToClear()
 	; 		CenterAlias.ForceRefTo(PlayerRef) ; Make them follow me
 
 	; 		UnregisterForUpdate()
-			
+
 	; 		; Lock hotkeys and wait 30 seconds
 	; 		Utility.WaitMenuMode(1.0)
 	; 		RegisterForKey(Hotkeys[kMoveScene])
@@ -384,93 +375,45 @@ State Animating
 	; 	endIf
 	; EndFunction
 
-	event OnKeyDown(int KeyCode)
-		; StateCheck()
-		if !Utility.IsInMenuMode(); || UI.IsMenuOpen("Console") || UI.IsMenuOpen("Loading Menu")
-			int i = Hotkeys.Find(KeyCode)
-			; Advance Stage
-			if i == kAdvanceAnimation
-				UnregisterForKey(kAdvanceAnimation)
-				AdvanceStage(Config.BackwardsPressed())
-				RegisterForKey(kAdvanceAnimation)
-
-			; Change Animation
-			elseIf i == kChangeAnimation
-				UnregisterForKey(kChangeAnimation)
-				ChangeAnimation(Config.BackwardsPressed())
-				RegisterForKey(kChangeAnimation)
-
-			; Forward / Backward adjustments
-			elseIf i == kAdjustForward
-				UnregisterForKey(kAdjustForward)
-				AdjustForward(Config.BackwardsPressed(), Config.AdjustStagePressed())
-				RegisterForKey(kAdjustForward)
-
-			; Up / Down adjustments
-			elseIf i == kAdjustUpward
-				UnregisterForKey(kAdjustUpward)
-				AdjustUpward(Config.BackwardsPressed(), Config.AdjustStagePressed())
-				RegisterForKey(kAdjustUpward)
-
-			; Left / Right adjustments
-			elseIf i == kAdjustSideways
-				UnregisterForKey(kAdjustSideways)
-				AdjustSideways(Config.BackwardsPressed(), Config.AdjustStagePressed())
-				RegisterForKey(kAdjustSideways)
-
-			; Rotate Scene
-			elseIf i == kRotateScene
-				UnregisterForKey(kRotateScene)
-				RotateScene(Config.BackwardsPressed())
-				RegisterForKey(kRotateScene)
-
-			; Adjust schlong bend
-			elseIf i == kAdjustSchlong
-				UnregisterForKey(kAdjustSchlong)
-				AdjustSchlong(Config.BackwardsPressed())
-				RegisterForKey(kAdjustSchlong)
-
-			; Change Adjusted Actor
-			elseIf i == kAdjustChange
-				UnregisterForKey(kAdjustChange)
-				AdjustChange(Config.BackwardsPressed())
-				RegisterForKey(kAdjustChange)
-
-			; RePosition Actors
-			elseIf i == kRealignActors
-				UnregisterForKey(kRealignActors)
-				ResetPositions()
-				RegisterForKey(kRealignActors)
-
-			; Change Positions
-			elseIf i == kChangePositions
-				UnregisterForKey(kChangePositions)
-				ChangePositions(Config.BackwardsPressed())
-				RegisterForKey(kChangePositions)
-
-			; Restore animation offsets
-			elseIf i == kRestoreOffsets
-				UnregisterForKey(kRestoreOffsets)
-				RestoreOffsets()
-				RegisterForKey(kRestoreOffsets)
-
-			; Move Scene
-			elseIf i == kMoveScene
-				MoveScene()
-
-			; EndAnimation
-			elseIf i == kEndAnimation
-				UnregisterForKey(kEndAnimation)
-				if Config.BackwardsPressed()
-					; End all threads
-					Config.ThreadSlots.StopAll()
-				else
-					; End only current thread
-					EndAnimation(true)
-				endIf
-				RegisterForKey(kEndAnimation)
-			endIf
-		endIf
+	Event OnKeyDown(int KeyCode)
+		If(Utility.IsInMenuMode())
+			return
+		EndIf
+		_HOTKEYLOCK = true
+		int hotkey = Hotkeys.Find(KeyCode)
+		If(hotkey == kAdvanceAnimation)
+			AdvanceStage(Config.BackwardsPressed())
+		ElseIf(hotkey == kChangeAnimation)
+			ChangeAnimation(Config.BackwardsPressed())
+		ElseIf(hotkey == kAdjustForward)
+			AdjustForward(Config.BackwardsPressed(), Config.AdjustStagePressed())
+		ElseIf (hotkey == kAdjustUpward)
+			AdjustUpward(Config.BackwardsPressed(), Config.AdjustStagePressed())
+		ElseIf (hotkey == kAdjustSideways)
+			AdjustSideways(Config.BackwardsPressed(), Config.AdjustStagePressed())
+		ElseIf (hotkey == kRotateScene)
+			RotateScene(Config.BackwardsPressed())
+		ElseIf (hotkey == kAdjustSchlong)
+			AdjustSchlong(Config.BackwardsPressed())
+		ElseIf (hotkey == kAdjustChange)		; Change Adjusted Actor
+			AdjustChange(Config.BackwardsPressed())
+		ElseIf hotkey == kRealignActors
+			ResetPositions()
+		ElseIf (hotkey == kChangePositions)	; Change Positions
+			ChangePositions(Config.BackwardsPressed())
+		ElseIf (hotkey == kRestoreOffsets)	; Restore animation offsets
+			RestoreOffsets()
+		ElseIf (hotkey == kMoveScene)
+			MoveScene()
+		ElseIf(hotkey == kEndAnimation)
+			If(Config.BackwardsPressed())
+				Config.ThreadSlots.StopAll()
+			Else
+				EndAnimation()
+			EndIf
+			return
+		EndIf
+		_HOTKEYLOCK = false
 	endEvent
 
 	; Function MoveActors()
@@ -504,7 +447,12 @@ endState
 ; --- Hotkeys								                          --- ;
 ; ------------------------------------------------------- ;
 
-bool HOTKEYLOCK
+; Adjustment hotkeys
+sslActorAlias AdjustAlias		; COMEBACK: Adjustments will be remade from ground up, this will no longer be necessary
+bool Adjusted								; COMEBACK: Idk why that here is even a thing. Its only set, never read
+
+
+bool _HOTKEYLOCK
 int[] Hotkeys
 int property kAdvanceAnimation = 0  autoreadonly hidden
 int property kChangeAnimation  = 1  autoreadonly hidden
@@ -522,7 +470,7 @@ int property kAdjustSchlong    = 12 autoreadonly hidden
 
 Function EnableHotkeys(bool forced = false)
 	If(HasPlayer || forced)
-		HOTKEYLOCK = true
+		_HOTKEYLOCK = true
 		Hotkeys = new int[13]
 		Hotkeys[kAdvanceAnimation] = Config.AdvanceAnimation
 		Hotkeys[kChangeAnimation]  = Config.ChangeAnimation
@@ -542,7 +490,7 @@ Function EnableHotkeys(bool forced = false)
 			RegisterForKey(Hotkeys[i])
 			i += 1
 		endwhile
-		HOTKEYLOCK = false
+		_HOTKEYLOCK = false
 	EndIf
 EndFunction
 

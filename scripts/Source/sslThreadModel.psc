@@ -49,7 +49,25 @@ bool Property LeadIn auto hidden
 
 ; Animation Info
 Sound Property SoundFX auto hidden
-string Property AdjustKey auto hidden
+string Property AdjustKey
+	String Function Get()
+		return "Global"
+		; if !Config.RaceAdjustments && Config.ScaleActors
+		; 	AdjustKey = "Global"
+		; else
+		; 	int i
+		; 	string NewKey
+		; 	while i < ActorCount
+		; 		NewKey += PositionAlias(i).GetActorKey()
+		; 		i += 1
+		; 		if i < ActorCount
+		; 			NewKey += "."
+		; 		endIf
+		; 	endWhile
+		; 	AdjustKey = NewKey
+		; endIf
+	EndFunction
+EndProperty
 string[] Property AnimEvents auto hidden
 
 sslBaseAnimation Property Animation auto hidden						; The currently playing Animation
@@ -1099,6 +1117,7 @@ EndFunction
 
 bool Function AddTags(String[] asTags)
 	Tags = sslpp.MergeStringArrayEx(Tags, asTags, true)
+	return true
 EndFunction
 
 bool Function RemoveTag(string Tag)
@@ -1166,12 +1185,12 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
 	int n = 0
 	While(n < akAnimations.Length)
-		If(akAnimations[n] && akAnimations[n].MatchTags(Tags) && (akAnimations[n].MatchKeys(pkeys) || ValidateShift(pkeys, akAnimations[n])))
+		Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].ActorKeys + " | Tags = " + akAnimations[n].GetTags())
+		If(akAnimations[n] && akAnimations[n].MatchTags(Tags) && (akAnimations[n].MatchKeys(pkeys) || !positions_shifted && ValidateShift(pkeys, akAnimations[n])))
+			positions_shifted = true
 			valids[n] = n
-			n += 1
-		Else
-			n = akAnimations.Length
 		EndIf
+		n += 1
 	EndWhile
 	sslBaseAnimation[] ret
 	valids = PapyrusUtil.RemoveInt(valids, -1)
@@ -1186,32 +1205,29 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 		ret = akAnimations
 	EndIf
 	Log("Post Validation, Animations left: " + ret.Length)
-	positions_shifted = true
 	return ret
 EndFunction
 
 bool Function ValidateShift(int[] aiKeys, sslBaseAnimation akValidate)
-	If(positions_shifted)
-		return false
-	EndIf
-	positions_shifted = true
 	; TODO: Consider Config to validate, let futas be female first then male or so
 	int k = aiKeys.Length
 	While(k > 0)
+		k -= 1
 		If(sslActorData.IsFuta(aiKeys[k]))
-			sslActorData.AddGenderToKey(aiKeys[k], 5)
-			ArrangePositionsByKeys(aiKeys)
-			If(akValidate.MatchKeys(aiKeys))
+			aiKeys[k] = ActorAlias[k].OverwriteMyGender(false)
+			If(akValidate.MatchKeys(sslActorData.SortDataKeys(aiKeys)))
+				ArrangePositions()
 				return true
 			EndIf
 		EndIf
 	EndWhile
 	int j = aiKeys.Length
 	While(j > 0)
+		j -= 1
 		If(sslActorData.IsFemale(aiKeys[j]))
-			sslActorData.AddGenderToKey(aiKeys[j], 5)
-			ArrangePositionsByKeys(aiKeys)
-			If(akValidate.MatchKeys(aiKeys))
+			aiKeys[k] = ActorAlias[k].OverwriteMyGender(false)
+			If(akValidate.MatchKeys(sslActorData.SortDataKeys(aiKeys)))
+				ArrangePositions()
 				return true
 			EndIf
 		EndIf
@@ -1285,6 +1301,7 @@ Function PlayStageAnimations()
 	EndWhile
 	; Wanna split this into 2 loops to minimize possible delays for anim event calls
 	Animation.GetAnimEvents(AnimEvents, Stage)
+	Log("Playing Stage Animations for animation " + Animation.Name + " with Events = " + AnimEvents)
 	int n = 0
 	While(n < Positions.Length)
 		ActorAlias[n].PlayAnimation(AnimEvents[n])
@@ -1385,17 +1402,17 @@ State Ending
 		EndIf
 		SendThreadEvent("AnimationEnd")
 		HookAnimationEnd()
-		; Some time for Thread Events to finish running
-		RegisterForSingleUpdate(15)
-	EndEvent
-
-	Event OnUpdate()
 		int i = 0
 		While(i < Positions.Length)
 			ActorAlias[i].DoStatistics()
 			ActorAlias[i].Clear()
 			i += 1
 		EndWhile
+		; Some time for Thread Events to finish running
+		RegisterForSingleUpdate(15)
+	EndEvent
+
+	Event OnUpdate()
 		Initialize()
 	EndEvent
 
@@ -1430,7 +1447,7 @@ Function AddCommonTags(sslBaseAnimation[] akAnimations)
 		int k = commons.Length
 		While(k > 0)
 			k -= 1
-			If(animtags.Find(commons[k]))
+			If(animtags.Find(commons[k]) == -1)
 				commons = sslpp.RemoveStringEx(commons, commons[k])
 				If(!commons.Length)
 					return
@@ -1617,30 +1634,6 @@ Function ArrangePositions()
 	Log("Arranging Positions - Post Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
 EndFunction
 
-Function ArrangePositionsByKeys(int[] aiKeys)
-	Log("Arranging Positions - Pre Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
-	int i = 1
-	While(i < aiKeys.Length)
-		sslActorAlias it_a = ActorAlias[i]
-		int it = aiKeys[i]
-		int n = i - 1
-		While(n >= 0 && sslActorData.IsLess(it, aiKeys[n]))
-			aiKeys[n + 1] = aiKeys[n]
-			ActorAlias[n + 1] = ActorAlias[n]
-			n -= 1
-		EndWhile
-		ActorAlias[n + 1] = it_a
-		aiKeys[n + 1] = it
-		i += 1
-	EndWhile
-	int k = 0
-	While(k < Positions.Length)
-		Positions[k] = ActorAlias[k].GetReference() as Actor
-		k +=1
-	EndWhile
-	Log("Arranging Positions by Keys - Post Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
-EndFunction
-
 Function SetFurnitureIgnored(bool disabling = true)
 	If(!BedRef)
 		return
@@ -1648,23 +1641,6 @@ Function SetFurnitureIgnored(bool disabling = true)
 	BedRef.SetDestroyed(disabling)
 	BedRef.BlockActivation(disabling)
 	BedRef.SetNoFavorAllowed(disabling)
-EndFunction
-
-Function UpdateAdjustKey()
-	if !Config.RaceAdjustments && Config.ScaleActors
-		AdjustKey = "Global"
-	else
-		int i
-		string NewKey
-		while i < ActorCount
-			NewKey += PositionAlias(i).GetActorKey()
-			i += 1
-			if i < ActorCount
-				NewKey += "."
-			endIf
-		endWhile
-		AdjustKey = NewKey
-	endIf
 EndFunction
 
 sslActorAlias Function PickAlias(Actor ActorRef)
@@ -1849,9 +1825,9 @@ Function Log(string msg, string src = "")
 EndFunction
 
 Function LogConsole(String asReport)
-	String msg = "[SEXLAB] - Thread[" + thread_id + "]" + asReport
+	String msg = "Thread[" + thread_id + "] - " + asReport
 	SexLabUtil.PrintConsole(msg)
-	Debug.Trace(msg)
+	Debug.Trace("SEXLAB - " + msg)
 EndFunction
 
 Function LogRedundant(String asFunction)
@@ -1950,10 +1926,9 @@ EndFunction
 bool Initialized
 Function Initialize()
 	UnregisterForUpdate()
-	if CenterAlias.GetReference()
-		;	SetObjectiveDisplayed(0, False)
+	If(CenterAlias.GetReference())
 		CenterAlias.Clear()
-	endIf
+	EndIf
 	; Forms
 	Animation = none
 	CenterRef = none
@@ -2115,6 +2090,9 @@ float[] Property RealTime
 		return ret
 	EndFunction
 EndProperty
+
+Function UpdateAdjustKey()
+EndFunction
 
 bool Function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppress = false)
 	int i = CheckTags.Length
