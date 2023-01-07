@@ -23,9 +23,13 @@ int Function BuildDataKey(Actor akActor, bool abIsVictim = false) global
 		racekeyidx = 0
 	Else
 		Race actorrace = akActor.GetRace()
-		racekeyidx = GetAllRaceKeys().Find(sslCreatureAnimationSlots.GetRaceKey(actorrace)) + 1
-		If(racekeyidx == -1)
-			Debug.Trace("SEXLAB - ERROR -Actor " + akActor + " is not using a recognized Race: " + actorrace)
+		String rk = sslCreatureAnimationSlots.GetRaceKey(actorrace)
+		If(rk == "Wolves" || rk == "Dogs")
+			rk == "Canines"
+		EndIf
+		racekeyidx = GetAllRaceKeys().Find(rk) + 1
+		If(racekeyidx == 0)
+			Debug.Trace("SEXLAB - ERROR -Actor " + akActor + " is not using a recognized Race: " + actorrace + "(" + rk + ")")
 			return 0
 		EndIf
 	EndIf

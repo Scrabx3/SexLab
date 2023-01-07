@@ -791,6 +791,9 @@ int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1
 	elseIf Gender == 1
 		Gender = 3
 	endIf
+	If(RaceKey == "Wolves" || RaceKey == "Dogs")
+		RaceKey = "Canines"
+	EndIf
 
 	int pid = AddPosition(Gender, AddCum)
 	If(pid != -1 && RaceKey != "")
@@ -1453,38 +1456,3 @@ string function GetGenderTag(bool Reverse = false)
 	endIf
 	return GenderTag(Females, "F")+GenderTag(Males, "M")+GenderTag(Creatures, "C")
 endFunction
-
-bool function IsInterspecies_Legacy()
-	if IsCreature
-		int Position = PositionCount
-		while Position > 1
-			Position -= 1
-			if RaceTypes[(Position - 1)] != "" && RaceTypes[Position] != ""
-				string[] Keys1 = sslCreatureAnimationSlots.GetAllRaceIDs(RaceTypes[(Position - 1)])
-				string[] Keys2 = sslCreatureAnimationSlots.GetAllRaceIDs(RaceTypes[Position])
-				if Keys1 && Keys2 && Keys1.Length > 0 && Keys2.Length > 0 && Keys1 != Keys2
-					int k1 = Keys1.Length
-					int k2 = Keys2.Length
-					if k1 == 1 && k2 == 1 && Keys1[0] != Keys2[0]
-						return true ; Simple single key mismatch
-					elseIf (k1 == 1 && k2 > 1 && Keys2.Find(Keys1[0]) < 0) && \
-						   (k2 == 1 && k1 > 1 && Keys1.Find(Keys2[0]) < 0)
-					   return true ; Single key to multikey mismatch
-					endIf
-					bool Matched = false
-					while k1
-						k1 -= 1
-						if Keys2.Find(Keys1[k1]) != -1
-							Matched = true ; Matched between multikey arrays
-						endIf
-					endWhile
-					if !Matched
-					   return true ; Mismatch between multikey arrays
-					endIf
-				endIf
-			endIf
-		endWhile
-	endIf
-	return false
-endFunction
-
