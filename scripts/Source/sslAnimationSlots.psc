@@ -75,6 +75,7 @@ sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 EndFunction
 
 sslBaseAnimation[] Function _GetAnimationsImpl(int[] aiKeys, String[] asTags)
+	Log("Searching for Animation with Keys = " + aiKeys + " | Tags = " + asTags)
 	sslBaseAnimation[] ret = new sslBaseAnimation[128]
 	int i = 0
 	int ii = 0
@@ -589,7 +590,7 @@ function Log(string msg)
 		MiscUtil.PrintConsole(msg)
 		Debug.TraceUser("SexLabDebug", msg)
 	endIf
-	Debug.Trace("SEXLAB - " + Self + msg)
+	Debug.Trace("SEXLAB - " + Self + " " + msg)
 endFunction
 
 state Locked

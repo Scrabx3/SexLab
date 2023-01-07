@@ -788,19 +788,6 @@ bool function IsUsingStrapon()
 	return Strapon && ActorRef.IsEquipped(Strapon)
 endFunction
 
-function ResolveStrapon(bool force = false)
-	if Strapon
-		bool equipped = ActorRef.IsEquipped(Strapon)
-		if UseStrapon || Thread.Animation.GetGender(Position) != 1
-			If(!equipped)
-				ActorRef.EquipItem(Strapon, true, true)
-			EndIf
-		ElseIf(equipped)
-			ActorRef.UnequipItem(Strapon, true, true)
-		endIf
-	endIf
-endFunction
-
 function EquipStrapon()
 	if Strapon && !ActorRef.IsEquipped(Strapon)
 		ActorRef.EquipItem(Strapon, true, true)
@@ -948,6 +935,7 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 ; Prepare this actor for positioning
 ; Return duration for the pre-placement starting animation, if any
 float Function PlaceActor(ObjectReference akCenter)
+	Log("PlaceActor on " + ActorRef)
 	LockActor()
 	If(!sslActorData.IsCreature(_ActorData))
 		If(StartAnimEvent == "")
@@ -999,7 +987,6 @@ float Function PlaceActor(ObjectReference akCenter)
 		EndIf
 		Log("Applying Scale on Actor " + ActorRef + ": ["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"]")
 	EndIf
-	Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
 	return StartWait
 EndFunction
 
@@ -1049,7 +1036,7 @@ EndFunction
 ; Reset this Actor into a pre-animation state, allowing them to freely move etc
 ; Is overwritten by the Animation State to consider animation exclusive statuses, eg expression
 Function UnplaceActor()
-	SendDefaultAnimEvent(true)
+	Log("UnplaceActor on " + ActorRef)
 	UnlockActor()
 	If(!sslActorData.IsCreature(_ActorData))
 		Unstrip()
@@ -1196,6 +1183,25 @@ Function UnStrip()
 	 	ActorRef.EquipItemEx(Equipment[i], ActorRef.EquipSlot_Default)
 		i += 1
  	EndWhile
+EndFunction
+
+function ResolveStrapon(bool force = false)
+	if Strapon
+		bool equipped = ActorRef.IsEquipped(Strapon)
+		if UseStrapon || Thread.Animation.GetGender(Position) != 1
+			If(!equipped)
+				ActorRef.EquipItem(Strapon, true, true)
+			EndIf
+		ElseIf(equipped)
+			ActorRef.UnequipItem(Strapon, true, true)
+		endIf
+	endIf
+endFunction
+
+Function RemoveStrapon()
+	If(Strapon && !HadStrapon)
+		ActorRef.RemoveItem(Strapon, 1, true)
+	EndIf
 EndFunction
 
 Function SendDefaultAnimEvent(bool Exit = False)

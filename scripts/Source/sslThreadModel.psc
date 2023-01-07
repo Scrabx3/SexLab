@@ -1235,7 +1235,6 @@ bool Function ValidateShift(int[] aiKeys, sslBaseAnimation akValidate)
 	return false
 EndFunction
 
-; TODO: Recognize Animation Adjustments
 ; Assume all Actors have all necessary data set
 Function PlaceActors()
 	float w = 0.0
@@ -1245,13 +1244,24 @@ Function PlaceActors()
 		If(ww > w)
 			w = ww
 		EndIf
-		Debug.SendAnimationEvent(Positions[i], "sosfasterect")
 		i += 1
 	EndWhile
 	; If placing includes an animation, wait for longest to finish
 	If(w > 0)
 		Utility.Wait(w)
 	EndIf
+	; Short delay is mandatory otherwise stripping/animation isnt executing correctly?
+	; Utility.Wait(w)
+	; int n = 0
+	; While(n < Positions.Length)
+	; 	If(!sslActorData.IsCreature(ActorAlias[n].GetActorData()))
+	; 		ActorAlias[n].Strip()
+	; 		ActorAlias[n].ResolveStrapon()
+	; 	EndIf
+	; 	Debug.SendAnimationEvent(Positions[i], "sosfasterect")
+	; 	n += 1
+	; EndWhile
+	; TODO: Use SetPositionEX and get offsets here
 	sslpp.SetPositions(Positions, _Center)
 EndFunction
 
@@ -1432,6 +1442,18 @@ Function UnplaceActors()
 	While(i < Positions.Length)
 		ActorAlias[i].UnplaceActor()
 		i += 1
+	EndWhile
+	; Gotta wait a lil time otherwise the default animation may not play correctly
+	Utility.Wait(0.1)
+	int n = 0
+	While(n < Positions.Length)
+		ActorAlias[n].SendDefaultAnimEvent(true)
+		Debug.SendAnimationEvent(Positions[n], "SOSFlaccid")
+		If(!sslActorData.IsCreature(ActorAlias[n].GetActorData()))
+			ActorAlias[n].Unstrip()
+			ActorAlias[n].RemoveStrapon()
+		EndIf
+		n += 1
 	EndWhile
 EndFunction
 
