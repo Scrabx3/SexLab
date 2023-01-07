@@ -315,19 +315,8 @@ EndFunction
 ; --- Thread Making API                               --- ;
 ; ------------------------------------------------------- ;
 
+; The Making State
 State Making
-	Event OnBeginState()
-		Log("Entering Making State")
-		RegisterForSingleUpdate(60.0)
-		; Action Events
-		; COMEBACK: Realign Actors can be called rightaway after rewrite, this event should become unnecessary
-		RegisterForModEvent(Key("RealignActors"), "RealignActors") ; To be used by the ConfigMenu without the CloseConfig issue ; Just dont use Utility.Wait?
-		RegisterForModEvent(Key(EventTypes[0]+"Done"), EventTypes[0]+"Done")
-	EndEvent
-	Event OnUpdate()
-		ReportAndFail("Thread has timed out of the making process; resetting model for selection pool")
-	EndEvent
-
 	int Function AddActor(Actor ActorRef, bool IsVictim = false, sslBaseVoice Voice = none, bool ForceSilent = false)
 		If(!ActorRef)
 			ReportAndFail("Failed to add actor -- Actor is a figment of your imagination", "AddActor(NONE)")
@@ -496,6 +485,29 @@ State Making
 		return self as sslThreadController
 	EndFunction
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+	Event OnBeginState()
+		Log("Entering Making State")
+		RegisterForSingleUpdate(60.0)
+		; Action Events
+		; COMEBACK: Realign Actors can be called rightaway after rewrite, this event should become unnecessary
+		RegisterForModEvent(Key("RealignActors"), "RealignActors") ; To be used by the ConfigMenu without the CloseConfig issue ; Just dont use Utility.Wait?
+		RegisterForModEvent(Key(EventTypes[0]+"Done"), EventTypes[0]+"Done")
+	EndEvent
+	Event OnUpdate()
+		ReportAndFail("Thread has timed out of the making process; resetting model for selection pool")
+	EndEvent
+
 	; Invoked after SyncEvent(kPrepareActor) is done for all actors
 	Event PrepareDone()
 		PlaceActors()
@@ -587,6 +599,10 @@ State Animating
 		EndIf
 		RegisterForSingleUpdate(0.5)
 	EndEvent
+
+; ------------------------------------------------------- ;
+; --- TODO: REVIEW EVERYTHING BELOW                   --- ;
+; ------------------------------------------------------- ;
 
 	Function TriggerOrgasm()
 		UnregisterForUpdate()
@@ -1031,6 +1047,10 @@ Function SetStartingAnimation(sslBaseAnimation FirstAnimation)
 EndFunction
 
 ; ------------------------------------------------------- ;
+; ---	NOTE: BELOW IS REVIEWED || !IMPORTANT ABOVE NEEDS REVIEW
+; ------------------------------------------------------- ;
+
+; ------------------------------------------------------- ;
 ; --- Thread Settings                                 --- ;
 ; ------------------------------------------------------- ;
 
@@ -1161,17 +1181,6 @@ sslActorAlias Function PositionAlias(int Position)
 	return ActorAlias[Position]
 EndFunction
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
-;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
-;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
-;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
-;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
-;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
 ; ------------------------------------------------------- ;
 ; ---	Animation	Start                                 --- ;
 ; ------------------------------------------------------- ;
@@ -1209,6 +1218,7 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 EndFunction
 
 bool Function ValidateShift(int[] aiKeys, sslBaseAnimation akValidate)
+	Log("Validating Shift")
 	; TODO: Consider Config to validate, let futas be female first then male or so
 	int k = aiKeys.Length
 	While(k > 0)

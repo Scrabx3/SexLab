@@ -5,12 +5,25 @@ scriptname sslActorAlias extends ReferenceAlias
 	in sslThreadController.psc if you wish to access or write alias data
 }
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
 ; ------------------------------------------------------- ;
 ; --- API Related Functions & Data                    --- ;
 ; ------------------------------------------------------- ;
 
+; There is no guaranteee that GetReference() == ActorRef at all times
 Actor Property ActorRef Auto Hidden
 
+; DataKey for this Reference
 int _ActorData
 int Function GetActorData()
 	return _ActorData
@@ -104,9 +117,6 @@ int BaseEnjoyment
 int QuitEnjoyment
 int FullEnjoyment
 int Orgasms
-
-Form Strapon
-Form HadStrapon
 
 Sound OrgasmFX
 
@@ -697,6 +707,57 @@ State Idling
 EndState
 
 ; ------------------------------------------------------- ;
+; --- Strapon									                        --- ;
+; ------------------------------------------------------- ;
+
+Form Strapon		; Strapon used by the animation
+Form HadStrapon	; Strapon worn prior to animation start
+; assert(HadStrappon ? Strappon == HadStrapon : true)
+
+Form function GetStrapon()
+	return Strapon
+endFunction
+
+bool function IsUsingStrapon()
+	return Strapon && ActorRef.IsEquipped(Strapon)
+endFunction
+
+function EquipStrapon()
+	if Strapon && !ActorRef.IsEquipped(Strapon)
+		ActorRef.EquipItem(Strapon, true, true)
+	endIf
+endFunction
+
+function UnequipStrapon()
+	if Strapon && ActorRef.IsEquipped(Strapon)
+		ActorRef.UnequipItem(Strapon, true, true)
+	endIf
+endFunction
+
+function SetStrapon(Form ToStrapon)
+	if Strapon && !HadStrapon && Strapon != ToStrapon
+		ActorRef.RemoveItem(Strapon, 1, true)
+	endIf
+	Strapon = ToStrapon
+	if GetState() == "Animating"
+		ResolveStrapon()
+	endIf
+endFunction
+
+function ResolveStrapon(bool force = false)
+	if Strapon
+		bool equipped = ActorRef.IsEquipped(Strapon)
+		if UseStrapon || Thread.Animation.GetGender(Position) != 1
+			If(!equipped)
+				ActorRef.EquipItem(Strapon, true, true)
+			EndIf
+		ElseIf(equipped)
+			ActorRef.UnequipItem(Strapon, true, true)
+		endIf
+	endIf
+endFunction
+
+; ------------------------------------------------------- ;
 ; --- Data Accessors                                  --- ;
 ; ------------------------------------------------------- ;
 
@@ -782,36 +843,6 @@ endFunction
 function SetStartAnimationEvent(string EventName, float PlayTime)
 	StartAnimEvent = EventName
 	StartWait = PapyrusUtil.ClampFloat(PlayTime, 0.1, 10.0)
-endFunction
-
-bool function IsUsingStrapon()
-	return Strapon && ActorRef.IsEquipped(Strapon)
-endFunction
-
-function EquipStrapon()
-	if Strapon && !ActorRef.IsEquipped(Strapon)
-		ActorRef.EquipItem(Strapon, true, true)
-	endIf
-endFunction
-
-function UnequipStrapon()
-	if Strapon && ActorRef.IsEquipped(Strapon)
-		ActorRef.UnequipItem(Strapon, true, true)
-	endIf
-endFunction
-
-function SetStrapon(Form ToStrapon)
-	if Strapon && !HadStrapon && Strapon != ToStrapon
-		ActorRef.RemoveItem(Strapon, 1, true)
-	endIf
-	Strapon = ToStrapon
-	if GetState() == "Animating"
-		ResolveStrapon()
-	endIf
-endFunction
-
-Form function GetStrapon()
-	return Strapon
 endFunction
 
 bool function PregnancyRisk()
@@ -935,7 +966,7 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 ; Prepare this actor for positioning
 ; Return duration for the pre-placement starting animation, if any
 float Function PlaceActor(ObjectReference akCenter)
-	Log("PlaceActor on " + ActorRef)
+	Log("PlaceActor on " + ActorRef + " | Key = " + _ActorData)
 	LockActor()
 	If(!sslActorData.IsCreature(_ActorData))
 		If(StartAnimEvent == "")
@@ -1185,25 +1216,6 @@ Function UnStrip()
  	EndWhile
 EndFunction
 
-function ResolveStrapon(bool force = false)
-	if Strapon
-		bool equipped = ActorRef.IsEquipped(Strapon)
-		if UseStrapon || Thread.Animation.GetGender(Position) != 1
-			If(!equipped)
-				ActorRef.EquipItem(Strapon, true, true)
-			EndIf
-		ElseIf(equipped)
-			ActorRef.UnequipItem(Strapon, true, true)
-		endIf
-	endIf
-endFunction
-
-Function RemoveStrapon()
-	If(Strapon && !HadStrapon)
-		ActorRef.RemoveItem(Strapon, 1, true)
-	EndIf
-EndFunction
-
 Function SendDefaultAnimEvent(bool Exit = False)
 	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
 	If(!sslActorData.IsCreature(_ActorData))
@@ -1298,7 +1310,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 int Function OverwriteMyGender(bool abToFemale)
-	_ActorData = sslActorData.AddGenderToKey(_ActorData, 4 + abToFemale as int)
+	_ActorData = sslActorData.AddGenderToKey(_ActorData, 5 + abToFemale as int)
 	return _ActorData
 EndFunction
 
