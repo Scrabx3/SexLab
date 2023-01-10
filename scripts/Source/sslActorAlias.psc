@@ -275,6 +275,7 @@ State Ready
 
 	; Called when the main thread wants to start the first animation
 	Function PlayAnimation(String asAnimation)
+		Log("Playing Animation " + asAnimation)
 		Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
 		Debug.SendAnimationEvent(ActorRef, asAnimation)
 		PlayingSA = Thread.Animation.Registry
@@ -518,6 +519,7 @@ state Animating
 	; ---- Below Function are called through the Mainthread only ---
 
 	Function PlayAnimation(String asAnimation)
+		Log("Playing Animation " + asAnimation)
 		; Dont restart the animation, might create some odd stuttering otherwise
 		If(PlayingAE == asAnimation)
 			return
@@ -539,7 +541,7 @@ state Animating
 
 	; Basically just an "update for current animation stage"
 	function SyncThread()
-		Flags = Thread.Animation.PositionFlags(Flags, "Global", Position, Thread.Stage)
+		Flags = Thread.Animation.PositionFlags(Flags, Thread.AdjustKey, Position, Thread.Stage)
 
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
@@ -747,7 +749,7 @@ endFunction
 function ResolveStrapon(bool force = false)
 	if Strapon
 		bool equipped = ActorRef.IsEquipped(Strapon)
-		if UseStrapon || Thread.Animation.GetGender(Position) != 1
+		if UseStrapon ; || Thread.Animation.GetGender(Position) != 1
 			If(!equipped)
 				ActorRef.EquipItem(Strapon, true, true)
 			EndIf
@@ -966,7 +968,7 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 ; Prepare this actor for positioning
 ; Return duration for the pre-placement starting animation, if any
 float Function PlaceActor(ObjectReference akCenter)
-	Log("PlaceActor on " + ActorRef + " | Key = " + _ActorData)
+	Log("PlaceActor on " + ActorRef)
 	LockActor()
 	If(!sslActorData.IsCreature(_ActorData))
 		If(StartAnimEvent == "")
@@ -1068,6 +1070,7 @@ EndFunction
 ; Is overwritten by the Animation State to consider animation exclusive statuses, eg expression
 Function UnplaceActor()
 	Log("UnplaceActor on " + ActorRef)
+	SendDefaultAnimEvent(true)
 	UnlockActor()
 	If(!sslActorData.IsCreature(_ActorData))
 		Unstrip()
@@ -1314,6 +1317,11 @@ int Function OverwriteMyGender(bool abToFemale)
 	return _ActorData
 EndFunction
 
+int Function ResetDataKey()
+	_ActorData = sslActorData.BuildDataKey(ActorRef, IsVictim())
+	return _ActorData
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Thread Events           				                --- ;
 ; ------------------------------------------------------- ;
@@ -1347,7 +1355,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Log(string msg, string src = "")
-	msg = "Thread[" + Thread.tid + "] ActorAlias[" + GetActorName() + "] " + src + " - " + msg
+	msg = "Thread[" + Thread.tid + "] ActorAlias[" + GetActorName() + "/" + _ActorData + "] " + src + " - " + msg
 	Debug.Trace("SEXLAB - " + msg)
 	if Config.DebugMode
 		SexLabUtil.PrintConsole(msg)

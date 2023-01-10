@@ -657,7 +657,8 @@ State Animating
 			n += 1
 		EndWhile
 		ArrangePositions()
-		sslpp.SetPositions(Positions, _Center)
+		float[] offsets = Animation.PositionOffsetsEx(AdjustKey, Stage, BedStatus[1])
+		sslpp.SetPositionsEx(Positions, _Center, offsets)
 
 		int[] g = ActorLib.GetGendersAll(Positions)
 		Genders[0] = PapyrusUtil.CountInt(g, 0)
@@ -1194,15 +1195,28 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
 	int n = 0
 	While(n < akAnimations.Length)
-		Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].ActorKeys + " | Tags = " + akAnimations[n].GetTags())
-		If(akAnimations[n] && akAnimations[n].MatchTags(Tags) && (akAnimations[n].MatchKeys(pkeys) || !positions_shifted && ValidateShift(pkeys, akAnimations[n])))
-			positions_shifted = true
+		Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].DataKeys() + " | Tags = " + akAnimations[n].GetTags())
+		If(akAnimations[n] && akAnimations[n].MatchKeys(pkeys) && akAnimations[n].MatchTags(Tags))
 			valids[n] = n
 		EndIf
 		n += 1
 	EndWhile
-	sslBaseAnimation[] ret
 	valids = PapyrusUtil.RemoveInt(valids, -1)
+	If(!valids.Length)
+		Log("No animations left, attempting shift...")
+		valids = Utility.CreateIntArray(akAnimations.Length, -1)
+		int j = 0
+		While(j < akAnimations.Length)
+			Log("Validating Animation Nr. " + j + " | Keys = " + akAnimations[j].DataKeys() + " | Tags = " + akAnimations[j].GetTags())
+			If(akAnimations[j] && (!positions_shifted && ValidateShift(pkeys, akAnimations[j]) || akAnimations[j].MatchKeys(pkeys)) && akAnimations[j].MatchTags(Tags))
+				positions_shifted = true
+				valids[j] = j
+			EndIf
+			j += 1
+		EndWhile
+		valids = PapyrusUtil.RemoveInt(valids, -1)
+	EndIf
+	sslBaseAnimation[] ret
 	If(valids.Length != akAnimations.Length)
 		ret = sslUtility.AnimationArray(valids.Length)
 		int i = 0
@@ -1242,6 +1256,13 @@ bool Function ValidateShift(int[] aiKeys, sslBaseAnimation akValidate)
 			EndIf
 		EndIf
 	EndWhile
+	; No animations found, make sure that all key manipulation is reset
+	int i = 0
+	While(i < Positions.Length)
+		ActorAlias[i].ResetDataKey()
+		ArrangePositions()
+		i += 1
+	EndWhile
 	return false
 EndFunction
 
@@ -1260,19 +1281,8 @@ Function PlaceActors()
 	If(w > 0)
 		Utility.Wait(w)
 	EndIf
-	; Short delay is mandatory otherwise stripping/animation isnt executing correctly?
-	; Utility.Wait(w)
-	; int n = 0
-	; While(n < Positions.Length)
-	; 	If(!sslActorData.IsCreature(ActorAlias[n].GetActorData()))
-	; 		ActorAlias[n].Strip()
-	; 		ActorAlias[n].ResolveStrapon()
-	; 	EndIf
-	; 	Debug.SendAnimationEvent(Positions[i], "sosfasterect")
-	; 	n += 1
-	; EndWhile
-	; TODO: Use SetPositionEX and get offsets here
-	sslpp.SetPositions(Positions, _Center)
+	float[] offsets = Animation.PositionOffsetsEx(AdjustKey, Stage, BedStatus[1])
+	sslpp.SetPositionsEx(Positions, _Center, offsets)
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -1403,6 +1413,10 @@ endfunction
 ; ------------------------------------------------------- ;
 
 Function EndAnimation(bool Quickly = false)
+	UnregisterForUpdate()
+	; Apparently the OnUpdate() cycle can carry over into a new state despite being unregistered
+	; I dont want to believe it myself its apparently a thing, so waiting 1 update cycle here just to be sure
+	Utility.Wait(0.6)	
 	GoToState("Ending")
 EndFunction
 
@@ -1452,18 +1466,6 @@ Function UnplaceActors()
 	While(i < Positions.Length)
 		ActorAlias[i].UnplaceActor()
 		i += 1
-	EndWhile
-	; Gotta wait a lil time otherwise the default animation may not play correctly
-	Utility.Wait(0.1)
-	int n = 0
-	While(n < Positions.Length)
-		ActorAlias[n].SendDefaultAnimEvent(true)
-		Debug.SendAnimationEvent(Positions[n], "SOSFlaccid")
-		If(!sslActorData.IsCreature(ActorAlias[n].GetActorData()))
-			ActorAlias[n].Unstrip()
-			ActorAlias[n].RemoveStrapon()
-		EndIf
-		n += 1
 	EndWhile
 EndFunction
 

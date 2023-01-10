@@ -1935,13 +1935,13 @@ function AnimationEditor()
 			string id = RaceIDs[Position]
 			Race RaceRef = Race.GetRace(id)
 			string Gender = ""
-			if !(RaceRef || id == "Humanoid" || sslCreatureAnimationSlots.HasRaceKey(id))
+			if !(RaceRef || id == "human" || sslCreatureAnimationSlots.HasRaceKey(id))
 				int i = 0
 				while i < 6
 					i += 1
 					id = StringUtil.Substring(RaceIDs[Position], 0, (StringUtil.GetLength(RaceIDs[Position]) - i))
 					RaceRef = Race.GetRace(id)
-					if RaceRef || id == "Humanoid" || sslCreatureAnimationSlots.HasRaceKey(id)
+					if RaceRef || id == "human" || sslCreatureAnimationSlots.HasRaceKey(id)
 						Gender = StringUtil.GetNthChar(RaceIDs[Position], (StringUtil.GetLength(RaceIDs[Position]) - i))
 						i = 6
 					endIf
@@ -1952,7 +1952,7 @@ function AnimationEditor()
 			endIf
 			if RaceRef
 				id = RaceRef.GetName()
-			elseIf id != "Humanoid"
+			elseIf id != "human"
 				id = RaceIDs[Position]
 			endIf
 			Profile = "$SSL_{"+id+"}-{"+GenderLabel(Gender)+"}"

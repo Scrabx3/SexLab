@@ -1,6 +1,13 @@
 scriptname sslBaseAnimation extends sslBaseObject
+{
+	Script for storing and reading Animation data
+	Once an animation is registered, it is assumed read only
 
-; TODO: ADD CUSTOM ORGASM STAGE SETTINGS
+	DO NOT link to a script instance directly, use the main API instead
+}
+
+; NOTE: No plans to implement this, rather have branched animations fully functional and consider linear ones legacy - Scrab
+; T-O-D-O: ADD CUSTOM ORGASM STAGE SETTINGS
 ; [4:36 PM] Ashal: I could add custom orgasm stage settings in the next update
 ; [4:36 PM] Ashal: it's not a bad idea
 ; [4:36 PM] Seijin: That'd be awesome
@@ -15,171 +22,485 @@ scriptname sslBaseAnimation extends sslBaseObject
 ; [4:41 PM] Seijin: That would work perfectly!
 ; [4:41 PM] Ashal: just a toggle box for whether the stage being edited is orgasm or not
 
-; import sslUtility
-; import PapyrusUtil
-; import Utility
 
-; Config
+; Total number of actors in this Animation
 int Actors
-int Stages
-
-string[] Animations
-string[] RaceTypes
-string[] LastKeys
-string LastKeyReg
-
-int[] Positions   ; = gender
-int[] CumIDs      ; = per stage cumIDs
-int[] Schlongs    ; = per stage schlong offset
-
-bool[] Silences
-bool[] OpenMouths
-bool[] Strapons
-
-; int[] Flags
-
-float[] Timers
-float[] CenterAdjust
-
-; float[] Offsets   ; = forward, side, up, rotate
-float[] BedOffset ; = forward, side, up, rotate
-
-bool property GenderedCreatures auto hidden
-
-int[] _ActorKeys	; See sslActorData.psc
-int[] Property ActorKeys
-	int[] Function Get()
-		return _ActorKeys
-	EndFunction
-EndProperty
-
-; Check if the given (sorted) set of ActorKeys can animate this Animation
-bool Function MatchKeys(int[] aiActorKeys)
-	If(aiActorKeys.Length != _ActorKeys.Length)
-		return false
-	EndIf
-	return sslActorData.MatchArray(aiActorKeys, _ActorKeys)
+int Function ActorCount()
+	return Actors
 EndFunction
 
-; Check if this animation matches all of the given tags
-; Similar to HasAllTags() but much faster and recognizes prefix-flags (~, -, ...)
+; Total number of individual Stages
+int Stages
+int function StageCount()
+	return Stages
+endFunction
+
+; DataKeys describing animation positions. Sorted and non-empty
+int[] _DataKeys
+int[] Function DataKeys()
+	return PapyrusUtil.RemoveInt(_DataKeys, 0)
+EndFunction
+
+; Check if the given Set of keys matches the one required by this animation, the given set MUST be sorted
+bool Function MatchKeys(int[] aiActorKeys)
+	If(aiActorKeys.Length != Actors)
+		return false
+	EndIf
+	return sslActorData.MatchArray(aiActorKeys, _DataKeys)
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Tags					                                  --- ;
+; ------------------------------------------------------- ;
+
+; Supports prefixes (- disabled / ~ optional)
 bool Function MatchTags(String[] asTags)
 	return Parent.MatchTags(asTags)
 EndFunction
 
+bool Function HasTag(string Tag)
+	return Parent.HasTag(Tag)
+EndFunction
+
+bool property IsSexual hidden
+	bool function get()
+		return HasTag("Sex") || HasTag("Vaginal") || HasTag("Anal") || HasTag("Oral")
+	endFunction
+endProperty
+
+bool property IsVaginal hidden
+	bool function get()
+		return HasTag("Vaginal")
+	endFunction
+endProperty
+bool property IsAnal hidden
+	bool function get()
+		return HasTag("Anal")
+	endFunction
+endProperty
+bool property IsOral hidden
+	bool function get()
+		return HasTag("Oral")
+	endFunction
+endProperty
+bool property IsDirty hidden
+	bool function get()
+		return HasTag("Dirty")
+	endFunction
+endProperty
+bool property IsLoving hidden
+	bool function get()
+		return HasTag("Loving")
+	endFunction
+endProperty
+
+bool property IsBedOnly hidden
+	bool function get()
+		return HasTag("BedOnly")
+	endFunction
+endProperty
+
 ; ------------------------------------------------------- ;
-; --- Array Indexers                                  --- ;
+; --- Genders				                                  --- ;
 ; ------------------------------------------------------- ;
 
-int function DataIndex(int Slots, int Position, int Stage, int Slot = 0)
-	return ( Position * (Stages * Slots) ) + ( (PapyrusUtil.ClampInt(Stage, 1, Stages) - 1) * Slots ) + Slot
+; Alternatively use DataKeys to get the gender of actors. This here does NOT support Futa actors
+; 0 - Male, 1 - Female, 2 - M. Crt, 3 - F. Crt
+int[] Property Genders Auto Hidden
+
+; If the animation requires a creature to be gendered,
+; meaning if an animation requires male or female traits of a creature to make sense
+bool Property GenderedCreatures Auto Hidden
+
+; ------------------------------------------------------- ;
+; --- Creatures			                                  --- ;
+; ------------------------------------------------------- ;
+
+String[] RaceTypes
+
+bool Function HasCreatures()
+	return Genders[2] + Genders[3]
+EndFunction
+
+; If the animation includes actors of different race groups
+bool function IsInterspecies()
+	int k = sslActorData.GetRaceID(_DataKeys[0])
+	int i = 1
+	While(i < _DataKeys.Length)
+		int nk = sslActorData.GetRaceID(_DataKeys[i])
+		If(nk != k)
+			return true
+		EndIf
+		k = nk
+		i += 1
+	EndWhile
+	return false
 endFunction
 
-int function StageIndex(int Position, int Stage)
-	return ((Position * Stages) + (PapyrusUtil.ClampInt(Stage, 1, Stages) - 1))
+; All RaceKeys used by this animation
+string[] function GetRaceKeys()
+	return PapyrusUtil.ClearEmpty(RaceTypes)
 endFunction
 
-int function AdjIndex(int Stage, int Slot = 0, int Slots = 4)
-	return ((PapyrusUtil.ClampInt(Stage, 1, Stages) - 1) * Slots) + Slot
-endfunction
+bool function HasActorRace(Actor ActorRef)
+	return HasRaceID(MiscUtil.GetActorRaceEditorID(ActorRef))
+endFunction
+bool function HasRace(Race RaceRef)
+	return HasRaceID(MiscUtil.GetRaceEditorID(RaceRef))
+endFunction
+bool function HasRaceKey(String RaceKey)
+	return RaceType != "" && RaceKey != "" && sslCreatureAnimationSlots.HasRaceID(RaceType, RaceKey)
+endFunction
 
-int function OffsetIndex(int Stage, int Slot)
-	return ((PapyrusUtil.ClampInt(Stage, 1, Stages) - 1) * 4) + Slot
-endfunction
+; Does the specifieds position use the given racekey
+bool function IsPositionRace(int Position, string RaceKey)
+	return RaceTypes && RaceTypes[Position] == RaceKey
+endFunction
 
-int function FlagIndex(int Stage, int Slot)
-	return ((PapyrusUtil.ClampInt(Stage, 1, Stages) - 1) * 6) + Slot
-endfunction
+; Given a set of RaceKeys, check if all RaceKeys are used in this animation, independent of order
+bool Function HasAllRaceKeys(String[] asRaceKeys)
+	If(asRaceKeys.Length != RaceTypes.Length)
+		return false
+	EndIf
+	String[] cmp = PapyrusUtil.SortStringArray(asRaceKeys)
+	String[] og = Papyrusutil.SortStringArray(RaceTypes)
+	int i = 0
+	While(i < cmp.Length)
+		If(cmp[i] != og[i])
+			return false
+		EndIf
+		i += 1
+	EndWhile
+	return true
+EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Animation Events                                --- ;
+; --- Animations		                                  --- ;
 ; ------------------------------------------------------- ;
 
-string[] function FetchPosition(int Position)
-	if Position >= Actors || Position < 0
-		Log("Unknown Position, '"+Position+"' given", "FetchPosition")
+String[] _ANIMATIONS	; M x S matrix 	| M = ActorCount, S = StageCount
+
+; Get all animations for the given position, beginning by stage 1
+String[] function FetchPosition(int Position)
+	If(Position >= Actors || Position < 0)
+		Log("Invalid Position, '" + Position + "' given", "FetchPosition")
 		return none
-	endIf
-	int Stage
-	string[] Anims = Utility.CreateStringArray(Stages)
-	while Stage <= Stages
-		Stage += 1
-		Anims[Stage] = Animations[StageIndex(Position, Stage)]
-	endWhile
-	return Anims
+	EndIf
+	String[] ret = Utility.CreateStringArray(Stages)
+	int i = 0
+	While(i < ret.Length)
+		ret[i] = AccessAnimation(Position, i)
+		i += 1
+	EndWhile
+	return ret
 endFunction
 
-string[] function FetchStage(int Stage)
+; Get all animations for the given stage, beginning by position 1
+String[] Function FetchStage(int Stage)
 	if Stage > Stages
 		Log("Unknown Stage, '"+Stage+"' given", "FetchStage")
 		return none
 	endIf
-	int Position
-	string[] Anims = Utility.CreateStringArray(Actors)
-	while Position < Actors
-		Anims[Position] = Animations[StageIndex(Position, Stage)]
-		Position += 1
-	endWhile
-	return Anims
+	String[] ret = Utility.CreateStringArray(Actors)
+	int i = 0
+	While(i < ret.Length)
+		ret[i] = AccessAnimation(i, Stage - 1)
+		i += 1
+	EndWhile
+	return ret
+EndFunction
+
+; Get the animation for the given position, at the given stage
+String Function FetchPositionStage(int Position, int Stage)
+	return AccessAnimation(Position, Stage - 1)
+EndFunction
+
+String Function AccessAnimation(int aiPosition, int aiStage)
+	return _ANIMATIONS[aiPosition * Stages + aiStage]
+EndFunction
+
+Function WriteAnimation(int aiPosition, int aiStage, String asValue)
+	int w = aiPosition * Stages + aiStage
+	_ANIMATIONS[w] = asValue
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Offsets				                                  --- ;
+; ------------------------------------------------------- ;
+
+float[] _OFFSETS	;	M	x S x 4	matrix 	| M = ActorCount, S = StageCount
+float[] BedOffset	; 1D array					| BedOffset.Length == kOffsetEnd
+
+int Property kForward  	= 0 AutoReadOnly
+int Property kSideways 	= 1 AutoReadOnly
+int Property kUpward   	= 2 AutoReadOnly
+int Property kRotate   	= 3 AutoReadOnly
+int Property kOffsetEnd = 4 AutoReadOnly
+
+float Function AccessOffset(int aiPosition, int aiStage, int aiIndex)
+	return _OFFSETS[(aiPosition * Stages * kOffsetEnd) + (aiStage * kOffsetEnd) + aiIndex]
+EndFunction
+
+Function EditOffset(int aiPosition, int aiStage, int aiIndex, float afValue)
+	int w = (aiPosition * Stages * kOffsetEnd) + (aiStage * kOffsetEnd) + aiIndex
+	_OFFSETS[w] = _OFFSETS[w] + afValue
+EndFunction
+
+Function WriteOffset(int aiPosition, int aiStage, int aiIndex, float afValue)
+	int w = (aiPosition * Stages * kOffsetEnd) + (aiStage * kOffsetEnd) + aiIndex
+	_OFFSETS[w] = afValue
+EndFunction
+
+float[] function GetPositionOffsets(string AdjustKey, int Position, int Stage)
+	float[] Output = new float[4]
+	return PositionOffsets(Output, AdjustKey, Position, Stage)
 endFunction
 
-function GetAnimEvents(string[] AnimEvents, int Stage)
-	if AnimEvents.Length != 5 || Stage > Stages
-		Log("Invalid Call("+AnimEvents+", "+Stage+"/"+Stages+")", "GetAnimEvents")
-	else
-		int Position
-		while Position < Actors
-			AnimEvents[Position] = Animations[StageIndex(Position, Stage)]
-			Position += 1
-		endWhile
+float[] function GetRawOffsets(int Position, int Stage)
+	float[] Output = new float[4]
+	return RawOffsets(Output, Position, Stage)
+endFunction
+
+float[] function _GetStageAdjustments(string Registrar, string AdjustKey, int Stage) global native
+float[] function GetPositionAdjustments(string AdjustKey, int Position, int Stage)
+	return _GetStageAdjustments(Registry, InitAdjustments(AdjustKey, Position), Stage)
+endFunction
+
+float[] function _GetAllAdjustments(string Registrar, string AdjustKey) global native
+float[] function GetAllAdjustments(string AdjustKey)
+	return _GetAllAdjustments(Registry, Adjustkey)
+endFunction
+
+bool function _HasAdjustments(string Registrar, string AdjustKey, int Stage) global native
+bool function HasAdjustments(string AdjustKey, int Stage)
+	return _HasAdjustments(Registry, AdjustKey, Stage)
+endFunction
+
+; Get the Position offsets for one specific actor for one specific stage
+function _PositionOffsets(string Registrar, string AdjustKey, string LastKey, int Stage, float[] RawOffsets) global native
+float[] function PositionOffsets(float[] Output, string AdjustKey, int Position, int Stage, int BedTypeID = 0)
+	Output = RawOffsets(Output, Position, Stage)
+	_PositionOffsets(Registry, AdjustKey+"."+Position, LastKeys[Position], Stage, Output)
+	If(BedTypeID && BedOffset.Length == 4)
+		float Forward = Output[0]
+		float Side = Output[1]
+		Output[0] = ((Forward * Math.cos(BedOffset[3])) - (Side * Math.sin(BedOffset[3])))
+		Output[1] = ((Forward * Math.sin(BedOffset[3])) + (Side * Math.cos(BedOffset[3])))
+
+		Output[0] = Output[0] + BedOffset[0]
+		Output[1] = Output[1] + BedOffset[1]
+		Output[2] = Output[2] + BedOffset[2]
+		Output[3] = Output[3] + BedOffset[3]
+	EndIf
+	If(Output[3] >= 360.0)
+		Output[3] = Output[3] - 360.0
+	ElseIf(Output[3] < 0.0)
+		Output[3] = Output[3] + 360.0
+	EndIf
+	Log("PositionOffsets()[Forward:"+Output[0]+",Sideward:"+Output[1]+",Upward:"+Output[2]+",Rotation:"+Output[3]+"]")
+	return Output
+endFunction
+
+; get a M x 4 matrix containing all offsets for every actor of the given stage
+float[] Function PositionOffsetsEx(String asAdjustKey, int aiStage, int aiBedType)
+	float[] ret = Utility.CreateFloatArray(Actors * kOffsetEnd)
+	int i = 0
+	While(i < Actors)
+		float[] offsets 
+		offsets = PositionOffsets(offsets, asAdjustKey, i, aiStage, aiBedType)
+		int n = 0
+		While(n < offsets.Length)
+			ret[i * kOffsetEnd + n] = offsets[n]
+			n += 1
+		EndWhile
+		i += 1
+	EndWhile
+	return ret
+EndFunction
+
+float[] function RawOffsets(float[] Output, int Position, int Stage)
+	Output = new float[4]
+	int i = 0
+	While(i < kOffsetEnd)
+		Output[i] = AccessOffset(Position, Stage - 1, i)
+		i += 1
+	EndWhile
+	return Output
+endFunction
+
+function SetBedOffsets(float forward, float sideward, float upward, float rotate)
+	BedOffset = new float[4]
+	BedOffset[0] = forward
+	BedOffset[1] = sideward
+	BedOffset[2] = upward
+	BedOffset[3] = rotate
+endFunction
+
+float[] function GetBedOffsets()
+	if BedOffset.Length
+		return BedOffset
 	endIf
+	return Utility.CreateFloatArray(4)
 endFunction
 
-string function FetchPositionStage(int Position, int Stage)
-	return Animations[StageIndex(Position, Stage)]
+; ------------------------------------------------------- ;
+; --- FLags					                                  --- ;
+; ------------------------------------------------------- ;
+
+int[] _FLAGS ; M x S x 6 matrix 	| M = ActorCount, S = StageCount
+
+int Property kSilent    = 0 AutoReadOnly
+int Property kOpenMouth = 1 AutoReadOnly
+int Property kStrapon   = 2 AutoReadOnly
+int Property kSchlong   = 3 AutoReadOnly
+int Property kCumID     = 4 AutoReadOnly
+int Property kCumSrc    = 5 AutoReadOnly
+int Property kFlagEnd		= 6 AUtoReadOnly
+
+int[] Function GetFlags()
+	return _FLAGS
+EndFunction
+
+int Function AccessFlag(int aiPosition, int aiStage, int aiIndex)
+	return _FLAGS[(aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex]
+EndFunction
+
+Function EditFlag(int aiPosition, int aiStage, int aiIndex, int aiValue)
+	int w = (aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex
+	_FLAGS[w] = _FLAGS[w] + aiValue
+EndFunction
+
+Function WriteFlag(int aiPosition, int aiStage, int aiIndex, int aiValue)
+	int w = (aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex
+	_FLAGS[w] = aiValue
+EndFunction
+
+int[] function GetPositionFlags(string AdjustKey, int Position, int Stage)
+	return PositionFlags(Utility.CreateIntArray(5), AdjustKey, Position, Stage)
 endFunction
 
-function SetPositionStage(int Position, int Stage, string AnimationEvent)
-	Animations[StageIndex(Position, Stage)] = AnimationEvent
+int[] function PositionFlags(int[] Output, string AdjustKey, int Position, int Stage)
+	Output = new int[5]
+	Output[0] = AccessFlag(Position, Stage - 1, 0)
+	Output[1] = AccessFlag(Position, Stage - 1, 1)
+	Output[2] = AccessFlag(Position, Stage - 1, 2)
+	Output[3] = GetSchlong(AdjustKey, Position, Stage)
+	Output[4] = GetGender(Position)
+	return Output
 endFunction
 
+bool function IsSilent(int Position, int Stage)
+	return AccessFlag(Position, Stage - 1, kSilent)
+endFunction
+
+bool function UseOpenMouth(int Position, int Stage)
+	return AccessFlag(Position, Stage - 1, kOpenMouth)
+endFunction
+
+bool function UseStrapon(int Position, int Stage)
+	return AccessFlag(Position, Stage - 1, kStrapon)
+endFunction
+
+int function _GetSchlong(string Registrar, string AdjustKey, string LastKey, int Stage) global native
+int function GetSchlong(string AdjustKey, int Position, int Stage)
+	int ret = sslBaseAnimation._GetSchlong(Registry, AdjustKey+"."+Position, LastKeys[Position], Stage)
+	if ret == -99
+		return AccessFlag(Position, Stage - 1, kSchlong)
+	endIf
+	return ret
+endFunction
+
+int function GetCumID(int Position, int Stage = 1)
+	return AccessFlag(Position, Stage - 1, kCumID)
+endFunction
+
+int function GetCumSource(int Position, int Stage = 1)
+	return AccessFlag(Position, Stage - 1, kCumSrc)
+endFunction
+
+bool function IsCumSource(int SourcePosition, int TargetPosition, int Stage = 1)
+	int CumSrc = GetCumSource(TargetPosition, Stage)
+	return CumSrc == -1 || CumSrc == SourcePosition
+endFunction
+
+function SetStageCumID(int Position, int Stage, int CumID, int CumSource = -1)
+	If(Position > Actors || Stage > Stages)
+		return
+	EndIf
+	WriteFlag(Position, Stage - 1, kCumID, CumID)
+	WriteFlag(Position, Stage - 1, kCumSrc, CumSource)
+endFunction
+
+int function GetCum(int Position)
+	return GetCumID(Position, Stages)
+endFunction
+
+; ------------------------------------------------------- ;
+; --- SoundFX                                         --- ;
+; ------------------------------------------------------- ;
+
+Form[] StageSoundFX
+Sound property SoundFX hidden
+	Sound function get()
+		return StageSoundFX[0] as Sound
+	endFunction
+	function set(Sound var)
+		StageSoundFX[0] = var
+	endFunction
+endProperty
+
+Sound function GetSoundFX(int Stage)
+	if Stage < 1 || Stage > StageSoundFX.Length
+		return StageSoundFX[0] as Sound
+	endIf
+	return StageSoundFX[Stage - 1] as Sound
+endFunction
+
+function SetStageSoundFX(int stage, Sound StageFX)
+	if stage > Stages || stage < 1
+		Log("Unknown animation stage, '"+stage+"' given.", "SetStageSound")
+		return
+	endIf
+	if StageSoundFX.Length != Stages
+		StageSoundFX = PapyrusUtil.ResizeFormArray(StageSoundFX, Stages, SoundFX)
+	endIf
+	StageSoundFX[stage - 1] = StageFX
+endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Stage Timer                                     --- ;
 ; ------------------------------------------------------- ;
 
+float[] Timers
+
 bool function HasTimer(int Stage)
-	return Timers && Stage > 0 && Stage <= Timers.Length && Timers[(Stage - 1)] != 0.0
+	return Stage > 0 && Stage <= Timers.Length && Timers[Stage - 1] != 0.0
 endFunction
 
 float function GetTimer(int Stage)
 	if !HasTimer(Stage)
 		return 0.0 ; Stage has no timer
 	endIf
-	return Timers[(Stage - 1)]
+	return Timers[Stage - 1]
 endFunction
 
-function SetStageTimer(int Stage, float Timer)
-	; Validate stage
-	if Stage > Stages || Stage < 1
+Function SetStageTimer(int Stage, float Timer)
+	If(!Stage || Stage > Stages)
 		Log("Unknown animation stage, '"+Stage+"' given.", "SetStageTimer")
 		return
-	endIf
-	; Initialize timer array if needed
-	if Timers.Length != Stages
+	ElseIf(Timers.Length != Stages)
 		Timers = Utility.CreateFloatArray(Stages)
-	endIf
-	; Set timer
-	Timers[(Stage - 1)] = Timer
-endFunction
+	EndIf
+	Timers[Stage - 1] = Timer
+EndFunction
 
 float function GetTimersRunTime(float[] StageTimers)
-	if StageTimers.Length < 2
+	if StageTimers.Length <= 1
 		return -1.0
 	endIf
-	float seconds  = 0.0
-	int LastTimer  = (StageTimers.Length - 1)
-	int LastStage  = (Stages - 1)
+	float seconds = 0.0
+	int LastTimer = StageTimers.Length - 1
+	int LastStage = Stages - 1
 	int Stage = Stages
 	while Stage > 0
  		Stage -= 1
@@ -207,151 +528,220 @@ float function GetRunTimeAggressive()
 endFunction
 
 ; ------------------------------------------------------- ;
-; --- SoundFX                                         --- ;
+; --- Animation Setup                                 --- ;
 ; ------------------------------------------------------- ;
 
-Form[] StageSoundFX
-Sound property SoundFX hidden
-	Sound function get()
-		if StageSoundFX[0]
-			return StageSoundFX[0] as Sound
-		endIf
-		return none
-	endFunction
-	function set(Sound var)
-		if var
-			StageSoundFX[0] = var as Form
-		else
-			StageSoundFX[0] = none
-		endIf
-	endFunction
-endProperty
+int position_stage
 
-Sound function GetSoundFX(int Stage)
-	if Stage < 1 || Stage > StageSoundFX.Length
-		return StageSoundFX[0] as Sound
-	endIf
-	return StageSoundFX[(Stage - 1)] as Sound
-endFunction
+; initialize a position and build the associated actor key
+int Function CreatePosition(int aiGender, bool[] abFlags, int aiCum = -1, String asRaceKey = "")
+	If(Actors >= 5)
+		Log("Cannot add more positions to animation")
+		return -1
+	EndIf
+	int idx = Actors
+	Actors += 1
+	; Only allocate more space if this is position > 0, as position == 0 has no stages fixed
+	; allocation for pos1 happens in AddPositionStage()
+	If(idx > 0)
+		_ANIMATIONS = Utility.ResizeStringArray(_ANIMATIONS, Actors * Stages)
+		_OFFSETS = Utility.ResizeFloatArray(_OFFSETS, Actors * Stages * kOffsetEnd)
+		_FLAGS = Utility.ResizeIntArray(_FLAGS, Actors * Stages * kFlagEnd)
+	Else
+		_ANIMATIONS = new String[1]
+		_OFFSETS = new float[4]
+		_FLAGS = new int[6]
+	EndIf
+	; Legacy support
+	If(asRaceKey == "Wolves" || asRaceKey == "Dogs")
+		asRaceKey = "Canines"
+	EndIf
+	; Invalid RaceKey returns 0/human
+	int raceid = sslActorData.GetRaceIDByRaceKey(asRaceKey)
+	_DataKeys[idx] = sslActorData.BuildCustomKey(aiGender, raceid, abFlags)
 
-function SetStageSoundFX(int stage, Sound StageFX)
-	; Validate stage
-	if stage > Stages || stage < 1
-		Log("Unknown animation stage, '"+stage+"' given.", "SetStageSound")
+	position_stage = 0
+	WriteFlag(idx, 0, kCumID, aiCum)
+	return idx
+EndFunction
+
+; Add a new Stage to a given Position. This has to be called directly after CreatePosition() 
+; and requires to be called in succession for every single Stage before creating a second position
+Function AddPositionStage(int Position, string AnimationEvent, float forward = 0.0, float side = 0.0, float up = 0.0, float rotate = 0.0, bool silent = false, bool openmouth = false, bool strapon = true, int sos = 0)
+	If(Position == -1 || Position >= 5 || AnimationEvent == "")
+		Log("FATAL: Invalid arguments!", "AddPositionStage("+Position+", "+AnimationEvent+")")
 		return
+	ElseIf(Position == 0)
+		; The first position dictates number of stages
+		Stages += 1
+		If(Stages > 1)
+			_ANIMATIONS = Utility.ResizeStringArray(_ANIMATIONS, Actors * Stages)
+			_OFFSETS = Utility.ResizeFloatArray(_OFFSETS, Actors * Stages * kOffsetEnd)
+			_FLAGS = Utility.ResizeIntArray(_FLAGS, Actors * Stages * kFlagEnd)
+		EndIf
+	EndIf
+
+	WriteAnimation(Position, position_stage, AnimationEvent)
+
+	WriteOffset(Position, position_stage, kForward, forward)
+	WriteOffset(Position, position_stage, kSideways, side)
+	WriteOffset(Position, position_stage, kUpward, up)
+	WriteOffset(Position, position_stage, kRotate, rotate)
+
+	WriteFlag(Position, position_stage, kSilent, silent as int)
+	WriteFlag(Position, position_stage, kOpenMouth, openmouth as int)
+	WriteFlag(Position, position_stage, kStrapon, strapon as int)
+	WriteFlag(Position, position_stage, kSchlong, sos as int)
+	WriteFlag(Position, position_stage, kCumID, AccessFlag(Position, 0, kCumID))
+	WriteFlag(Position, position_stage, kCumSrc, -1)
+
+	position_stage += 1
+EndFunction
+
+; Complete the setup & finalize data
+function Save(int id = -1)
+	; Sort positions
+	_DataKeys = Utility.ResizeIntArray(_DataKeys, Actors)
+	int[] ogidx = Utility.CreateIntArray(Actors)
+	int k = 0
+	While(k < ogidx.Length)
+		ogidx[k] = k
+		k += 1
+	EndWhile
+	; ZynFemdom - Keys before sorting: [2, 1, 2] / [0, 1, 2]
+	; ZynFemdom - Keys after sorting: [1, 2, 2] / [1, 0, 1]
+	; expected: [1, 2, 2] / [1, 0, 2]
+	Log("Keys before sorting: " + _DataKeys + " / " + ogidx)
+	int i = 1
+	While(i < _DataKeys.Length)
+		int x = ogidx[i]
+		int it = _DataKeys[i]
+		int n = i - 1
+		While(n >= 0 && sslActorData.IsLess(it, _DataKeys[n]))
+			_DataKeys[n + 1] = _DataKeys[n]
+			ogidx[n + 1] = ogidx[n]
+			n -= 1
+		EndWhile
+		_DataKeys[n + 1] = it
+		ogidx[n + 1] = x
+		i += 1
+	EndWhile
+	Log("Keys after sorting: " + _DataKeys + " / " + ogidx)
+
+	Log("Animations before sorting: " + _ANIMATIONS)
+	String[] og_str = _ANIMATIONS
+	float[] og_flt = _OFFSETS
+	int[] og_int = _FLAGS
+
+	_ANIMATIONS = Utility.CreateStringArray(og_str.Length)
+	_OFFSETS = Utility.CreateFloatArray(og_flt.Length)
+	_FLAGS = Utility.CreateIntArray(og_int.Length)
+
+	int n = 0
+	While(n < Actors)
+		; animation >> aiPosition * Stages + aiStage
+		; offsets		>> (aiPosition * Stages * kOffsetEnd) + (aiStage * kOffsetEnd) + aiIndex
+		; flags			>> (aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex
+		int idx = ogidx[n]
+		int j = 0
+		While(j < Stages)
+			; with idx = 2, s = 4, j <= 4
+			; animation >> idx * s + j
+			WriteAnimation(n, j, og_str[idx * Stages + j])
+
+			WriteFlag(n, j, kSilent, og_int[(idx * Stages * kFlagEnd) + (j * kFlagEnd) + kSilent])
+			WriteFlag(n, j, kOpenMouth, og_int[(idx * Stages * kFlagEnd) + (j * kFlagEnd) + kOpenMouth])
+			WriteFlag(n, j, kStrapon, og_int[(idx * Stages * kFlagEnd) + (j * kFlagEnd) + kStrapon])
+			WriteFlag(n, j, kSchlong, og_int[(idx * Stages * kFlagEnd) + (j * kFlagEnd) + kSchlong])
+			WriteFlag(n, j, kCumID, og_int[(idx * Stages * kFlagEnd) + (j * kFlagEnd) + kCumID])
+			WriteFlag(n, j, kCumSrc, og_int[(idx * Stages * kFlagEnd) + (j * kFlagEnd) + kCumSrc])
+			
+			WriteOffset(n, j, kForward, og_flt[(idx * Stages * kOffsetEnd) + (j * kOffsetEnd) + kForward])
+			WriteOffset(n, j, kSideways, og_flt[(idx * Stages * kOffsetEnd) + (j * kOffsetEnd) + kSideways])
+			WriteOffset(n, j, kUpward, og_flt[(idx * Stages * kOffsetEnd) + (j * kOffsetEnd) + kUpward])
+			WriteOffset(n, j, kRotate, og_flt[(idx * Stages * kOffsetEnd) + (j * kOffsetEnd) + kRotate])
+			j += 1
+		EndWhile
+		n += 1
+	EndWhile
+	Log("Animations after sorting: " + _ANIMATIONS)
+
+	; Add legacy gender tags/data
+	String[] gendertag = Utility.CreateStringArray(Actors)
+	int j = 0
+	While(j < Actors)
+		If(sslActorData.IsMale(_DataKeys[j]))
+			gendertag[j] = "M"
+			genders[0] = genders[0] + 1
+		ElseIf(sslActorData.IsFemale(_DataKeys[j]))
+			gendertag[j] = "F"
+			genders[1] = genders[1] + 1
+		ElseIf(sslActorData.IsCreature(_DataKeys[j]))
+			gendertag[j] = "C"
+			If(sslActorData.IsMaleCreature(_DataKeys[j]))
+				genders[2] = genders[2] + 1
+			Else
+				genders[3] = genders[3] + 1
+			EndIf
+		EndIf
+		j += 1
+	EndWhile
+	PapyrusUtil.SortStringArray(gendertag, false)
+	AddTag(PapyrusUtil.StringJoin(gendertag, ""))
+	PapyrusUtil.SortStringArray(gendertag, true)
+	AddTag(PapyrusUtil.StringJoin(gendertag, ""))
+	; Import Offsets
+	ImportOffsetsDefault("BedOffset")
+	ImportOffsets("BedOffset")
+	; Reset saved keys if they no longer match
+	if LastKeyReg != Registry
+		LastKeys = new string[5]
 	endIf
-	; Initialize fx array if needed
-	if StageSoundFX.Length != Stages
-		StageSoundFX = PapyrusUtil.ResizeFormArray(StageSoundFX, Stages, SoundFX)
+	LastKeyReg = Registry
+	; Log the new animation
+	if IsCreature
+		; RaceTypes = PapyrusUtil.ResizeStringArray(RaceTypes, Actors)
+		if IsInterspecies()
+			AddTag("Interspecies")
+		else
+			RemoveTag("Interspecies")
+		endIf
 	endIf
-	; Set Stage fx
-	StageSoundFX[(stage - 1)] = StageFX
+	Log("Done registering animation " + Name)
+	parent.Save(id)
 endFunction
 
 ; ------------------------------------------------------- ;
-; --- Offsets                                         --- ;
+; --- Initialize                                      --- ;
 ; ------------------------------------------------------- ;
 
-float[] function GetPositionOffsets(string AdjustKey, int Position, int Stage)
-	float[] Output = new float[4]
-	return PositionOffsets(Output, AdjustKey, Position, Stage)
-endFunction
+function Initialize()
+	Actors = 0
+	Stages = 0
+	GenderedCreatures = false
 
-float[] function GetRawOffsets(int Position, int Stage)
-	float[] Output = new float[4]
-	return RawOffsets(Output, Position, Stage)
-endFunction
+	_DataKeys = new int[5]
+	Genders = new int[4]
+	StageSoundFX = new Form[1]
 
-float[] function _GetStageAdjustments(string Registrar, string AdjustKey, int Stage) global native
-float[] function GetPositionAdjustments(string AdjustKey, int Position, int Stage)
-	return _GetStageAdjustments(Registry, InitAdjustments(AdjustKey, Position), Stage)
-endFunction
-
-;float[] function _GetAllAdjustments(string sProfile, string sRegistry, string sAdjustKey) global native
-float[] function _GetAllAdjustments(string Registrar, string AdjustKey) global native
-float[] function GetAllAdjustments(string AdjustKey)
-	return _GetAllAdjustments(Registry, Adjustkey)
-endFunction
-
-bool function _HasAdjustments(string Registrar, string AdjustKey, int Stage) global native
-bool function HasAdjustments(string AdjustKey, int Stage)
-	return _HasAdjustments(Registry, AdjustKey, Stage)
-endFunction
-
-function _PositionOffsets(string Registrar, string AdjustKey, string LastKey, int Stage, float[] RawOffsets) global native
-float[] function PositionOffsets(float[] Output, string AdjustKey, int Position, int Stage, int BedTypeID = 0)
-	if !Output || Output.Length < 4
-		Output = new float[4]
-	endIf
-	int i = OffsetIndex(Stage, 0)
-	float[] Offsets = OffsetsArray(Position)
-	Output[0] = Offsets[i] + CenterAdjust[(Stage - 1)] ; Forward
-	Output[1] = Offsets[(i + 1)] ; Side
-	Output[2] = Offsets[(i + 2)] ; Up
-	Output[3] = Offsets[(i + 3)] ; Rot - no offset
-
-	_PositionOffsets(Registry, AdjustKey+"."+Position, LastKeys[Position], Stage, Output)
-
-	float Forward = Output[0]
-	float Side = Output[1]
-	if BedTypeID > 0 && BedOffset.Length == 4
-		Output[0] = ((Forward * Math.cos(BedOffset[3])) - (Side * Math.sin(BedOffset[3])))
-		Output[1] = ((Forward * Math.sin(BedOffset[3])) + (Side * Math.cos(BedOffset[3])))
-
-		Output[0] = Output[0] + BedOffset[0]
-		Output[1] = Output[1] + BedOffset[1]
-		Output[2] = Output[2] + BedOffset[2]
-		Output[3] = Output[3] + BedOffset[3]
-	endIf
-	if Output[3] >= 360.0
-		Output[3] = Output[3] - 360.0
-	elseIf Output[3] < 0.0
-		Output[3] = Output[3] + 360.0
+	; Only init if needed to keep between registry resets.
+	if LastKeys.Length != 5
+		LastKeys  = new string[5]
 	endIf
 
-	Log("PositionOffsets()[Forward:"+Output[0]+",Sideward:"+Output[1]+",Upward:"+Output[2]+",Rotation:"+Output[3]+"]")
-	return Output
-endFunction
+	RaceTypes  = Utility.CreateStringArray(0)
+	BedOffset  = Utility.CreateFloatArray(0)
+	Timers     = Utility.CreateFloatArray(0)
 
-float[] function RawOffsets(float[] Output, int Position, int Stage)
-	if !Output || Output.Length < 4
-		Output = new float[4]
-	endIf
-	int i = OffsetIndex(Stage, 0)
-	float[] Offsets = OffsetsArray(Position)
-	Output[0] = Offsets[i] ; Forward
-	Output[1] = Offsets[(i + 1)] ; Side
-	Output[2] = Offsets[(i + 2)] ; Up
-	Output[3] = Offsets[(i + 3)] ; Rot
-	return Output
-endFunction
-
-function SetBedOffsets(float forward, float sideward, float upward, float rotate)
-	; Reverse defaults if setting to 0 have nothing to do with the Config.BedOffset
-	;if forward == 0.0
-	;	forward -= Config.BedOffset[0]
-	;endIf
-	;if upward == 0.0
-	;	upward  -= Config.BedOffset[2]
-	;endIf
-
-	BedOffset = new float[4]
-	BedOffset[0] = forward
-	BedOffset[1] = sideward
-	BedOffset[2] = upward
-	BedOffset[3] = rotate
-endFunction
-
-float[] function GetBedOffsets()
-	if BedOffset.Length > 0
-		return BedOffset
-	endIf
-	return Utility.CreateFloatArray(4)
-endFunction
+	parent.Initialize()
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Adjustments                                     --- ;
 ; ------------------------------------------------------- ;
+
+string[] LastKeys
+string LastKeyReg
 
 function _SetAdjustment(string Registrar, string AdjustKey, int Stage, int Slot, float Adjustment) global native
 function SetAdjustment(string AdjustKey, int Position, int Stage, int Slot, float Adjustment)
@@ -422,7 +812,6 @@ function RestoreOffsets(string AdjustKey)
 endFunction
 
 bool function _CopyAdjustments(string Registrar, string AdjustKey, float[] Array) global native
-
 function CopyAdjustmentsFrom(string AdjustKey, string CopyKey, int Position)
 	CopyKey   = CopyKey+"."+Position
 	AdjustKey = AdjustKey+"."+Position
@@ -464,13 +853,13 @@ string function InitAdjustments(string AdjustKey, int Position)
 				string id = RaceIDs[Position]
 				Race RaceRef = Race.GetRace(id)
 				string Gender = ""
-				if !(RaceRef || id == "Humanoid" || sslCreatureAnimationSlots.HasRaceKey(id))
+				if !(RaceRef || id == "human" || sslCreatureAnimationSlots.HasRaceKey(id))
 					int i = 0
 					while i < 6
 						i += 1
 						id = StringUtil.Substring(RaceIDs[Position], 0, (StringUtil.GetLength(RaceIDs[Position]) - i))
 						RaceRef = Race.GetRace(id)
-						if RaceRef || id == "Humanoid" || sslCreatureAnimationSlots.HasRaceKey(id)
+						if RaceRef || id == "human" || sslCreatureAnimationSlots.HasRaceKey(id)
 							Gender = StringUtil.GetNthChar(RaceIDs[Position], (StringUtil.GetLength(RaceIDs[Position]) - i))
 							i = 6
 						endIf
@@ -502,15 +891,15 @@ string function InitAdjustments(string AdjustKey, int Position)
 	return AdjustKey
 endFunction
 
+; Get the schlong adjustement value for this actor, beginning at Stage 1
 float[] function GetEmptyAdjustments(int Position)
-	float[] Output = Utility.CreateFloatArray((Stages * 4))
-	int[] Flags = FlagsArray(Position)
-	int Stage = Stages
-	while Stage > 0
-		Output[AdjIndex(Stage, kSchlong)] = Flags[FlagIndex(Stage, kSchlong)]
-		Stage -= 1
-	endWhile
-	return Output
+	float[] ret = Utility.CreateFloatArray(Stages * 4)
+	int i = 0
+	While(i < Stages)
+		ret[i] = AccessFlag(Position, i, kSchlong)
+		i += 1
+	EndWhile
+	return ret
 endFunction
 
 string[] function _GetAdjustKeys(string Registrar) global native
@@ -518,154 +907,241 @@ string[] function GetAdjustKeys()
 	return _GetAdjustKeys(Registry)
 endFunction
 
-;/ string function GetLastKey()
-	return StorageUtil.GetStringValue(Config, Key("LastKey"), "Global")
-endFunction
-
-string function PickKey(string AdjustKey, int Position)
-
-endFunction
- /;
 ; ------------------------------------------------------- ;
-; --- Flags                                           --- ;
+; --- Export/Import                                   --- ;
 ; ------------------------------------------------------- ;
 
-int[] function GetPositionFlags(string AdjustKey, int Position, int Stage)
-	int[] Output = new int[5]
-	return PositionFlags(Output, AdjustKey, Position, Stage)
-endFunction
-
-int[] function PositionFlags(int[] Output, string AdjustKey, int Position, int Stage)
-	if !Output.Length || Output.Length < 5
-		Output = new int[5]
+;Animation Offsets
+function ExportOffsets(string Type = "BedOffset")
+	float[] Values
+	if Type == "BedOffset"
+		Values = GetBedOffsets()
+	else
+		return
 	endIf
-	int i = FlagIndex(Stage, 0)
-	int[] Flags = FlagsArray(Position)
-	Output[0] = Flags[i]
-	Output[1] = Flags[i + 1]
-	Output[2] = Flags[i + 2]
-	Output[3] = GetSchlong(AdjustKey, Position, Stage)
-	Output[4] = GetGender(Position)
-	return Output
-endFunction
+	string File = "../SexLab/SexLabOffsets.json"
 
-; ------------------------------------------------------- ;
-; --- Animation Info                                  --- ;
-; ------------------------------------------------------- ;
+	; Set label of export
+	JsonUtil.SetStringValue(File, "ExportLabel", "User Defined Offsets " + Utility.GetCurrentRealTime())
 
-bool function IsSilent(int Position, int Stage)
-	return FlagsArray(Position)[FlagIndex(Stage, kSilent)] as bool
-endFunction
-
-bool function UseOpenMouth(int Position, int Stage)
-	return FlagsArray(Position)[FlagIndex(Stage, kOpenMouth)] as bool
-endFunction
-
-bool function UseStrapon(int Position, int Stage)
-	return FlagsArray(Position)[FlagIndex(Stage, kStrapon)] as bool
-endFunction
-
-int function _GetSchlong(string Registrar, string AdjustKey, string LastKey, int Stage) global native
-int function GetSchlong(string AdjustKey, int Position, int Stage)
-	int var = sslBaseAnimation._GetSchlong(Registry, AdjustKey+"."+Position, LastKeys[Position], Stage)
-	if var == -99
-		var = FlagsArray(Position)[FlagIndex(Stage, kSchlong)]
+	JsonUtil.FloatListClear(File, Registry+"."+Type)
+	if PapyrusUtil.CountFloat(Values, 0.0) != Values.Length
+		JsonUtil.FloatListCopy(File, Registry+"."+Type, Values)
 	endIf
-	return var
+
+	; Save to JSON file
+	JsonUtil.Save(File, true)
 endFunction
 
-; 	if HasAdjustments(Registry, AdjustKey+"."+Position, Stage)
-; 		return _GetAdjustment(Registry, AdjustKey+"."+Position, Stage, 3) as int
-; 	elseIf LastKeys[Position] != "" && HasAdjustments(Registry, LastKeys[Position], Stage)
-; 		return _GetAdjustment(Registry, LastKeys[Position], Stage, 3) as int
-; 	endIf
-; 	return FlagsArray(Position)[FlagIndex(Stage, kSchlong)]
-; endFunction
-
-int function GetCumID(int Position, int Stage = 1)
-	return FlagsArray(Position)[FlagIndex(Stage, kCumID)]
+function ImportOffsets(string Type = "BedOffset")
+	If(Type != "BedOffset")
+		return
+	EndIf
+	float[] Values = GetBedOffsets()
+	string File = "../SexLab/SexLabOffsets.json"
+	int len = 4
+	if JsonUtil.FloatListCount(File, Registry+"."+Type) == len || JsonUtil.IntListCount(File, Registry+"."+Type) == len
+		if Values.Length != len
+			Values = Utility.CreateFloatArray(len)
+		endIf
+		int i = 0
+		while i < len
+			Values[i] = JsonUtil.FloatListGet(File, Registry+"."+Type, i)
+			i += 1
+		endWhile
+		BedOffset = Values
+	endIf
 endFunction
 
-int function GetCumSource(int Position, int Stage = 1)
-	return FlagsArray(Position)[FlagIndex(Stage, kCumSrc)]
+function ImportOffsetsDefault(string Type = "BedOffset")
+	If(Type != "BedOffset")
+		return
+	EndIf
+	string File = "../SexLab/SexLabOffsetsDefault.json"
+	float[] Values = GetBedOffsets()
+	int len = 4
+	if JsonUtil.FloatListCount(File, Registry+"."+Type) == len || JsonUtil.IntListCount(File, Registry+"."+Type) == len
+		if Values.Length != len
+			Values = Utility.CreateFloatArray(len)
+		endIf
+		int i = 0
+		while i < len
+			Values[i] = JsonUtil.FloatListGet(File, Registry+"."+Type, i)
+			i += 1
+		endWhile
+		BedOffset = Values
+	endIf
 endFunction
 
-bool function IsCumSource(int SourcePosition, int TargetPosition, int Stage = 1)
-	int CumSrc = GetCumSource(TargetPosition, Stage)
-	return CumSrc == -1 || CumSrc == SourcePosition
+function ExportJSON()
+	string Folder = "../SexLab/Animations/"
+	if IsCreature
+		Folder += "Creatures/"
+	endIf
+	string Filename = Folder+Registry+".json"
+	JsonUtil.ClearAll(Filename)
+
+	JsonUtil.SetPathStringValue(Filename, ".name", Name)
+	JsonUtil.SetPathIntValue(Filename, ".enabled", Enabled as int)
+	JsonUtil.SetPathStringArray(Filename, ".tags", GetTags())
+	if StageSoundFX
+		JsonUtil.SetPathFormArray(Filename, ".sfx", StageSoundFX)
+	endIf
+	if Timers
+		JsonUtil.SetPathFloatArray(Filename, ".timers", Timers)
+	endIf
+	JsonUtil.SetPathFloatArray(Filename, ".bedoffset", GetBedOffsets())
+	int Position
+	while Position < PositionCount
+		string path = ".positions["+Position+"]"
+		int Stage = 0
+		while Stage < StageCount
+			JsonUtil.SetPathStringValue(Filename, path + ".animation["+Stage+"]", AccessAnimation(Position, Stage))
+			JsonUtil.SetPathFloatArray(Filename, path + ".offset["+Stage+"]", GetRawOffsets(Position, Stage))
+			JsonUtil.SetPathIntValue(Filename, path + ".flag.schlong["+Stage+"]", AccessFlag(Position, Stage, kSilent))
+			JsonUtil.SetPathIntValue(Filename, path + ".flag.cum["+Stage+"]", AccessFlag(Position, Stage, kOpenMouth))
+			JsonUtil.SetPathIntValue(Filename, path + ".flag.cumsrc["+Stage+"]", AccessFlag(Position, Stage, kStrapon))
+			JsonUtil.SetPathIntValue(Filename, path + ".flag.openmouth["+Stage+"]", AccessFlag(Position, Stage, kSchlong))
+			JsonUtil.SetPathIntValue(Filename, path + ".flag.silent["+Stage+"]", AccessFlag(Position, Stage, kCumID))
+			JsonUtil.SetPathIntValue(Filename, path + ".flag.strapon["+Stage+"]", AccessFlag(Position, Stage, kCumSrc))
+		endWhile
+		JsonUtil.SetPathIntValue(Filename, path + ".gender", GetGender(Position))
+		if IsCreature && CreaturePosition(Position)
+			if RaceTypes[Position] == ""
+				JsonUtil.SetPathStringValue(Filename, path + ".creature", RaceType)
+			else
+				JsonUtil.SetPathStringValue(Filename, path + ".creature", RaceTypes[Position])
+			endIf
+		endIf
+		Position += 1
+	endWhile
+	JsonUtil.Save(Filename)
+	JsonUtil.Unload(Filename)
 endFunction
 
-function SetStageCumID(int Position, int Stage, int CumID, int CumSource = -1)
-	FlagsArray(Position)[FlagIndex(Stage, kCumID)]  = CumID
-	FlagsArray(Position)[FlagIndex(Stage, kCumSrc)] = CumSource
-endFunction
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;    				    ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗	  				  ;
+;    				    ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝	  				  ;
+;    				    ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 	  				  ;
+;    				    ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  	  				  ;
+;    				    ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   	  				  ;
+;    				    ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   	  				  ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-int function GetCum(int Position)
-	return GetCumID(Position, Stages)
-endFunction
+Function LogRedundant(String asFunction)
+	Debug.MessageBox("[SEXLAB]\nFunction '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.\n\nPlease report this to Scrab with a Papyrus Log attached")
+	Debug.TraceStack("Invoking Legacy Content Function " + asFunction)
+EndFunction
 
-int function ActorCount()
-	return Actors
-endFunction
-
-int function StageCount()
-	return Stages
-endFunction
-
-int function GetGender(int Position)
-	return Positions[Position]
-endFunction
-
-bool function MalePosition(int Position)
-	return Positions[Position] == 0
-endFunction
-
-bool function FemalePosition(int Position)
-	return Positions[Position] == 1
-endFunction
-
-bool function CreaturePosition(int Position)
-	return Positions[Position] >= 2
-endFunction
-
+; Just compare directly
 bool function MatchGender(int Gender, int Position)
 	return Gender == GetGender(Position) || (!GenderedCreatures && Gender > 1)
 endFunction
 
+; Just use the property directly
 int function FemaleCount()
 	return Genders[1]
 endFunction
-
 int function MaleCount()
 	return Genders[0]
 endFunction
-
 bool function IsSexual()
 	return IsSexual
 endFunction
 
+int Function GetGender(int Position)
+	return sslActorData.GetLegacyGenderByKey(_DataKeys[Position])
+EndFunction
+
+bool Function MalePosition(int Position)
+	return sslActorData.IsMale(_DataKeys[Position])
+EndFunction
+
+bool Function FemalePosition(int Position)
+	return sslActorData.IsFemale(_DataKeys[Position])
+EndFunction
+
+bool Function CreaturePosition(int Position)
+	return sslActorData.IsCreature(_DataKeys[Position])
+EndFunction
+
+; Scene Building Legacy Functions
+int function AddPosition(int Gender = 0, int AddCum = -1)
+	return CreatePosition(Gender, Utility.CreateBoolArray(0), AddCum)
+endFunction
+bool function CheckByTags(int ActorCount, string[] Search, string[] Suppress, bool RequireAll)
+	return Enabled && ActorCount == PositionCount && CheckTags(Search, RequireAll) && (Suppress.Length < 1 || !HasOneTag(Suppress))
+endFunction
+
+; Misc stuff
+int property StageCount hidden
+	int function get()
+		return Stages
+	endFunction
+endProperty
+int property PositionCount hidden
+	int function get()
+		return Actors
+	endFunction
+endProperty
+bool property IsCreature hidden
+	bool function get()
+		return Creatures
+	endFunction
+endProperty
+int Property Males
+	int Function get()
+		return Genders[0]
+	EndFunction
+EndProperty
+int Property Females
+	int Function get()
+		return Genders[1]
+	EndFunction
+EndProperty
+int Property Creatures
+	int Function get()
+		return Genders[2] + Genders[3]
+	EndFunction
+EndProperty
+int Property MaleCreatures
+	int Function get()
+		return Genders[2]
+	EndFunction
+EndProperty
+int Property FemaleCreatures
+	int Function get()
+		return Genders[3]
+	EndFunction
+EndProperty
+
 function SetContent(int contentType)
-	; No longer used
 endFunction
 
-; ------------------------------------------------------- ;
-; --- Creature Use                                    --- ;
-; ------------------------------------------------------- ;
-
-bool function HasActorRace(Actor ActorRef)
-	return HasRaceID(MiscUtil.GetActorRaceEditorID(ActorRef))
+function AddRaceID(string RaceID)
+	if !HasRaceID(RaceID)
+		sslCreatureAnimationSlots.AddRaceID(RaceType, RaceID)
+	endIf
 endFunction
 
-bool function HasRace(Race RaceRef)
-	return HasRaceID(MiscUtil.GetRaceEditorID(RaceRef)) ; FormListFind(Profile, Key("Creatures"), RaceRef) != -1
+string[] function GetRaceIDs()
+	return sslCreatureAnimationSlots.GetAllRaceIDs(RaceType)
 endFunction
 
 function AddRace(Race RaceRef)
 	AddRaceID(MiscUtil.GetRaceEditorID(RaceRef))
 endFunction
 
+; Redundant due to outdated naming conventions
 bool function HasRaceID(string RaceID)
 	return RaceType != "" && RaceID != "" && sslCreatureAnimationSlots.HasRaceID(RaceType, RaceID)
+endFunction
+
+; Redundant due to outdated naming conventions
+string[] function GetRaceTypes()
+	return PapyrusUtil.ClearEmpty(RaceTypes)
 endFunction
 
 bool function HasValidRaceKey(string[] RaceKeys)
@@ -691,381 +1167,11 @@ int function CountValidRaceKey(string[] RaceKeys)
 	return out
 endFunction
 
-bool function IsPositionRace(int Position, string RaceKey)
-	return RaceTypes && RaceTypes[Position] == RaceKey
-endFunction
-
 bool function HasPostionRace(int Position, string[] RaceKeys)
 	return RaceTypes && RaceKeys.Find(RaceTypes[Position]) != -1
 endFunction
 
-string[] function GetRaceTypes()
-	int i = RaceTypes.Length
-	string[] out = Utility.CreateStringArray(i)
-	while i
-		i -= 1
-		out[i] = RaceTypes[i]
-	endWhile
-	return out
-endFunction
-
-function AddRaceID(string RaceID)
-	if !HasRaceID(RaceID)
-		sslCreatureAnimationSlots.AddRaceID(RaceType, RaceID)
-	endIf
-endFunction
-
-function SetRaceKey(string RaceKey)
-	if sslCreatureAnimationSlots.HasRaceKey(RaceKey)
-		RaceType = RaceKey
-	else
-		Log("Unknown or empty RaceKey!", "SetRaceKey("+RaceKey+")")
-	endIf
-endFunction
-
-function SetPositionRaceKey(int Position, string RaceKey)
-	if GetGender(Position) >= 2
-		if !RaceTypes || RaceTypes.Length
-			RaceTypes = new string[5]
-		endIf
-		RaceTypes[Position] = RaceKey
-		RaceType            = RaceKey
-	endIf
-endFunction
-
-function SetRaceIDs(string[] RaceList)
-	RaceType = ""
-	int i = RaceList.Length
-	while i
-		i -= 1
-		string RaceKey = sslCreatureAnimationSlots.GetRaceKeyByID(RaceList[i])
-		if RaceKey != "" && RaceType != RaceKey
-			RaceType = RaceKey
-			i = 0
-		endIf
-	endWhile
-endFunction
-
-string[] function GetRaceIDs()
-	return sslCreatureAnimationSlots.GetAllRaceIDs(RaceType)
-endFunction
-
-; ------------------------------------------------------- ;
-; --- Animation Setup                                 --- ;
-; ------------------------------------------------------- ;
-
-int aid
-int oid
-int fid
-string[] GenderTags
-
-bool Locked
-int function AddPosition(int Gender = 0, int AddCum = -1)
-	if Actors >= 5
-		return -1
-	endIf
-	while Locked
-		Utility.WaitMenuMode(0.1)
-		Log(Registry + " AddPosition Lock! -- Adding Actor: " + Actors)
-	endWhile
-	Locked = true
-
-	oid = 0
-	fid = 0
-
-	_ActorKeys[Actors] = sslActorData.BuildByLegacyGender(Gender)
-
-	InitArrays(Actors)
-	FlagsArray(Actors)[kCumID] = AddCum
-
-	Actors += 1
-	Locked = false
-	return (Actors - 1)
-endFunction
-
-int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1)
-	if Actors >= 5
-		return -1
-	elseIf Gender <= 0 || Gender > 3
-		Gender = 2
-	elseIf Gender == 1
-		Gender = 3
-	endIf
-	If(RaceKey == "Wolves" || RaceKey == "Dogs")
-		RaceKey = "Canines"
-	EndIf
-
-	int pid = AddPosition(Gender, AddCum)
-	If(pid != -1 && RaceKey != "")
-		_ActorKeys[pid] = sslActorData.BuildByLegacyGender(gender, RaceKey)
-		; Technically its possible and supported to mix different creature races in an animation now
-		; so only set this one the first creature. Not ideal but w/e do I do
-		If(!RaceType)
-			RaceType = RaceKey
-		EndIf
-	EndIf
-
-	return pid
-endFunction
-
-function AddPositionStage(int Position, string AnimationEvent, float forward = 0.0, float side = 0.0, float up = 0.0, float rotate = 0.0, bool silent = false, bool openmouth = false, bool strapon = true, int sos = 0)
-	; Out of range position or empty animation event
-	if Position == -1 || Position >= 5 || AnimationEvent == ""
-		Log("FATAL: Invalid arguments!", "AddPositionStage("+Position+", "+AnimationEvent+")")
-		return
-	endIf
-
-	; First position dictates stage count and sizes
-	if Position == 0
-		Stages += 1
-		; Flag stage overflow
-		if (fid + kFlagEnd) >= Flags0.Length
-			Log("WARNING: Flags position overflow, resizing! - Current flags: "+Flags0, "AddPositionStage("+Position+", "+AnimationEvent+")")
-			Flags0 = PapyrusUtil.ResizeIntArray(Flags0, (Flags0.Length + 32))
-		endIf
-		; Offset stage overflow
-		if (oid + kOffsetEnd) >= Offsets0.Length
-			Log("WARNING: Offsets position overflow, resizing! - Current offsets: "+Offsets0, "AddPositionStage("+Position+", "+AnimationEvent+")")
-			Offsets0 = PapyrusUtil.ResizeFloatArray(Offsets0, (Offsets0.Length + 32))
-		endIf
-	endIf
-
-	; Save stage animation event
-	if aid < 128
-		Animations[aid] = AnimationEvent
-	else
-		if aid == 128
-			Log("WARNING: Animation stage overflow, resorting to push! - Current events: "+Animations, "AddPositionStage("+Position+", "+AnimationEvent+")")
-		endIf
-		Animations = PapyrusUtil.PushString(Animations, AnimationEvent)
-	endIf
-	aid += 1
-
-	; Save position flags
-	int[] Flags = FlagsArray(Position)
-	Flags[fid + 0] = silent as int
-	Flags[fid + 1] = openmouth as int
-	Flags[fid + 2] = strapon as int
-	Flags[fid + 3] = sos
-	Flags[fid + 4] = Flags[kCumID]
-	Flags[fid + 5] = -1
-	fid += kFlagEnd
-
-	; Save position offsets
-	float[] Offsets = OffsetsArray(Position)
-	Offsets[oid + 0] = forward
-	Offsets[oid + 1] = side
-	Offsets[oid + 2] = up
-	Offsets[oid + 3] = rotate
-	oid += kOffsetEnd
-endFunction
-
-function Save(int id = -1)
-	; Sort Keys + Animations, then initialize legacy data
-	_ActorKeys = Utility.ResizeIntArray(_ActorKeys, Actors)
-	FinalizePositionsAndAnimations()
-	int i = 0
-	While(i < _ActorKeys.Length)
-		int g = sslActorData.GetLegacyGenderByKey(_ActorKeys[i])
-		string gs = GetGenderString(g)
-		Genders[g] 		= Genders[g] + 1
-		Positions[i] 	= g
-		RaceTypes[i] 	= sslActorData.GetRaceKey(_ActorKeys[i])
-		GenderTags[0] = GenderTags[0] + gs
-		GenderTags[1] = gs + GenderTags[1]
-		i += 1
-	EndWhile
-
-	; Add gender tags
-	AddTag(GenderTags[0])
-	if GenderTags[0] != GenderTags[1]
-		AddTag(GenderTags[1])
-	endIf
-	; SLPP 1.0 - No longer supported
-	; Compensate for custom 3P+ animations that mix gender order, such as FMF
-	; if PositionCount > 2
-	; 	AddTag(GetGenderTag(false))
-	; 	AddTag(GetGenderTag(true))
-	; endIf
-
-	; Finalize config data
-	Flags0     = Utility.ResizeIntArray(Flags0, (Stages * kFlagEnd))
-	Offsets0   = Utility.ResizeFloatArray(Offsets0, (Stages * kOffsetEnd))
-	; Animations = Utility.ResizeStringArray(Animations, aid)
-	; Positions  = Utility.ResizeIntArray(Positions, Actors)
-	; LastKeys   = Utility.ResizeStringArray(LastKeys, Actors)
-	; Init forward offset list
-	CenterAdjust = Utility.CreateFloatArray(Stages)
-	if Actors > 1
-		int Stage = Stages
-		while Stage
-			CenterAdjust[Stage - 1] = CalcCenterAdjuster(Stage)
-			Stage -= 1
-		endWhile
-	endIf
-	; Import Offsets
-	ImportOffsetsDefault("BedOffset")
-	ImportOffsets("BedOffset")
-	; Reset saved keys if they no longer match
-	if LastKeyReg != Registry
-		LastKeys = new string[5]
-	endIf
-	LastKeyReg = Registry
-	; Log the new animation
-	if IsCreature
-		RaceTypes = PapyrusUtil.ResizeStringArray(RaceTypes, Actors)
-		if IsInterspecies()
-			AddTag("Interspecies")
-		else
-			RemoveTag("Interspecies")
-		endIf
-		Log(Name, "Creatures["+id+"]")
-	else
-		Log(Name, "Animations["+id+"]")
-	endIf
-	; Finalize tags and registry slot id
-	parent.Save(id)
-endFunction
-
-Function FinalizePositionsAndAnimations()
-	; Log("Sorted Position | Stages = " + Stages)
-	; bit clunky but w/e; the startindex of every positions animations
-	; anims are stored as [A1S1, A1S2, ... A2S1, ... AnSn]
-	int[] og_anim = Utility.CreateIntArray(Actors)
-	int j = 1
-	While(j < og_anim.Length)
-		; Startindex for this actors animations
-		og_anim[j] = Stages * j
-		j += 1
-	EndWhile
-	; Log("Sorting Positions -> Anim Stages = " + og_anim)
-	; ISort for the normal animations
-  int i = 1
-	While(i < _ActorKeys.Length)
-		int it = _ActorKeys[i]
-		int idx = og_anim[i]
-		int[] it_f = FlagsArray(i)
-		int n = i - 1
-		While(n >= 0 && sslActorData.IsLess(it, _ActorKeys[n]))
-			_ActorKeys[n + 1] = _ActorKeys[n]
-			og_anim[n + 1] = og_anim[n]
-			FlagsSave(n + 1, FlagsArray(n))
-			n -= 1
-		EndWhile
-		_ActorKeys[n + 1] = it
-		og_anim[n + 1] = idx
-		FlagsSave(n + 1, it_f)
-		i += 1
-	EndWhile
-	; Log("Sorting Post Sort -> Anim Stages = " + og_anim)
-	; Now store the individual anims
-	String[] _Anims = Utility.CreateStringArray(aid)
-	int k = 0
-	While(k < og_anim.Length)
-		int n = 0
-		While(n < Stages)
-			_Anims[og_anim[k] + n] = Animations[k * Stages + n]
-			n += 1
-		EndWhile
-		k += 1
-	EndWhile
-	Animations = _Anims
-	Log("Sorted Animations -> " + Animations)
-EndFunction
-
-bool function IsInterspecies()
-	int k = sslActorData.GetRaceID(_ActorKeys[0])
-	int i = 1
-	While(i < _ActorKeys.Length)
-		int nk = sslActorData.GetRaceID(_ActorKeys[i])
-		If(nk != k)
-			return true
-		EndIf
-		k = nk
-		i += 1
-	EndWhile
-	return false
-endFunction
-
-float function CalcCenterAdjuster(int Stage)
-	; Get forward Offsets of all Positions + find highest/lowest position
-	float Adjuster
-	int Position = Actors
-	while Position
-		Position -= 1
-		float Forward = OffsetsArray(Position)[OffsetIndex(Stage, 0)]
-		if Math.Abs(Forward) > Math.Abs(Adjuster)
-			Adjuster = Forward
-		endIf
-	endWhile
-	; Get signed half of highest/lowest offset
-	return Adjuster * -0.5
-endFunction
-
-string function GetGenderString(int Gender)
-	if Gender == 0
-		return "M"
-	elseIf Gender == 1
-		return "F"
-	elseIf Gender >= 2
-		return "C"
-	endIf
-	return ""
-endFunction
-
-; ------------------------------------------------------- ;
-; --- System Use                                      --- ;
-; ------------------------------------------------------- ;
-
-function Initialize()
-	aid       = 0
-	oid       = 0
-	fid       = 0
-	Actors    = 0
-	Stages    = 0
-	RaceType  = ""
-	GenderedCreatures = false
-
-	_ActorKeys	 	= new int[5]
-	Genders      	= new int[4]
-	Positions    	= new int[5]
-	StageSoundFX 	= new Form[1]
-	GenderTags   	= new string[2]
-	RaceTypes 		= new string[5]
-
-	; Only init if needed to keep between registry resets.
-	if LastKeys.Length != 5
-		LastKeys  = new string[5]
-	endIf
-
-	; RaceTypes  = Utility.CreateStringArray(0)
-	Animations = Utility.CreateStringArray(0)
-	BedOffset  = Utility.CreateFloatArray(0)
-	Timers     = Utility.CreateFloatArray(0)
-
-	Flags0 = Utility.CreateIntArray(0)
-	Flags1 = Utility.CreateIntArray(0)
-	Flags2 = Utility.CreateIntArray(0)
-	Flags3 = Utility.CreateIntArray(0)
-	Flags4 = Utility.CreateIntArray(0)
-
-	Offsets0 = Utility.CreateFloatArray(0)
-	Offsets1 = Utility.CreateFloatArray(0)
-	Offsets2 = Utility.CreateFloatArray(0)
-	Offsets3 = Utility.CreateFloatArray(0)
-	Offsets4 = Utility.CreateFloatArray(0)
-
-	Locked = false
-
-	parent.Initialize()
-endFunction
-
-; ------------------------------------------------------- ;
-; --- Properties                                      --- ;
-; ------------------------------------------------------- ;
-
-; Creature Use
-string property RaceType auto hidden	; Redundant
+; Note sure how this would ever be useful
 Form[] property CreatureRaces hidden
 	form[] function get()
 		string[] Races = sslCreatureAnimationSlots.GetAllRaceIDs(RaceType)
@@ -1079,359 +1185,25 @@ Form[] property CreatureRaces hidden
 	endFunction
 endProperty
 
-; Information
-bool property IsSexual hidden
-	bool function get()
-		return HasTag("Sex") || HasTag("Vaginal") || HasTag("Anal") || HasTag("Oral")
-	endFunction
-endProperty
-bool property IsCreature hidden
-	bool function get()
-		return Genders[2] > 0 || Genders[3] > 0
-	endFunction
-endProperty
-
-bool property IsVaginal hidden
-	bool function get()
-		return HasTag("Vaginal")
-	endFunction
-endProperty
-bool property IsAnal hidden
-	bool function get()
-		return HasTag("Anal")
-	endFunction
-endProperty
-bool property IsOral hidden
-	bool function get()
-		return HasTag("Oral")
-	endFunction
-endProperty
-bool property IsDirty hidden
-	bool function get()
-		return HasTag("Dirty")
-	endFunction
-endProperty
-bool property IsLoving hidden
-	bool function get()
-		return HasTag("Loving")
-	endFunction
-endProperty
-
-; Animation handling tags
-bool property IsBedOnly hidden
-	bool function get()
-		return HasTag("BedOnly")
-	endFunction
-endProperty
-
-int property StageCount hidden
-	int function get()
-		return Stages
-	endFunction
-endProperty
-int property PositionCount hidden
-	int function get()
-		return Actors
-	endFunction
-endProperty
-
-; Position Genders
-int[] property Genders auto hidden
-int property Males hidden
-	int function get()
-		return Genders[0]
-	endFunction
-endProperty
-int property Females hidden
-	int function get()
-		return Genders[1]
-	endFunction
-endProperty
-int property Creatures hidden
-	int function get()
-		return Genders[2] + Genders[3]
-	endFunction
-endProperty
-int property MaleCreatures hidden
-	int function get()
-		return Genders[2]
-	endFunction
-endProperty
-int property FemaleCreatures hidden
-	int function get()
-		return Genders[3]
-	endFunction
-endProperty
-
-;/ string property Profile hidden
-	string function get()
-		return "../SexLab/AnimationProfile_"+Config.AnimProfile+".json"
-	endFunction
-endProperty /;
-
-bool function CheckByTags(int ActorCount, string[] Search, string[] Suppress, bool RequireAll)
-	return Enabled && ActorCount == PositionCount && CheckTags(Search, RequireAll) && (Suppress.Length < 1 || !HasOneTag(Suppress))
+int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1)
+	If Gender <= 0 || Gender > 3
+		Gender = 2
+	elseIf Gender == 1
+		Gender = 3
+	endIf
+	return CreatePosition(Gender, Utility.CreateBoolArray(0), AddCum, RaceKey)
 endFunction
 
-int[] Flags0
-int[] Flags1
-int[] Flags2
-int[] Flags3
-int[] Flags4
-
-int property kSilent    = 0 autoreadonly hidden
-int property kOpenMouth = 1 autoreadonly hidden
-int property kStrapon   = 2 autoreadonly hidden
-int property kSchlong   = 3 autoreadonly hidden
-int property kCumID     = 4 autoreadonly hidden
-int property kCumSrc    = 5 autoreadonly hidden
-int property kFlagEnd hidden
-	int function get()
-		return 6
-	endFunction
-endProperty
-
-int[] function FlagsArray(int Position)
-	if Position == 0
-		return Flags0
-	elseIf Position == 1
-		return Flags1
-	elseIf Position == 2
-		return Flags2
-	elseIf Position == 3
-		return Flags3
-	elseIf Position == 4
-		return Flags4
+string function GetGenderString(int Gender)
+	if Gender == 0
+		return "M"
+	elseIf Gender == 1
+		return "F"
+	elseIf Gender >= 2
+		return "C"
 	endIf
-	return Utility.CreateIntArray(0)
+	return ""
 endFunction
-
-function FlagsSave(int Position, int[] Flags)
-	if Position == 0
-		Flags0 = Flags
-	elseIf Position == 1
-		Flags1 = Flags
-	elseIf Position == 2
-		Flags2 = Flags
-	elseIf Position == 3
-		Flags3 = Flags
-	elseIf Position == 4
-		Flags4 = Flags
-	endIf
-endFunction
-
-float[] Offsets0
-float[] Offsets1
-float[] Offsets2
-float[] Offsets3
-float[] Offsets4
-
-int property kForward  = 0 autoreadonly hidden
-int property kSideways = 1 autoreadonly hidden
-int property kUpward   = 2 autoreadonly hidden
-int property kRotate   = 3 autoreadonly hidden
-int property kOffsetEnd hidden
-	int function get()
-		return 4
-	endFunction
-endProperty
-
-float[] function OffsetsArray(int Position)
-	if Position == 0
-		return Offsets0
-	elseIf Position == 1
-		return Offsets1
-	elseIf Position == 2
-		return Offsets2
-	elseIf Position == 3
-		return Offsets3
-	elseIf Position == 4
-		return Offsets4
-	endIf
-	return Utility.CreateFloatArray(0)
-endFunction
-
-function OffsetsSave(int Position, float[] Offsets)
-	if Position == 0
-		Offsets0 = Offsets
-	elseIf Position == 1
-		Offsets1 = Offsets
-	elseIf Position == 2
-		Offsets2 = Offsets
-	elseIf Position == 3
-		Offsets3 = Offsets
-	elseIf Position == 4
-		Offsets4 = Offsets
-	endIf
-endFunction
-
-function InitArrays(int Position)
-	if Position == 0
-		Flags0     = new int[128]
-		Offsets0   = new float[128]
-		Animations = new string[128]
-	elseIf Position == 1
-		Flags1   = Utility.CreateIntArray((Stages * kFlagEnd))
-		Offsets1 = Utility.CreateFloatArray((Stages * kOffsetEnd))
-	elseIf Position == 2
-		Flags2   = Utility.CreateIntArray((Stages * kFlagEnd))
-		Offsets2 = Utility.CreateFloatArray((Stages * kOffsetEnd))
-	elseIf Position == 3
-		Flags3   = Utility.CreateIntArray((Stages * kFlagEnd))
-		Offsets3 = Utility.CreateFloatArray((Stages * kOffsetEnd))
-	elseIf Position == 4
-		Flags4   = Utility.CreateIntArray((Stages * kFlagEnd))
-		Offsets4 = Utility.CreateFloatArray((Stages * kOffsetEnd))
-	endIf
-endFunction
-
-;Animation Offsets
-function ExportOffsets(string Type = "BedOffset")
-	float[] Values
-	if Type == "BedOffset"
-		Values = GetBedOffsets()
-	else
-		return
-	endIf
-	string File = "../SexLab/SexLabOffsets.json"
-
-	; Set label of export
-	JsonUtil.SetStringValue(File, "ExportLabel", "User Defined Offsets " + Utility.GetCurrentRealTime())
-
-	JsonUtil.FloatListClear(File, Registry+"."+Type)
-	if PapyrusUtil.CountFloat(Values, 0.0) != Values.Length
-		JsonUtil.FloatListCopy(File, Registry+"."+Type, Values)
-	endIf
-
-	; Save to JSON file
-	JsonUtil.Save(File, true)
-endFunction
-
-function ImportOffsets(string Type = "BedOffset")
-	float[] Values
-	if Type == "BedOffset"
-		Values = GetBedOffsets()
-	else
-		return
-	endIf
-	string File = "../SexLab/SexLabOffsets.json"
-	int len = 4
-	if JsonUtil.FloatListCount(File, Registry+"."+Type) == len || JsonUtil.IntListCount(File, Registry+"."+Type) == len
-		if Values.Length != len
-			Values = Utility.CreateFloatArray(len)
-		endIf
-		int i = 0
-		while i < len
-			Values[i] = JsonUtil.FloatListGet(File, Registry+"."+Type, i)
-			i += 1
-		endWhile
-		if Type == "BedOffset"
-			BedOffset = Values
-		endIf
-	endIf
-endFunction
-
-function ImportOffsetsDefault(string Type = "BedOffset")
-	float[] Values
-	if Type == "BedOffset"
-		Values = GetBedOffsets()
-	else
-		return
-	endIf
-	string File = "../SexLab/SexLabOffsetsDefault.json"
-	int len = 4
-	if JsonUtil.FloatListCount(File, Registry+"."+Type) == len || JsonUtil.IntListCount(File, Registry+"."+Type) == len
-		if Values.Length != len
-			Values = Utility.CreateFloatArray(len)
-		endIf
-		int i = 0
-		while i < len
-			Values[i] = JsonUtil.FloatListGet(File, Registry+"."+Type, i)
-			i += 1
-		endWhile
-		if Type == "BedOffset"
-			BedOffset = Values
-		endIf
-	endIf
-endFunction
-
-function ExportJSON()
-	string Folder = "../SexLab/Animations/"
-	if IsCreature
-		Folder += "Creatures/"
-	endIf
-	string Filename = Folder+Registry+".json"
-
-	JsonUtil.ClearAll(Filename)
-
-	JsonUtil.SetPathStringValue(Filename, ".name", Name)
-	JsonUtil.SetPathIntValue(Filename, ".enabled", Enabled as int)
-	JsonUtil.SetPathStringArray(Filename, ".tags", GetTags())
-
-	; JsonUtil.SetRawPathValue(Filename, ".tags", "[\""+PapyrusUtil.StringJoin(GetTags(), "\",\"")+"\"]")
-	if StageSoundFX
-		JsonUtil.SetPathFormArray(Filename, ".sfx", StageSoundFX)
-	endIf
-	if Timers
-		JsonUtil.SetPathFloatArray(Filename, ".timers", Timers)
-	endIf
-	; if IsCreature
-	; 	JsonUtil.SetPathStringArray(Filename, ".racetypes", Utility.ResizeStringArray(RaceTypes, PositionCount))
-	; endIf
-	JsonUtil.SetPathFloatArray(Filename, ".bedoffset", GetBedOffsets())
-
-	int Position
-	while Position < PositionCount
-
-		int stg = 0
-		while stg < StageCount
-			string Path = ".positions["+Position+"]"
-			int Stage = stg + 1
-
-			JsonUtil.SetPathStringValue(Filename, Path+".animation["+stg+"]", Animations[StageIndex(Position, Stage)])
-			JsonUtil.SetPathFloatArray(Filename, Path+".offset["+stg+"]", GetRawOffsets(Position, Stage))
-
-			int[] Flags = FlagsArray(Position)
-			int fi = FlagIndex(Stage, 0)
-
-			JsonUtil.SetPathIntValue(Filename, Path+".flag.schlong["+stg+"]", Flags[(fi + 3)])
-			JsonUtil.SetPathIntValue(Filename, Path+".flag.cum["+stg+"]", Flags[(fi + 4)])
-			JsonUtil.SetPathIntValue(Filename, Path+".flag.cumsrc["+stg+"]", Flags[(fi + 5)])
-			JsonUtil.SetPathIntValue(Filename, Path+".flag.openmouth["+stg+"]", Flags[(fi + 1)])
-			JsonUtil.SetPathIntValue(Filename, Path+".flag.silent["+stg+"]", Flags[(fi + 0)])
-			JsonUtil.SetPathIntValue(Filename, Path+".flag.strapon["+stg+"]", Flags[(fi + 2)])
-
-			stg += 1
-		endWhile
-
-		JsonUtil.SetPathIntValue(Filename, ".positions["+Position+"].gender", GetGender(Position))
-
-		if IsCreature && CreaturePosition(Position)
-			if RaceTypes[Position] == ""
-				JsonUtil.SetPathStringValue(Filename, ".positions["+Position+"].creature", RaceType)
-			else
-				JsonUtil.SetPathStringValue(Filename, ".positions["+Position+"].creature", RaceTypes[Position])
-			endIf
-		endIf
-
-		Position += 1
-
-	endWhile
-
-	JsonUtil.Save(Filename)
-	JsonUtil.Unload(Filename)
-endFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
-;																																											;
-;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
-;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
-;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
-;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
-;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
-;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
-;																																											;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
 
 string function GenderTag(int count, string gender)
 	if count == 0
@@ -1455,4 +1227,88 @@ string function GetGenderTag(bool Reverse = false)
 		return GenderTag(Creatures, "C")+GenderTag(Males, "M")+GenderTag(Females, "F")
 	endIf
 	return GenderTag(Females, "F")+GenderTag(Males, "M")+GenderTag(Creatures, "C")
+endFunction
+
+float function CalcCenterAdjuster(int Stage)
+endFunction
+
+int[] function FlagsArray(int Position)
+	LogRedundant("FlagsArray")
+endFunction
+
+function FlagsSave(int Position, int[] Flags)
+	LogRedundant("FlagsSave")
+endFunction
+
+float[] function OffsetsArray(int Position)
+	LogRedundant("OffsetsArray")
+endFunction
+
+function OffsetsSave(int Position, float[] Offsets)
+	LogRedundant("OffsetsSave")
+endFunction
+
+function InitArrays(int Position)
+	LogRedundant("InitArrays")
+endFunction
+
+int function DataIndex(int Slots, int Position, int Stage, int Slot = 0)
+	LogRedundant("DataIndex")
+endFunction
+
+int function StageIndex(int Position, int Stage)
+	LogRedundant("StageIndex")
+endFunction
+
+int function AdjIndex(int Stage, int Slot = 0, int Slots = 4)
+	LogRedundant("AdjIndex")
+endfunction
+
+int function OffsetIndex(int Stage, int Slot)
+	LogRedundant("OffsetIndex")
+endfunction
+
+int function FlagIndex(int Stage, int Slot)
+	LogRedundant("FlagIndex")
+endfunction
+
+; Animations now have complex creature support using data keys
+string property RaceType
+	String Function Get()
+		int i = 0
+		While(i < _DataKeys.Length)
+			String rk = sslActorData.GetRaceKey(_DataKeys[i])
+			If(rk != "human")
+				return rk
+			EndIf
+			i += 1
+		EndWhile
+		return ""
+	EndFunction
+EndProperty
+
+Function GetAnimEvents(string[] AnimEvents, int Stage)
+	If(AnimEvents.Length != 5 || Stage > Stages)
+		Log("Invalid Call("+AnimEvents+", "+Stage+"/"+Stages+")", "GetAnimEvents")
+		return
+	EndIf
+	String[] copy = FetchStage(Stage)
+	int i = 0
+	While(i < copy.Length)
+		AnimEvents[i] = copy[i]
+		i += 1
+	EndWhile
+EndFunction
+
+; Animations are read only after setup, dont make everything mutable just cuz you can
+function SetRaceKey(string RaceKey)
+endFunction
+
+function SetPositionRaceKey(int Position, string RaceKey)
+endFunction
+
+function SetRaceIDs(string[] RaceList)
+endFunction
+
+function SetPositionStage(int Position, int Stage, string AnimationEvent)
 endFunction

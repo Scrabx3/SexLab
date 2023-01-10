@@ -630,7 +630,7 @@ function Cleanup()
 	endWhile
 endFunction
 
-; TODO: needs rewrite to match current animation script
+; TODO: needs rewrite to match current animation script	!IMPORTANT
 sslBaseAnimation function CopyAnimation(sslBaseAnimation Copy, sslBaseAnimation Orig)
 	; Set info
 	Copy.Name = Orig.Name

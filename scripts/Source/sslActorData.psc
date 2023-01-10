@@ -66,6 +66,13 @@ int[] Function BuildSortedDataKeyArrayEx(Actor[] akActors, bool[] abIsVictim) gl
   return SortDataKeys(BuildDataKeyArrayEx(akActors, abIsVictim))
 EndFunction
 
+
+; EXTRA DATA FLAGS
+int Property Victim = 0 AutoReadOnly
+int Property Vampire = 1 AutoReadOnly
+; Gender: 0 - Male / 1 - Female / 2 - Futa / 3 - Crt. Male / 4 - Crt. Female
+int Function BuildCustomKey(int aiGender, int aiRaceID, bool[] abExtraData) native global
+
 ; ------------------------------------------------------- ;
 ; --- Comparing & Sorting      				                --- ;
 ; ------------------------------------------------------- ;
@@ -124,12 +131,12 @@ String Function GetRaceKey(int aiKey) global
   If(idx > 0)
     return GetAllRaceKeys()[idx - 1]
   EndIf
-  return "Humanoid"
+  return "human"
 EndFunction
 
 ; Get the ID from the given RaceKey
 int Function GetRaceIDByRaceKey(String asRaceKey) global
-  return GetAllRaceKeys().Find(asRaceKey)
+  return GetAllRaceKeys().Find(asRaceKey) + 1
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -141,7 +148,7 @@ EndFunction
 int Function GetLegacyGenderByKey(int aiKey) native global
 
 ; Animation registration function for pre SLAL2
-int Function BuildByLegacyGender(int aiLegacyGender, String asRaceKey = "Humanoid") global
+int Function BuildByLegacyGender(int aiLegacyGender, String asRaceKey = "human") global
   int id = GetRaceIDByRaceKey(asRaceKey)
   return BuildByLegacyGenderNative(aiLegacyGender, id + 1)
 EndFunction

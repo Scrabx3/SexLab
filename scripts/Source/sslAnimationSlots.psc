@@ -82,7 +82,7 @@ sslBaseAnimation[] Function _GetAnimationsImpl(int[] aiKeys, String[] asTags)
 	While(i < Slotted)
 		If(Objects[i])
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			Log("Validating Animation Nr. " + i + " | Keys = " + Slot.ActorKeys + " | Tags = " + Slot.GetTags())
+			Log("Validating Animation Nr. " + i + " | Keys = " + Slot.DataKeys() + " | Tags = " + Slot.GetTags())
 			If(Slot.Enabled && Slot.MatchKeys(aiKeys) && Slot.MatchTags(asTags))
 				ret[ii] = Slot
 				If(ii == 127)	; Array is full
