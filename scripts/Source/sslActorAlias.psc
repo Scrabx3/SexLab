@@ -265,10 +265,10 @@ State Ready
 		If(ActorRef.GetDistance(_center) > 6144.0)
 			return
 		EndIf
-		float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
+		float t = SexLabUtil.GetCurrentGameRealTimeEx() + 15.0
 		ActorRef.SetFactionRank(AnimatingFaction, 2)
 		ActorRef.EvaluatePackage()
-		While (ActorRef.GetDistance(_center) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
+		While (ActorRef.GetDistance(_center) > 256.0 && SexLabUtil.GetCurrentGameRealTimeEx() < t)
 			Utility.Wait(0.035)
 		EndWhile
 		ActorRef.SetFactionRank(AnimatingFaction, 1)
@@ -439,7 +439,7 @@ EndEvent
 state Animating
 	Event OnBeginState()
 		TrackedEvent("Start")
-		StartedAt = SexLabUtil.GetCurrentGameRealTime()
+		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		LastOrgasm = StartedAt
 		SyncThread()
 		RegisterForSingleUpdate(Utility.RandomFloat(1.0, 3.0))
@@ -507,7 +507,7 @@ state Animating
 			ElseIf(sslActorData.IsMaleCreature(_ActorData))
 				cmp = 30
 			EndIf
-			If(SexLabUtil.GetCurrentGameRealTime() - LastOrgasm > cmp)
+			If(SexLabUtil.GetCurrentGameRealTimeEx() - LastOrgasm > cmp)
 				OrgasmEffect()
 			EndIf
 		EndIf
@@ -575,7 +575,7 @@ state Animating
 		elseIf !Forced && Enjoyment < 1
 			; Actor have the orgasm few seconds ago or is in pain and can't orgasm
 			return
-		elseIf Math.Abs(SexLabUtil.GetCurrentGameRealTime() - LastOrgasm) < 5.0
+		elseIf Math.Abs(SexLabUtil.GetCurrentGameRealTimeEx() - LastOrgasm) < 5.0
 			Log("Excessive OrgasmEffect Triggered")
 			return
 		endIf
@@ -616,7 +616,7 @@ state Animating
 			endIf
 		endIf
 		UnregisterForUpdate()
-		LastOrgasm = SexLabUtil.GetCurrentGameRealTime()
+		LastOrgasm = SexLabUtil.GetCurrentGameRealTimeEx()
 		Orgasms   += 1
 		; Send an orgasm event hook with actor and orgasm count
 		int eid = ModEvent.Create("SexLabOrgasm")
@@ -767,13 +767,13 @@ endFunction
 
 int function GetEnjoyment()
 	if !IsSkilled
-		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((SexLabUtil.GetCurrentGameRealTime() - StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((Thread.Stage as float / Thread.Animation.StageCount as float) * 60.0)) as int
+		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((Thread.Stage as float / Thread.Animation.StageCount as float) * 60.0)) as int
 	else
 		if Position == 0	; COMEBACK: ???
 			Thread.RecordSkills()
 			Thread.SetBonuses()
 		endIf
-		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorData.IsFemale(_ActorData), (SexLabUtil.GetCurrentGameRealTime() - StartedAt), Thread.Stage, Thread.Animation.StageCount)
+		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorData.IsFemale(_ActorData), (SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt), Thread.Stage, Thread.Animation.StageCount)
 		; Log("FullEnjoyment["+FullEnjoyment+"] / BaseEnjoyment["+BaseEnjoyment+"] / Enjoyment["+(FullEnjoyment - BaseEnjoyment)+"]")
 	endIf
 
@@ -1124,7 +1124,7 @@ Function DoStatistics()
 		VictimRef = ActorRef
 	endIf
 	int g = sslActorData.GetLegacyGenderByKey(_ActorData)
-	float rt = SexLabUtil.GetCurrentGameRealTime()
+	float rt = SexLabUtil.GetCurrentGameRealTimeEx()
 	sslActorStats.RecordThread(ActorRef, g, BestRelation, StartedAt, rt, Utility.GetCurrentGameTime(), Thread.HasPlayer, VictimRef, Thread.Genders, Thread.SkillXP)
 	Stats.AddPartners(ActorRef, Thread.Positions, Thread.Victims)
 	if Thread.IsVaginal

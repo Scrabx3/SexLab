@@ -179,7 +179,7 @@ EndProperty
 float Property StartedAt auto hidden
 float Property TotalTime hidden
 	float Function get()
-		return SexLabUtil.GetCurrentGameRealTime() - StartedAt
+		return SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt
 	EndFunction
 EndProperty
 
@@ -366,7 +366,7 @@ State Making
 	EndFunction
 
 	Function SetAnimations(sslBaseAnimation[] AnimationList)
-		If(AnimationList.Length)
+		If(AnimationList.Length && AnimationList.Find(none) == -1)
 			PrimaryAnimations = AnimationList
 		EndIf
 	EndFunction
@@ -421,7 +421,7 @@ State Making
 				EndIf
 			Else
 				; COMEBACK: This doesnt actually do anything, idk why its there or if I should remove it
-				; float LeadInCoolDown = Math.Abs(SexLabUtil.GetCurrentGameRealTime() - StorageUtil.GetFloatValue(Config,"SexLab.LastLeadInEnd",0))
+				; float LeadInCoolDown = Math.Abs(SexLabUtil.GetCurrentGameRealTimeEx() - StorageUtil.GetFloatValue(Config,"SexLab.LastLeadInEnd",0))
 				; If(LeadInCoolDown < Config.LeadInCoolDown)
 				; 	Log("LeadIn CoolDown " + LeadInCoolDown + "::" + Config.LeadInCoolDown)
 				; 	DisableLeadIn(True)
@@ -548,7 +548,7 @@ State Animating
 		If(LeadIn)
 			SendThreadEvent("LeadInStart")
 		EndIf
-		StartedAt = SexLabUtil.GetCurrentGameRealTime()
+		StartedAt = Utility.GetCurrentRealTime()
 		SkillTime = SkillTime
 		SFXDelay = Config.SFXDelay
 		PlayStageAnimations()
@@ -579,14 +579,14 @@ State Animating
 		EndIf
 		SFXDelay = PapyrusUtil.ClampFloat(Config.SFXDelay - (Stage * 0.3), 0.5, 30.0)
 		ResolveTimers()
-		StageTimer = SexLabUtil.GetCurrentGameRealTime() + GetTimer()
+		StageTimer = SexLabUtil.GetCurrentGameRealTimeEx() + GetTimer()
 		RegisterForSingleUpdate(0.5)
 		SendThreadEvent("StageStart")
 		HookStageStart()
 	EndFunction
 	
 	Event OnUpdate()
-		float rt = SexLabUtil.GetCurrentGameRealTime()
+		float rt = SexLabUtil.GetCurrentGameRealTimeEx()
 		If((AutoAdvance || TimedStage || Animation.HasTimer(Stage)) && StageTimer < rt)
 			GoToStage(Stage + 1)
 			return
@@ -957,13 +957,16 @@ int Function GetLowestPresentRelationshipRank(Actor ActorRef)
 	return out
 EndFunction
 
+; ------------------------------------------------------- ;
+; ---	NOTE: BELOW IS REVIEWED || !IMPORTANT ABOVE NEEDS REVIEW
+; ------------------------------------------------------- ;
 
 ; ------------------------------------------------------- ;
 ; --- Animation Setup                                 --- ;
 ; ------------------------------------------------------- ;
 
 Function SetForcedAnimations(sslBaseAnimation[] AnimationList)
-	if AnimationList.Length
+	if AnimationList.Length && AnimationList.Find(none) == -1
 		CustomAnimations = AnimationList
 	endIf
 EndFunction
@@ -983,7 +986,7 @@ Function ClearForcedAnimations()
 EndFunction
 
 Function SetAnimations(sslBaseAnimation[] AnimationList)
-	if AnimationList.Length
+	if AnimationList.Length && AnimationList.Find(none) == -1
 		PrimaryAnimations = AnimationList
 	endIf
 EndFunction
@@ -1003,7 +1006,7 @@ Function ClearAnimations()
 EndFunction
 
 Function SetLeadAnimations(sslBaseAnimation[] AnimationList)
-	if AnimationList.Length
+	if AnimationList.Length && AnimationList.Find(none) == -1
 		LeadIn = true
 		LeadAnimations = AnimationList
 	endIf
@@ -1046,10 +1049,6 @@ EndFunction
 Function SetStartingAnimation(sslBaseAnimation FirstAnimation)
 	StartingAnimation = FirstAnimation
 EndFunction
-
-; ------------------------------------------------------- ;
-; ---	NOTE: BELOW IS REVIEWED || !IMPORTANT ABOVE NEEDS REVIEW
-; ------------------------------------------------------- ;
 
 ; ------------------------------------------------------- ;
 ; --- Thread Settings                                 --- ;
@@ -1196,7 +1195,7 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 	int n = 0
 	While(n < akAnimations.Length)
 		Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].DataKeys() + " | Tags = " + akAnimations[n].GetTags())
-		If(akAnimations[n] && akAnimations[n].MatchKeys(pkeys) && akAnimations[n].MatchTags(Tags))
+		If(akAnimations[n].MatchKeys(pkeys) && akAnimations[n].MatchTags(Tags))
 			valids[n] = n
 		EndIf
 		n += 1
@@ -1208,7 +1207,7 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 		int j = 0
 		While(j < akAnimations.Length)
 			Log("Validating Animation Nr. " + j + " | Keys = " + akAnimations[j].DataKeys() + " | Tags = " + akAnimations[j].GetTags())
-			If(akAnimations[j] && (!positions_shifted && ValidateShift(pkeys, akAnimations[j]) || akAnimations[j].MatchKeys(pkeys)) && akAnimations[j].MatchTags(Tags))
+			If((!positions_shifted && ValidateShift(pkeys, akAnimations[j]) || akAnimations[j].MatchKeys(pkeys)) && akAnimations[j].MatchTags(Tags))
 				positions_shifted = true
 				valids[j] = j
 			EndIf
@@ -1352,7 +1351,7 @@ Function EndLeadInImpl()
 	; TODO: Get rid of this "QuickEvent" stuff
 	QuickEvent("Strip")
 	; Start primary animations at stage 1
-	StorageUtil.SetFloatValue(Config, "SexLab.LastLeadInEnd", SexLabUtil.GetCurrentGameRealTime())
+	StorageUtil.SetFloatValue(Config, "SexLab.LastLeadInEnd", SexLabUtil.GetCurrentGameRealTimeEx())
 	SendThreadEvent("LeadInEnd")
 	GoToStage(1)
 EndFunction
@@ -1604,7 +1603,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 Function RecordSkills()
-	float TimeNow = SexLabUtil.GetCurrentGameRealTime()
+	float TimeNow = SexLabUtil.GetCurrentGameRealTimeEx()
 	float xp = ((TimeNow - SkillTime) / 8.0)
 	if xp >= 0.5
 		if IsType[1]
@@ -2122,7 +2121,7 @@ EndProperty
 float[] Property RealTime
 	float[] Function Get()
 		float[] ret = new float[1]
-		ret[0] = SexLabUtil.GetCurrentGameRealTime()
+		ret[0] = SexLabUtil.GetCurrentGameRealTimeEx()
 		return ret
 	EndFunction
 EndProperty

@@ -173,6 +173,21 @@ int function FloatMinMaxIndex(float[] searchArray, bool findHighestValue = true)
 
 float function GetCurrentGameRealTime() global native
 
+; Non native of the above ^ since SE has no access to it
+float function GetCurrentGameRealTimeEx() global
+	Form TimeScale = Game.GetFormFromFile(0x3A, "Skyrim.esm")
+	float fTimeScale = 1
+	if TimeScale && TimeScale != none
+		fTimeScale = (TimeScale as GlobalVariable).GetValue()
+	else
+		fTimeScale = 20.0 ; Skyrim default TimeScale
+	endIf
+	if fTimeScale < 1
+		fTimeScale = 1.0
+	endIf
+	return (Utility.GetCurrentGameTime() / fTimeScale) * 86400.0
+EndFunction
+
 float function GetCurrentGameTimeHours() global
 	return Utility.GetCurrentGameTime() * 24.0
 endFunction
