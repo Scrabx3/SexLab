@@ -25,7 +25,7 @@ int Function BuildDataKey(Actor akActor, bool abIsVictim = false) global
 		Race actorrace = akActor.GetRace()
 		String rk = sslCreatureAnimationSlots.GetRaceKey(actorrace)
 		If(rk == "Wolves" || rk == "Dogs")
-			rk == "Canines"
+			rk = "Canines"
 		EndIf
 		racekeyidx = GetAllRaceKeys().Find(rk) + 1
 		If(racekeyidx == 0)

@@ -1191,7 +1191,8 @@ int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1
 	elseIf Gender == 1
 		Gender = 3
 	endIf
-	return CreatePosition(Gender, Utility.CreateBoolArray(0), AddCum, RaceKey)
+	; Shift gender by 1 as legacy gender has no futa key
+	return CreatePosition(Gender + 1, Utility.CreateBoolArray(0), AddCum, RaceKey)
 endFunction
 
 string function GetGenderString(int Gender)

@@ -1337,6 +1337,8 @@ Function PlayStageAnimations()
 		ActorAlias[n].PlayAnimation(AnimEvents[n])
 		n += 1
 	EndWhile
+	float[] offsets = Animation.PositionOffsetsEx(AdjustKey, Stage, BedStatus[1])
+	sslpp.SetPositionsEx(Positions, _Center, offsets)
 EndFunction
 
 ; End leadin -> Start default animation

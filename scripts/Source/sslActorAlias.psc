@@ -157,7 +157,6 @@ endProperty
 ; Default Sate for an unused Alias. While in here, the Alias is empty and can be used for animation
 ; The Script will leave this State once an Actor has been properly filled in
 Auto State Empty
-	; TODO: Review
 	bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoice, bool abSilent)
 		if !akReference || akReference != GetReference()
 			Error("Reference mismatch on SetActor, expected " + GetReference() + " but got " + akReference)
@@ -224,9 +223,12 @@ Auto State Empty
 		return true
 	endFunction
 
-	; No Actor to get a key from
+	; No Actor to get a key/data from
 	String function GetActorKey()
 		return ""
+	EndFunction
+	int Function GetActorData()
+		return 0
 	EndFunction
 EndState
 
