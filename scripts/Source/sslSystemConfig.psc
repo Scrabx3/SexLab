@@ -792,19 +792,19 @@ endFunction
 
 bool function CheckSystemPart(string CheckSystem)
 	if CheckSystem == "Skyrim"
-		return (StringUtil.SubString(Debug.GetVersionNumber(), 0, 3) as float) >= 1.6
+		return (StringUtil.SubString(Debug.GetVersionNumber(), 0, 3) as float) >= 1.5
 
 	elseIf CheckSystem == "SKSE"
-		return SKSE.GetScriptVersionRelease() >= 69
+		return SKSE.GetScriptVersionRelease() >= 64
 
 	elseIf CheckSystem == "SkyUI"
 		return Quest.GetQuest("SKI_ConfigManagerInstance") != none
 
 	elseIf CheckSystem == "SexLabUtil"
-		return SexLabUtil.GetPluginVersion() >= 16500
+		return SexLabUtil.GetPluginVersion() >= 16300
 
 	elseIf CheckSystem == "PapyrusUtil"
-		return PapyrusUtil.GetVersion() >= 44
+		return PapyrusUtil.GetVersion() >= 39
 
 	elseIf CheckSystem == "NiOverride"
 		return SKSE.GetPluginVersion("SKEE64") >= 7 || NiOverride.GetScriptVersion() >= 7 ;SSE
