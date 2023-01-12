@@ -357,12 +357,17 @@ State Making
 			return false
 		EndIf
 		keys = sslActorData.SortDataKeys(keys)
-		sslBaseAnimation[] anims = AnimSlots.GetAnimationsByKeys(keys, asTags, aiUseBed - 1)
-		If(anims.Length)
-			PrimaryAnimations = anims
-			return true
+		sslBaseAnimation[] anims
+		If(sslActorData.IsCreature(keys[keys.Length - 1]))
+			anims = CreatureSlots.GetAnimationsByKeys(keys, asTags, aiUseBed - 1)
+		Else
+			anims = AnimSlots.GetAnimationsByKeys(keys, asTags, aiUseBed - 1)
 		EndIf
-		return false
+		If(!anims.Length)
+			return false
+		EndIf
+		PrimaryAnimations = anims
+		return true
 	EndFunction
 
 	Function SetAnimations(sslBaseAnimation[] AnimationList)
@@ -1415,9 +1420,6 @@ endfunction
 
 Function EndAnimation(bool Quickly = false)
 	UnregisterForUpdate()
-	; Apparently the OnUpdate() cycle can carry over into a new state despite being unregistered
-	; I dont want to believe it myself its apparently a thing, so waiting 1 update cycle here just to be sure
-	Utility.Wait(0.6)	
 	GoToState("Ending")
 EndFunction
 
