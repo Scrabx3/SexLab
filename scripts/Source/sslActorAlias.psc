@@ -16,6 +16,26 @@ scriptname sslActorAlias extends ReferenceAlias
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+; Framework access
+sslThreadController Thread
+
+sslSystemConfig Config
+sslActorLibrary ActorLib
+sslActorStats Stats
+
+Actor PlayerRef
+Faction AnimatingFaction
+
+; Actor Info
+int vanilla_sex
+bool IsSkilled	; COMEBACK: Can prolly be deleted
+
+int Property Position
+	int Function Get()
+		return Thread.Positions.Find(ActorRef)
+	EndFunction
+EndProperty
+
 ; ------------------------------------------------------- ;
 ; --- API Related Functions & Data                    --- ;
 ; ------------------------------------------------------- ;
@@ -62,26 +82,6 @@ endfunction
 ; --- Still under constructions                       --- ;
 ; ------------------------------------------------------- ;
 
-; Framework access
-sslSystemConfig Config
-sslActorLibrary ActorLib
-sslActorStats Stats
-Actor PlayerRef
-
-; Actor Info
-int vanilla_sex
-String ActorRaceKey
-bool IsSkilled
-Faction AnimatingFaction
-
-; Current Thread state
-sslThreadController Thread
-int Property Position
-	int Function Get()
-		return Thread.Positions.Find(ActorRef)
-	EndFunction
-EndProperty
-
 float StartWait
 string StartAnimEvent
 bool NoOrgasm
@@ -99,7 +99,6 @@ sslBaseExpression Expression
 sslBaseExpression[] Expressions
 
 ; Storage
-int[] Flags
 Form[] Equipment
 Form LeftHand
 Form RightHand
@@ -123,31 +122,37 @@ Sound OrgasmFX
 
 Spell HDTHeelSpell
 
-; Thread.Animation Position/Thread.Stage flags
+; Animation Position/Stage flags
 bool property ForceOpenMouth auto hidden
 bool property OpenMouth hidden
 	bool function get()
-		return Flags[1] == 1 || ForceOpenMouth ; This is for compatibility reasons because mods like DDi realy need it.
+		return Thread.Animation.UseOpenMouth(Position, Thread.Stage) || ForceOpenMouth ; This is for compatibility reasons because mods like DD realy need it.
 	endFunction
 endProperty
+
 bool property IsSilent hidden
 	bool function get()
-		return !Voice || IsForcedSilent || Flags[0] == 1 || Flags[1] == 1
+		return !Voice || IsForcedSilent || OpenMouth || Thread.Animation.UseOpenMouth(Position, Thread.Stage)
 	endFunction
 endProperty
+
 bool property UseStrapon hidden
-	bool function get()
-		return Flags[2] == 1 || Flags[4] == 0
+	bool function get()	; Use Strapon if [actor is pure female] && ([animation has flag] || [animation expects male/futa])
+		bool flag = Thread.Animation.UseStrapon(Position, Thread.Stage)
+		int gender = Thread.Animation.GetGenderEx(Position)
+		return sslActorData.IsPureFemale(_ActorData) && (flag || gender != 1)
 	endFunction
 endProperty
+
 int property Schlong hidden
 	int function get()
-		return Flags[3]
+		return Thread.Animation.GetSchlong(Thread.AdjustKey, Position, Thread.Stage)
 	endFunction
 endProperty
+
 bool property MalePosition hidden
 	bool function get()
-		return Flags[4] == 0
+		return Thread.Animation.GetGender(Position) == 0
 	endFunction
 endProperty
 
@@ -216,8 +221,6 @@ Auto State Empty
 		EndIf
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
-		; Init some needed arrays
-		Flags = new int[5]
 		; Ready
 		RegisterEvents()
 		TrackedEvent("Added")
@@ -546,8 +549,6 @@ state Animating
 
 	; Basically just an "update for current animation stage"
 	function SyncThread()
-		Flags = Thread.Animation.PositionFlags(Flags, Thread.AdjustKey, Position, Thread.Stage)
-
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
 		if !IsSilent && Thread.Stage > 1
