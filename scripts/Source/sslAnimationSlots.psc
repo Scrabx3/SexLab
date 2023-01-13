@@ -40,38 +40,18 @@ EndFunction
 
 sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 	sslBaseAnimation[] ret = _GetAnimationsImpl(aiKeys, asTags)
-	If(ret.Length)
-		Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
-		return ret
-	EndIf
-	; TODO: Base fallback for futas on config, turn them female or male first
-	int n = aiKeys.Length
-	While(n > 0)
-		n -= 1
-		If(sslActorData.IsFuta(aiKeys[n]))
-			aiKeys[n] = sslActorData.AddGenderToKey(aiKeys[n], 5)
-			ret = _GetAnimationsImpl(sslActorData.SortDataKeys(aiKeys), asTags)
-			If(ret.Length)
-				Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
-				return ret
-			EndIf
+	While(!ret.Length)
+		aiKeys = ShiftKeys(aiKeys)
+		If(!aiKeys.Length)
+			Log("Unable to shift")
+			Log("Unable to find valid animations")
+			return sslUtility.AnimationArray(0)
 		EndIf
+		Log("Successfully shifted positions. New keys: " + aiKeys)
+		ret = _GetAnimationsImpl(aiKeys, asTags)
 	EndWhile
-	If(Config.UseStrapons)
-		int i = aiKeys.Length
-		While(i > 0)
-			i -= 1
-			If(sslActorData.IsPureFemale(aiKeys[i]))
-				aiKeys[n] = sslActorData.AddGenderToKey(aiKeys[i], 5)
-				ret = _GetAnimationsImpl(sslActorData.SortDataKeys(aiKeys), asTags)
-				If(ret.Length)
-					Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
-					return ret
-				EndIf
-			EndIf
-		EndWhile
-	EndIf
-	Log("Unable to find animations")
+	Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
+	return ret
 EndFunction
 
 sslBaseAnimation[] Function _GetAnimationsImpl(int[] aiKeys, String[] asTags)
@@ -100,6 +80,29 @@ sslBaseAnimation[] Function _GetAnimationsImpl(int[] aiKeys, String[] asTags)
 		j += 1
 	EndWhile
 	return _ret
+EndFunction
+
+int[] Function ShiftKeys(int[] aiKeys)
+	; IDEA: Shift Futas first to female, then to male
+	int k = aiKeys.Length
+	While(k > 0)
+		k -= 1
+		If(sslActorData.IsFuta(aiKeys[k]) && !sslActorData.IsMaleOverwrite(aiKeys[k]))
+			aiKeys[k] = sslActorData.AddGenderToKey(aiKeys[k], 5)
+			return sslActorData.SortDataKeys(aiKeys)
+		EndIf
+	EndWhile
+	If(Config.UseStrapons)
+		int i = aiKeys.Length
+		While(i > 0)
+			i -= 1
+			If(sslActorData.IsFemale(aiKeys[k]) && !sslActorData.IsMaleOverwrite(aiKeys[k]))
+				aiKeys[k] = sslActorData.AddGenderToKey(aiKeys[k], 5)
+				return sslActorData.SortDataKeys(aiKeys)
+			EndIf
+		EndWhile
+	EndIf
+	return Utility.CreateIntArray(0)
 EndFunction
 
 ; ------------------------------------------------------- ;

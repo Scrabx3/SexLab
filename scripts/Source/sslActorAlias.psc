@@ -30,6 +30,9 @@ int Function GetActorData()
 EndFunction
 
 String Function GetActorName()
+	If(!ActorRef)
+		return "EMPTY"
+	EndIf
 	return ActorRef.GetLeveledActorBase().GetName()
 EndFunction
 
@@ -44,11 +47,11 @@ int function GetGender()
 endFunction
 
 bool Function IsAggressor()
-	return Thread.Victims.Find(ActorRef) == -1
+	return Thread.Victims.Length && !sslActorData.IsVictim(_ActorData)
 EndFunction
 
 bool function IsVictim()
-	return Thread.Victims.Find(ActorRef) > -1
+	return sslActorData.IsVictim(_ActorData)
 endFunction
 
 function AdjustEnjoyment(int AdjustBy)
@@ -64,8 +67,6 @@ sslSystemConfig Config
 sslActorLibrary ActorLib
 sslActorStats Stats
 Actor PlayerRef
-
-; TODO: Remove these 3453462342634 local vars for readabilities sake
 
 ; Actor Info
 int vanilla_sex
@@ -162,6 +163,7 @@ Auto State Empty
 			Error("Reference mismatch on SetActor, expected " + GetReference() + " but got " + akReference)
 			return false
 		endIf
+		Log("Setting Actor to " + akReference)
 		Initialize()
 		ActorRef = akReference
 		_ActorData = sslActorData.BuildDataKey(akReference, abIsVictim)
@@ -220,6 +222,7 @@ Auto State Empty
 		RegisterEvents()
 		TrackedEvent("Added")
 		GoToState("Ready")
+		Log("Completed Actor Setup")
 		return true
 	endFunction
 

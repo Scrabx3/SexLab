@@ -33,6 +33,7 @@ int Function BuildDataKey(Actor akActor, bool abIsVictim = false) global
 			return 0
 		EndIf
 	EndIf
+	Debug.Trace("SEXLAB - Building Actor key from Actor " + akActor + " | Victim: " + abIsVictim + " | RaceKey = " + racekeyidx)
   return BuildDataKeyNative(akActor, abIsVictim, racekeyidx)
 EndFunction
 
