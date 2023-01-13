@@ -424,10 +424,15 @@ State Making
 		Else
 			; No Custom Animations. If there were thered be no point validating these
 			PrimaryAnimations = ValidateAnimations(PrimaryAnimations)
+			If(!PrimaryAnimations.Length && !SetAnimationsByTags(""))
+				ReportAndFail("Failed to start Thread -- No valid animations for given actors")
+				return none
+			EndIf
+			AddCommonTags(PrimaryAnimations)
 			If(LeadIn)
-				LeadAnimations = ValidateAnimations(LeadAnimations)
+				LeadAnimations = ValidateAnimations(LeadAnimations, false)
 				If(!LeadAnimations.Length)
-					LeadAnimations = AnimSlots._GetAnimations(GetPositionData(), Utility.CreateStringArray(0))
+					LeadAnimations = AnimSlots._GetAnimations(GetPositionData(), Utility.CreateStringArray(1, "LeadIn"))
 					LeadIn = LeadAnimations.Length
 				EndIf
 			Else
@@ -441,11 +446,6 @@ State Making
 				; 	DisableLeadIn(True)
 				; EndIf
 			EndIf
-			If(!PrimaryAnimations.Length && !SetAnimationsByTags(""))
-				ReportAndFail("Failed to start Thread -- No valid animations for given actors")
-				return none
-			EndIf
-			AddCommonTags(PrimaryAnimations)
 		EndIf
 		
 		; ------------------------- ;
@@ -1195,7 +1195,7 @@ EndFunction
 ; ---	Animation	Start                                 --- ;
 ; ------------------------------------------------------- ;
 
-sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
+sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, bool abAllowShift = true)
 	If(!akAnimations.Length)
 		return akAnimations
 	EndIf
@@ -1211,12 +1211,18 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations)
 		n += 1
 	EndWhile
 	valids = PapyrusUtil.RemoveInt(valids, -1)
-	While(!valids.Length)
+	While(!valids.Length && abAllowShift)
 		Log("No valid animations. Attempting shift. Keys before shift: " + pkeys)
 		pkeys = ShiftKeys(pkeys)
 		If(!pkeys.Length)
 			Log("Unable to shift")
 			Log("Unable to find valid animations")
+			int j = 0
+			While(j < pkeys.Length)
+				ActorAlias[i].ResetDataKey()				
+				j += 1
+			EndWhile
+			ArrangePositions()
 			return sslUtility.AnimationArray(0)
 		EndIf
 		Log("Successfully shifted positions. New keys: " + pkeys)
