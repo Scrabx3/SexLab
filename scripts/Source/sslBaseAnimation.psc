@@ -104,8 +104,14 @@ endProperty
 ; --- Genders				                                  --- ;
 ; ------------------------------------------------------- ;
 
-; Alternatively use DataKeys to get the gender of actors. This here does NOT support Futa actors
-; 0 - Male, 1 - Female, 2 - M. Crt, 3 - F. Crt
+; Gender of the given actor:
+; 0 - Male, 1 - Female, 2 - Futa, 3 - M. Crt, 4 - F. Crt
+int Function GetGenderEx(int aiPosition)
+	return sslActorData.GetGender(_DataKeys[aiPosition])
+EndFunction
+
+; Legacy gender count:
+; 0 - Male, 1 - Female + Futa, 2 - M. Crt, 3 - F. Crt
 int[] Property Genders Auto Hidden
 
 ; If the animation requires a creature to be gendered,
@@ -374,20 +380,6 @@ Function WriteFlag(int aiPosition, int aiStage, int aiIndex, int aiValue)
 	int w = (aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex
 	_FLAGS[w] = aiValue
 EndFunction
-
-int[] function GetPositionFlags(string AdjustKey, int Position, int Stage)
-	return PositionFlags(Utility.CreateIntArray(5), AdjustKey, Position, Stage)
-endFunction
-
-int[] function PositionFlags(int[] Output, string AdjustKey, int Position, int Stage)
-	Output = new int[5]
-	Output[0] = AccessFlag(Position, Stage - 1, kSilent)
-	Output[1] = AccessFlag(Position, Stage - 1, kOpenMouth)
-	Output[2] = AccessFlag(Position, Stage - 1, kStrapon)
-	Output[3] = GetSchlong(AdjustKey, Position, Stage)
-	Output[4] = GetGender(Position)
-	return Output
-endFunction
 
 bool function IsSilent(int Position, int Stage)
 	return AccessFlag(Position, Stage - 1, kSilent)
@@ -1073,6 +1065,20 @@ int function AddPosition(int Gender = 0, int AddCum = -1)
 endFunction
 bool function CheckByTags(int ActorCount, string[] Search, string[] Suppress, bool RequireAll)
 	return Enabled && ActorCount == PositionCount && CheckTags(Search, RequireAll) && (Suppress.Length < 1 || !HasOneTag(Suppress))
+endFunction
+
+int[] function GetPositionFlags(string AdjustKey, int Position, int Stage)
+	return PositionFlags(Utility.CreateIntArray(5), AdjustKey, Position, Stage)
+endFunction
+
+int[] function PositionFlags(int[] Output, string AdjustKey, int Position, int Stage)
+	Output = new int[5]
+	Output[0] = AccessFlag(Position, Stage - 1, kSilent)
+	Output[1] = AccessFlag(Position, Stage - 1, kOpenMouth)
+	Output[2] = AccessFlag(Position, Stage - 1, kStrapon)
+	Output[3] = GetSchlong(AdjustKey, Position, Stage)
+	Output[4] = GetGender(Position)
+	return Output
 endFunction
 
 ; Misc stuff

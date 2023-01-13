@@ -59,7 +59,7 @@ State Animating
 			return
 		EndIf
 		UnregisterForUpdate()
-
+		Log("Changing Animation")
 		If(!Config.AdjustStagePressed())	; Forward/Backward
 			SetAnimation(sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards))
 		Else	; Random
