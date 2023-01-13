@@ -381,9 +381,9 @@ endFunction
 
 int[] function PositionFlags(int[] Output, string AdjustKey, int Position, int Stage)
 	Output = new int[5]
-	Output[0] = AccessFlag(Position, Stage - 1, 0)
-	Output[1] = AccessFlag(Position, Stage - 1, 1)
-	Output[2] = AccessFlag(Position, Stage - 1, 2)
+	Output[0] = AccessFlag(Position, Stage - 1, kSilent)
+	Output[1] = AccessFlag(Position, Stage - 1, kOpenMouth)
+	Output[2] = AccessFlag(Position, Stage - 1, kStrapon)
 	Output[3] = GetSchlong(AdjustKey, Position, Stage)
 	Output[4] = GetGender(Position)
 	return Output

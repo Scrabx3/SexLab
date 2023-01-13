@@ -137,7 +137,7 @@ bool property IsSilent hidden
 endProperty
 bool property UseStrapon hidden
 	bool function get()
-		return Flags[2] == 1 && Flags[4] == 0
+		return Flags[2] == 1 || Flags[4] == 0
 	endFunction
 endProperty
 int property Schlong hidden
@@ -753,12 +753,9 @@ endFunction
 
 function ResolveStrapon(bool force = false)
 	if Strapon
-		bool equipped = ActorRef.IsEquipped(Strapon)
-		if UseStrapon ; || Thread.Animation.GetGender(Position) != 1
-			If(!equipped)
-				ActorRef.EquipItem(Strapon, true, true)
-			EndIf
-		ElseIf(equipped)
+		if UseStrapon && !ActorRef.IsEquipped(Strapon)
+			ActorRef.EquipItem(Strapon, true, true)
+		ElseIf(ActorRef.IsEquipped(Strapon))
 			ActorRef.UnequipItem(Strapon, true, true)
 		endIf
 	endIf
@@ -772,7 +769,7 @@ int function GetEnjoyment()
 	if !IsSkilled
 		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((Thread.Stage as float / Thread.Animation.StageCount as float) * 60.0)) as int
 	else
-		if Position == 0	; COMEBACK: ???
+		if Position == 0
 			Thread.RecordSkills()
 			Thread.SetBonuses()
 		endIf
@@ -883,10 +880,7 @@ endProperty
 bool NoRedress
 bool property DoRedress hidden
 	bool function get()
-		if NoRedress || (IsVictim() && !Config.RedressVictim)
-			return false
-		endIf
-		return !IsVictim() || (IsVictim() && Config.RedressVictim)
+		return !NoRedress && (!IsVictim() || Config.RedressVictim)
 	endFunction
 	function set(bool value)
 		NoRedress = !value
