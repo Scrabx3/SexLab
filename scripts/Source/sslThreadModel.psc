@@ -286,9 +286,6 @@ float SkillTime
 bool Property DebugMode auto hidden
 float Property t auto hidden
 
-; TODO: remove var v
-bool positions_shifted
-
 int[] Function GetPositionData()
 	int[] ret = Utility.CreateIntArray(Positions.Length)
 	int j = 0
@@ -573,6 +570,7 @@ State Animating
 		UnregisterForUpdate()
 		SendThreadEvent("StageEnd")
 		HookStageEnd()
+		Log("Going to Stage: " + ToStage)
 		Stage = ToStage
 		If(Stage > Animation.StageCount)
 			If(LeadIn)
@@ -1218,8 +1216,8 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, 
 			Log("Unable to shift")
 			Log("Unable to find valid animations")
 			int j = 0
-			While(j < pkeys.Length)
-				ActorAlias[i].ResetDataKey()				
+			While(j < ActorAlias.Length)
+				ActorAlias[j].ResetDataKey()
 				j += 1
 			EndWhile
 			ArrangePositions()
@@ -1301,7 +1299,6 @@ EndFunction
 ; Set the Active Animation & update the stage
 ; This should only be called from State "Animating"
 Function SetAnimation(int aid = -1)
-	; Randomize if -1
 	if aid < 0 || aid >= Animations.Length
 		aid = Utility.RandomInt(0, (Animations.Length - 1))
 	endIf
@@ -1329,7 +1326,6 @@ Function SetAnimationImpl(sslBaseAnimation akAnimation)
 	IsType[5] = animtags.Find("Dirty") 	!= -1
 	SetBonuses()
 	SoundFX = Animation.GetSoundFX(Stage)
-	; TODO: Define Position Adjustment Data
 EndFunction
 
 Function PlayStageAnimations()
