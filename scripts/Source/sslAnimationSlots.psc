@@ -41,32 +41,31 @@ EndFunction
 sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 	sslBaseAnimation[] ret = _GetAnimationsImpl(aiKeys, asTags)
 	While(!ret.Length)
-		; Log("Unable to find animations. Shifting positions from keys: " + aiKeys)
+		Log("Unable to find animations. Shifting positions from keys: " + aiKeys)
 		aiKeys = ShiftKeys(aiKeys)
 		If(!aiKeys.Length)
-			; Log("Unable to shift")
+			Log("Unable to shift")
 			Log("Unable to find animations")
 			return sslUtility.AnimationArray(0)
 		EndIf
 		ret = _GetAnimationsImpl(aiKeys, asTags)
 	EndWhile
-	; Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
-	Log("_GetAnimations: Found " + ret.Length + " animations")
+	Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
 	return ret
 EndFunction
 
 sslBaseAnimation[] Function _GetAnimationsImpl(int[] aiKeys, String[] asTags)
-	; Log("Searching for Animation with Keys = " + aiKeys + " | Tags = " + asTags)
+	Log("Searching for Animation with Keys = " + aiKeys + " | Tags = " + asTags)
 	sslBaseAnimation[] ret = new sslBaseAnimation[128]
 	int i = 0
 	int ii = 0
 	While(i < Slotted)
 		If(Objects[i])
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			; Log("Validating Animation Nr. " + i + " | Keys = " + Slot.DataKeys() + " | Tags = " + Slot.GetTags())
+			Log("Validating Animation Nr. " + i + " | Keys = " + Slot.DataKeys() + " | Tags = " + Slot.GetTags())
 			If(Slot.Enabled && Slot.MatchKeys(aiKeys) && Slot.MatchTags(asTags))
 				ret[ii] = Slot
-				If(ii == 127)	; Array is full
+				If(ii == 127)
 					return ret
 				EndIf
 				ii += 1
