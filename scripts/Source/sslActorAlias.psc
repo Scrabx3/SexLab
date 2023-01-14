@@ -140,7 +140,7 @@ bool property UseStrapon hidden
 	bool function get()	; Use Strapon if [actor is pure female] && ([animation has flag] || [animation expects male/futa])
 		bool flag = Thread.Animation.UseStrapon(Position, Thread.Stage)
 		int gender = Thread.Animation.GetGenderEx(Position)
-		return sslActorData.IsPureFemale(_ActorData) && (flag || gender != 1)
+		return sslActorData.IsFemale(_ActorData) && (flag || gender != 1)
 	endFunction
 endProperty
 
@@ -334,7 +334,7 @@ State Ready
 		EndIf
 		; Strapon & Expression (for NPC only)
 		If(!sslActorData.IsCreature(_ActorData))
-			If(Config.UseStrapons && sslActorData.IsPureFemale(_ActorData))
+			If(Config.UseStrapons && sslActorData.IsFemale(_ActorData))
 				HadStrapon = Config.WornStrapon(ActorRef)
 				If(!HadStrapon)
 					Strapon = Config.GetStrapon()
@@ -642,7 +642,7 @@ state Animating
 			PlayLouder(OrgasmFX, ActorRef, Config.SFXVolume)
 		EndIf
 		; Apply cum to female positions from male position orgasm
-		if Thread.ActorCount > 1 && Config.UseCum && (MalePosition || sslActorData.IsCreature(_ActorData)) && (Config.AllowFFCum || !sslActorData.IsPureFemale(_ActorData) && !sslActorData.IsFemaleCreature(_ActorData))
+		if Thread.ActorCount > 1 && Config.UseCum && (MalePosition || sslActorData.IsCreature(_ActorData)) && (Config.AllowFFCum || !sslActorData.IsFemale(_ActorData) && !sslActorData.IsFemaleCreature(_ActorData))
 			if Thread.ActorCount == 2
 				Thread.PositionAlias(1 - Position).ApplyCum()
 			else

@@ -33,7 +33,7 @@ int Function BuildDataKey(Actor akActor, bool abIsVictim = false) global
 			return 0
 		EndIf
 	EndIf
-	Debug.Trace("SEXLAB - Building Actor key from Actor " + akActor + " | Victim: " + abIsVictim + " | RaceKey = " + racekeyidx)
+	; Debug.Trace("SEXLAB - Building Actor key from Actor " + akActor + " | Victim: " + abIsVictim + " | RaceKey = " + racekeyidx)
   return BuildDataKeyNative(akActor, abIsVictim, racekeyidx)
 EndFunction
 
@@ -93,26 +93,22 @@ bool Function MatchArray(int[] aiKeys, int[] aiCmp) native global
 ; --- Reading                 				                --- ;
 ; ------------------------------------------------------- ;
 
-; Return an integer ID for the given key
-; 0 - Male
-; 1 - Female
-; 2 - Futa
-; 3 - M Crt
-; 4 - F Crt
+; Return an integer id for the given keys gender, ignoring overwrites
+; 0 - Male / 1 - Female / 2 - Futa / 3 - M Crt / 4 - F Crt
 int Function GetGender(int aiKey) native global
 
-; Return the real gender of this actor, ie the gender without respect to overwrites
-; A futa is defined as a female with a schlong from SoS, a Creature is always gendered
+; Wrappers for the above function. Does not respect overwrites
+; Futas are a unique gender [IsFuta() <=> !IsFemale()], Creatures are gendered by default
 bool Function IsMale(int aiKey) native global
 bool Function IsFemale(int aiKey) native global
-bool Function IsPureFemale(int aiKey) native global			; assert(IsFemale() && !IsFuta())
-bool Function IsFuta(int aiKey) native global      			; assert(IsFemale() && !IsPureFemale())
-bool Function IsCreature(int aiKey) native global  			; assert(IsMaleCreature() || IsFemaleCreature())
-bool Function IsMaleCreature(int aiKey) native global		;	may return false positive if creature gender is disabled
-bool Function IsFemaleCreature(int aiKey) native global	;	may return false positive if creature gender is disabled
+bool Function IsFuta(int aiKey) native global
+bool Function IsCreature(int aiKey) native global
+bool Function IsMaleCreature(int aiKey) native global
+bool Function IsFemaleCreature(int aiKey) native global
 
 bool Function IsVictim(int aiKey) native global
 bool Function IsVampire(int aiKey) native global
+; bool Function IsDead(int aiKey) native global
 
 ; Gender overwrites are used to allow authors and users to manually assign a gender to an actor
 ; These only support male and female overwrites and are primarily used for animation filtering
@@ -125,8 +121,7 @@ bool Function IsFemaleOverwrite(int aiKey) native global
 ; use the RaceKey (String) for bookmarking or comparing specific races
 int Function GetRaceID(int aiKey) native global
 
-; Gets the RaceKey this DataKey represents. Every group of races uses a distinct RaceKey, see
-; SexlabFramework.psc for a short introduction on RaceKeys
+; The racekey this key represents. See SexLabFramework.psc
 String Function GetRaceKey(int aiKey) global
   int idx = GetRaceID(aiKey)
   If(idx > 0)
@@ -164,6 +159,8 @@ int Function BuildBlankKey() native global
 ; --- Misc		                 				                --- ;
 ; ------------------------------------------------------- ;
 
+; int Function AddOverWrite(int aiKey, bool abFemale) native global
+
 ; 0 - Male, 1 - Female, 2 - Futa, 3 - M Crt, 4 - F Crt, 5 - Overwrite Male, 6 - Overwrite Female
 int Function AddGenderToKey(int aiKey, int aiGender) native global
 int Function RemoveGenderFromKey(int aiKey, int aiGender) native global
@@ -178,7 +175,7 @@ Function NeutralizeCreatureGender(int[] aiKeys) native global
 ; NOTE: ALL BELOW CODE IS TEMPORARY AND ONLY EXISTS AS I DO NOT OWN SEXLABS ORIGINAL DLL SOURCE
 ; DO NOT USE ANY FUNCTION HERE AS IT WILL (hopefully) BE REMOVED AT ONE POINT WITHOUT WARNING
 
-int Function BuildDataKeyNative(Actor akActor, bool abIsVictim, int aiRaceID) native global
+int Function BuildDataKeyNative(Actor akActor, bool abIsVictim, int asRaceKey) native global
 
 String[] Function GetAllRaceKeys() global
   String[] ret = new String[52]

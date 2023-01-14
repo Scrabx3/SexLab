@@ -41,28 +41,29 @@ EndFunction
 sslBaseAnimation[] Function _GetAnimations(int[] aiKeys, String[] asTags)
 	sslBaseAnimation[] ret = _GetAnimationsImpl(aiKeys, asTags)
 	While(!ret.Length)
+		; Log("Unable to find animations. Shifting positions from keys: " + aiKeys)
 		aiKeys = ShiftKeys(aiKeys)
 		If(!aiKeys.Length)
-			Log("Unable to shift")
-			Log("Unable to find valid animations")
+			; Log("Unable to shift")
+			Log("Unable to find animations")
 			return sslUtility.AnimationArray(0)
 		EndIf
-		Log("Successfully shifted positions. New keys: " + aiKeys)
 		ret = _GetAnimationsImpl(aiKeys, asTags)
 	EndWhile
-	Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
+	; Log("_GetAnimations: Found " + ret.Length + " animations | Keys " + aiKeys + " | Tags = " + asTags)
+	Log("_GetAnimations: Found " + ret.Length + " animations")
 	return ret
 EndFunction
 
 sslBaseAnimation[] Function _GetAnimationsImpl(int[] aiKeys, String[] asTags)
-	Log("Searching for Animation with Keys = " + aiKeys + " | Tags = " + asTags)
+	; Log("Searching for Animation with Keys = " + aiKeys + " | Tags = " + asTags)
 	sslBaseAnimation[] ret = new sslBaseAnimation[128]
 	int i = 0
 	int ii = 0
 	While(i < Slotted)
 		If(Objects[i])
 			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			Log("Validating Animation Nr. " + i + " | Keys = " + Slot.DataKeys() + " | Tags = " + Slot.GetTags())
+			; Log("Validating Animation Nr. " + i + " | Keys = " + Slot.DataKeys() + " | Tags = " + Slot.GetTags())
 			If(Slot.Enabled && Slot.MatchKeys(aiKeys) && Slot.MatchTags(asTags))
 				ret[ii] = Slot
 				If(ii == 127)	; Array is full
@@ -632,6 +633,7 @@ EndFunction
 
 
 sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	Log("AnimationFilter: GetByTags")
 	int[] keys = Utility.CreateIntArray(ActorCount)
 	int n = 0
 	While(n < keys.Length)
@@ -645,6 +647,7 @@ sslBaseAnimation[] function GetByTags(int ActorCount, string Tags, string TagsSu
 endFunction
 
 sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	Log("AnimationFilter: GetByCommonTags")
 	If(CommonTags == "")
 		return GetByTags(ActorCount, Tags, TagsSuppressed, RequireAll)
 	EndIf
@@ -662,16 +665,9 @@ sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, s
 EndFunction
 
 sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
+	Log("AnimationFilter: GetByType")
 	int[] keys = Utility.CreateIntArray(ActorCount)
 	int i = 0
-	While(i < Females)
-		keys[i] = sslActorData.BuildByLegacyGender(1)
-		i += 1
-	EndWhile
-	While(i < Females + Males)
-		keys[i] = sslActorData.BuildByLegacyGender(0)
-		i += 1
-	EndWhile
 	While(i < ActorCount)
 		keys[i] = sslActorData.BuildBlankKey()
 		i += 1
@@ -681,11 +677,11 @@ sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Female
 		tags = new String[1]
 		tags[0] = "-LeadIn"
 	EndIf
-	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	return _GetAnimations(sslActorData.SortDataKeys(keys), tags)
+	return _GetAnimations(keys, tags)
 endFunction
 
 sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
+	Log("AnimationFilter: PickByActors")
 	String tags = ""
 	If(Aggressive)
 		tags += "Aggressive"
@@ -694,6 +690,7 @@ sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool
 EndFunction
 
 sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
+	Log("AnimationFilter: GetByDefault")
 	int[] keys = Utility.CreateIntArray(Males + Females)
 	int n = 0
 	While(n < Females)
@@ -714,10 +711,12 @@ sslBaseAnimation[] function GetByDefault(int Males, int Females, bool IsAggressi
 		tags[0] = "Aggressive"
 	EndIf
 	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	return _GetAnimations(sslActorData.SortDataKeys(keys), tags)
+	keys = sslActorData.SortDataKeys(keys)
+	return _GetAnimations(keys, tags)
 EndFunction
 
 sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
+	Log("AnimationFilter: GetByDefaultTags")
 	If(Males + Females == 0)
 		return none
 	EndIf
@@ -773,7 +772,8 @@ sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggr
 		EndIf
 	EndIf
 	; Sorting is technically unnecessary but want to avoid breaking this if default order ever changes
-	return _GetAnimations(sslActorData.SortDataKeys(keys), argTags)
+	keys = sslActorData.SortDataKeys(keys)
+	return _GetAnimations(keys, argTags)
 EndFunction
 
 sslBaseAnimation[] function GetList(bool[] Valid)

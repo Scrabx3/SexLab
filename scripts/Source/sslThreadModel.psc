@@ -1199,10 +1199,10 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, 
 	EndIf
 	int[] valids = Utility.CreateIntArray(akAnimations.Length, -1)
 	int[] pkeys = GetPositionDataConfig()
-	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
+	; Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
 	int n = 0
 	While(n < akAnimations.Length)
-		Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].DataKeys() + " | Tags = " + akAnimations[n].GetTags())
+		; Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].DataKeys() + " | Tags = " + akAnimations[n].GetTags())
 		If(akAnimations[n].MatchKeys(pkeys) && akAnimations[n].MatchTags(Tags))
 			valids[n] = n
 		EndIf
@@ -1210,10 +1210,10 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, 
 	EndWhile
 	valids = PapyrusUtil.RemoveInt(valids, -1)
 	While(!valids.Length && abAllowShift)
-		Log("No valid animations. Attempting shift. Keys before shift: " + pkeys)
+		; Log("No valid animations. Attempting shift. Keys before shift: " + pkeys)
 		pkeys = ShiftKeys(pkeys)
 		If(!pkeys.Length)
-			Log("Unable to shift")
+			; Log("Unable to shift")
 			Log("Unable to find valid animations")
 			int j = 0
 			While(j < ActorAlias.Length)
@@ -1223,11 +1223,11 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, 
 			ArrangePositions()
 			return sslUtility.AnimationArray(0)
 		EndIf
-		Log("Successfully shifted positions. New keys: " + pkeys)
+		; Log("Successfully shifted positions. New keys: " + pkeys)
 		valids = Utility.CreateIntArray(akAnimations.Length, -1)
 		int i = 0
 		While(i < akAnimations.Length)
-			Log("Validating Animation Nr. " + i + " | Keys = " + akAnimations[i].DataKeys() + " | Tags = " + akAnimations[i].GetTags())
+			; Log("Validating Animation Nr. " + i + " | Keys = " + akAnimations[i].DataKeys() + " | Tags = " + akAnimations[i].GetTags())
 			If(akAnimations[i].MatchKeys(pkeys) && akAnimations[i].MatchTags(Tags))
 				valids[i] = i
 			EndIf
@@ -1264,7 +1264,7 @@ int[] Function ShiftKeys(int[] aiKeys)
 	int i = aiKeys.Length
 	While(i > 0)
 		i -= 1
-		If(sslActorData.IsPureFemale(aiKeys[i]) && !sslActorData.IsMaleOverwrite(aiKeys[i]))
+		If(sslActorData.IsFemale(aiKeys[i]) && !sslActorData.IsMaleOverwrite(aiKeys[i]))
 			ActorAlias[i].OverwriteMyGender(false)
 			ArrangePositions()
 			return GetPositionDataConfig()
@@ -1652,7 +1652,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 Function ArrangePositions()
-	Log("Arranging Positions - Pre Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
+	; Log("Arranging Positions - Pre Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
 	int i = 1
 	While(i < ActorAlias.Length)
 		sslActorAlias it = ActorAlias[i]
@@ -1669,7 +1669,7 @@ Function ArrangePositions()
 		Positions[k] = ActorAlias[k].GetReference() as Actor
 		k +=1
 	EndWhile
-	Log("Arranging Positions - Post Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
+	; Log("Arranging Positions - Post Arrange -> Alias = " + ActorAlias + " | Positions = " + Positions + " | Keys = " + GetPositionData())
 EndFunction
 
 Function SetFurnitureIgnored(bool disabling = true)

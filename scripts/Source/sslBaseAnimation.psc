@@ -600,10 +600,7 @@ function Save(int id = -1)
 		ogidx[k] = k
 		k += 1
 	EndWhile
-	; ZynFemdom - Keys before sorting: [2, 1, 2] / [0, 1, 2]
-	; ZynFemdom - Keys after sorting: [1, 2, 2] / [1, 0, 1]
-	; expected: [1, 2, 2] / [1, 0, 2]
-	Log("Keys before sorting: " + _DataKeys + " / " + ogidx)
+	; Log("Keys before sorting: " + _DataKeys + " / " + ogidx)
 	int i = 1
 	While(i < _DataKeys.Length)
 		int x = ogidx[i]
@@ -618,9 +615,8 @@ function Save(int id = -1)
 		ogidx[n + 1] = x
 		i += 1
 	EndWhile
-	Log("Keys after sorting: " + _DataKeys + " / " + ogidx)
-
-	Log("Animations before sorting: " + _ANIMATIONS)
+	; Log("Keys after sorting: " + _DataKeys + " / " + ogidx)
+	; Log("Animations before sorting: " + _ANIMATIONS)
 	String[] og_str = _ANIMATIONS
 	float[] og_flt = _OFFSETS
 	int[] og_int = _FLAGS
@@ -656,7 +652,7 @@ function Save(int id = -1)
 		EndWhile
 		n += 1
 	EndWhile
-	Log("Animations after sorting: " + _ANIMATIONS)
+	; Log("Animations after sorting: " + _ANIMATIONS)
 
 	; Add legacy gender tags/data
 	String[] gendertag = Utility.CreateStringArray(Actors)
