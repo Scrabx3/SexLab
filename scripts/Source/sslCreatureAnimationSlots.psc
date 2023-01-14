@@ -554,7 +554,7 @@ sslBaseAnimation[] function GetByCreatureActorsTags(int ActorCount, Actor[] Posi
 			ii -= 1
 			keys[i] = data[ii]
 		Else
-			keys[i] = sslActorData.BuildByLegacyGenderNative(-1, 0)
+			keys[i] = sslActorData.BuildByLegacyGender(-1)
 		EndIf
 	EndWhile
 	String[] t = BuildArgTags(PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(Tags)), PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(TagsSuppressed)), RequireAll)

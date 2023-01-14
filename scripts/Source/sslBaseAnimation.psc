@@ -130,10 +130,10 @@ EndFunction
 
 ; If the animation includes actors of different race groups
 bool function IsInterspecies()
-	int k = sslActorData.GetRaceID(_DataKeys[0])
+	String k = sslActorData.GetRaceKey(_DataKeys[0])
 	int i = 1
 	While(i < _DataKeys.Length)
-		int nk = sslActorData.GetRaceID(_DataKeys[i])
+		String nk = sslActorData.GetRaceKey(_DataKeys[i])
 		If(nk != k)
 			return true
 		EndIf
@@ -549,8 +549,7 @@ int Function CreatePosition(int aiGender, bool[] abFlags, int aiCum = -1, String
 		asRaceKey = "Canines"
 	EndIf
 	; Invalid RaceKey returns 0/human
-	int raceid = sslActorData.GetRaceIDByRaceKey(asRaceKey)
-	_DataKeys[idx] = sslActorData.BuildCustomKey(aiGender, raceid, abFlags)
+	_DataKeys[idx] = sslActorData.BuildCustomKeyA(aiGender, asRaceKey, abFlags)
 
 	position_stage = 0
 	WriteFlag(idx, 0, kCumID, aiCum)

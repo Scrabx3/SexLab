@@ -1313,7 +1313,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 int Function OverwriteMyGender(bool abToFemale)
-	_ActorData = sslActorData.AddGenderToKey(_ActorData, 5 + abToFemale as int)
+	_ActorData = sslActorData.AddOverWrite(_ActorData, abToFemale)
 	return _ActorData
 EndFunction
 

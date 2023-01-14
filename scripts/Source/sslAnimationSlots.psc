@@ -89,7 +89,7 @@ int[] Function ShiftKeys(int[] aiKeys)
 	While(k > 0)
 		k -= 1
 		If(sslActorData.IsFuta(aiKeys[k]) && !sslActorData.IsMaleOverwrite(aiKeys[k]))
-			aiKeys[k] = sslActorData.AddGenderToKey(aiKeys[k], 5)
+			aiKeys[k] = sslActorData.AddOverWrite(aiKeys[k], false)
 			return sslActorData.SortDataKeys(aiKeys)
 		EndIf
 	EndWhile
@@ -98,7 +98,7 @@ int[] Function ShiftKeys(int[] aiKeys)
 		While(i > 0)
 			i -= 1
 			If(sslActorData.IsFemale(aiKeys[k]) && !sslActorData.IsMaleOverwrite(aiKeys[k]))
-				aiKeys[k] = sslActorData.AddGenderToKey(aiKeys[k], 5)
+				aiKeys[k] = sslActorData.AddOverWrite(aiKeys[k], false)
 				return sslActorData.SortDataKeys(aiKeys)
 			EndIf
 		EndWhile
