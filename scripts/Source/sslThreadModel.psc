@@ -573,6 +573,7 @@ State Animating
 		Log("Going to Stage: " + ToStage)
 		Stage = ToStage
 		If(Stage > Animation.StageCount)
+			Log("Stage > Animation.StageCount")
 			If(LeadIn)
 				EndLeadInImpl()
 			Else
@@ -1304,13 +1305,14 @@ Function SetAnimation(int aid = -1)
 	endIf
 	RecordSkills()
 	SetAnimationImpl(Animations[aid])
-	; Reset the currently playing animation
-	; ResetPositions()	; TODO: New Animation => Check Position Adjustments
-	If(Stage >= Animation.StageCount)
-		GoToStage(Animation.StageCount - 1)
-	Else
-		GoToStage(Stage)
-	EndIf
+	; This is only called when changing animation from an active one
+	int i = 0
+	While(i < Positions.Length)
+		ActorAlias[i].SendDefaultAnimEvent()
+		i += 1
+	EndWhile
+	Utility.Wait(0.2)
+	GoToStage(1)
 EndFunction
 
 ; Set active animation data only
@@ -1426,6 +1428,8 @@ EndFunction
 
 State Ending
 	Event OnBeginState()
+		; Some time for Thread Events to finish running
+		RegisterForSingleUpdate(15)
 		SendThreadEvent("AnimationEnding")
 		HookAnimationEnding()
 		Config.DisableThreadControl(self as sslThreadController)
@@ -1446,11 +1450,10 @@ State Ending
 			ActorAlias[i].Clear()
 			i += 1
 		EndWhile
-		; Some time for Thread Events to finish running
-		RegisterForSingleUpdate(15)
 	EndEvent
 
 	Event OnUpdate()
+		Log("Animation End Timeout over, initializing...")
 		Initialize()
 	EndEvent
 

@@ -137,10 +137,10 @@ bool property IsSilent hidden
 endProperty
 
 bool property UseStrapon hidden
-	bool function get()	; Use Strapon if [actor is pure female] && ([animation has flag] || [animation expects male/futa])
+	bool function get()
 		bool flag = Thread.Animation.UseStrapon(Position, Thread.Stage)
 		int gender = Thread.Animation.GetGenderEx(Position)
-		return sslActorData.IsFemale(_ActorData) && (flag || gender != 1)
+		return sslActorData.IsFemale(_ActorData) && flag && gender != 1
 	endFunction
 endProperty
 
@@ -286,7 +286,6 @@ State Ready
 		Log("Playing Animation " + asAnimation)
 		Debug.SendAnimationEvent(ActorRef, "SOSFastErect")
 		Debug.SendAnimationEvent(ActorRef, asAnimation)
-		PlayingSA = Thread.Animation.Registry
 		PlayingAE = asAnimation
 		GoToState("Animating")
 	EndFunction
@@ -415,7 +414,6 @@ EndState
 ; --- Animation Loop       				                    --- ;
 ; ------------------------------------------------------- ;
 
-string PlayingSA
 string PlayingAE
 float LoopDelay
 float LoopExpressionDelay
@@ -530,11 +528,8 @@ state Animating
 		Log("Playing Animation " + asAnimation)
 		; Dont restart the animation, might create some odd stuttering otherwise
 		If(PlayingAE == asAnimation)
+			Log("Playing Animation is same as current one, abandon")
 			return
-		ElseIf(PlayingSA != Thread.Animation.Registry)
-			; This only happens when the active animation is changed
-			Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
-			SendDefaultAnimEvent()
 		EndIf
 		Debug.SendAnimationEvent(ActorRef, asAnimation)
 		PlayingAE = asAnimation
@@ -544,8 +539,6 @@ state Animating
 	Event OnTranslationComplete()
 		Snap()
 	EndEvent
-
-	; --- TODO: Review & reimplement these
 
 	; Basically just an "update for current animation stage"
 	function SyncThread()
@@ -560,6 +553,7 @@ state Animating
 		Debug.SendAnimationEvent(ActorRef, "SOSBend"+Schlong)
 	endFunction
 
+	; --- TODO: Review & reimplement these
 	function RefreshLoc()	; COMEBACK: Call "SetPositions" again with the new offset data
 		; Thread.ResetLocation()
 	endFunction
@@ -1407,7 +1401,6 @@ Function Initialize()
 	StartWait      = 0.0
 	; Strings
 	StartAnimEvent = ""
-	PlayingSA      = ""
 	PlayingAE      = ""
 	; Storage
 	StripOverride  = Utility.CreateIntArray(0)
