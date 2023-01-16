@@ -427,21 +427,20 @@ State Making
 			EndIf
 			AddCommonTags(PrimaryAnimations)
 			If(LeadIn)
-				LeadAnimations = ValidateAnimations(LeadAnimations, false)
-				If(!LeadAnimations.Length)
-					LeadAnimations = AnimSlots._GetAnimations(GetPositionData(), Utility.CreateStringArray(1, "LeadIn"))
-					LeadIn = LeadAnimations.Length
+				float LeadInCoolDown = Math.Abs(SexLabUtil.GetCurrentGameRealTimeEx() - StorageUtil.GetFloatValue(Config,"SexLab.LastLeadInEnd",0))
+				If(LeadInCoolDown < Config.LeadInCoolDown)
+					Log("LeadIn CoolDown " + LeadInCoolDown + "::" + Config.LeadInCoolDown)
+					DisableLeadIn(True)
+				ElseIf(Config.LeadInCoolDown > 0 && PrimaryAnimations && PrimaryAnimations.Length && AnimSlots.CountTag(PrimaryAnimations, "Anal,Vaginal") < 1)
+					Log("None of the PrimaryAnimations have 'Anal' or 'Vaginal' tags. Disabling LeadIn")
+					DisableLeadIn(True)
+				Else
+					LeadAnimations = ValidateAnimations(LeadAnimations, false)
+					If(!LeadAnimations.Length)
+						LeadAnimations = AnimSlots._GetAnimations(GetPositionData(), Utility.CreateStringArray(1, "LeadIn"))
+						LeadIn = LeadAnimations.Length
+					EndIf
 				EndIf
-			Else
-				; COMEBACK: This doesnt actually do anything, idk why its there or if I should remove it
-				; float LeadInCoolDown = Math.Abs(SexLabUtil.GetCurrentGameRealTimeEx() - StorageUtil.GetFloatValue(Config,"SexLab.LastLeadInEnd",0))
-				; If(LeadInCoolDown < Config.LeadInCoolDown)
-				; 	Log("LeadIn CoolDown " + LeadInCoolDown + "::" + Config.LeadInCoolDown)
-				; 	DisableLeadIn(True)
-				; ElseIf(Config.LeadInCoolDown > 0 && PrimaryAnimations && PrimaryAnimations.Length && AnimSlots.CountTag(PrimaryAnimations, "Anal,Vaginal") < 1)
-				; 	Log("None of the PrimaryAnimations have 'Anal' or 'Vaginal' tags. Disabling LeadIn")
-				; 	DisableLeadIn(True)
-				; EndIf
 			EndIf
 		EndIf
 		
@@ -720,8 +719,10 @@ EndState
 ; ------------------------------------------------------- ;
 
 bool Function UseLimitedStrip()
+	bool limitedstrip = HasTag("LimitedStrip")
 	bool LeadInNoBody = !(Config.StripLeadInMale[2] || Config.StripLeadInFemale[2])
-	return (LeadIn && (!LeadInNoBody || AnimSlots.CountTag(Animations, "LimitedStrip") == Animations.Length)) || (Config.LimitedStrip && ((!LeadInNoBody && AnimSlots.CountTag(Animations, "Kissing,Foreplay,LeadIn,LimitedStrip") == Animations.Length) || (LeadInNoBody && AnimSlots.CountTag(Animations, "LimitedStrip") == Animations.Length)))
+	return LeadIn && (!LeadInNoBody || limitedstrip) || \
+	Config.LimitedStrip && (limitedstrip || (!LeadInNoBody && AnimSlots.CountTag(Animations, "Kissing,Foreplay,LeadIn,LimitedStrip") == Animations.Length))
 EndFunction
 
 ; Actor Overrides
@@ -1356,9 +1357,11 @@ Function EndLeadInImpl()
 	; Add runtime to foreplay skill xp
 	SkillXP[0] = SkillXP[0] + (TotalTime / 10.0)
 	; Restrip with new strip options
-	; TODO: Get rid of this "QuickEvent" stuff
-	QuickEvent("Strip")
-	; Start primary animations at stage 1
+	int i = 0
+	While(i < Positions.Length)
+		ActorAlias[i].Strip()
+		i += 1
+	EndWhile
 	StorageUtil.SetFloatValue(Config, "SexLab.LastLeadInEnd", SexLabUtil.GetCurrentGameRealTimeEx())
 	SendThreadEvent("LeadInEnd")
 	GoToStage(1)
@@ -1423,6 +1426,9 @@ endfunction
 
 Function EndAnimation(bool Quickly = false)
 	UnregisterForUpdate()
+	; Apparently the OnUpdate() cycle can carry over into a new state despite being unregistered
+	; I dont want to believe it myself its apparently a thing, so waiting 1 update cycle here just to be sure
+	Utility.Wait(0.6)
 	GoToState("Ending")
 EndFunction
 
