@@ -1166,16 +1166,16 @@ Function Strip()
 		LeftHand = none
 	EndIf
 	; Armor
-	Equipment = sslpp.StripActor(ActorRef, Strip[0])
-	Log("<Strip> Left Weapon: " + LeftHand + " | Right Weapon: " + RightHand + " | Equipment: " + Equipment)
+	Form[] gear = sslpp.StripActor(ActorRef, Strip[0])
+	Equipment = PapyrusUtil.MergeFormArray(Equipment, gear)
+	Log("<Strip> Left Weapon: " + LeftHand + " | Right Weapon: " + RightHand + " | Equipment: " + gear + " | Total Stripped: " + Equipment)
 	; Equip the nudesuit
 	if Math.LogicalAnd(Strip[0], 4) && (vanilla_sex == 0 && Config.UseMaleNudeSuit || vanilla_sex == 1 && Config.UseFemaleNudeSuit)
 		ActorRef.EquipItem(Config.NudeSuit, true, true)
 	endIf
-	; Suppress NiOverride High Heels
+	; NiOverride High Heels
 	if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
 		if Config.HasNiOverride
-			; Remove NiOverride High Heels
 			bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
 			if NiOverride.HasNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
 				float[] pos = NiOverride.GetNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
@@ -1330,7 +1330,6 @@ function RegisterEvents()
 	string e = Thread.Key("")
 	; Quick Events
 	RegisterForModEvent(e+"Orgasm", "OrgasmEffect")
-	RegisterForModEvent(e+"Strip", "Strip")
 	; Sync Events
 	RegisterForModEvent(e+"Prepare", "PrepareActor")
 endFunction
@@ -1339,7 +1338,6 @@ function ClearEvents()
 	string e = Thread.Key("")
 	; Quick Events
 	UnregisterForModEvent(e+"Orgasm")
-	UnregisterForModEvent(e+"Strip")
 	; Sync Events
 	UnregisterForModEvent(e+"Prepare")
 endFunction
