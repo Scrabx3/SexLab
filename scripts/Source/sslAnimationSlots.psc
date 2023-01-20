@@ -615,7 +615,6 @@ endState
 ; This is only intended to be used as wrapper to link legacy animation getters to the new one
 String[] Function BuildArgTags(String[] asTags, String[] asTagsSuppress, bool abRequireAll)
 	String[] ret = Utility.ResizeStringArray(asTags, asTags.Length + asTagsSuppress.Length)
-	int i = asTags.Length
 	If(!abRequireAll && asTags.Length > 1)
 		int n = 0
 		While(n < asTags.Length)
@@ -623,10 +622,11 @@ String[] Function BuildArgTags(String[] asTags, String[] asTagsSuppress, bool ab
 			n += 1
 		EndWhile
 	EndIf
-	int k = asTagsSuppress.Length
-	While(k > 0)
-		k -= 1
+	int i = asTags.Length
+	int k = 0
+	While(k < asTagsSuppress.Length)
 		ret[i + k] = "-" + asTagsSuppress[k]
+		k += 1
 	EndWhile
 	return ret
 EndFunction
