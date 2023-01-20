@@ -105,6 +105,7 @@ function StopThread(sslThreadController Slot)
 		; Slot.Initialize()
 	elseIf SlotState == "Ending"
 		; NOTE: Will auto clear itself after Cooldown is done
+		; Interrupting this could glitch out the thread
 		; ---
 		; Slot.Initialize()
 	elseIf SlotState != "Unlocked"

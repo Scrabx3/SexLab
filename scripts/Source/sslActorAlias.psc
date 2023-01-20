@@ -450,20 +450,7 @@ state Animating
 	EndEvent
 
 	Function UnplaceActor()
-		; Clear SFX & expression & any other animation-exclusive effects
-		; Make sure of play the last animation stage to prevet AnimObject issues
-		String last_anim = Thread.Animation.FetchPositionStage(Position, Thread.Animation.StageCount)
-		If(PlayingAE != last_anim)
-			PlayingAE = last_anim
-			Debug.SendAnimationEvent(ActorRef, last_anim)
-		EndIf
-		; Reset Expression
-		If(Expression || sslBaseExpression.IsMouthOpen(ActorRef))
-			sslBaseExpression.CloseMouth(ActorRef)
-		EndIf
-		ActorRef.ClearExpressionOverride()
-		ActorRef.ResetExpressionOverrides()
-		sslBaseExpression.ClearMFG(ActorRef)
+		ClearAnimating()
 		GoToState("Idling")
 		UnplaceActor()
 	EndFunction
@@ -1108,6 +1095,23 @@ Function UnlockActor()
 		ActorRef.SetRestrained(false)
 	endIf
 	ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", false)
+EndFunction
+
+Function ClearAnimating()
+	; Clear SFX & expression & any other animation-exclusive effects
+	; Make sure of play the last animation stage to prevet AnimObject issues
+	String last_anim = Thread.Animation.FetchPositionStage(Position, Thread.Animation.StageCount)
+	If(PlayingAE != last_anim)
+		PlayingAE = last_anim
+		Debug.SendAnimationEvent(ActorRef, last_anim)
+	EndIf
+	; Reset Expression
+	If(Expression || sslBaseExpression.IsMouthOpen(ActorRef))
+		sslBaseExpression.CloseMouth(ActorRef)
+	EndIf
+	ActorRef.ClearExpressionOverride()
+	ActorRef.ResetExpressionOverrides()
+	sslBaseExpression.ClearMFG(ActorRef)
 EndFunction
 
 Function DoStatistics()

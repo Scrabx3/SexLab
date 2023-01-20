@@ -608,6 +608,11 @@ State Animating
 		RegisterForSingleUpdate(0.5)
 	EndEvent
 
+	Function RealignActors()
+		float[] offsets = Animation.PositionOffsetsEx(AdjustKey, Stage, BedStatus[1])
+		sslpp.SetPositionsEx(Positions, _Center, offsets)
+	EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- TODO: REVIEW EVERYTHING BELOW                   --- ;
 ; ------------------------------------------------------- ;
@@ -665,8 +670,7 @@ State Animating
 			n += 1
 		EndWhile
 		ArrangePositions()
-		float[] offsets = Animation.PositionOffsetsEx(AdjustKey, Stage, BedStatus[1])
-		sslpp.SetPositionsEx(Positions, _Center, offsets)
+		RealignActors()
 
 		int[] g = ActorLib.GetGendersAll(Positions)
 		Genders[0] = PapyrusUtil.CountInt(g, 0)
@@ -1345,8 +1349,7 @@ Function PlayStageAnimations()
 		ActorAlias[n].PlayAnimation(AnimEvents[n])
 		n += 1
 	EndWhile
-	float[] offsets = Animation.PositionOffsetsEx(AdjustKey, Stage, BedStatus[1])
-	sslpp.SetPositionsEx(Positions, _Center, offsets)
+	RealignActors()
 EndFunction
 
 ; End leadin -> Start default animation

@@ -392,11 +392,11 @@ int function ValidateActor(Actor ActorRef)
 	if !ActorRef
 		Log("ValidateActor(NONE) -- FALSE -- Because they don't exist.")
 		return -1
-	; Remove actors stuck in animating faction
-	elseIf ActorRef.IsInFaction(AnimatingFaction) && (ActorRef != PlayerRef || Config.GetThreadControlled() == none) && Config.ThreadSlots.FindActorController(ActorRef) == -1
-		ActorRef.RemoveFromFaction(AnimatingFaction)
-		Log("ValidateActor("+ActorRef.GetLeveledActorBase().GetName()+") -- WARN -- Was in AnimatingFaction but not in a thread")
-	endIf	
+	; Remove actors stuck in animating faction /// Just dont have that happen???? Theres obvsly smth wrong if that is ever the case
+	; elseIf ActorRef.IsInFaction(AnimatingFaction) && (ActorRef != PlayerRef || Config.GetThreadControlled() == none) && Config.ThreadSlots.FindActorController(ActorRef) == -1
+	; 	ActorRef.RemoveFromFaction(AnimatingFaction)
+	; 	Log("ValidateActor("+ActorRef.GetLeveledActorBase().GetName()+") -- WARN -- Was in AnimatingFaction but not in a thread")
+	endIf
 	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
 	; Primary checks
 	if ActorRef.IsInFaction(AnimatingFaction)

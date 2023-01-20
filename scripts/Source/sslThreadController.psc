@@ -74,9 +74,7 @@ State Animating
 		RegisterForSingleUpdate(0.2)
 	EndFunction
 
-	; TODO: Review all these Hotkey Functions. Esp the ones moving the Scene
-	; COMEBACK: For the time being leaving this disabled as I want to know how reliable the keys are and imrpove on them
-	; Rather have people complain about it than leaving bugs in silently decaying unnoticed by me
+	; TODO: This here should only allow a swap between same gender positions
 	; Function ChangePositions(bool backwards = false)
 	; 	if ActorCount < 2 || HasCreature
 	; 		return ; Solo/Creature Animation, nobody to swap with
@@ -108,6 +106,11 @@ State Animating
 	; 	RegisterForSingleUpdate(1.0)
 	; EndFunction
 
+
+	; TODO: Review all these Hotkey Functions. Esp the ones moving the Scene
+	; COMEBACK: For the time being leaving this disabled as I want to know how reliable the keys are and imrpove on them
+	; Rather have people complain about it than leaving bugs in silently decaying unnoticed by me
+	
 	; Function AdjustForward(bool backwards = false, bool AdjustStage = false)
 	; 	UnregisterforUpdate()
 	; 	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
@@ -206,36 +209,34 @@ State Animating
 	; 	RegisterForSingleUpdate(0.2)
 	; EndFunction
 
-	; Function AdjustSchlong(bool backwards = false)
-	; 	int Amount  = PapyrusUtil.SignInt(backwards, 1)
-	; 	int AdjustPos = GetAdjustPos()
-	; 	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
-	; 	if Math.Abs(Schlong) <= 9
-	; 		Adjusted = true
-	; 		Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
-	; 		AdjustAlias.GetPositionInfo()
-	; 		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
-	; 		PlayHotkeyFX(2, !backwards)
-	; 	endIf
-	; EndFunction
+	Function AdjustSchlong(bool backwards = false)
+		int Amount  = PapyrusUtil.SignInt(backwards, 1)
+		int AdjustPos = GetAdjustPos()
+		int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
+		If(Math.Abs(Schlong) <= 9)
+			Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
+			AdjustAlias.GetPositionInfo()
+			Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
+			PlayHotkeyFX(2, !backwards)
+		EndIf
+	EndFunction
 
-	; Function AdjustChange(bool backwards = false)
-	; 	UnregisterForUpdate()
-	; 	if ActorCount > 1
-	; 		int AdjustPos = GetAdjustPos()
-	; 		AdjustPos = sslUtility.IndexTravel(AdjustPos, ActorCount, backwards)
-	; 		if Positions[AdjustPos] != PlayerRef
-	; 			Config.TargetRef = Positions[AdjustPos]
-	; 		endIf
-	; 		AdjustAlias = PositionAlias(AdjustPos)
-	; 		Config.SelectedSpell.Cast(Positions[AdjustPos], Positions[AdjustPos])
-	; 		PlayHotkeyFX(0, !backwards)
-	; 		string msg = "Adjusting Position For: "+Positions[AdjustPos].GetLeveledActorBase().GetName()
-	; 		Debug.Notification(msg)
-	; 		SexLabUtil.PrintConsole(msg)
-	; 	endIf
-	; 	RegisterForSingleUpdate(0.2)
-	; EndFunction
+	Function AdjustChange(bool backwards = false)
+		If(Positions.Length <= 1)
+			return
+		EndIf
+		int i = GetAdjustPos()
+		i = sslUtility.IndexTravel(i, ActorCount, backwards)
+		If(Positions[i] != PlayerRef)
+			Config.TargetRef = Positions[i]
+		EndIf
+		AdjustAlias = ActorAlias[i]
+		Config.SelectedSpell.Cast(Positions[i])	; SFX for visual feedback
+		PlayHotkeyFX(0, !backwards)
+		String msg = "Adjusting Position For: " + AdjustAlias.GetActorName()
+		Debug.Notification(msg)
+		SexLabUtil.PrintConsole(msg)
+	EndFunction
 
 	; Function RestoreOffsets()
 	; 	UnregisterForUpdate()
@@ -260,120 +261,111 @@ State Animating
 	; 	endIf
 	; EndFunction
 
-	; Function MoveScene()
-	; 	; Stop animation loop
-	; 	UnregisterForUpdate()
-	; 	; Processing Furnitures
-	; 	int PreFurnitureStatus = BedTypeID
-	; 	if UsingBed && CenterRef.IsActivationBlocked()
-	; 		SetFurnitureIgnored(false)
-	; 	endIf
-	; 	; Enable Controls
-	; 	sslActorAlias PlayerSlot = ActorAlias(PlayerRef)
-	; 	if Config.GetThreadControlled() == self || PlayerRef.IsInFaction(Config.AnimatingFaction) && PlayerRef.GetFactionRank(Config.AnimatingFaction) != 0
-	; 		if PlayerSlot && PlayerSlot != none
-	; 			PlayerSlot.UnlockActor()
-	; 			PlayerSlot.StopAnimating(true)
-	; 			PlayerRef.StopTranslation()
-	; 		else
-	; 			Config.DisableThreadControl(self)
-	; 			PlayerRef.SetFactionRank(Config.AnimatingFaction, 0)
-	; 		endIf
-	; 		Debug.Notification("Player movement unlocked - repositioning scene in 30 seconds...")
-	; 		UnregisterForUpdate()
-	; 		int i
-	; 		while i < ActorCount
-	; 			sslActorAlias ActorSlot = ActorAlias[i]
-	; 			if ActorSlot != none && ActorSlot != PlayerSlot
-	; 				ActorSlot.UnlockActor()
-	; 				ActorSlot.StopAnimating(true)
-	; 				ActorSlot.ActorRef.SetFactionRank(Config.AnimatingFaction, 2)
-	; 			endIf
-	; 			i += 1
-	; 		endWhile
-
-	; 		CenterAlias.TryToClear()
-	; 		CenterAlias.ForceRefTo(PlayerRef) ; Make them follow me
-
-	; 		UnregisterForUpdate()
-
-	; 		; Lock hotkeys and wait 30 seconds
-	; 		Utility.WaitMenuMode(1.0)
-	; 		RegisterForKey(Hotkeys[kMoveScene])
-	; 		; Ready
-	; 		i = 28 ; Time to wait
-	; 		while i
-	; 			i -= 1
-	; 			Utility.Wait(1.0)
-	; 			if !PlayerRef.IsInFaction(Config.AnimatingFaction)
-	; 				PlayerRef.SetFactionRank(Config.AnimatingFaction, 0) ; In case some mod call ValidateActor function.
-	; 			endIf
-	; 		endWhile
-	; 	endIf
-	; 	if GetState() == "Animating" && PlayerRef.GetFactionRank(Config.AnimatingFaction) == 0
-	; 		Debug.Notification("Player movement locked - repositioning scene...")
-	; 		ApplyFade()
-	; 		; Disable Controls
-	; 		if PlayerSlot != none
-	; 			if PlayerRef.GetFurnitureReference() == none
-	; 				PlayerSlot.SendDefaultAnimEvent() ; Seems like the CenterRef don't change if PlayerRef is running
-	; 			endIf
-	; 			PlayerSlot.LockActor()
-	; 		else
-	; 			Config.GetThreadControl(self)
-	; 		endIf
-	; 		int i
-	; 		while i < ActorCount
-	; 			sslActorAlias ActorSlot = ActorAlias[i]
-	; 			if ActorSlot != none && ActorSlot != PlayerSlot
-	; 				ActorSlot.LockActor()
-	; 			endIf
-	; 			i += 1
-	; 		endWhile
-	; 		; Clear CenterAlias to avoid player repositioning to previous position
-	; 		if CenterAlias.GetReference() != none
-	; 			CenterAlias.TryToClear()
-	; 		endIf
-	; 		UnregisterForUpdate()
-	; 		; Give player time to settle incase airborne
-	; 		Utility.Wait(1.0)
-	; 		; Recenter on coords to avoid stager + resync animations
-	; 		if AreUsingFurniture(Positions) > 0
-	; 			CenterOnBed(false, 300.0)
-	; 		endIf
-	; 		Log("PreFurnitureStatus:"+PreFurnitureStatus+" BedTypeID:"+BedTypeID)
-	; 		if PreFurnitureStatus != BedTypeID || (PreFurnitureStatus > 0 && CenterAlias.GetReference() == none)
-	; 			ClearAnimations()
-	; 			if CenterAlias.GetReference() == none ;Is not longer using Furniture
-	; 				; Center on fallback choices
-	; 				if HasPlayer && !(PlayerRef.GetFurnitureReference() || PlayerRef.IsSwimming() || PlayerRef.IsFlying())
-	; 					CenterOnObject(PlayerRef, false)
-	; 				elseIf IsAggressive && !(VictimRef.GetFurnitureReference() || VictimRef.IsSwimming() || VictimRef.IsFlying())
-	; 					CenterOnObject(VictimRef, false)
-	; 				else
-	; 					i = 0
-	; 					while i < ActorCount
-	; 						if !(Positions[i].GetFurnitureReference() || Positions[i].IsSwimming() || Positions[i].IsFlying())
-	; 							CenterOnObject(Positions[i], false)
-	; 							i = ActorCount
-	; 						endIf
-	; 						i += 1
-	; 					endWhile
-	; 				endIf
-	; 				CenterOnObject(PlayerRef, false)
-	; 			endIf
-	; 			ChangeActors(Positions)
-	; 			SendThreadEvent("ActorsRelocated")
-	; 		elseIf CenterAlias.GetReference() != none ;Is using Furniture
-	; 			RealignActors()
-	; 			SendThreadEvent("ActorsRelocated")
-	; 		else
-	; 			CenterOnObject(PlayerRef, true)
-	; 		endIf
-	; 		; Return to animation loop
-	; 		ResetPositions()
-	; 	endIf
-	; EndFunction
+	Function MoveScene()
+		UnregisterForUpdate()
+		; Processing Furnitures
+		int PreFurnitureStatus = BedTypeID
+		if UsingBed && CenterRef.IsActivationBlocked()
+			SetFurnitureIgnored(false)
+		endIf
+		; Enable Controls
+		sslActorAlias PlayerSlot = ActorAlias(PlayerRef)
+		; COMEBACK: This is a tautology. Wouldnt be able to call this is ControlThread != self?
+		If(Config.GetThreadControlled() == self || PlayerRef.IsInFaction(Config.AnimatingFaction) && PlayerRef.GetFactionRank(Config.AnimatingFaction) != 0)
+			If(!PlayerSlot)
+				; ... does this just act as a toggle here? instead of just using a simple bool toggle?
+				Config.DisableThreadControl(self)
+			EndIf
+			; Allow everyone to move freely & make them follow the player
+			UnplaceActors()
+			CenterAlias.ForceRefTo(PlayerRef)
+			PlayerRef.SetFactionRank(Config.AnimatingFaction, 0)
+			int i = 0
+			While(i < Positions.Length)
+				ActorAlias[i].ActorRef.SetFactionRank(Config.AnimatingFaction, 2)
+				ActorAlias[i].ActorRef.EvaluatePackage()
+				i += 1
+			EndWhile
+			Debug.Notification("Player movement unlocked - repositioning scene in 30 seconds...")
+			; Lock hotkeys and wait 30 seconds
+			Utility.WaitMenuMode(1.0)
+			; COMEBACK: There should be a better way to do this
+			RegisterForKey(Hotkeys[kMoveScene])
+			; Ready
+			i = 28 ; Time to wait NOTE: It doesnt take 1 second to get here, we only wait 29 secs here wtf
+			while i
+				i -= 1
+				Utility.Wait(1.0)
+				if !PlayerRef.IsInFaction(Config.AnimatingFaction)
+					PlayerRef.SetFactionRank(Config.AnimatingFaction, 0) ; In case some mod call ValidateActor function.
+				endIf
+			endWhile
+		endIf
+		
+		if GetState() == "Animating" && PlayerRef.GetFactionRank(Config.AnimatingFaction) == 0
+			Debug.Notification("Player movement locked - repositioning scene...")
+			ApplyFade()
+			; Disable Controls
+			if PlayerSlot != none
+				if PlayerRef.GetFurnitureReference() == none
+					PlayerSlot.SendDefaultAnimEvent() ; Seems like the CenterRef don't change if PlayerRef is running
+				endIf
+				PlayerSlot.LockActor()
+			else
+				Config.GetThreadControl(self)
+			endIf
+			int i
+			while i < ActorCount
+				sslActorAlias ActorSlot = ActorAlias[i]
+				if ActorSlot != none && ActorSlot != PlayerSlot
+					ActorSlot.LockActor()
+				endIf
+				i += 1
+			endWhile
+			; Clear CenterAlias to avoid player repositioning to previous position
+			if CenterAlias.GetReference() != none
+				CenterAlias.TryToClear()
+			endIf
+			UnregisterForUpdate()
+			; Give player time to settle incase airborne
+			Utility.Wait(1.0)
+			; Recenter on coords to avoid stager + resync animations
+			if AreUsingFurniture(Positions) > 0
+				CenterOnBed(false, 300.0)
+			endIf
+			Log("PreFurnitureStatus:"+PreFurnitureStatus+" BedTypeID:"+BedTypeID)
+			if PreFurnitureStatus != BedTypeID || (PreFurnitureStatus > 0 && CenterAlias.GetReference() == none)
+				ClearAnimations()
+				if CenterAlias.GetReference() == none ;Is not longer using Furniture
+					; Center on fallback choices
+					if HasPlayer && !(PlayerRef.GetFurnitureReference() || PlayerRef.IsSwimming() || PlayerRef.IsFlying())
+						CenterOnObject(PlayerRef, false)
+					elseIf IsAggressive && !(VictimRef.GetFurnitureReference() || VictimRef.IsSwimming() || VictimRef.IsFlying())
+						CenterOnObject(VictimRef, false)
+					else
+						i = 0
+						while i < ActorCount
+							if !(Positions[i].GetFurnitureReference() || Positions[i].IsSwimming() || Positions[i].IsFlying())
+								CenterOnObject(Positions[i], false)
+								i = ActorCount
+							endIf
+							i += 1
+						endWhile
+					endIf
+					CenterOnObject(PlayerRef, false)
+				endIf
+				ChangeActors(Positions)
+				SendThreadEvent("ActorsRelocated")
+			elseIf CenterAlias.GetReference() != none ;Is using Furniture
+				RealignActors()
+				SendThreadEvent("ActorsRelocated")
+			else
+				CenterOnObject(PlayerRef, true)
+			endIf
+			; Return to animation loop
+			ResetPositions()
+		endIf
+	EndFunction
 
 	Event OnKeyDown(int KeyCode)
 		If(Utility.IsInMenuMode())
@@ -395,7 +387,7 @@ State Animating
 			RotateScene(Config.BackwardsPressed())
 		ElseIf (hotkey == kAdjustSchlong)
 			AdjustSchlong(Config.BackwardsPressed())
-		ElseIf (hotkey == kAdjustChange)		; Change Adjusted Actor
+		ElseIf (hotkey == kAdjustChange)		; Change Adjusting Position
 			AdjustChange(Config.BackwardsPressed())
 		ElseIf hotkey == kRealignActors
 			ResetPositions()
@@ -416,31 +408,9 @@ State Animating
 		_HOTKEYLOCK = false
 	endEvent
 
-	; Function MoveActors()
-	; 	int i = 0
-	; 	While(i < Positions.Length)
-	; 		ActorAlias[i].RefreshLoc()
-	; 		i += 1
-	; 	EndWhile
-	; EndFunction
-
-	; TODO: This shouldnt need to Sync, just call the SetPosition again with updated PosAdjust Data
-	; Function RealignActors()
-	; 	UnregisterForUpdate()
-	; 	int i = 0
-	; 	While(i < Positions.Length)
-	; 		ActorAlias[i].SyncThread()
-	; 		i += 1
-	; 	EndWhile
-	; 	RegisterForSingleUpdate(0.5)
-	; EndFunction
-
-	; Function ResetPositions()
-	; 	UnregisterForUpdate()
-	; 	ApplyFade()
-	; 	GoToState("Refresh")
-	; 	SyncEvent(kRefreshActor, 15.0)
-	; EndFunction
+	Function ResetPositions()
+		RealignActors()
+	EndFunction
 endState
 
 ; ------------------------------------------------------- ;
@@ -448,9 +418,8 @@ endState
 ; ------------------------------------------------------- ;
 
 ; Adjustment hotkeys
-sslActorAlias AdjustAlias		; COMEBACK: Adjustments will be remade from ground up, this will no longer be necessary
-bool Adjusted								; COMEBACK: Idk why that here is even a thing. Its only set, never read
-
+sslActorAlias AdjustAlias		; The actor currently selected for position adjustments
+bool moving_scene
 
 bool _HOTKEYLOCK
 int[] Hotkeys
@@ -501,12 +470,11 @@ EndFunction
 Function Initialize()
 	Config.DisableThreadControl(self)
 	DisableHotkeys()
-	Adjusted    = false
 	AdjustAlias = ActorAlias[0]
+	moving_scene = false
 	parent.Initialize()
 EndFunction
 
-; COMEBACK: This here should become redundant
 int Function GetAdjustPos()
 	int AdjustPos = -1
 	if AdjustAlias && AdjustAlias.ActorRef

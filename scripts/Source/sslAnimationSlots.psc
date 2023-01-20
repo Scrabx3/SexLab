@@ -614,18 +614,19 @@ endState
 
 ; This is only intended to be used as wrapper to link legacy animation getters to the new one
 String[] Function BuildArgTags(String[] asTags, String[] asTagsSuppress, bool abRequireAll)
-	String[] ret = Utility.ResizeStringArray(asTags, asTagsSuppress.Length)
-	int i = 0
-	If(!abRequireAll)
-		While(i < asTags.Length)
-			ret[i] = "~" + asTags[i]
-			i += 1
+	String[] ret = Utility.ResizeStringArray(asTags, asTags.Length + asTagsSuppress.Length)
+	int i = asTags.Length
+	If(!abRequireAll && asTags.Length > 1)
+		int n = 0
+		While(n < asTags.Length)
+			ret[n] = "~" + asTags[n]
+			n += 1
 		EndWhile
 	EndIf
-	int k = 0
-	While(k < asTagsSuppress.Length)
+	int k = asTagsSuppress.Length
+	While(k > 0)
+		k -= 1
 		ret[i + k] = "-" + asTagsSuppress[k]
-		k += 1
 	EndWhile
 	return ret
 EndFunction
