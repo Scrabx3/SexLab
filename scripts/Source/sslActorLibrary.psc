@@ -272,7 +272,9 @@ bool function IsStrippable(Form ItemRef)
 	return ItemRef && (IsAlwaysStrip(ItemRef) || !IsNoStrip(ItemRef))
 endFunction
 
-bool function ContinueStrip(Form ItemRef, bool DoStrip = true)
+; A framework shouldnt be "random" and the keyword convention should be established strongly enough to not rely on StorageUtil anymore
+; Not deleting contents for the unlikely cause it causes issues
+bool function ContinueStrip(Form ItemRef, bool DoStrip = true) global
 	if !ItemRef
 		return False
 	endIf

@@ -1525,19 +1525,8 @@ endFunction
 function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global native
 bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global native
 
-; A framework shouldnt be "random" and the keyword convention should be established strongly enough to not rely on StorageUtil anymore
-; Not deleting contents for the unlikely cause it causes issues
 bool function ContinueStrip(Form ItemRef, bool DoStrip = true)
-	if StorageUtil.FormListHas(none, "AlwaysStrip", ItemRef) || SexLabUtil.HasKeywordSub(ItemRef, "AlwaysStrip")
-		if StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100) < 100
-			if !DoStrip
-				return (StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100) >= Utility.RandomInt(76, 100))
-			endIf
-			return (StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100) >= Utility.RandomInt(1, 100))
-		endIf
-		return True
-	endIf
-	return DoStrip && !(StorageUtil.FormListHas(none, "NoStrip", ItemRef) || SexLabUtil.HasKeywordSub(ItemRef, "NoStrip"))
+	return sslActorLibrary.ContinueStrip(ItemRef, DoStrip)
 endFunction
 
 int function IntIfElse(bool check, int isTrue, int isFalse)
