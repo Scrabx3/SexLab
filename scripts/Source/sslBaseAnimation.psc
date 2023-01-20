@@ -368,7 +368,10 @@ int[] Function GetFlags()
 EndFunction
 
 int Function AccessFlag(int aiPosition, int aiStage, int aiIndex)
-	return _FLAGS[(aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex]
+	int w =  (aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex
+	Debug.Trace("AccessFlag -> aiPosition = " + aiPosition + "; aiStage = " + aiStage + "; aiIndex = " + aiIndex + \
+	" // Access at " + w + " Returning: " + _FLAGS[w])
+	return _FLAGS[w]
 EndFunction
 
 Function EditFlag(int aiPosition, int aiStage, int aiIndex, int aiValue)

@@ -528,7 +528,9 @@ state Animating
 	EndEvent
 
 	; Basically just an "update for current animation stage"
+	; Update everything stage related here, Flag data, delays, etcpp
 	function SyncThread()
+		ResolveStrapon()
 		VoiceDelay = BaseDelay
 		ExpressionDelay = Config.ExpressionDelay * BaseDelay
 		if !IsSilent && Thread.Stage > 1
@@ -701,7 +703,7 @@ EndState
 
 Form Strapon		; Strapon used by the animation
 Form HadStrapon	; Strapon worn prior to animation start
-; assert(HadStrappon ? Strappon == HadStrapon : true)
+; assert(HadStrappon => Strappon == HadStrapon)
 
 Form function GetStrapon()
 	return Strapon
@@ -1171,6 +1173,7 @@ Function Strip()
 	EndIf
 	; Armor
 	Form[] gear = sslpp.StripActor(ActorRef, Strip[0])
+	ActorRef.QueueNiNodeUpdate()
 	Equipment = PapyrusUtil.MergeFormArray(Equipment, gear)
 	Log("<Strip> Left Weapon: " + LeftHand + " | Right Weapon: " + RightHand + " | Equipment: " + gear + " | Total Stripped: " + Equipment)
 	; Equip the nudesuit
