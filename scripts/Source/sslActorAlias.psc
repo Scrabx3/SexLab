@@ -735,15 +735,19 @@ function SetStrapon(Form ToStrapon)
 	endIf
 endFunction
 
-function ResolveStrapon(bool force = false)
-	if Strapon
-		if UseStrapon && !ActorRef.IsEquipped(Strapon)
+Function ResolveStrapon(bool force = false)
+	If(!Strapon)
+		return
+	EndIf
+	bool equipped = ActorRef.IsEquipped(Strapon)
+	If(UseStrapon)
+		If(!equipped)
 			ActorRef.EquipItem(Strapon, true, true)
-		ElseIf(ActorRef.IsEquipped(Strapon))
-			ActorRef.UnequipItem(Strapon, true, true)
-		endIf
-	endIf
-endFunction
+		EndIf
+	ElseIf(equipped)
+		ActorRef.UnequipItem(Strapon, true, true)
+	EndIf
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Data Accessors                                  --- ;
