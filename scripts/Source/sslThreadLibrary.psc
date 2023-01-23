@@ -87,6 +87,7 @@ Actor function FindAvailableActorInFaction(Faction FactionRef, ObjectReference C
 	return none
 endFunction
 
+; TODO: Rewrite this to not check for legacy NoStrip stuff
 Actor function FindAvailableActorWornForm(int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True, string RaceKey = "", bool JustSameFloor = False)
 	if !CenterRef || slotMask < 1 || FindGender > 3 || FindGender < -1 || Radius < 0.1
 		return none ; Invalid args

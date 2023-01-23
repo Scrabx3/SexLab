@@ -221,170 +221,87 @@ Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimat
 endFunction
 
 function MakeNoStrip(Form ItemRef)
-	if ItemRef && !FormListHas(none, "NoStrip", ItemRef)
-		FormListAdd(none, "NoStrip", ItemRef, false)
-		FormListRemove(none, "AlwaysStrip", ItemRef, true)
-		ObjectReference ObjRef = ItemRef as ObjectReference
-		if ObjRef && ObjRef.GetBaseObject()
-			ItemRef = ObjRef.GetBaseObject()
-			FormListAdd(none, "NoStrip", ItemRef, false)
-			FormListRemove(none, "AlwaysStrip", ItemRef, true)
-		endIf
-	endIf
+	sslpp.WriteStrip(ItemRef, true)
 endFunction
 
 function MakeAlwaysStrip(Form ItemRef)
-	if ItemRef && !FormListHas(none, "AlwaysStrip", ItemRef)
-		FormListAdd(none, "AlwaysStrip", ItemRef, false)
-		FormListRemove(none, "NoStrip", ItemRef, true)
-		ObjectReference ObjRef = ItemRef as ObjectReference
-		if ObjRef
-			FormListAdd(none, "AlwaysStrip", ObjRef, false)
-			FormListRemove(none, "NoStrip", ObjRef, true)
-		endIf
-	endIf
+	sslpp.WriteStrip(ItemRef, false)
 endFunction
 
 function ClearStripOverride(Form ItemRef)
-	FormListRemove(none, "NoStrip", ItemRef, true)
-	FormListRemove(none, "AlwaysStrip", ItemRef, true)
-	ObjectReference ObjRef = ItemRef as ObjectReference
-	if ObjRef && ObjRef.GetBaseObject()
-		FormListRemove(none, "NoStrip", ItemRef, true)
-		FormListRemove(none, "AlwaysStrip", ItemRef, true)
-	endIf
+	sslpp.EraseStrip(ItemRef)
 endFunction
 
 function ResetStripOverrides()
-	FormListClear(none, "NoStrip")
-	FormListClear(none, "AlwaysStrip")
+	sslpp.EraseStripAll()
 endFunction
 
 bool function IsNoStrip(Form ItemRef)
-	return FormListHas(none, "NoStrip", ItemRef) || SexLabUtil.HasKeywordSub(ItemRef, "NoStrip")
+	return sslpp.CheckStrip(ItemRef) == -1
 endFunction
 
 bool function IsAlwaysStrip(Form ItemRef)
-	return FormListHas(none, "AlwaysStrip", ItemRef) || SexLabUtil.HasKeywordSub(ItemRef, "AlwaysStrip")
+	return sslpp.CheckStrip(ItemRef) == 1
 endFunction
 
 bool function IsStrippable(Form ItemRef)
-	return ItemRef && (IsAlwaysStrip(ItemRef) || !IsNoStrip(ItemRef))
-endFunction
-
-; A framework shouldnt be "random" and the keyword convention should be established strongly enough to not rely on StorageUtil anymore
-; Not deleting contents for the unlikely cause it causes issues
-bool function ContinueStrip(Form ItemRef, bool DoStrip = true) global
-	if !ItemRef
-		return False
-	endIf
-	if StorageUtil.FormListHas(none, "AlwaysStrip", ItemRef) || SexLabUtil.HasKeywordSub(ItemRef, "AlwaysStrip")
-		if StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100) < 100
-			if !DoStrip
-				return (StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100) >= Utility.RandomInt(76, 100))
-			endIf
-			return (StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100) >= Utility.RandomInt(1, 100))
-		endIf
-		return True
-	endIf
-	return (DoStrip && !(StorageUtil.FormListHas(none, "NoStrip", ItemRef) || SexLabUtil.HasKeywordSub(ItemRef, "NoStrip")))
-endFunction
-
-Form function StripSlot(Actor ActorRef, int SlotMask)
-	if !ActorRef
-		return none
-	endIf
-	Form ItemRef = ActorRef.GetWornForm(SlotMask)
-	if IsStrippable(ItemRef)
-		ActorRef.UnequipItemEX(ItemRef, 0, false)
-		return ItemRef
-	endIf
-	return none
+	return !IsNoStrip(ItemRef)
 endFunction
 
 Form[] function StripSlots(Actor ActorRef, bool[] Strip, bool DoAnimate = false, bool AllowNudesuit = true)
-	if !ActorRef || Strip.Length < 33
+	If(!ActorRef || Strip.Length < 33)
 		return Utility.CreateFormArray(0)
-	endIf
-	int Gender = ActorRef.GetLeveledActorBase().GetSex()
-	; Start stripping animation
-	;if DoAnimate
-	;	Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G"+Gender)
-	;endIf
-	; Get Nudesuit
-	bool UseNudeSuit = Strip[2] && ((Gender == 0 && Config.UseMaleNudeSuit) || (Gender == 1 && Config.UseFemaleNudeSuit))
-	if UseNudeSuit && ActorRef.GetItemCount(Config.NudeSuit) < 1
-		ActorRef.AddItem(Config.NudeSuit, 1, true)
-	endIf
-	; Stripped storage
-	Form ItemRef
-	Form[] Stripped = new Form[34]
-	; Strip weapons
-	if ActorRef.IsWeaponDrawn() || ActorRef == PlayerRef
-		ActorRef.SheatheWeapon() ; To prevent issues with the animation if the player is stocked on the weapon drawn idle. For some reason hapen more than expected
-	endIf
-	; Right hand
-	ItemRef = ActorRef.GetEquippedObject(1)
-	if ContinueStrip(ItemRef, Strip[32])
-		Stripped[33] = ItemRef
-		ActorRef.UnequipItemEX(ItemRef, 1, false)
-		SetIntValue(ItemRef, "Hand", 1)
-	endIf
-	; Left hand
-	ItemRef = ActorRef.GetEquippedObject(0)
-	if ContinueStrip(ItemRef, Strip[32])
-		Stripped[32] = ItemRef
-		ActorRef.UnequipItemEX(ItemRef, 2, false)
-		SetIntValue(ItemRef, "Hand", 2) 
-	endIf
-	; Strip armors
-	Form BodyRef = ActorRef.GetWornForm(Armor.GetMaskForSlot(32))
-	int i = 31
-	while i >= 0
-		; Grab item in slot
-		ItemRef = ActorRef.GetWornForm(Armor.GetMaskForSlot(i + 30))
-		if ContinueStrip(ItemRef, Strip[i])
-			; Start stripping animation
-			if DoAnimate && ItemRef == BodyRef ;Body
-				Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G"+Gender)
-				Utility.Wait(1.0)
-			endIf
-			ActorRef.UnequipItemEX(ItemRef, 0, false)
-			Stripped[i] = ItemRef
-		endIf
-		i -= 1
-	endWhile
-	; Apply Nudesuit
-	if UseNudeSuit
-		ActorRef.EquipItem(NudeSuit, true, true)
-	endIf
-	; output stripped items
-	return PapyrusUtil.ClearNone(Stripped)
-endFunction
+	EndIf
+	DoAnimate = DoAnimate && ActorRef.GetWornForm(0x4)	; Body armor slot
+	If(DoAnimate)
+		int Gender = ActorRef.GetLeveledActorBase().GetSex()
+		Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G" + Gender)
+		Utility.Wait(0.6)
+	EndIf
+	Form[] ret = sslpp.StripActor(ActorRef, sslUtility.BoolToBit(Strip))
+	If(Strip[32]) ; Weapons
+		Form RightHand = ActorRef.GetEquippedObject(1)
+		If(RightHand && IsStrippable(RightHand))
+			ActorRef.UnequipItemEX(RightHand, ActorRef.EquipSlot_RightHand, false)
+			ret = PapyrusUtil.PushForm(ret, LeftHand)
+			StorageUtil.SetIntValue(RightHand, "Hand", 1)
+		EndIf
+		Form LeftHand = ActorRef.GetEquippedObject(0)
+		If(LeftHand && IsStrippable(LeftHand))
+			ActorRef.UnequipItemEX(LeftHand, ActorRef.EquipSlot_LeftHand, false)
+			ret = PapyrusUtil.PushForm(ret, LeftHand)
+			StorageUtil.SetIntValue(RightHand, "Hand", 2)
+		EndIf
+	EndIf
+	If(DoAnimate)
+		Utility.Wait(0.4)
+	EndIf
+	return ret
+EndFunction
 
 function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
-	int i = Stripped.Length
-	; Remove nudesuits
-	int n = ActorRef.GetItemCount(NudeSuit)
-	if n > 0
-		ActorRef.RemoveItem(NudeSuit, n, true)
-	endIf
-	; Actor is victim, don't redress
-	if IsVictim && !Config.RedressVictim
+	If(!ActorRef)
 		return
-	endIf
-	; Equip stripped
-	while i
-		i -= 1
-		if Stripped[i]
- 			int hand = GetIntValue(Stripped[i], "Hand", 0)
- 			if hand != 0
+	EndIf
+	; int n = ActorRef.GetItemCount(NudeSuit)
+	; If(n > 0)
+	; 	ActorRef.RemoveItem(NudeSuit, n, true)
+	; EndIf
+	If(IsVictim && !Config.RedressVictim)
+		return
+	EndIf
+	int i = 0
+	While(i < Stripped.Length)
+		If(Stripped[i])
+ 			int hand = StorageUtil.GetIntValue(Stripped[i], "Hand", 0)
+ 			If(hand)
 	 			UnsetIntValue(Stripped[i], "Hand")
-	 		endIf
+			EndIf
 	 		ActorRef.EquipItemEx(Stripped[i], hand, false)
-		endIf
-	endWhile
-endFunction
+		EndIf
+		i += 1
+	EndWhile
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Actor Validation                                --- ;
@@ -707,6 +624,40 @@ function Setup()
 	CumVaginalSpell         = Config.CumVaginalSpell
 	CumOralSpell            = Config.CumOralSpell
 	CumAnalSpell            = Config.CumAnalSpell
+endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+; A framework shouldnt be "random" and the keyword convention should be established strongly enough to not rely on StorageUtil anymore
+; Not deleting contents for the unlikely cause it causes issues
+bool function ContinueStrip(Form ItemRef, bool DoStrip = true) global
+	int t = sslpp.CheckStrip(ItemRef)
+	if t == 1
+		return True
+	endIf
+	return DoStrip && t != -1
+endFunction
+
+; Do it yourself?
+Form function StripSlot(Actor ActorRef, int SlotMask)
+	if !ActorRef
+		return none
+	endIf
+	Form ItemRef = ActorRef.GetWornForm(SlotMask)
+	if IsStrippable(ItemRef)
+		ActorRef.UnequipItemEX(ItemRef, 0, false)
+		return ItemRef
+	endIf
+	return none
 endFunction
 
 ; ------------------------------------------------------- ;

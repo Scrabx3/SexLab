@@ -666,10 +666,12 @@ state Animating
 	endFunction
 
 	; --- LEGACY
-	function SyncLocation(bool Force = false)	; COMEBACK: Add SetPositions() call in here
+	function SyncLocation(bool Force = false)
+		Thread.RealignActors()
 	endFunction
 
-	function Snap()	; COMEBACK: Add SetPositions() call in here
+	function Snap()
+		Thread.RealignActors()
 	endFunction
 endState
 
@@ -1164,11 +1166,11 @@ Function Strip()
 	; Weapons
 	If(Strip[1])
 		RightHand = ActorRef.GetEquippedObject(1)
-		If(RightHand && !SexLabUtil.HasKeywordSub(RightHand, "NoStrip"))
+		If(RightHand && sslpp.CheckStrip(RightHand) != -1)
 			ActorRef.UnequipItemEX(RightHand, ActorRef.EquipSlot_RightHand, false)
 		EndIf
 		LeftHand = ActorRef.GetEquippedObject(0)
-		If(LeftHand && !SexLabUtil.HasKeywordSub(LeftHand, "NoStrip"))
+		If(LeftHand && sslpp.CheckStrip(RightHand) != -1)
 			ActorRef.UnequipItemEX(LeftHand, ActorRef.EquipSlot_LeftHand, false)
 		EndIf
 	Else

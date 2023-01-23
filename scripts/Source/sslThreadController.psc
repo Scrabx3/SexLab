@@ -528,8 +528,6 @@ Function RestoreOffsets()
 EndFunction
 Function MoveScene()
 EndFunction
-Function RealignActors()
-EndFunction
 Function MoveActors()
 EndFunction
 Function GoToStage(int ToStage)

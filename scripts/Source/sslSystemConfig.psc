@@ -1437,40 +1437,6 @@ function ExportSettings()
 	ExportExpressions()
 	ExportVoices()
 
-	; Export striplist items
-	StorageUtil.FormListRemove(none, "AlwaysStrip", none, true)
-	Form[] AlwaysStrip = StorageUtil.FormListToArray(none, "AlwaysStrip")
-	int i = AlwaysStrip.Length
-	while i
-		i -= 1
-		if AlwaysStrip[i]
-			JsonUtil.FormListAdd(File, "AlwaysStrip", AlwaysStrip[i], false)
-		endIf
-	endWhile
-	
-	StorageUtil.IntListRemove(none, "SometimesStrip", 0, true)
-	StorageUtil.IntListRemove(none, "SometimesStrip", 100, true)
-	Form[] SometimesStrip = StorageUtil.FormListToArray(none, "SometimesStrip")
-	int[] SometimesStripVal = StorageUtil.IntListToArray(none, "SometimesStrip")
-	i = SometimesStrip.Length
-	while i
-		i -= 1
-		if SometimesStrip[i]
-			JsonUtil.FormListAdd(File, "SometimesStrip", SometimesStrip[i], false)
-			JsonUtil.IntListAdd(File, "SometimesStripVal", SometimesStripVal[i], false)
-		endIf
-	endWhile
-	
-	StorageUtil.FormListRemove(none, "NoStrip", none, true)
-	Form[] NoStrip = StorageUtil.FormListToArray(none, "NoStrip")
-	i = NoStrip.Length
-	while i
-		i -= 1
-		if NoStrip[i]
-			JsonUtil.FormListAdd(File, "NoStrip", NoStrip[i], false)
-		endIf
-	endWhile
-
 	; Save to JSON file
 	JsonUtil.Save(File, true)
 endFunction
@@ -1582,39 +1548,6 @@ function ImportSettings()
 	ImportCreatures()
 	ImportExpressions()
 	ImportVoices()
-
-	; Import striplist items
-	Form[] AlwaysStrip = JsonUtil.FormListToArray(File, "AlwaysStrip")
-	int i = AlwaysStrip.Length
-	while i
-		i -= 1
-		if AlwaysStrip[i]
-			ActorLib.MakeAlwaysStrip(AlwaysStrip[i])
-		endIf
-	endWhile
-	StorageUtil.FormListRemove(none, "AlwaysStrip", none, true)
-
-	Form[] SometimesStrip = JsonUtil.FormListToArray(File, "SometimesStrip")
-	int[] SometimesStripVal = JsonUtil.IntListToArray(File, "SometimesStripVal")
-	i = SometimesStrip.Length
-	while i
-		i -= 1
-		if SometimesStrip[i]
-			StorageUtil.SetIntValue(SometimesStrip[i], "SometimesStrip", SometimesStripVal[i])
-		endIf
-	endWhile
-	StorageUtil.IntListRemove(none, "SometimesStrip", 0, true)
-	StorageUtil.IntListRemove(none, "SometimesStrip", 100, true)
-
-	Form[] NoStrip = JsonUtil.FormListToArray(File, "NoStrip")
-	i = NoStrip.Length
-	while i
-		i -= 1
-		if NoStrip[i]
-			ActorLib.MakeNoStrip(NoStrip[i])
-		endIf
-	endWhile
-	StorageUtil.FormListRemove(none, "NoStrip", none, true)
 
 	; Reload settings with imported values
 	Reload()

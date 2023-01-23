@@ -170,7 +170,6 @@ event OnPageReset(string page)
 			LoadCustomContent("SexLab/logo.dds", 184, 31)
 		endIf
 	endIf
-
 endEvent
 
 bool ShowAnimationEditor = false
@@ -517,43 +516,20 @@ event OnHighlightST()
 		endIf
 
 	; Strip Editor
-	elseIf Options[0] == "StripEditor"
-		Form ItemRef
-		if (Options[1] as int) == 0
-			ItemRef = ItemsPlayer[(Options[2] as int)]
-		else
-			ItemRef = ItemsTarget[(Options[2] as int)]
-		endIf
-		string InfoText = GetItemName(ItemRef, "?")
-		Armor ArmorRef = ItemRef as Armor
-		if ArmorRef
-			int[] SlotMasks = GetAllMaskSlots(ArmorRef.GetSlotMask())
-			if SlotMasks && ArmorRef
-				InfoText += "\nArmor Slots: "+SlotMasks
-			endIf
-		else
+	ElseIf(Options[0] == "StripEditorPlayer" || Options[0] == "StripEditorTarget")
+		Form item
+		If(Options[0] == "StripEditorPlayer")
+			item = ItemsPlayer[Options[1] as int]
+		Else
+			item = ItemsTarget[Options[1] as int]
+		EndIf
+		String InfoText = GetItemName(item, "?")
+		Armor ArmorRef = item as Armor
+		If(ArmorRef)
+			InfoText += "\nArmor Slots: " + GetAllMaskSlots(ArmorRef.GetSlotMask())
+		Else
 			InfoText += "\nWeapon"
-		endIf
-		SetInfoText(InfoText)
-
-	; Strip Editor
-	elseIf Options[0] == "StripEditorPossibility"
-		Form ItemRef
-		if (Options[1] as int) == 0
-			ItemRef = ItemsPlayer[(Options[2] as int)]
-		else
-			ItemRef = ItemsTarget[(Options[2] as int)]
-		endIf
-		string InfoText = GetItemName(ItemRef, "?")
-		Armor ArmorRef = ItemRef as Armor
-		if ArmorRef
-			int[] SlotMasks = GetAllMaskSlots(ArmorRef.GetSlotMask())
-			if SlotMasks && ArmorRef
-				InfoText += "\nArmor Slots: "+SlotMasks
-			endIf
-		else
-			InfoText += "\nWeapon"
-		endIf
+		EndIf
 		SetInfoText(InfoText)
 
 	; Advanced OpenMouth Expression
@@ -674,20 +650,6 @@ event OnSliderOpenST()
 		SetSliderDialogRange(3, 300)
 		SetSliderDialogInterval(1)
 		SetSliderDialogDefaultValue(GetTimersDef()[(Options[2] as int)])
-
-	; Strip Editor
-	elseIf Options[0] == "StripEditorPossibility"
-		Form ItemRef
-		if (Options[1] as int) == 0
-			ItemRef = ItemsPlayer[(Options[2] as int)]
-		else
-			ItemRef = ItemsTarget[(Options[2] as int)]
-		endIf
-
-		SetSliderDialogStartValue(StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100))
-		SetSliderDialogRange(1, 100)
-		SetSliderDialogInterval(1)
-		SetSliderDialogDefaultValue(100)
 	endIf
 
 endEvent
@@ -759,28 +721,6 @@ event OnSliderAcceptST(float value)
 		float[] Timers = GetTimers()
 		Timers[(Options[2] as int)] = value
 		SetSliderOptionValueST(value, "$SSL_Seconds")
-
-	; Strip Editor
-	elseIf Options[0] == "StripEditorPossibility"
-		Form ItemRef
-		if (Options[1] as int) == 0
-			ItemRef = ItemsPlayer[(Options[2] as int)]
-		else
-			ItemRef = ItemsTarget[(Options[2] as int)]
-		endIf
-
-		if value == 100
-			StorageUtil.UnsetIntValue(ItemRef, "SometimesStrip")
-		else
-			StorageUtil.SetIntValue(ItemRef, "SometimesStrip", value as int)
-		endIf
-		
-		SetSliderOptionValueST(value as int, "{0}%")
-		
-		string StripEditorST = "StripEditor_"+Options[1]+"_"+Options[2]
-		SetTextOptionValueST(GetStripState(ItemRef), false, StripEditorST)
-
-	;	ForcePageReset()
 	endIf
 
 endEvent
@@ -1030,29 +970,22 @@ event OnSelectST()
 		
 		
 	; Strip Editor
-	elseIf Options[0] == "StripEditor"
-		Form ItemRef
-		if (Options[1] as int) == 0
-			ItemRef = ItemsPlayer[(Options[2] as int)]
-		else
-			ItemRef = ItemsTarget[(Options[2] as int)]
-		endIf
-
-		if ActorLib.IsAlwaysStrip(ItemRef)
-			ActorLib.ClearStripOverride(ItemRef)
-			StorageUtil.UnsetIntValue(ItemRef, "SometimesStrip")
-		elseIf ActorLib.IsNoStrip(ItemRef)
-			ActorLib.MakeAlwaysStrip(ItemRef)
-		else
-			ActorLib.MakeNoStrip(ItemRef)
-		endIf
-		SetTextOptionValueST(GetStripState(ItemRef))
-	
-		string StripEditorPossibilityST = "StripEditorPossibility_"+Options[1]+"_"+Options[2]
-		SetSliderOptionValueST(StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100), "{0}%", false, StripEditorPossibilityST)
-		SetOptionFlagsST(SexLabUtil.IntIfElse(ActorLib.IsAlwaysStrip(ItemRef), OPTION_FLAG_NONE, OPTION_FLAG_DISABLED), false, StripEditorPossibilityST)
-		
-	;	ForcePageReset()
+	ElseIf(Options[0] == "StripEditorPlayer" || Options[0] == "StripEditorTarget")
+		Form item
+		If(Options[0] == "StripEditorPlayer")
+			item = ItemsPlayer[Options[1] as int]
+		Else
+			item = ItemsTarget[Options[1] as int]
+		EndIf
+		int i = sslpp.CheckStrip(item)
+		If(i == -1)			; Never 			-> Always
+			sslpp.WriteStrip(item, false)
+		ElseIf(i == 0)	; Unspecified	-> Never
+			sslpp.WriteStrip(item, true)
+		ElseIf(i == 1)	; Always			-> Unspecified
+			sslpp.EraseStrip(item)
+		EndIf
+		SetTextOptionValueST(GetStripState(item))
 		
 	; Animation Toggle
 	elseIf Options[0] == "Animation"
@@ -3405,82 +3338,42 @@ Form[] ItemsTarget
 bool FullInventoryPlayer
 bool FullInventoryTarget
 
-function StripEditor()
-	AddHeaderOption("$SSL_Equipment{"+PlayerName+"}")
+Form[] Function GetStrippables(Actor akTarget, bool abWornOnly) native global
+
+; Strip Page to customize if items should never or always be stripped
+Function StripEditor()
+	SetCursorFillMode(LEFT_TO_RIGHT)
+	AddHeaderOption("$SSL_Equipment{" + PlayerName + "}")
 	AddToggleOptionST("FullInventoryPlayer", "$SSL_FullInventory", FullInventoryPlayer)
-
-	ItemsPlayer = GetItems(PlayerRef, FullInventoryPlayer)
-	int Max = AddItemToggles(ItemsPlayer, 0, 123)
-;	if ItemsPlayer.Length % 2 != 0
-;		AddEmptyOption()
-;		Max -= 1
-;	endIf ;Not longer need with StripEditorPossibility option
-
-	if TargetRef && Max >= 4
-		AddHeaderOption("$SSL_Equipment{"+TargetRef.GetLeveledActorBase().GetName()+"}")
-		AddToggleOptionST("FullInventoryTarget", "$SSL_FullInventory", FullInventoryTarget)
-
-		ItemsTarget = GetItems(TargetRef, FullInventoryTarget)
-		Max = AddItemToggles(ItemsTarget, 1, Max)
-	endIf
-
-	if Max < 1
-		AddHeaderOption("NOTICE: Max display of items reached!")
-	endIf
-endFunction
-
-int function AddItemToggles(Form[] Items, int ID, int Max)
-	if !Items
-		return Max
-	endIf
-	int i
-	while i < Items.Length && Max
-		if Items[i]
-			AddTextOptionST("StripEditor_"+ID+"_"+i, GetItemName(Items[i]), GetStripState(Items[i]))
-			Max -= 1
-			AddSliderOptionST("StripEditorPossibility_"+ID+"_"+i,"Possibility", StorageUtil.GetIntValue(Items[i], "SometimesStrip", 100), "{0}%", SexLabUtil.IntIfElse(ActorLib.IsAlwaysStrip(Items[i]), OPTION_FLAG_NONE, OPTION_FLAG_DISABLED))
-			Max -= 1
-		endIf
+	ItemsPlayer = GetStrippables(PlayerRef, !FullInventoryPlayer)
+	int i = 0
+	While(i < ItemsPlayer.Length && i < 127 - 2)	; At most 128 entries per page
+		AddTextOptionST("StripEditorPlayer_" + i, GetItemName(ItemsPlayer[i]), GetStripState(ItemsPlayer[i]))
 		i += 1
-	endWhile
-	return Max
-endFunction
+	EndWhile
+	If((i + 2) > 121 || !TargetRef)	; Want at least 6 free spaces for target NPC
+		return
+	EndIf
+	AddHeaderOption("$SSL_Equipment{" + TargetRef.GetLeveledActorBase().GetName() + "}")
+	AddToggleOptionST("FullInventoryTarget", "$SSL_FullInventory", FullInventoryTarget)
+	ItemsTarget = GetStrippables(TargetRef, !FullInventoryTarget)
+	int n = 0
+	While(n < ItemsTarget.Length && (i + n) < (127 - 4))
+		AddTextOptionST("StripEditorTarget_" + i, GetItemName(ItemsTarget[i]), GetStripState(ItemsTarget[i]))
+		n += 1
+	EndWhile
+EndFunction
 
-; function AddStripToggles(Form[] Items, )
-
-string function GetStripState(Form ItemRef)
-	if !ItemRef
-		return "none"
-	elseIf ActorLib.IsNoStrip(ItemRef)
-		return "$SSL_NeverRemove"
-	elseIf ActorLib.IsAlwaysStrip(ItemRef)
-		if StorageUtil.GetIntValue(ItemRef, "SometimesStrip", 100) < 100
-			return "$SSL_SometimesRemove"
-		endIf
+String Function GetStripState(Form ItemRef)
+	int strip = sslpp.CheckStrip(ItemRef)
+	If(strip == 1)
 		return "$SSL_AlwaysRemove"
-	else
+	ElseIf(strip == -1)
+		return "$SSL_NeverRemove"
+	Else
 		return "---"
-	endIf
-endFunction
-
-bool function IsToggleable(Form ItemRef)
-	return !SexLabUtil.HasKeywordSub(ItemRef, "NoStrip") && !SexLabUtil.HasKeywordSub(ItemRef, "AlwaysStrip")
-endFunction
-;/ int function ItemToggleFlag(Form ItemRef)
-	if !ItemRef || SexLabUtil.HasKeywordSub(ItemRef, "NoStrip") || SexLabUtil.HasKeywordSub(ItemRef, "AlwaysStrip")
-		return OPTION_FLAG_DISABLED
-	else
-		return OPTION_FLAG_NONE
-	endIf
-endFunction /;
-
-Form[] function GetItems(Actor ActorRef, bool FullInventory = false)
-	if FullInventory
-		return GetFullInventory(ActorRef)
-	else
-		return GetEquippedItems(ActorRef)
-	endIf
-endFunction
+	EndIf
+EndFunction
 
 string function GetItemName(Form ItemRef, string AltName = "$SSL_Unknown")
 	if ItemRef
@@ -3491,7 +3384,6 @@ string function GetItemName(Form ItemRef, string AltName = "$SSL_Unknown")
 			return AltName
 		endIf
 	endIf
-	
 	return "None"
 endFunction
 
@@ -3507,68 +3399,6 @@ int[] function GetAllMaskSlots(int Mask)
 		i += 1
 	endWhile
 	return Output
-endFunction
-
-Form[] function GetEquippedItems(Actor ActorRef)
-	Form[] Output = new Form[34]
-	; Weapons
-	Form ItemRef
-	ItemRef = ActorRef.GetEquippedWeapon(false) ; Right Hand
-	if ItemRef && IsToggleable(ItemRef)
-		Output[33] = ItemRef
-	endIf
-	ItemRef = ActorRef.GetEquippedWeapon(true) ; Left Hand
-	if ItemRef && ItemRef != Output[33] && IsToggleable(ItemRef)
-		Output[32] = ItemRef
-	endIf
-
-	; Armor
-	int i
-	int Slot = 0x01
-	while i < 32
-		Form WornRef = ActorRef.GetWornForm(Slot)
-		if WornRef
-			if WornRef as ObjectReference
-				WornRef = (WornRef as ObjectReference).GetBaseObject()
-			endIf
-			if Output.Find(WornRef) == -1 && IsToggleable(WornRef)
-				Output[i] = WornRef
-			endIf
-		endIf
-		Slot *= 2
-		i    += 1
-	endWhile
-	return PapyrusUtil.ClearNone(Output)
-endFunction
-
-Form[] function GetFullInventory(Actor ActorRef)
-	int[] Valid = new int[3]
-	Valid[0] = 26 ; kArmor
-	Valid[1] = 41 ; kWeapon 
-	Valid[2] = 53 ; kLeveledItem
-	;/ Valid[3] = 124 ; kOutfit
-	Valid[4] = 102 ; kARMA
-	Valid[5] = 120 ; kEquipSlot /;
-
-	Form[] Output = GetEquippedItems(ActorRef)
-	Form[] Items  = ActorRef.GetContainerForms()
-	int n = Output.Length
-	int i = Items.Length
-	Output = Utility.ResizeFormArray(Output, 126)
-	while i && n < 126
-		i -= 1
-		Form ItemRef = Items[i]
-		if ItemRef && Valid.Find(ItemRef.GetType()) != -1
-			if ItemRef as ObjectReference
-				ItemRef = (ItemRef as ObjectReference).GetBaseObject()
-			endIf
-			if Output.Find(ItemRef) == -1 && IsToggleable(ItemRef)
-				Output[n] = ItemRef
-				n += 1
-			endIf
-		endIf
-	endWhile
-	return PapyrusUtil.ClearNone(Output)
 endFunction
 
 state FullInventoryPlayer
@@ -4697,10 +4527,39 @@ int function DoDisable(bool check)
 	return OPTION_FLAG_NONE
 endFunction
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
 function DEPRECATED()
-	string log = "SexLab DEPRECATED -- sslConfigMenu.psc -- Use of this property has been deprecated, the mod that called this function should be updated as soon as possible. If you are not the author of this mod, notify them of this error if possible."
+	string log = "SexLab DEPRECATED -- sslConfigMenu.psc -- A depreciated property/function has been invoked. The mod that called this function should be updated as soon as possible. If you are not the author of this mod, notify them of this error."
+	Debug.MessageBox(log)
 	Debug.TraceStack(log, 1)
-	if (Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig).InDebugMode
-		MiscUtil.PrintConsole(log)
-	endIf
+endFunction
+
+int function AddItemToggles(Form[] Items, int ID, int Max)
+	DEPRECATED()
+endFunction
+
+Form[] function GetItems(Actor ActorRef, bool FullInventory = false)
+	DEPRECATED()
+endFunction
+
+Form[] function GetEquippedItems(Actor ActorRef)
+	DEPRECATED()
+endFunction
+
+Form[] function GetFullInventory(Actor ActorRef)
+	DEPRECATED()
+endFunction
+
+bool function IsToggleable(Form ItemRef)
+	DEPRECATED()
 endFunction

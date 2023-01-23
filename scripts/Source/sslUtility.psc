@@ -1,8 +1,7 @@
 scriptname sslUtility hidden
-
-;/-----------------------------------------------\;
-;|	Misc Utility Functions
-;\-----------------------------------------------/;
+{
+	Internal utility
+}
 
 sslBaseAnimation[] function PushAnimation(sslBaseAnimation var, sslBaseAnimation[] Array) global
 	int len = Array.Length
@@ -225,6 +224,18 @@ float Function TrigAngleZ(float afGameAngle) global
 		 return 90 - afGameAngle
 	EndIf
  	return 450 - afGameAngle
+EndFunction
+
+int Function BoolToBit(bool[] abBools) global
+	int ret = 0
+	int i = 0
+	While(i < 32 && i < abBools.Length)
+		If(abBools[i])
+			ret += Math.LeftShift(1, i)
+		EndIf
+		i += 1
+	EndWhile
+	return ret
 EndFunction
 
 int function IndexTravel(int CurrentIndex, int ArrayLength, bool Reverse = false) global
@@ -1464,12 +1475,21 @@ sslBaseObject[] function BaseObjectArray(int size) global
 	endIf
 endFunction
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
 
 ;/-----------------------------------------------\;
 ;|	DEPRECATED Utility Functions -
 ;|     - See PapyrusUtil.psc
 ;\-----------------------------------------------/;
-
 
 bool[] function BoolArray(int size) global
 	; Debug.Trace("SEXLAB -- sslUtility.BoolArray -- DEVELOPMENT DEPRECATION, MOTHER FUCKER - Check PapyrusUtil.psc alternative.")
