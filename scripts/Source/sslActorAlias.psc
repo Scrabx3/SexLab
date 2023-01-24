@@ -450,7 +450,20 @@ state Animating
 	EndEvent
 
 	Function UnplaceActor()
-		ClearAnimating()
+		; Clear SFX & expression & any other animation-exclusive effects
+		; Make sure of play the last animation stage to prevet AnimObject issues
+		String last_anim = Thread.Animation.FetchPositionStage(Position, Thread.Animation.StageCount)
+		If(PlayingAE != last_anim)
+			PlayingAE = last_anim
+			Debug.SendAnimationEvent(ActorRef, last_anim)
+		EndIf
+		; Reset Expression
+		If(Expression || sslBaseExpression.IsMouthOpen(ActorRef))
+			sslBaseExpression.CloseMouth(ActorRef)
+		EndIf
+		ActorRef.ClearExpressionOverride()
+		ActorRef.ResetExpressionOverrides()
+		sslBaseExpression.ClearMFG(ActorRef)
 		GoToState("Idling")
 		UnplaceActor()
 	EndFunction
@@ -543,10 +556,6 @@ state Animating
 	endFunction
 
 	; --- TODO: Review & reimplement these
-	function RefreshLoc()	; COMEBACK: Call "SetPositions" again with the new offset data
-		; Thread.ResetLocation()
-	endFunction
-
 	function OrgasmEffect()
 		DoOrgasm()
 	endFunction
@@ -664,15 +673,6 @@ state Animating
 		; VoiceDelay = 0.8
 		RegisterForSingleUpdate(0.8)
 	endFunction
-
-	; --- LEGACY
-	function SyncLocation(bool Force = false)
-		Thread.RealignActors()
-	endFunction
-
-	function Snap()
-		Thread.RealignActors()
-	endFunction
 endState
 
 ; ------------------------------------------------------- ;
@@ -696,6 +696,12 @@ State Idling
 		TrackedEvent("End")
 		Parent.Clear()
 		GoToState("Empty")
+	EndFunction
+
+	Function PlaceActor(ObjectReference akCenter)
+		Log("Placing Idling Actor")
+		GoToState("Animating")
+		PlaceActor(akCenter)
 	EndFunction
 EndState
 
@@ -748,6 +754,12 @@ Function ResolveStrapon(bool force = false)
 		EndIf
 	ElseIf(equipped)
 		ActorRef.UnequipItem(Strapon, true, true)
+	EndIf
+EndFunction
+
+Function RemoveStrapon()
+	If(Strapon && !HadStrapon)
+		ActorRef.RemoveItem(Strapon, 1, true)
 	EndIf
 EndFunction
 
@@ -956,32 +968,9 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 
 ; Prepare this actor for positioning
 ; Return duration for the pre-placement starting animation, if any
-float Function PlaceActor(ObjectReference akCenter)
+Function PlaceActor(ObjectReference akCenter)
 	Log("PlaceActor on " + ActorRef)
 	LockActor()
-	If(!sslActorData.IsCreature(_ActorData))
-		If(StartAnimEvent == "")
-			; Set intro animation to undressing if none defined & undress anim requested
-			If(DoUndress)
-				Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G" + (sslActorData.IsFemale(_ActorData) as int))
-				StartWait = 1.0
-			EndIf
-		Else
-			Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
-		EndIf
-		Strip()
-		ResolveStrapon()
-		; Remove HDT High Heels
-		If(Config.RemoveHeelEffect)
-			HDTHeelSpell = sslpp.GetHDTHeelSpell(ActorRef)
-			If(HDTHeelSpell)
-				Log("Removing HDT Heel Effect: " + HDTHeelSpell)
-				ActorRef.RemoveSpell(HDTHeelSpell)
-			EndIf
-		EndIf
-	ElseIf(StartAnimEvent != "")
-		Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
-	EndIf
 	ActorRef.SetVehicle(akCenter)
 	; Scale after SetVehicle
 	If(Config.DisableScale)
@@ -1008,6 +997,17 @@ float Function PlaceActor(ObjectReference akCenter)
 			ActorRef.SetScale(AnimScale)
 		EndIf
 		Log("Applying Scale on Actor " + ActorRef + ": ["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"]")
+	EndIf
+EndFunction
+
+float Function HandleStartAnimation()
+	If(StartAnimEvent == "")
+		If(DoUndress)
+			Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G" + vanilla_sex)
+			StartWait = 1.0
+		EndIf
+	Else
+		Debug.SendAnimationEvent(ActorRef, StartAnimEvent)
 	EndIf
 	return StartWait
 EndFunction
@@ -1055,22 +1055,12 @@ EndFunction
 ; ---	In Animation				                            --- ;
 ; ------------------------------------------------------- ;
 
-; Reset this Actor into a pre-animation state, allowing them to freely move etc
+; Reset this Actor into a pre-animation state, allowing them to freely move around
 ; Is overwritten by the Animation State to consider animation exclusive statuses, eg expression
 Function UnplaceActor()
 	Log("UnplaceActor on " + ActorRef)
 	SendDefaultAnimEvent(true)
 	UnlockActor()
-	If(!sslActorData.IsCreature(_ActorData))
-		Unstrip()
-		If(Strapon && !HadStrapon)
-			ActorRef.RemoveItem(Strapon, 1, true)
-		EndIf
-		; HDTSpell is null if not removed by this script previously
-		If(HDTHeelSpell && ActorRef.GetWornForm(0x00000080) && !ActorRef.HasSpell(HDTHeelSpell))
-			ActorRef.AddSpell(HDTHeelSpell)
-		EndIf
-	EndIf
 	ActorRef.SetVehicle(none)
 	If(ActorScale != 1.0 || AnimScale != 1.0)
 		ActorRef.SetScale(ActorScale)
@@ -1103,23 +1093,6 @@ Function UnlockActor()
 		ActorRef.SetRestrained(false)
 	endIf
 	ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", false)
-EndFunction
-
-Function ClearAnimating()
-	; Clear SFX & expression & any other animation-exclusive effects
-	; Make sure of play the last animation stage to prevet AnimObject issues
-	String last_anim = Thread.Animation.FetchPositionStage(Position, Thread.Animation.StageCount)
-	If(PlayingAE != last_anim)
-		PlayingAE = last_anim
-		Debug.SendAnimationEvent(ActorRef, last_anim)
-	EndIf
-	; Reset Expression
-	If(Expression || sslBaseExpression.IsMouthOpen(ActorRef))
-		sslBaseExpression.CloseMouth(ActorRef)
-	EndIf
-	ActorRef.ClearExpressionOverride()
-	ActorRef.ResetExpressionOverrides()
-	sslBaseExpression.ClearMFG(ActorRef)
 EndFunction
 
 Function DoStatistics()
@@ -1163,7 +1136,8 @@ Function Strip()
 		EndWhile
 		Strip[1] = s[32] as int
 	EndIf
-	; Weapons
+	Log("STRIPPING -> " + Strip)
+	; Gear
 	If(Strip[1])
 		RightHand = ActorRef.GetEquippedObject(1)
 		If(RightHand && sslpp.CheckStrip(RightHand) != -1)
@@ -1177,32 +1151,37 @@ Function Strip()
 		RightHand = none
 		LeftHand = none
 	EndIf
-	; Armor
 	Form[] gear = sslpp.StripActor(ActorRef, Strip[0])
-	ActorRef.QueueNiNodeUpdate()
 	Equipment = PapyrusUtil.MergeFormArray(Equipment, gear)
-	Log("<Strip> Left Weapon: " + LeftHand + " | Right Weapon: " + RightHand + " | Equipment: " + gear + " | Total Stripped: " + Equipment)
-	; Equip the nudesuit
-	if Math.LogicalAnd(Strip[0], 4) && (vanilla_sex == 0 && Config.UseMaleNudeSuit || vanilla_sex == 1 && Config.UseFemaleNudeSuit)
+	If(Math.LogicalAnd(Strip[0], 4) && (vanilla_sex == 0 && Config.UseMaleNudeSuit || vanilla_sex == 1 && Config.UseFemaleNudeSuit))
 		ActorRef.EquipItem(Config.NudeSuit, true, true)
-	endIf
+	EndIf
+	Log("STRIPPING -> Stripped Items: Weapon (Right):" + RightHand + " / Weapon (Left): " + LeftHand + " / Armor: " + Equipment)
+	ActorRef.QueueNiNodeUpdate()
 	; NiOverride High Heels
-	if Config.RemoveHeelEffect && ActorRef.GetWornForm(0x00000080)
-		if Config.HasNiOverride
-			bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
-			if NiOverride.HasNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
-				float[] pos = NiOverride.GetNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
-				Log(pos, "RemoveHeelEffect (NiOverride)")
-				pos[0] = -pos[0]
-				pos[1] = -pos[1]
-				pos[2] = -pos[2]
-				NiOverride.AddNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm", pos)
-				NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
-			elseIf UpdateNiOPosition
-				NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
+	If(Config.RemoveHeelEffect)
+		If(ActorRef.GetWornForm(0x80))
+			if Config.HasNiOverride
+				bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
+				if NiOverride.HasNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
+					float[] pos = NiOverride.GetNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "internal")
+					Log(pos, "RemoveHeelEffect (NiOverride)")
+					pos[0] = -pos[0]
+					pos[1] = -pos[1]
+					pos[2] = -pos[2]
+					NiOverride.AddNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm", pos)
+					NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
+				elseIf UpdateNiOPosition
+					NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
+				endIf
 			endIf
-		endIf
-	endIf
+		EndIf
+		HDTHeelSpell = sslpp.GetHDTHeelSpell(ActorRef)
+		If(HDTHeelSpell)
+			Log("Removing HDT Heel Effect: " + HDTHeelSpell)
+			ActorRef.RemoveSpell(HDTHeelSpell)
+		EndIf
+	EndIf
 EndFunction
 
 Function UnStrip()
@@ -1224,9 +1203,14 @@ Function UnStrip()
 	 	ActorRef.EquipItemEx(Equipment[i], ActorRef.EquipSlot_Default)
 		i += 1
  	EndWhile
+	; HDTSpell is null if not removed by this script previously
+	If(HDTHeelSpell && ActorRef.GetWornForm(0x00000080) && !ActorRef.HasSpell(HDTHeelSpell))
+		ActorRef.AddSpell(HDTHeelSpell)
+	EndIf
 EndFunction
 
 Function SendDefaultAnimEvent(bool Exit = False)
+	PlayingAE = ""
 	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
 	If(!sslActorData.IsCreature(_ActorData))
 		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
@@ -1457,12 +1441,6 @@ EndFunction
 ; Animating
 function SyncThread()
 endFunction
-function SyncLocation(bool Force = false)
-endFunction
-function RefreshLoc()
-endFunction
-function Snap()
-endFunction
 Function PlayAnimation(String asAnimation)
 EndFunction
 function OrgasmEffect()
@@ -1525,6 +1503,18 @@ endEvent
 
 function SetEndAnimationEvent(string EventName)
 	; EndAnimEvent = EventName
+endFunction
+
+function RefreshLoc()
+	Thread.RealignActors()
+endFunction
+
+function SyncLocation(bool Force = false)
+	Thread.RealignActors()
+endFunction
+
+function Snap()
+	Thread.RealignActors()
 endFunction
 
 ; ------------------------------------------------------- ;

@@ -11,7 +11,7 @@
         <Variable Name="ThisProject" Value="."/>
         <Variable Name="Rel" Value=".\.release"/>
         <Variable Name="MO2" Value=".."/>
-        <Variable Name="Ver" Value="1.3"/>
+        <Variable Name="Ver" Value="1.4.0.1"/>
     </Variables>
     <Imports>
         <Import>@ThisProject\Scripts\Source</Import>

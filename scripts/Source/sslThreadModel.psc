@@ -52,6 +52,7 @@ Sound Property SoundFX auto hidden
 string Property AdjustKey
 	String Function Get()
 		return "Global"
+		; TODO: reimplement this
 		; if !Config.RaceAdjustments && Config.ScaleActors
 		; 	AdjustKey = "Global"
 		; else
@@ -204,9 +205,10 @@ EndProperty
 bool property DisableOrgasms auto hidden
 
 ; Beds
-int[] Property BedStatus auto hidden
 ; BedStatus[0] = -1 forbid, 0 allow, 1 force
 ; BedStatus[1] = 0 none, 1 bedroll, 2 single, 3 double
+int[] Property BedStatus auto hidden
+
 ObjectReference Property BedRef auto hidden
 int Property BedTypeID hidden
 	int Function get()
@@ -285,6 +287,8 @@ float SkillTime
 ; Debug testing
 bool Property DebugMode auto hidden
 float Property t auto hidden
+
+bool Property BLOCK_API_ELEMENTS Auto Hidden
 
 int[] Function GetPositionData()
 	int[] ret = Utility.CreateIntArray(Positions.Length)
@@ -450,7 +454,7 @@ State Making
 
 		If(!CenterRef)
 			; Lil bit odd to read. 'CenterOnBed' return true if a center bed was set, thus never entering this branch
-			If(ActorCount == Creatures || HasTag("Furniture") || !CenterOnBed(HasPlayer, 750.0))
+			If(ActorCount == Creatures || HasTag("Furniture") || !CenterOnBedEx(HasPlayer, 750.0, false))
 				int n = Positions.Find(PlayerRef)
 				If(n == -1)
 					int j = 0
@@ -466,7 +470,7 @@ State Making
 						n = 0
 					EndIf
 				EndIf
-				CenterOnObject(Positions[n])
+				CenterOnObjectImpl(Positions[n])
 			EndIf
 		EndIf
 		If(Config.ShowInMap && !HasPlayer && PlayerRef.GetDistance(CenterRef) > 750)
@@ -1095,15 +1099,6 @@ int Function AreUsingFurniture(Actor[] ActorList)
 EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Center			                                    --- ;
-; ------------------------------------------------------- ;
-
-Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
-	CenterOnObjectImpl(CenterOn)
-	; IDEA: use the resync parameter to call SetPosition here if currently in AnimationState 
-EndFunction
-
-; ------------------------------------------------------- ;
 ; --- Event Hooks                                     --- ;
 ; ------------------------------------------------------- ;
 
@@ -1280,13 +1275,18 @@ int[] Function ShiftKeys(int[] aiKeys)
 EndFunction
 
 ; Assume all Actors have all necessary data set
+; Final preperations before starting the animation. Stripping, Position, ...
 Function PlaceActors()
 	float w = 0.0
 	int i = 0
 	While(i < Positions.Length)
-		float ww = ActorAlias[i].PlaceActor(_Center)
-		If(ww > w)
-			w = ww
+		ActorAlias[i].PlaceActor(_Center)
+		If(!sslActorData.IsCreature(ActorAlias[i].GetActorData()))
+			ActorAlias[i].Strip()
+			float ww = ActorAlias[i].HandleStartAnimation()
+			If(ww > w)
+				w = ww
+			EndIf
 		EndIf
 		i += 1
 	EndWhile
@@ -1350,6 +1350,15 @@ Function PlayStageAnimations()
 		n += 1
 	EndWhile
 	RealignActors()
+EndFunction
+
+Function ResetStage()
+	int i = 0
+	While(i < Positions.Length)
+		ActorAlias[i].SendDefaultAnimEvent()
+		i += 1
+	EndWhile
+	GoToStage(Stage)
 EndFunction
 
 ; End leadin -> Start default animation
@@ -1448,7 +1457,7 @@ State Ending
 		EndIf
 		RecordSkills()
 		UnplaceActors()
-		If(UsingBed && CenterRef.IsActivationBlocked())
+		If(UsingBed)
 			SetFurnitureIgnored(false)
 		EndIf
 		SendThreadEvent("AnimationEnd")
@@ -1481,6 +1490,10 @@ Function UnplaceActors()
 	int i = 0
 	While(i < Positions.Length)
 		ActorAlias[i].UnplaceActor()
+		If(!sslActorData.IsCreature(ActorAlias[i].GetActorData()))
+			ActorAlias[i].Unstrip()
+			ActorAlias[i].RemoveStrapon()
+		EndIf
 		i += 1
 	EndWhile
 EndFunction
@@ -1512,6 +1525,17 @@ EndFunction
 ; ------------------------------------------------------- ;
 ; --- Center                                          --- ;
 ; ------------------------------------------------------- ;
+
+ObjectReference Function GetRealCenter()
+	return _Center
+EndFunction
+
+Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
+	CenterOnObjectImpl(CenterOn)
+	If(resync)	;	&& GetState() == "Animating") RealignActors() is empty if not in Animating State
+		RealignActors()
+	EndIf
+EndFunction
 
 Function CenterOnObjectImpl(ObjectReference akNewCenter)
 	If(!akNewCenter)
@@ -1576,6 +1600,10 @@ Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, fl
 EndFunction
 
 bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
+	CenterOnBedEx(AskPlayer, Radius, true)
+EndFunction
+
+bool Function CenterOnBedEx(bool abAskPlayer = true, float afRadius = 750.0, bool abResync)
 	If(BedStatus[0] == -1)
 		return false
 	ElseIf(GetState() == "Making" && (!HasPlayer && Config.NPCBed == 0 || HasPlayer && Config.AskBed == 0))
@@ -1587,27 +1615,27 @@ bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
 		FoundBed = Positions[i].GetFurnitureReference()
 		int BedType = ThreadLib.GetBedType(FoundBed)	; 0 if no bed
 		If(BedType > 0 && (Positions.Length <= 2 || BedType != 2))
-			CenterOnObject(FoundBed)
+			CenterOnObject(FoundBed, abResync)
 			return true
 		Else
 			i += 1
 		EndIf
 	EndWhile
-	Radius *= 1 + BedStatus[0]	; Double r if forced (BedStatus[0] == 1)
+	afRadius *= 1 + BedStatus[0]	; Double r if forced (BedStatus[0] == 1)
 	If(HasPlayer)
 		; Config.AskBed: 0 - Never, 1 - Alwys, 2 - If not victim
 		If(;/ !InStart || /; Config.AskBed == 1 || Config.AskBed == 2 && (!IsVictim(PlayerRef) || UseNPCBed))
-			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
-			AskPlayer = AskPlayer && (;/ !InStart || /; Config.AskBed < 1 || !IsVictim(PlayerRef))
+			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, afRadius)
+			abAskPlayer = abAskPlayer && (;/ !InStart || /; Config.AskBed < 1 || !IsVictim(PlayerRef))
 		EndIf
 	Else
-		AskPlayer = false
+		abAskPlayer = false
 		If(!FoundBed && UseNPCBed)
-			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, Radius)
+			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, afRadius)
 		EndIf
 	EndIf
-	If(FoundBed && (BedStatus[0] == 1 || !AskPlayer || Config.UseBed.Show() as bool))
-		CenterOnObject(FoundBed)
+	If(FoundBed && (BedStatus[0] == 1 || !abAskPlayer || Config.UseBed.Show() as bool))
+		CenterOnObject(FoundBed, abResync)
 		return true
 	endIf
 	return false
