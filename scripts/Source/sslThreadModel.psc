@@ -1534,6 +1534,7 @@ Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
 	CenterOnObjectImpl(CenterOn)
 	If(resync)	;	&& GetState() == "Animating") RealignActors() is empty if not in Animating State
 		RealignActors()
+		SendThreadEvent("ActorsRelocated")
 	EndIf
 EndFunction
 
@@ -1591,12 +1592,18 @@ EndFunction
 
 ; COMEBACK: This here should be completely pointless but might wanna check that it doesnt break anythin just to be sure
 Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
-	; CenterLocation[0] = LocX
-	; CenterLocation[1] = LocY
-	; CenterLocation[2] = LocZ
-	; CenterLocation[3] = RotX
-	; CenterLocation[4] = RotY
-	; CenterLocation[5] = RotZ
+	_Center.SetPosition(LocX, LocY, LocZ)
+	_Center.SetAngle(RotX, RotY, RotZ)
+	CenterLocation[0] = LocX
+	CenterLocation[1] = LocY
+	CenterLocation[2] = LocZ
+	CenterLocation[3] = RotX
+	CenterLocation[4] = RotY
+	CenterLocation[5] = RotZ
+	If(resync)
+		RealignActors()
+		SendThreadEvent("ActorsRelocated")
+	EndIf
 EndFunction
 
 bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)

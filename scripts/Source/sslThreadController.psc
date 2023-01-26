@@ -111,155 +111,111 @@ State Animating
 	; COMEBACK: For the time being leaving this disabled as I want to know how reliable the keys are and imrpove on them
 	; Rather have people complain about it than leaving bugs in silently decaying unnoticed by me
 	
-	; Function AdjustForward(bool backwards = false, bool AdjustStage = false)
-	; 	UnregisterforUpdate()
-	; 	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
-	; 	Adjusted = true
-	; 	PlayHotkeyFX(0, backwards)
-	; 	int AdjustPos = GetAdjustPos()
-	; 	Animation.AdjustForward(AdjustKey, AdjustPos, Stage, Amount, AdjustStage)
-	; 	AdjustAlias.RefreshLoc()
-	; 	int k = Config.AdjustForward
-	; 	while Input.IsKeyPressed(k)
-	; 		PlayHotkeyFX(0, backwards)
-	; 		Animation.AdjustForward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-	; 		AdjustAlias.RefreshLoc()
-	; 		Utility.Wait(0.5)
-	; 	endWhile
-	; 	RegisterForSingleUpdate(0.1)
-	; EndFunction
+	Function AdjustForward(bool backwards = false, bool AdjustStage = false)
+		UnregisterforUpdate()
+		float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
+		int AdjustPos = GetAdjustPos()
+		While(true)
+			PlayHotkeyFX(0, backwards)
+			Animation.AdjustForward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
+			AdjustAlias.RefreshLoc()
+			Utility.Wait(0.5)
+			If(!Input.IsKeyPressed(Hotkeys[kAdjustForward]))
+				RegisterForSingleUpdate(0.2)
+				return
+			EndIf
+		EndWhile
+	EndFunction
 
-	; Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
-	; 	UnregisterforUpdate()
-	; 	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
-	; 	Adjusted = true
-	; 	PlayHotkeyFX(0, backwards)
-	; 	int AdjustPos = GetAdjustPos()
-	; 	Animation.AdjustSideways(AdjustKey, AdjustPos, Stage, Amount, AdjustStage)
-	; 	AdjustAlias.RefreshLoc()
-	; 	int k = Config.AdjustSideways
-	; 	while Input.IsKeyPressed(k)
-	; 		PlayHotkeyFX(0, backwards)
-	; 		Animation.AdjustSideways(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-	; 		AdjustAlias.RefreshLoc()
-	; 		Utility.Wait(0.5)
-	; 	endWhile
-	; 	RegisterForSingleUpdate(0.1)
-	; EndFunction
+	Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
+		UnregisterforUpdate()
+		int AdjustPos = GetAdjustPos()
+		float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
+		While(true)
+			PlayHotkeyFX(0, backwards)
+			Animation.AdjustSideways(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
+			RealignActors()
+			Utility.Wait(0.5)
+			If(!Input.IsKeyPressed(Hotkeys[kAdjustSideways]))
+				RegisterForSingleUpdate(0.2)
+				return
+			EndIf
+		EndWhile
+	EndFunction
 
-	; Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
-	; 	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
-	; 	UnregisterforUpdate()
-	; 	Adjusted = true
-	; 	PlayHotkeyFX(2, backwards)
-	; 	int AdjustPos = GetAdjustPos()
-	; 	Animation.AdjustUpward(AdjustKey, AdjustPos, Stage, Amount, AdjustStage)
-	; 	AdjustAlias.RefreshLoc()
-	; 	int k = Config.AdjustUpward
-	; 	while Input.IsKeyPressed(k)
-	; 		PlayHotkeyFX(2, backwards)
-	; 		Animation.AdjustUpward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-	; 		AdjustAlias.RefreshLoc()
-	; 		Utility.Wait(0.5)
-	; 	endWhile
-	; 	RegisterForSingleUpdate(0.1)
-	; EndFunction
+	Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
+		UnregisterforUpdate()
+		int AdjustPos = GetAdjustPos()
+		float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
+		While(true) 
+			PlayHotkeyFX(2, backwards)
+			Animation.AdjustUpward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
+			RealignActors()
+			Utility.Wait(0.5)
+			If(!Input.IsKeyPressed(Hotkeys[kAdjustUpward]))
+				RegisterForSingleUpdate(0.2)
+				return
+			EndIf
+		EndWhile
+	EndFunction
 
-	; Function RotateScene(bool backwards = false)
-	; 	UnregisterForUpdate()
-	; 	float Amount = 15.0
-	; 	if Config.IsAdjustStagePressed()
-	; 		Amount = 180.0
-	; 	endIf
-	; 	Amount = PapyrusUtil.SignFloat(backwards, Amount)
-	; 	PlayHotkeyFX(1, !backwards)
-	; 	CenterLocation[5] = CenterLocation[5] + Amount
-	; 	if CenterLocation[5] >= 360.0
-	; 		CenterLocation[5] = CenterLocation[5] - 360.0
-	; 	elseIf CenterLocation[5] < 0.0
-	; 		CenterLocation[5] = CenterLocation[5] + 360.0
-	; 	endIf
-	; 	ActorAlias[0].RefreshLoc()
-	; 	ActorAlias[1].RefreshLoc()
-	; 	ActorAlias[2].RefreshLoc()
-	; 	ActorAlias[3].RefreshLoc()
-	; 	ActorAlias[4].RefreshLoc()
-	; 	int k = Config.RotateScene
-	; 	while Input.IsKeyPressed(k)
-	; 		PlayHotkeyFX(1, !backwards)
-	; 		if Config.IsAdjustStagePressed()
-	; 			Amount = 180.0
-	; 		else
-	; 			Amount = 15.0
-	; 		endIf
-	; 		Amount = PapyrusUtil.SignFloat(backwards, Amount)
-	; 		CenterLocation[5] = CenterLocation[5] + Amount
-	; 		if CenterLocation[5] >= 360.0
-	; 			CenterLocation[5] = CenterLocation[5] - 360.0
-	; 		elseIf CenterLocation[5] < 0.0
-	; 			CenterLocation[5] = CenterLocation[5] + 360.0
-	; 		endIf
-	; 		ActorAlias[0].RefreshLoc()
-	; 		ActorAlias[1].RefreshLoc()
-	; 		ActorAlias[2].RefreshLoc()
-	; 		ActorAlias[3].RefreshLoc()
-	; 		ActorAlias[4].RefreshLoc()
-	; 		Utility.Wait(0.5)
-	; 	endWhile
-	; 	RegisterForSingleUpdate(0.2)
-	; EndFunction
+	Function RotateScene(bool backwards = false)
+		UnregisterForUpdate()
+		float Amount = 15.0
+		If(Config.IsAdjustStagePressed())
+			Amount = 180.0
+		EndIf
+		Amount = PapyrusUtil.SignFloat(backwards, Amount)
+		While(true)	; Pseudo do-while loop
+			PlayHotkeyFX(1, !backwards)
+			CenterLocation[5] = CenterLocation[5] + Amount
+			If(CenterLocation[5] >= 360.0)
+				CenterLocation[5] = CenterLocation[5] - 360.0
+			ElseIf(CenterLocation[5] < 0.0)
+				CenterLocation[5] = CenterLocation[5] + 360.0
+			EndIf
+			RealignActors()
+			Utility.Wait(0.5)
+			If(!Input.IsKeyPressed(Hotkeys[kRotateScene]))
+				RegisterForSingleUpdate(0.2)
+				return
+			EndIf
+		EndWhile
+	EndFunction
 
-	; Function AdjustSchlong(bool backwards = false)
-	; 	int Amount  = PapyrusUtil.SignInt(backwards, 1)
-	; 	int AdjustPos = GetAdjustPos()
-	; 	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
-	; 	If(Math.Abs(Schlong) <= 9)
-	; 		Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
-	; 		AdjustAlias.GetPositionInfo()
-	; 		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
-	; 		PlayHotkeyFX(2, !backwards)
-	; 	EndIf
-	; EndFunction
+	Function AdjustSchlong(bool backwards = false)
+		int Amount  = PapyrusUtil.SignInt(backwards, 1)
+		int AdjustPos = GetAdjustPos()
+		int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
+		If(Math.Abs(Schlong) <= 9)
+			Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
+			AdjustAlias.GetPositionInfo()
+			Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
+			PlayHotkeyFX(2, !backwards)
+		EndIf
+	EndFunction
 
-	; Function AdjustChange(bool backwards = false)
-	; 	If(Positions.Length <= 1)
-	; 		return
-	; 	EndIf
-	; 	int i = GetAdjustPos()
-	; 	i = sslUtility.IndexTravel(i, ActorCount, backwards)
-	; 	If(Positions[i] != PlayerRef)
-	; 		Config.TargetRef = Positions[i]
-	; 	EndIf
-	; 	AdjustAlias = ActorAlias[i]
-	; 	Config.SelectedSpell.Cast(Positions[i])	; SFX for visual feedback
-	; 	PlayHotkeyFX(0, !backwards)
-	; 	String msg = "Adjusting Position For: " + AdjustAlias.GetActorName()
-	; 	Debug.Notification(msg)
-	; 	SexLabUtil.PrintConsole(msg)
-	; EndFunction
+	Function AdjustChange(bool backwards = false)
+		If(Positions.Length <= 1)
+			return
+		EndIf
+		int i = GetAdjustPos()
+		i = sslUtility.IndexTravel(i, ActorCount, backwards)
+		If(Positions[i] != PlayerRef)
+			Config.TargetRef = Positions[i]
+		EndIf
+		AdjustAlias = ActorAlias[i]
+		Config.SelectedSpell.Cast(Positions[i])	; SFX for visual feedback
+		PlayHotkeyFX(0, !backwards)
+		String msg = "Adjusting Position For: " + AdjustAlias.GetActorName()
+		Debug.Notification(msg)
+		SexLabUtil.PrintConsole(msg)
+	EndFunction
 
-	; Function RestoreOffsets()
-	; 	UnregisterForUpdate()
-	; 	Animation.RestoreOffsets(AdjustKey)
-	; 	RealignActors()
-	; 	RegisterForSingleUpdate(0.2)
-	; EndFunction
-
-	; Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
-	; 	parent.CenterOnObject(CenterOn, resync)
-	; 	if resync
-	; 		RealignActors()
-	; 		SendThreadEvent("ActorsRelocated")
-	; 	endIf
-	; EndFunction
-
-	; Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
-	; 	parent.CenterOnCoords(LocX, LocY, LocZ, RotX, RotY, RotZ, resync)
-	; 	if resync
-	; 		RealignActors()
-	; 		SendThreadEvent("ActorsRelocated")
-	; 	endIf
-	; EndFunction
+	Function RestoreOffsets()
+		Animation.RestoreOffsets(AdjustKey)
+		RealignActors()
+	EndFunction
 
 	Function MoveScene()
 		UnregisterForUpdate()
@@ -309,7 +265,6 @@ State Animating
 		EndIf
 		Game.EnablePlayerControls()		; placing doesnt interact with player controls
 		GoToStage(1)									; Will re-register the update loop
-		SendThreadEvent("ActorsRelocated")
 	EndFunction
 
 	Event OnKeyDown(int KeyCode)
@@ -325,23 +280,23 @@ State Animating
 			ChangeAnimation(Config.BackwardsPressed())
 		ElseIf(hotkey == kAdjustForward)
 			AdjustForward(Config.BackwardsPressed(), Config.AdjustStagePressed())
-		ElseIf (hotkey == kAdjustUpward)
+		ElseIf(hotkey == kAdjustUpward)
 			AdjustUpward(Config.BackwardsPressed(), Config.AdjustStagePressed())
-		ElseIf (hotkey == kAdjustSideways)
+		ElseIf(hotkey == kAdjustSideways)
 			AdjustSideways(Config.BackwardsPressed(), Config.AdjustStagePressed())
-		ElseIf (hotkey == kRotateScene)
+		ElseIf(hotkey == kRotateScene)
 			RotateScene(Config.BackwardsPressed())
-		ElseIf (hotkey == kAdjustSchlong)
+		ElseIf(hotkey == kAdjustSchlong)
 			AdjustSchlong(Config.BackwardsPressed())
-		ElseIf (hotkey == kAdjustChange)		; Change Adjusting Position
+		ElseIf(hotkey == kAdjustChange)			; Change Adjusting Position
 			AdjustChange(Config.BackwardsPressed())
-		ElseIf hotkey == kRealignActors
-			RealignActors()
-		ElseIf (hotkey == kChangePositions)	; Change Positions
-			ChangePositions(Config.BackwardsPressed())
-		ElseIf (hotkey == kRestoreOffsets)	; Restore animation offsets
+		; ElseIf(hotkey == kRealignActors)
+		; 	RealignActors()
+		; ElseIf(hotkey == kChangePositions)	; Change Positions
+		; 	ChangePositions(Config.BackwardsPressed())
+		ElseIf(hotkey == kRestoreOffsets)		; Restore animation offsets
 			RestoreOffsets()
-		ElseIf (hotkey == kMoveScene)
+		ElseIf(hotkey == kMoveScene)
 			MoveScene()
 		ElseIf(hotkey == kEndAnimation)
 			If(Config.BackwardsPressed())
