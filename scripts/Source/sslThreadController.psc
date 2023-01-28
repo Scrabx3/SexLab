@@ -174,7 +174,7 @@ State Animating
 			ElseIf(CenterLocation[5] < 0.0)
 				CenterLocation[5] = CenterLocation[5] + 360.0
 			EndIf
-			RealignActors()
+			CenterOnCoords(CenterLocation[0], CenterLocation[1], CenterLocation[2], 0, 0, CenterLocation[5], true)
 			Utility.Wait(0.5)
 			If(!Input.IsKeyPressed(Hotkeys[kRotateScene]))
 				RegisterForSingleUpdate(0.2)

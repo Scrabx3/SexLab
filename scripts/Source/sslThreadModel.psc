@@ -1590,15 +1590,12 @@ Function CenterOnObjectImpl(ObjectReference akNewCenter)
 	Log("Creating new Center Ref from = " + akNewCenter + " at Coordinates = " + CenterLocation + "(New Center is Bed Type: " + BedStatus[1] + ")")
 EndFunction
 
-; COMEBACK: This here should be completely pointless but might wanna check that it doesnt break anythin just to be sure
 Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
 	_Center.SetPosition(LocX, LocY, LocZ)
-	_Center.SetAngle(RotX, RotY, RotZ)
+	_Center.SetAngle(CenterLocation[3], CenterLocation[4], RotZ)
 	CenterLocation[0] = LocX
 	CenterLocation[1] = LocY
 	CenterLocation[2] = LocZ
-	CenterLocation[3] = RotX
-	CenterLocation[4] = RotY
 	CenterLocation[5] = RotZ
 	If(resync)
 		RealignActors()
