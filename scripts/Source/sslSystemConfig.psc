@@ -283,11 +283,11 @@ float function GetVoiceDelay(bool IsFemale = false, int Stage = 1, bool IsSilent
 endFunction
 
 int[] Function GetStripSettings(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
-	int idx = IsFemale as int
+	int idx
 	If(IsAggressive)
-		idx += (Math.LeftShift(IsVictim as int, 1) + 4) * 2
+		idx = (Math.LeftShift(IsVictim as int, 1) + 4) * 2
 	Else
-		idx += Math.LeftShift(IsLeadIn as int, 1) * 2
+		idx = ((IsFemale as int) + Math.LeftShift(IsLeadIn as int, 1)) * 2
 	EndIf
 	int[] ret = new int[2]
 	ret[0] = iStripForms[idx]

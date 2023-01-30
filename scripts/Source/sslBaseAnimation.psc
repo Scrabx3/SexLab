@@ -369,8 +369,6 @@ EndFunction
 
 int Function AccessFlag(int aiPosition, int aiStage, int aiIndex)
 	int w =  (aiPosition * Stages * kFlagEnd) + (aiStage * kFlagEnd) + aiIndex
-	Debug.Trace("AccessFlag -> aiPosition = " + aiPosition + "; aiStage = " + aiStage + "; aiIndex = " + aiIndex + \
-	" // Access at " + w + " Returning: " + _FLAGS[w])
 	return _FLAGS[w]
 EndFunction
 
@@ -529,7 +527,7 @@ endFunction
 int position_stage
 
 ; initialize a position and build the associated actor key
-int Function CreatePosition(int aiGender, bool[] abFlags, int aiCum = -1, String asRaceKey = "")
+int Function CreatePosition(int aiGender, int aiCum = -1, String asRaceKey = "")
 	If(Actors >= 5)
 		Log("Cannot add more positions to animation")
 		return -1
@@ -547,12 +545,8 @@ int Function CreatePosition(int aiGender, bool[] abFlags, int aiCum = -1, String
 		_OFFSETS = new float[4]
 		_FLAGS = new int[6]
 	EndIf
-	; Legacy support
-	If(asRaceKey == "Wolves" || asRaceKey == "Dogs")
-		asRaceKey = "Canines"
-	EndIf
 	; Invalid RaceKey returns 0/human
-	_DataKeys[idx] = sslActorData.BuildCustomKeyA(aiGender, asRaceKey, abFlags)
+	_DataKeys[idx] = sslActorData.BuildCustomKey(aiGender, asRaceKey)
 
 	position_stage = 0
 	WriteFlag(idx, 0, kCumID, aiCum)
@@ -1059,7 +1053,7 @@ EndFunction
 
 ; Scene Building Legacy Functions
 int function AddPosition(int Gender = 0, int AddCum = -1)
-	return CreatePosition(Gender, Utility.CreateBoolArray(0), AddCum)
+	return CreatePosition(Gender, AddCum)
 endFunction
 bool function CheckByTags(int ActorCount, string[] Search, string[] Suppress, bool RequireAll)
 	return Enabled && ActorCount == PositionCount && CheckTags(Search, RequireAll) && (Suppress.Length < 1 || !HasOneTag(Suppress))
@@ -1196,7 +1190,7 @@ int function AddCreaturePosition(string RaceKey, int Gender = 2, int AddCum = -1
 		Gender = 3
 	endIf
 	; Shift gender by 1 as legacy gender has no futa key
-	return CreatePosition(Gender + 1, Utility.CreateBoolArray(0), AddCum, RaceKey)
+	return CreatePosition(Gender + 1, AddCum, RaceKey)
 endFunction
 
 string function GetGenderString(int Gender)

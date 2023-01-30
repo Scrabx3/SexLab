@@ -55,12 +55,7 @@ int[] Function BuildSortedDataKeyArrayEx(Actor[] akActors, bool[] abIsVictim) gl
   return SortDataKeys(BuildDataKeyArrayEx(akActors, abIsVictim))
 EndFunction
 
-; EXTRA DATA FLAGS
-int Property Victim = 0 AutoReadOnly
-int Property Vampire = 1 AutoReadOnly
-
 int Function BuildCustomKey(int aiGender, String asRaceKey) native global
-int Function BuildCustomKeyA(int aiGender, String asRaceKey, bool[] abExtraData) native global
 
 ; ------------------------------------------------------- ;
 ; --- Comparing & Sorting      				                --- ;

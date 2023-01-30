@@ -1203,11 +1203,11 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, 
 	EndIf
 	int[] valids = Utility.CreateIntArray(akAnimations.Length, -1)
 	int[] pkeys = GetPositionDataConfig()
-	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys + " | Scene tags = " + tags)
+	Log("Validating " + akAnimations.Length + " Animations with keys = " + pkeys)
 	int n = 0
 	While(n < akAnimations.Length)
-		Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].DataKeys() + " | Tags = " + akAnimations[n].GetTags())
-		If(akAnimations[n].MatchKeys(pkeys) && akAnimations[n].MatchTags(Tags))
+		; Log("Validating Animation Nr. " + n + " | Keys = " + akAnimations[n].DataKeys() + " | Tags = " + akAnimations[n].GetTags())
+		If(akAnimations[n].MatchKeys(pkeys))
 			valids[n] = n
 		EndIf
 		n += 1
@@ -1231,8 +1231,8 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, 
 		valids = Utility.CreateIntArray(akAnimations.Length, -1)
 		int i = 0
 		While(i < akAnimations.Length)
-			Log("Validating Animation Nr. " + i + " | Keys = " + akAnimations[i].DataKeys() + " | Tags = " + akAnimations[i].GetTags())
-			If(akAnimations[i].MatchKeys(pkeys) && akAnimations[i].MatchTags(Tags))
+			; Log("Validating Animation Nr. " + i + " | Keys = " + akAnimations[i].DataKeys() + " | Tags = " + akAnimations[i].GetTags())
+			If(akAnimations[i].MatchKeys(pkeys))
 				valids[i] = i
 			EndIf
 			i += 1
@@ -1250,7 +1250,7 @@ sslBaseAnimation[] Function ValidateAnimations(sslBaseAnimation[] akAnimations, 
 	Else
 		ret = akAnimations
 	EndIf
-	Log("Post Validation, Animations left: " + ret.Length)
+	Log("Post Validation, Animations left: " + ret.Length + " | Keys = " + pkeys)
 	return ret
 EndFunction
 
