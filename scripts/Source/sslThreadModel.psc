@@ -352,7 +352,7 @@ State Making
 	EndFunction
 
 	; 0 To disable bed, 1 to "not care", 2 to force
-	bool Function SetAnimationsByTags(String asTags, int aiUseBed = 1)
+	bool Function SetAnimationsByTags(String asTags, int aiUseBed = 1, bool abNoShutDown = false)
 		int[] keys = GetPositionData()
 		If(!keys.Length)
 			return false
@@ -371,6 +371,9 @@ State Making
 			anims = AnimSlots.GetAnimationsByKeys(keys, asTags, aiUseBed - 1)
 		EndIf
 		If(!anims.Length)
+			If(!abNoShutDown)
+				ReportAndFail("Failed to start Thread -- Unable to find valid animations")
+			EndIf
 			return false
 		EndIf
 		PrimaryAnimations = anims
@@ -2082,7 +2085,7 @@ Function OrgasmDone()
 EndFunction
 Function StartupDone()
 EndFunction
-bool Function SetAnimationsByTags(String asTags, int aiUseBed = 1)
+bool Function SetAnimationsByTags(String asTags, int aiUseBed = 1, bool abNoShutDown = false)
 EndFunction
 ; Animating
 Function TriggerOrgasm()
@@ -2191,223 +2194,8 @@ bool Function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppres
 	return true
 EndFunction
 
-; Might want to come back to this just to check that we actually consider all configs in the DataKey \o/
 int Function FilterAnimations()
-	; Filter animations based on user settings and scene
-	if !CustomAnimations || CustomAnimations.Length < 1
-		Log("FilterAnimations() BEGIN - LeadAnimations="+LeadAnimations.Length+", PrimaryAnimations="+PrimaryAnimations.Length)
-		string[] Filters
-		string[] BasicFilters
-		string[] BedFilters
-		sslBaseAnimation[] FilteredPrimary
-		sslBaseAnimation[] FilteredLead
-		int[] Futas = ActorLib.TransCount(Positions)
-		int i
-
-		; Filter tags for Male Vaginal restrictions
-		if (Futas[0] + Futas[1]) < 1 && ((!Config.UseCreatureGender && ActorCount == Males) || (Config.UseCreatureGender && ActorCount == (Males + MaleCreatures)))
-			BasicFilters = AddString(BasicFilters, "Vaginal")
-		elseIf (HasTag("Vaginal") || HasTag("Pussy") || HasTag("Cunnilingus"))
-			if FemaleCreatures <= 0
-				Filters = AddString(Filters, "CreatureSub")
-			endIf
-		endIf
-
-		if IsAggressive && Config.FixVictimPos
-			if VictimRef == Positions[0] && ActorLib.GetGender(VictimRef) == 0 && ActorLib.GetTrans(VictimRef) == -1
-				BasicFilters = AddString(BasicFilters, "Vaginal")
-			endIf
-			if Males > 0 && ActorLib.GetGender(VictimRef) == 1 && ActorLib.GetTrans(VictimRef) == -1
-				Filters = AddString(Filters, "FemDom")
-			elseIf Creatures > 0 && !ActorLib.IsCreature(VictimRef) && Males <= 0 && (!Config.UseCreatureGender || (Males + MaleCreatures) <= 0)
-				Filters = AddString(Filters, "CreatureSub")
-			endIf
-		endIf
-		
-		; Filter tags for same sex restrictions
-		if ActorCount == 2 && Creatures == 0 && (Males == 0 || Females == 0) && Config.RestrictSameSex
-			BasicFilters = AddString(BasicFilters, SexLabUtil.StringIfElse(Females == 2, "FM", "Breast"))
-		endIf
-		if Config.UseStrapons && Config.RestrictStrapons && (ActorCount - Creatures) == Females && Females > 0
-			Filters = AddString(Filters, "Straight")
-			Filters = AddString(Filters, "Gay")
-		endIf
-		if BasicFilters.Find("Breast") >= 0
-			Filters = AddString(Filters, "Boobjob")
-		endIf
-
-		;Remove filtered basic tags from primary
-		FilteredPrimary = sslUtility.FilterTaggedAnimations(PrimaryAnimations, BasicFilters, false)
-		if PrimaryAnimations.Length > FilteredPrimary.Length
-			Log("Filtered out '"+(PrimaryAnimations.Length - FilteredPrimary.Length)+"' primary animations with tags: "+BasicFilters)
-			PrimaryAnimations = FilteredPrimary
-		endIf
-
-		; Filter tags for non-bed friendly animations
-		if BedRef
-			BedFilters = AddString(BedFilters, "Furniture")
-			BedFilters = AddString(BedFilters, "NoBed")
-			if Config.BedRemoveStanding
-				BedFilters = AddString(BedFilters, "Standing")
-			endIf
-			if UsingBedRoll
-				BedFilters = AddString(BedFilters, "BedOnly")
-			elseIf UsingSingleBed
-				BedFilters = AddString(BedFilters, "DoubleBed") ; For bed animations made specific for DoubleBed or requiring too mush space to use single beds
-			elseIf UsingDoubleBed
-				BedFilters = AddString(BedFilters, "SingleBed") ; For bed animations made specific for SingleBed
-			endIf
-		else
-			BedFilters = AddString(BedFilters, "BedOnly")
-		endIf
-
-		; Remove any animations with filtered tags
-		Filters = PapyrusUtil.RemoveString(Filters, "")
-		BasicFilters = PapyrusUtil.RemoveString(BasicFilters, "")
-		BedFilters = PapyrusUtil.RemoveString(BedFilters, "")
-		
-		; Get default creature animations if none
-		if HasCreature
-			if Config.UseCreatureGender
-				if ActorCount != Creatures 
-					PrimaryAnimations = CreatureSlots.FilterCreatureGenders(PrimaryAnimations, Genders[2], Genders[3])
-				else
-					;TODO: Find bether solution instead of Exclude CC animations from filter  
-				endIf
-			endIf
-			; Pick default creature animations if currently empty (none or failed above check)
-			if PrimaryAnimations.Length == 0 ; || (BasicFilters.Length > 1 && PrimaryAnimations[0].CheckTags(BasicFilters, False))
-				Log("Selecting new creature animations - "+PrimaryAnimations)
-				Log("Creature Genders: "+Genders)
-				SetAnimations(CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, "", PapyrusUtil.StringJoin(BasicFilters, ",")))
-				if PrimaryAnimations.Length == 0
-					SetAnimations(CreatureSlots.GetByCreatureActors(ActorCount, Positions))
-					if PrimaryAnimations.Length == 0
-						ReportAndFail("Failed to find valid creature animations.")
-						return -1
-					endIf
-				endIf
-			endIf
-			; Sort the actors to creature order
-		;	Positions = ThreadLib.SortCreatures(Positions, Animations[0]) ; not longer needed since is already on the SetAnimation fuction
-
-		; Get default primary animations if none
-		elseIf PrimaryAnimations.Length == 0 ; || (BasicFilters.Length > 1 && PrimaryAnimations[0].CheckTags(BasicFilters, False))
-			SetAnimations(AnimSlots.GetByDefaultTags(Males, Females, IsAggressive, (BedRef != none), Config.RestrictAggressive, "", PapyrusUtil.StringJoin(BasicFilters, ",")))
-			if PrimaryAnimations.Length == 0
-				SetAnimations(AnimSlots.GetByDefault(Males, Females, IsAggressive, (BedRef != none), Config.RestrictAggressive))
-				if PrimaryAnimations.Length == 0
-					ReportAndFail("Unable to find valid default animations")
-					return -1
-				endIf
-			endIf
-		endIf
-
-		; Remove any animations without filtered gender tags
-		if Config.RestrictGenderTag
-			string DefGenderTag = ""
-			i = ActorCount
-			int[] GendersAll = ActorLib.GetGendersAll(Positions)
-			int[] FutasAll = ActorLib.GetTransAll(Positions)
-			while i ;Make Position Gender Tag
-				i -= 1
-				if GendersAll[i] == 0
-					DefGenderTag = "M" + DefGenderTag
-				elseIf GendersAll[i] == 1
-					DefGenderTag = "F" + DefGenderTag
-				elseIf GendersAll[i] >= 2
-					DefGenderTag = "C" + DefGenderTag
-				endIf
-			endWhile
-			if DefGenderTag != ""
-				string[] GenderTag = Utility.CreateStringArray(1, DefGenderTag)
-				;Filtering Futa animations
-				if (Futas[0] + Futas[1]) < 1
-					BasicFilters = AddString(BasicFilters, "Futa")
-				elseIf (Futas[0] + Futas[1]) != (Genders[0] + Genders[1])
-					Filters = AddString(Filters, "AllFuta")
-				endIf
-				;Make Extra Position Gender Tag if actor is Futanari or female use strapon
-				i = ActorCount
-				while i
-					i -= 1
-					if (Config.UseStrapons && GendersAll[i] == 1) || (FutasAll[i] == 1)
-						if StringUtil.GetNthChar(DefGenderTag, ActorCount - i) == "F"
-							GenderTag = AddString(GenderTag, StringUtil.Substring(DefGenderTag, 0, ActorCount - i) + "M" + StringUtil.Substring(DefGenderTag, (ActorCount - i) + 1))
-						endIf
-					elseIf (FutasAll[i] == 0)
-						if StringUtil.GetNthChar(DefGenderTag, ActorCount - i) == "M"
-							GenderTag = AddString(GenderTag, StringUtil.Substring(DefGenderTag, 0, ActorCount - i) + "F" + StringUtil.Substring(DefGenderTag, (ActorCount - i) + 1))
-						endIf
-					endIf
-				endWhile
-				if Config.UseStrapons
-					DefGenderTag = ActorLib.GetGenderTag(0, Males + Females, Creatures)
-					GenderTag = AddString(GenderTag, DefGenderTag)
-				endIf
-				DefGenderTag = ActorLib.GetGenderTag(Females, Males, Creatures)
-				GenderTag = AddString(GenderTag, DefGenderTag)
-				
-				DefGenderTag = ActorLib.GetGenderTag(Females + Futas[0] - Futas[1], Males - Futas[0] + Futas[1], Creatures)
-				GenderTag = AddString(GenderTag, DefGenderTag)
-				; Remove filtered gender tags from primary
-				FilteredPrimary = sslUtility.FilterTaggedAnimations(PrimaryAnimations, GenderTag, true)
-				if FilteredPrimary.Length > 0 && PrimaryAnimations.Length > FilteredPrimary.Length
-					Log("Filtered out '"+(PrimaryAnimations.Length - FilteredPrimary.Length)+"' primary animations without tags: "+GenderTag)
-					PrimaryAnimations = FilteredPrimary
-				endIf
-				; Remove filtered gender tags from lead in
-				if LeadAnimations && LeadAnimations.Length > 0
-					FilteredLead = sslUtility.FilterTaggedAnimations(LeadAnimations, GenderTag, true)
-					if LeadAnimations.Length > FilteredLead.Length
-						Log("Filtered out '"+(LeadAnimations.Length - FilteredLead.Length)+"' lead in animations without tags: "+GenderTag)
-						LeadAnimations = FilteredLead
-					endIf
-				endIf
-			endIf
-		endIf
-		
-		; Remove filtered tags from primary step by step
-		FilteredPrimary = sslUtility.FilterTaggedAnimations(PrimaryAnimations, BedFilters, false)
-		if FilteredPrimary.Length > 0 && PrimaryAnimations.Length > FilteredPrimary.Length
-			Log("Filtered out '"+(PrimaryAnimations.Length - FilteredPrimary.Length)+"' primary animations with tags: "+BedFilters)
-			PrimaryAnimations = FilteredPrimary
-		endIf
-		FilteredPrimary = sslUtility.FilterTaggedAnimations(PrimaryAnimations, BasicFilters, false)
-		if FilteredPrimary.Length > 0 && PrimaryAnimations.Length > FilteredPrimary.Length
-			Log("Filtered out '"+(PrimaryAnimations.Length - FilteredPrimary.Length)+"' primary animations with tags: "+BasicFilters)
-			PrimaryAnimations = FilteredPrimary
-		endIf
-		FilteredPrimary = sslUtility.FilterTaggedAnimations(PrimaryAnimations, Filters, false)
-		if FilteredPrimary.Length > 0 && PrimaryAnimations.Length > FilteredPrimary.Length
-			Log("Filtered out '"+(PrimaryAnimations.Length - FilteredPrimary.Length)+"' primary animations with tags: "+Filters)
-			PrimaryAnimations = FilteredPrimary
-		endIf
-		; Remove filtered tags from lead in
-		if LeadAnimations && LeadAnimations.Length > 0
-			Filters = PapyrusUtil.MergeStringArray(Filters, BasicFilters, true)
-			Filters = PapyrusUtil.MergeStringArray(Filters, BedFilters, true)
-			FilteredLead = sslUtility.FilterTaggedAnimations(LeadAnimations, Filters, false)
-			if LeadAnimations.Length > FilteredLead.Length
-				Log("Filtered out '"+(LeadAnimations.Length - FilteredLead.Length)+"' lead in animations with tags: "+Filters)
-				LeadAnimations = FilteredLead
-			endIf
-		endIf
-		; Remove Dupes
-		if LeadAnimations && PrimaryAnimations && PrimaryAnimations.Length > LeadAnimations.Length
-			PrimaryAnimations = sslUtility.RemoveDupesFromList(PrimaryAnimations, LeadAnimations)
-		endIf
-		; Make sure we are still good to start after all the filters
-		if !LeadAnimations || LeadAnimations.Length < 1
-			LeadIn = false
-		endIf
-		if !PrimaryAnimations || PrimaryAnimations.Length < 1
-			ReportAndFail("Empty primary animations after filters")
-			return -1
-		endIf
-		Log("FilterAnimations() END - LeadAnimations="+LeadAnimations.Length+", PrimaryAnimations="+PrimaryAnimations.Length)
-		return 1
-	endIf
+	LogRedundant("FilterAnimations")
 	return 0
 EndFunction
 

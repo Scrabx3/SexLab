@@ -164,11 +164,7 @@ bool property RestrictAggressive auto hidden
 bool property AllowCreatures auto hidden
 bool property NPCSaveVoice auto hidden
 bool property UseStrapons auto hidden
-bool property RestrictStrapons auto hidden
 bool property RedressVictim auto hidden
-bool property RagdollEnd auto hidden
-bool property UseMaleNudeSuit auto hidden
-bool property UseFemaleNudeSuit auto hidden
 bool property UndressAnimation auto hidden
 bool property UseLipSync auto hidden
 bool property UseExpressions auto hidden
@@ -186,7 +182,6 @@ bool property BedRemoveStanding auto hidden
 bool property UseCreatureGender auto hidden
 bool property LimitedStrip auto hidden
 bool property RestrictSameSex auto hidden
-bool property RestrictGenderTag auto hidden
 bool property SeparateOrgasms auto hidden
 bool property RemoveHeelEffect auto hidden
 bool property AdjustTargetStage auto hidden
@@ -194,8 +189,6 @@ bool property ShowInMap auto hidden
 bool property DisableTeleport auto hidden
 bool property SeedNPCStats auto hidden
 bool property DisableScale auto hidden
-bool property FixVictimPos auto hidden
-bool property ForceSort auto hidden
 
 ; Integers
 int property AnimProfile auto hidden
@@ -208,7 +201,6 @@ int property Backwards auto hidden
 int property AdjustStage auto hidden
 int property AdvanceAnimation auto hidden
 int property ChangeAnimation auto hidden
-int property ChangePositions auto hidden
 int property AdjustChange auto hidden
 int property AdjustForward auto hidden
 int property AdjustSideways auto hidden
@@ -234,18 +226,11 @@ float property SFXDelay auto hidden
 float property SFXVolume auto hidden
 float property LeadInCoolDown auto hidden
 
-; Boolean Arrays
-bool[] property StripMale auto hidden
-bool[] property StripFemale auto hidden
-bool[] property StripLeadInFemale auto hidden
-bool[] property StripLeadInMale auto hidden
-bool[] property StripVictim auto hidden
-bool[] property StripAggressor auto hidden
+; Int Arrays
+int[] Property iStripForms Auto Hidden	;	0b[Weapon][Gender][Leadin || Submissive][Aggressive]
 
 ; Float Array
-float[] property StageTimer auto hidden
-float[] property StageTimerLeadIn auto hidden
-float[] property StageTimerAggr auto hidden
+float[] Property fTimers Auto Hidden		; 5x3 Matrix / [Stage] x [Type]
 float[] property OpenMouthMale auto hidden
 float[] property OpenMouthFemale auto hidden
 float[] property BedOffset auto hidden
@@ -297,29 +282,18 @@ float function GetVoiceDelay(bool IsFemale = false, int Stage = 1, bool IsSilent
 	return VoiceDelay
 endFunction
 
-bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
-	if IsLeadIn
-		if IsFemale
-			return StripLeadInFemale
-		else
-			return StripLeadInMale
-		endIf
- 	elseif IsAggressive
- 		if IsVictim
- 			return StripVictim
- 		else
- 			return StripAggressor
- 		endIf
- 	elseIf IsFemale
- 		return StripFemale
- 	else
- 		return StripMale
- 	endIf
-endFunction
-
-bool function UsesNudeSuit(bool IsFemale)
-	return ((!IsFemale && UseMaleNudeSuit) || (IsFemale && UseFemaleNudeSuit))
-endFunction
+int[] Function GetStripSettings(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
+	int idx = IsFemale as int
+	If(IsAggressive)
+		idx += (Math.LeftShift(IsVictim as int, 1) + 4) * 2
+	Else
+		idx += Math.LeftShift(IsLeadIn as int, 1) * 2
+	EndIf
+	int[] ret = new int[2]
+	ret[0] = iStripForms[idx]
+	ret[1] = iStripForms[idx + 1]
+	return ret
+EndFunction
 
 bool function HasCreatureInstall()
 	return FNIS.GetMajor(true) > 0 && (Game.GetCameraState() < 8 || PlayerRef.GetAnimationVariableInt("SexLabCreature") > 0)
@@ -407,20 +381,6 @@ bool function SetOpenMouthExpression(bool isFemale, int value)
 		return true
 	endIf
 	return false
-endFunction
-
-bool function AddCustomBed(Form BaseBed, int BedType = 0)
-	if !BaseBed
-		return false
-	elseIf !BedsList.HasForm(BaseBed)
-		BedsList.AddForm(BaseBed)
-	endIf
-	if BedType == 1 && !BedRollsList.HasForm(BaseBed)
-		BedRollsList.AddForm(BaseBed)
-	elseIf BedType == 2 && !DoubleBedsList.HasForm(BaseBed)
-		DoubleBedsList.AddForm(BaseBed)
-	endIf
-	return true
 endFunction
 
 bool function SetCustomBedOffset(Form BaseBed, float Forward = 0.0, float Sideward = 0.0, float Upward = 37.0, float Rotation = 0.0)
@@ -574,14 +534,11 @@ event OnKeyDown(int keyCode)
 endEvent
 
 event OnCrosshairRefChange(ObjectReference ActorRef)
-	CrosshairRef = none
-	if ActorRef
-		CrosshairRef = ActorRef as Actor
-	endIf
+	CrosshairRef = ActorRef as Actor
 endEvent
 
 function SetTargetActor()
-	if CrosshairRef && CrosshairRef != none
+	if CrosshairRef
 		TargetRef = CrosshairRef
 		SelectedSpell.Cast(TargetRef, TargetRef)
 		Debug.Notification("SexLab Target Selected: "+TargetRef.GetLeveledActorBase().GetName())
@@ -766,7 +723,7 @@ ReferenceAlias property BardBystander5 auto
 
 bool function CheckBardAudience(Actor ActorRef, bool RemoveFromAudience = true)
 	if !ActorRef
-		return false; Invalid argument
+		return false
 	elseIf RemoveFromAudience
 		return BystanderClear(ActorRef, BardBystander1) || BystanderClear(ActorRef, BardBystander2) || BystanderClear(ActorRef, BardBystander3) \
 			|| BystanderClear(ActorRef, BardBystander4) || BystanderClear(ActorRef, BardBystander5)
@@ -1099,11 +1056,10 @@ function SetDefaults()
 	; AllowCreatures     = false
 	NPCSaveVoice       = false
 	UseStrapons        = true
-	RestrictStrapons   = false
 	RedressVictim      = true
-	RagdollEnd         = false
-	UseMaleNudeSuit    = false
-	UseFemaleNudeSuit  = false
+	; RagdollEnd         = false
+	; UseMaleNudeSuit    = false
+	; UseFemaleNudeSuit  = false
 	UndressAnimation   = false
 	UseLipSync         = true
 	UseExpressions     = true
@@ -1121,7 +1077,6 @@ function SetDefaults()
 	UseCreatureGender  = false
 	LimitedStrip       = false
 	RestrictSameSex    = false
-	RestrictGenderTag  = true
 	SeparateOrgasms    = false
 	RemoveHeelEffect   = HasHDTHeels
 	AdjustTargetStage  = false
@@ -1129,9 +1084,7 @@ function SetDefaults()
 	DisableTeleport    = true
 	SeedNPCStats       = true
 	DisableScale       = true ; TMP: enabled by default for testing
-	FixVictimPos       = false
 	LipsFixedValue     = true
-	ForceSort          = false
 
 	; Integers
 	AnimProfile        = 1
@@ -1144,7 +1097,7 @@ function SetDefaults()
 	AdjustStage        = 157; Right Ctrl
 	AdvanceAnimation   = 57 ; Space
 	ChangeAnimation    = 24 ; O
-	ChangePositions    = 13 ; =
+	; ChangePositions    = 13 ; =
 	AdjustChange       = 37 ; K
 	AdjustForward      = 38 ; L
 	AdjustSideways     = 40 ; '
@@ -1176,109 +1129,52 @@ function SetDefaults()
 	LeadInCoolDown     = 0.0
 	LipsMoveTime       = 0.2
 
-	; Boolean strip arrays
-	StripMale = new bool[33]
-	StripMale[0] = true
-	StripMale[1] = true
-	StripMale[2] = true
-	StripMale[3] = true
-	StripMale[7] = true
-	StripMale[8] = true
-	StripMale[9] = true
-	StripMale[4] = true
-	StripMale[11] = true
-	StripMale[15] = true
-	StripMale[16] = true
-	StripMale[17] = true
-	StripMale[19] = true
-	StripMale[23] = true
-	StripMale[24] = true
-	StripMale[26] = true
-	StripMale[27] = true
-	StripMale[28] = true
-	StripMale[29] = true
-	StripMale[32] = true
+	; Stripping
+	iStripForms = new int[16]
+	iStripForms[0] = 1032555423
+	iStripForms[1] = 1
 
-	StripFemale = new bool[33]
-	StripFemale[0] = true
-	StripFemale[1] = true
-	StripFemale[2] = true
-	StripFemale[3] = true
-	StripFemale[4] = true
-	StripFemale[7] = true
-	StripFemale[8] = true
-	StripFemale[9] = true
-	StripFemale[11] = true
-	StripFemale[15] = true
-	StripFemale[16] = true
-	StripFemale[17] = true
-	StripFemale[19] = true
-	StripFemale[23] = true
-	StripFemale[24] = true
-	StripFemale[26] = true
-	StripFemale[27] = true
-	StripFemale[28] = true
-	StripFemale[29] = true
-	StripFemale[32] = true
+	iStripForms[2] = 1032555423
+	iStripForms[3] = 1
 
-	StripLeadInFemale = new bool[33]
-	StripLeadInFemale[0] = true
-	StripLeadInFemale[2] = true
-	StripLeadInFemale[9] = true
-	StripLeadInFemale[14] = true
-	StripLeadInFemale[32] = true
+	iStripForms[4] = 4719365
+	iStripForms[5] = 1
 
-	StripLeadInMale = new bool[33]
-	StripLeadInMale[0] = true
-	StripLeadInMale[2] = true
-	StripLeadInMale[8] = true
-	StripLeadInMale[9] = true
-	; StripLeadInMale[14] = true
-	StripLeadInMale[19] = true
-	StripLeadInMale[22] = true
-	StripLeadInMale[32] = true
+	iStripForms[6] = 16901
+	iStripForms[7] = 1
 
-	StripVictim = new bool[33]
-	StripVictim[1] = true
-	StripVictim[2] = true
-	StripVictim[4] = true
-	StripVictim[9] = true
-	StripVictim[11] = true
-	StripVictim[16] = true
-	StripVictim[24] = true
-	StripVictim[26] = true
-	StripVictim[28] = true
-	StripVictim[32] = true
+	iStripForms[8] = 83952148
+	iStripForms[9] = 0
 
-	StripAggressor = new bool[33]
-	StripAggressor[2] = true
-	StripAggressor[4] = true
-	StripAggressor[9] = true
-	StripAggressor[16] = true
-	StripAggressor[24] = true
-	StripAggressor[26] = true
+	iStripForms[10] = iStripForms[8]
+	iStripForms[11] = iStripForms[9]
+
+	iStripForms[12] = 352389654
+	iStripForms[13] = 1
+
+	iStripForms[14] = iStripForms[12]
+	iStripForms[15] = iStripForms[13]
 
 	; Float timer arrays
-	StageTimer = new float[5]
-	StageTimer[0] = 30.0
-	StageTimer[1] = 20.0
-	StageTimer[2] = 15.0
-	StageTimer[3] = 15.0
-	StageTimer[4] = 9.0
-
-	StageTimerLeadIn = new float[5]
-	StageTimerLeadIn[0] = 10.0
-	StageTimerLeadIn[1] = 10.0
-	StageTimerLeadIn[2] = 10.0
-	StageTimerLeadIn[3] = 8.0
-	StageTimerLeadIn[4] = 8.0
-
-	StageTimerAggr = new float[5]
-	StageTimerAggr[0] = 20.0
-	StageTimerAggr[1] = 15.0
-	StageTimerAggr[2] = 10.0
-	StageTimerAggr[3] = 10.0
-	StageTimerAggr[4] = 4.0
+	fTimers = new float[15]
+	; Default timers
+	fTimers[0] = 30.0
+	fTimers[1] = 20.0
+	fTimers[2] = 15.0
+	fTimers[3] = 15.0
+	fTimers[4] = 9.0
+	; Lead In
+	fTimers[5] = 10.0
+	fTimers[6] = 10.0
+	fTimers[7] = 10.0
+	fTimers[8] = 8.0
+	fTimers[9] = 8.0
+	; Aggressive
+	fTimers[10] = 20.0
+	fTimers[11] = 15.0
+	fTimers[12] = 10.0
+	fTimers[13] = 10.0
+	fTimers[14] = 4.0
 
 	OpenMouthMale = new float[17]
 	OpenMouthMale[1] = 0.8
@@ -1336,100 +1232,85 @@ function ExportSettings()
 	JsonUtil.SetStringValue(File, "ExportLabel", PlayerRef.GetLeveledActorBase().GetName()+" - "+Utility.GetCurrentRealTime() as int)
 
 	; Booleans
-	ExportBool("RestrictAggressive", RestrictAggressive)
-	ExportBool("AllowCreatures", AllowCreatures)
-	ExportBool("NPCSaveVoice", NPCSaveVoice)
-	ExportBool("UseStrapons", UseStrapons)
-	ExportBool("RestrictStrapons", RestrictStrapons)
-	ExportBool("RedressVictim", RedressVictim)
-	ExportBool("RagdollEnd", RagdollEnd)
-	ExportBool("UseMaleNudeSuit", UseMaleNudeSuit)
-	ExportBool("UseFemaleNudeSuit", UseFemaleNudeSuit)
-	ExportBool("UndressAnimation", UndressAnimation)
-	ExportBool("UseLipSync", UseLipSync)
-	ExportBool("UseExpressions", UseExpressions)
-	ExportBool("RefreshExpressions", RefreshExpressions)
-	ExportBool("ScaleActors", ScaleActors)
-	ExportBool("UseCum", UseCum)
-	ExportBool("AllowFFCum", AllowFFCum)
-	ExportBool("DisablePlayer", DisablePlayer)
-	ExportBool("AutoTFC", AutoTFC)
-	ExportBool("AutoAdvance", AutoAdvance)
-	ExportBool("ForeplayStage", ForeplayStage)
-	ExportBool("OrgasmEffects", OrgasmEffects)
-	ExportBool("RaceAdjustments", RaceAdjustments)
-	ExportBool("BedRemoveStanding", BedRemoveStanding)
-	ExportBool("UseCreatureGender", UseCreatureGender)
-	ExportBool("LimitedStrip", LimitedStrip)
-	ExportBool("RestrictSameSex", RestrictSameSex)
-	ExportBool("RestrictGenderTag", RestrictGenderTag)
-	ExportBool("SeparateOrgasms", SeparateOrgasms)
-	ExportBool("RemoveHeelEffect", RemoveHeelEffect)
-	ExportBool("AdjustTargetStage", AdjustTargetStage)
-	ExportBool("ShowInMap", ShowInMap)
-	ExportBool("DisableTeleport", DisableTeleport)
-	ExportBool("SeedNPCStats", SeedNPCStats)
-	ExportBool("DisableScale", DisableScale)
-	ExportBool("FixVictimPos", FixVictimPos)
-	ExportBool("LipsFixedValue", LipsFixedValue)
-	ExportBool("ForceSort", ForceSort)
+	; ExportBool("RestrictAggressive", RestrictAggressive)
+	; ExportBool("AllowCreatures", AllowCreatures)
+	; ExportBool("NPCSaveVoice", NPCSaveVoice)
+	; ExportBool("UseStrapons", UseStrapons)
+	; ExportBool("RedressVictim", RedressVictim)
+	; ; ExportBool("RagdollEnd", RagdollEnd)
+	; ; ExportBool("UseMaleNudeSuit", UseMaleNudeSuit)
+	; ; ExportBool("UseFemaleNudeSuit", UseFemaleNudeSuit)
+	; ExportBool("UndressAnimation", UndressAnimation)
+	; ExportBool("UseLipSync", UseLipSync)
+	; ExportBool("UseExpressions", UseExpressions)
+	; ExportBool("RefreshExpressions", RefreshExpressions)
+	; ExportBool("ScaleActors", ScaleActors)
+	; ExportBool("UseCum", UseCum)
+	; ExportBool("AllowFFCum", AllowFFCum)
+	; ExportBool("DisablePlayer", DisablePlayer)
+	; ExportBool("AutoTFC", AutoTFC)
+	; ExportBool("AutoAdvance", AutoAdvance)
+	; ExportBool("ForeplayStage", ForeplayStage)
+	; ExportBool("OrgasmEffects", OrgasmEffects)
+	; ExportBool("RaceAdjustments", RaceAdjustments)
+	; ExportBool("BedRemoveStanding", BedRemoveStanding)
+	; ExportBool("UseCreatureGender", UseCreatureGender)
+	; ExportBool("LimitedStrip", LimitedStrip)
+	; ExportBool("RestrictSameSex", RestrictSameSex)
+	; ExportBool("SeparateOrgasms", SeparateOrgasms)
+	; ExportBool("RemoveHeelEffect", RemoveHeelEffect)
+	; ExportBool("AdjustTargetStage", AdjustTargetStage)
+	; ExportBool("ShowInMap", ShowInMap)
+	; ExportBool("DisableTeleport", DisableTeleport)
+	; ExportBool("SeedNPCStats", SeedNPCStats)
+	; ExportBool("DisableScale", DisableScale)
+	; ExportBool("LipsFixedValue", LipsFixedValue)
 
-	; Integers
-	ExportInt("AnimProfile", AnimProfile)
-	ExportInt("AskBed", AskBed)
-	ExportInt("NPCBed", NPCBed)
-	ExportInt("OpenMouthSize", OpenMouthSize)
-	ExportInt("UseFade", UseFade)
+	; ; Integers
+	; ExportInt("AnimProfile", AnimProfile)
+	; ExportInt("AskBed", AskBed)
+	; ExportInt("NPCBed", NPCBed)
+	; ExportInt("OpenMouthSize", OpenMouthSize)
+	; ExportInt("UseFade", UseFade)
 
-	ExportInt("Backwards", Backwards)
-	ExportInt("AdjustStage", AdjustStage)
-	ExportInt("AdvanceAnimation", AdvanceAnimation)
-	ExportInt("ChangeAnimation", ChangeAnimation)
-	ExportInt("ChangePositions", ChangePositions)
-	ExportInt("AdjustChange", AdjustChange)
-	ExportInt("AdjustForward", AdjustForward)
-	ExportInt("AdjustSideways", AdjustSideways)
-	ExportInt("AdjustUpward", AdjustUpward)
-	ExportInt("RealignActors", RealignActors)
-	ExportInt("MoveScene", MoveScene)
-	ExportInt("RestoreOffsets", RestoreOffsets)
-	ExportInt("RotateScene", RotateScene)
-	ExportInt("EndAnimation", EndAnimation)
-	ExportInt("ToggleFreeCamera", ToggleFreeCamera)
-	ExportInt("TargetActor", TargetActor)
-	ExportInt("AdjustSchlong", AdjustSchlong)
-	ExportInt("LipsSoundTime", LipsSoundTime)
-	ExportInt("LipsPhoneme", LipsPhoneme)
-	ExportInt("LipsMinValue", LipsMinValue)
-	ExportInt("LipsMaxValue", LipsMaxValue)
+	; ExportInt("Backwards", Backwards)
+	; ExportInt("AdjustStage", AdjustStage)
+	; ExportInt("AdvanceAnimation", AdvanceAnimation)
+	; ExportInt("ChangeAnimation", ChangeAnimation)
+	; ; ExportInt("ChangePositions", ChangePositions)
+	; ExportInt("AdjustChange", AdjustChange)
+	; ExportInt("AdjustForward", AdjustForward)
+	; ExportInt("AdjustSideways", AdjustSideways)
+	; ExportInt("AdjustUpward", AdjustUpward)
+	; ExportInt("RealignActors", RealignActors)
+	; ExportInt("MoveScene", MoveScene)
+	; ExportInt("RestoreOffsets", RestoreOffsets)
+	; ExportInt("RotateScene", RotateScene)
+	; ExportInt("EndAnimation", EndAnimation)
+	; ExportInt("ToggleFreeCamera", ToggleFreeCamera)
+	; ExportInt("TargetActor", TargetActor)
+	; ExportInt("AdjustSchlong", AdjustSchlong)
+	; ExportInt("LipsSoundTime", LipsSoundTime)
+	; ExportInt("LipsPhoneme", LipsPhoneme)
+	; ExportInt("LipsMinValue", LipsMinValue)
+	; ExportInt("LipsMaxValue", LipsMaxValue)
 
-	; Floats
-	ExportFloat("CumTimer", CumTimer)
-	ExportFloat("ShakeStrength", ShakeStrength)
-	ExportFloat("AutoSUCSM", AutoSUCSM)
-	ExportFloat("MaleVoiceDelay", MaleVoiceDelay)
-	ExportFloat("FemaleVoiceDelay", FemaleVoiceDelay)
-	ExportFloat("ExpressionDelay", ExpressionDelay)
-	ExportFloat("VoiceVolume", VoiceVolume)
-	ExportFloat("SFXDelay", SFXDelay)
-	ExportFloat("SFXVolume", SFXVolume)
-	ExportFloat("LeadInCoolDown", LeadInCoolDown)
-	ExportFloat("LipsMoveTime", LipsMoveTime)
+	; ; Floats
+	; ExportFloat("CumTimer", CumTimer)
+	; ExportFloat("ShakeStrength", ShakeStrength)
+	; ExportFloat("AutoSUCSM", AutoSUCSM)
+	; ExportFloat("MaleVoiceDelay", MaleVoiceDelay)
+	; ExportFloat("FemaleVoiceDelay", FemaleVoiceDelay)
+	; ExportFloat("ExpressionDelay", ExpressionDelay)
+	; ExportFloat("VoiceVolume", VoiceVolume)
+	; ExportFloat("SFXDelay", SFXDelay)
+	; ExportFloat("SFXVolume", SFXVolume)
+	; ExportFloat("LeadInCoolDown", LeadInCoolDown)
+	; ExportFloat("LipsMoveTime", LipsMoveTime)
 
-	; Boolean Arrays
-	ExportBoolList("StripMale", StripMale, 33)
-	ExportBoolList("StripFemale", StripFemale, 33)
-	ExportBoolList("StripLeadInFemale", StripLeadInFemale, 33)
-	ExportBoolList("StripLeadInMale", StripLeadInMale, 33)
-	ExportBoolList("StripVictim", StripVictim, 33)
-	ExportBoolList("StripAggressor", StripAggressor, 33)
-
-	; Float Array
-	ExportFloatList("StageTimer", StageTimer, 5)
-	ExportFloatList("StageTimerLeadIn", StageTimerLeadIn, 5)
-	ExportFloatList("StageTimerAggr", StageTimerAggr, 5)
-	ExportFloatList("OpenMouthMale", OpenMouthMale, 17)
-	ExportFloatList("OpenMouthFemale", OpenMouthFemale, 17)
+	; ; Float Array
+	; ExportFloatList("OpenMouthMale", OpenMouthMale, 17)
+	; ExportFloatList("OpenMouthFemale", OpenMouthFemale, 17)
 
 	; Export object registry
 	ExportAnimations()
@@ -1445,100 +1326,85 @@ function ImportSettings()
 	File = "../SexLab/SexlabConfig.json"
 
 	; Booleans
-	RestrictAggressive = ImportBool("RestrictAggressive", RestrictAggressive)
-	AllowCreatures     = ImportBool("AllowCreatures", AllowCreatures)
-	NPCSaveVoice       = ImportBool("NPCSaveVoice", NPCSaveVoice)
-	UseStrapons        = ImportBool("UseStrapons", UseStrapons)
-	RestrictStrapons   = ImportBool("RestrictStrapons", RestrictStrapons)
-	RedressVictim      = ImportBool("RedressVictim", RedressVictim)
-	RagdollEnd         = ImportBool("RagdollEnd", RagdollEnd)
-	UseMaleNudeSuit    = ImportBool("UseMaleNudeSuit", UseMaleNudeSuit)
-	UseFemaleNudeSuit  = ImportBool("UseFemaleNudeSuit", UseFemaleNudeSuit)
-	UndressAnimation   = ImportBool("UndressAnimation", UndressAnimation)
-	UseLipSync         = ImportBool("UseLipSync", UseLipSync)
-	UseExpressions     = ImportBool("UseExpressions", UseExpressions)
-	RefreshExpressions = ImportBool("RefreshExpressions", RefreshExpressions)
-	ScaleActors        = ImportBool("ScaleActors", ScaleActors)
-	UseCum             = ImportBool("UseCum", UseCum)
-	AllowFFCum         = ImportBool("AllowFFCum", AllowFFCum)
-	DisablePlayer      = ImportBool("DisablePlayer", DisablePlayer)
-	AutoTFC            = ImportBool("AutoTFC", AutoTFC)
-	AutoAdvance        = ImportBool("AutoAdvance", AutoAdvance)
-	ForeplayStage      = ImportBool("ForeplayStage", ForeplayStage)
-	OrgasmEffects      = ImportBool("OrgasmEffects", OrgasmEffects)
-	RaceAdjustments    = ImportBool("RaceAdjustments", RaceAdjustments)
-	BedRemoveStanding  = ImportBool("BedRemoveStanding", BedRemoveStanding)
-	UseCreatureGender  = ImportBool("UseCreatureGender", UseCreatureGender)
-	LimitedStrip       = ImportBool("LimitedStrip", LimitedStrip)
-	RestrictSameSex    = ImportBool("RestrictSameSex", RestrictSameSex)
-	RestrictGenderTag  = ImportBool("RestrictGenderTag", RestrictGenderTag)
-	SeparateOrgasms    = ImportBool("SeparateOrgasms", SeparateOrgasms)
-	RemoveHeelEffect   = ImportBool("RemoveHeelEffect", RemoveHeelEffect)
-	AdjustTargetStage  = ImportBool("AdjustTargetStage", AdjustTargetStage)
-	ShowInMap          = ImportBool("ShowInMap", ShowInMap)
-	DisableTeleport    = ImportBool("DisableTeleport", DisableTeleport)
-	SeedNPCStats       = ImportBool("SeedNPCStats", SeedNPCStats)
-	DisableScale       = ImportBool("DisableScale", DisableScale)
-	FixVictimPos       = ImportBool("FixVictimPos", FixVictimPos)
-	LipsFixedValue     = ImportBool("LipsFixedValue", LipsFixedValue)
-	ForceSort          = ImportBool("ForceSort", ForceSort)
+	; RestrictAggressive = ImportBool("RestrictAggressive", RestrictAggressive)
+	; AllowCreatures     = ImportBool("AllowCreatures", AllowCreatures)
+	; NPCSaveVoice       = ImportBool("NPCSaveVoice", NPCSaveVoice)
+	; UseStrapons        = ImportBool("UseStrapons", UseStrapons)
+	; RedressVictim      = ImportBool("RedressVictim", RedressVictim)
+	; ; RagdollEnd         = ImportBool("RagdollEnd", RagdollEnd)
+	; ; UseMaleNudeSuit    = ImportBool("UseMaleNudeSuit", UseMaleNudeSuit)
+	; ; UseFemaleNudeSuit  = ImportBool("UseFemaleNudeSuit", UseFemaleNudeSuit)
+	; UndressAnimation   = ImportBool("UndressAnimation", UndressAnimation)
+	; UseLipSync         = ImportBool("UseLipSync", UseLipSync)
+	; UseExpressions     = ImportBool("UseExpressions", UseExpressions)
+	; RefreshExpressions = ImportBool("RefreshExpressions", RefreshExpressions)
+	; ScaleActors        = ImportBool("ScaleActors", ScaleActors)
+	; UseCum             = ImportBool("UseCum", UseCum)
+	; AllowFFCum         = ImportBool("AllowFFCum", AllowFFCum)
+	; DisablePlayer      = ImportBool("DisablePlayer", DisablePlayer)
+	; AutoTFC            = ImportBool("AutoTFC", AutoTFC)
+	; AutoAdvance        = ImportBool("AutoAdvance", AutoAdvance)
+	; ForeplayStage      = ImportBool("ForeplayStage", ForeplayStage)
+	; OrgasmEffects      = ImportBool("OrgasmEffects", OrgasmEffects)
+	; RaceAdjustments    = ImportBool("RaceAdjustments", RaceAdjustments)
+	; BedRemoveStanding  = ImportBool("BedRemoveStanding", BedRemoveStanding)
+	; UseCreatureGender  = ImportBool("UseCreatureGender", UseCreatureGender)
+	; LimitedStrip       = ImportBool("LimitedStrip", LimitedStrip)
+	; RestrictSameSex    = ImportBool("RestrictSameSex", RestrictSameSex)
+	; SeparateOrgasms    = ImportBool("SeparateOrgasms", SeparateOrgasms)
+	; RemoveHeelEffect   = ImportBool("RemoveHeelEffect", RemoveHeelEffect)
+	; AdjustTargetStage  = ImportBool("AdjustTargetStage", AdjustTargetStage)
+	; ShowInMap          = ImportBool("ShowInMap", ShowInMap)
+	; DisableTeleport    = ImportBool("DisableTeleport", DisableTeleport)
+	; SeedNPCStats       = ImportBool("SeedNPCStats", SeedNPCStats)
+	; DisableScale       = ImportBool("DisableScale", DisableScale)
+	; LipsFixedValue     = ImportBool("LipsFixedValue", LipsFixedValue)
 
-	; Integers
-	AnimProfile        = ImportInt("AnimProfile", AnimProfile)
-	AskBed             = ImportInt("AskBed", AskBed)
-	NPCBed             = ImportInt("NPCBed", NPCBed)
-	OpenMouthSize      = ImportInt("OpenMouthSize", OpenMouthSize)
-	UseFade            = ImportInt("UseFade", UseFade)
+	; ; Integers
+	; AnimProfile        = ImportInt("AnimProfile", AnimProfile)
+	; AskBed             = ImportInt("AskBed", AskBed)
+	; NPCBed             = ImportInt("NPCBed", NPCBed)
+	; OpenMouthSize      = ImportInt("OpenMouthSize", OpenMouthSize)
+	; UseFade            = ImportInt("UseFade", UseFade)
 
-	Backwards          = ImportInt("Backwards", Backwards)
-	AdjustStage        = ImportInt("AdjustStage", AdjustStage)
-	AdvanceAnimation   = ImportInt("AdvanceAnimation", AdvanceAnimation)
-	ChangeAnimation    = ImportInt("ChangeAnimation", ChangeAnimation)
-	ChangePositions    = ImportInt("ChangePositions", ChangePositions)
-	AdjustChange       = ImportInt("AdjustChange", AdjustChange)
-	AdjustForward      = ImportInt("AdjustForward", AdjustForward)
-	AdjustSideways     = ImportInt("AdjustSideways", AdjustSideways)
-	AdjustUpward       = ImportInt("AdjustUpward", AdjustUpward)
-	RealignActors      = ImportInt("RealignActors", RealignActors)
-	MoveScene          = ImportInt("MoveScene", MoveScene)
-	RestoreOffsets     = ImportInt("RestoreOffsets", RestoreOffsets)
-	RotateScene        = ImportInt("RotateScene", RotateScene)
-	EndAnimation       = ImportInt("EndAnimation", EndAnimation)
-	ToggleFreeCamera   = ImportInt("ToggleFreeCamera", ToggleFreeCamera)
-	TargetActor        = ImportInt("TargetActor", TargetActor)
-	AdjustSchlong      = ImportInt("AdjustSchlong", AdjustSchlong)
-	LipsSoundTime      = ImportInt("LipsSoundTime", LipsSoundTime)
-	LipsPhoneme        = ImportInt("LipsPhoneme", LipsPhoneme)
-	LipsMinValue       = ImportInt("LipsMinValue", LipsMinValue)
-	LipsMaxValue       = ImportInt("LipsMaxValue", LipsMaxValue)
+	; Backwards          = ImportInt("Backwards", Backwards)
+	; AdjustStage        = ImportInt("AdjustStage", AdjustStage)
+	; AdvanceAnimation   = ImportInt("AdvanceAnimation", AdvanceAnimation)
+	; ChangeAnimation    = ImportInt("ChangeAnimation", ChangeAnimation)
+	; ; ChangePositions    = ImportInt("ChangePositions", ChangePositions)
+	; AdjustChange       = ImportInt("AdjustChange", AdjustChange)
+	; AdjustForward      = ImportInt("AdjustForward", AdjustForward)
+	; AdjustSideways     = ImportInt("AdjustSideways", AdjustSideways)
+	; AdjustUpward       = ImportInt("AdjustUpward", AdjustUpward)
+	; RealignActors      = ImportInt("RealignActors", RealignActors)
+	; MoveScene          = ImportInt("MoveScene", MoveScene)
+	; RestoreOffsets     = ImportInt("RestoreOffsets", RestoreOffsets)
+	; RotateScene        = ImportInt("RotateScene", RotateScene)
+	; EndAnimation       = ImportInt("EndAnimation", EndAnimation)
+	; ToggleFreeCamera   = ImportInt("ToggleFreeCamera", ToggleFreeCamera)
+	; TargetActor        = ImportInt("TargetActor", TargetActor)
+	; AdjustSchlong      = ImportInt("AdjustSchlong", AdjustSchlong)
+	; LipsSoundTime      = ImportInt("LipsSoundTime", LipsSoundTime)
+	; LipsPhoneme        = ImportInt("LipsPhoneme", LipsPhoneme)
+	; LipsMinValue       = ImportInt("LipsMinValue", LipsMinValue)
+	; LipsMaxValue       = ImportInt("LipsMaxValue", LipsMaxValue)
 
-	; Floats
-	CumTimer           = ImportFloat("CumTimer", CumTimer)
-	ShakeStrength      = ImportFloat("ShakeStrength", ShakeStrength)
-	AutoSUCSM          = ImportFloat("AutoSUCSM", AutoSUCSM)
-	MaleVoiceDelay     = ImportFloat("MaleVoiceDelay", MaleVoiceDelay)
-	FemaleVoiceDelay   = ImportFloat("FemaleVoiceDelay", FemaleVoiceDelay)
-	ExpressionDelay    = ImportFloat("ExpressionDelay", ExpressionDelay)
-	VoiceVolume        = ImportFloat("VoiceVolume", VoiceVolume)
-	SFXDelay           = ImportFloat("SFXDelay", SFXDelay)
-	SFXVolume          = ImportFloat("SFXVolume", SFXVolume)
-	LeadInCoolDown     = ImportFloat("LeadInCoolDown", LeadInCoolDown)
-	LipsMoveTime       = ImportFloat("LipsMoveTime", LipsMoveTime)
+	; ; Floats
+	; CumTimer           = ImportFloat("CumTimer", CumTimer)
+	; ShakeStrength      = ImportFloat("ShakeStrength", ShakeStrength)
+	; AutoSUCSM          = ImportFloat("AutoSUCSM", AutoSUCSM)
+	; MaleVoiceDelay     = ImportFloat("MaleVoiceDelay", MaleVoiceDelay)
+	; FemaleVoiceDelay   = ImportFloat("FemaleVoiceDelay", FemaleVoiceDelay)
+	; ExpressionDelay    = ImportFloat("ExpressionDelay", ExpressionDelay)
+	; VoiceVolume        = ImportFloat("VoiceVolume", VoiceVolume)
+	; SFXDelay           = ImportFloat("SFXDelay", SFXDelay)
+	; SFXVolume          = ImportFloat("SFXVolume", SFXVolume)
+	; LeadInCoolDown     = ImportFloat("LeadInCoolDown", LeadInCoolDown)
+	; LipsMoveTime       = ImportFloat("LipsMoveTime", LipsMoveTime)
 
-	; Boolean Arrays
-	StripMale          = ImportBoolList("StripMale", StripMale, 33)
-	StripFemale        = ImportBoolList("StripFemale", StripFemale, 33)
-	StripLeadInFemale  = ImportBoolList("StripLeadInFemale", StripLeadInFemale, 33)
-	StripLeadInMale    = ImportBoolList("StripLeadInMale", StripLeadInMale, 33)
-	StripVictim        = ImportBoolList("StripVictim", StripVictim, 33)
-	StripAggressor     = ImportBoolList("StripAggressor", StripAggressor, 33)
-
-	; Float Array
-	StageTimer         = ImportFloatList("StageTimer", StageTimer, 5)
-	StageTimerLeadIn   = ImportFloatList("StageTimerLeadIn", StageTimerLeadIn, 5)
-	StageTimerAggr     = ImportFloatList("StageTimerAggr", StageTimerAggr, 5)
-	OpenMouthMale      = ImportFloatList("OpenMouthMale", OpenMouthMale, 17)
-	OpenMouthFemale    = ImportFloatList("OpenMouthFemale", OpenMouthFemale, 17)
+	; ; Float Array
+	; OpenMouthMale      = ImportFloatList("OpenMouthMale", OpenMouthMale, 17)
+	; OpenMouthFemale    = ImportFloatList("OpenMouthFemale", OpenMouthFemale, 17)
 
 	; Register creature animations
 	CreatureSlots.RegisterSlots()
@@ -1798,6 +1664,96 @@ event OnInit()
 	SetDefaults()
 endEvent
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+;																																											;
+;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
+;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
+;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
+;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
+;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
+;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
+;																																											;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+bool property RestrictStrapons auto hidden
+bool property RagdollEnd auto hidden
+bool property UseMaleNudeSuit auto hidden
+bool property UseFemaleNudeSuit auto hidden
+bool property RestrictGenderTag auto hidden
+bool property FixVictimPos auto hidden
+bool property ForceSort auto hidden
+int property ChangePositions auto hidden
+
+bool function UsesNudeSuit(bool IsFemale)
+	return false
+	; return ((!IsFemale && UseMaleNudeSuit) || (IsFemale && UseFemaleNudeSuit))
+endFunction
+
+bool[] property StripMale
+	bool[] Function Get()
+		return GetStrip(false, false, false, false)
+	EndFunction
+EndProperty
+bool[] property StripFemale
+	bool[] Function Get()
+		return GetStrip(true, false, false, false)
+	EndFunction
+EndProperty
+bool[] property StripLeadInMale
+	bool[] Function Get()
+		return GetStrip(false, true, false, false)
+	EndFunction
+EndProperty
+bool[] property StripLeadInFemale
+	bool[] Function Get()
+		return GetStrip(true, true, false, false)
+	EndFunction
+EndProperty
+bool[] property StripVictim
+	bool[] Function Get()
+		return GetStrip(false, false, true, true)
+	EndFunction
+EndProperty
+bool[] property StripAggressor
+	bool[] Function Get()
+		return GetStrip(false, false, true, false)
+	EndFunction
+EndProperty
+
+float[] property StageTimer
+	float[] Function Get()
+		float[] ret = new float[5]
+		ret[0] = fTimers[0]
+		ret[1] = fTimers[1]
+		ret[2] = fTimers[2]
+		ret[3] = fTimers[3]
+		ret[4] = fTimers[4]
+		return ret
+	EndFunction
+EndProperty
+float[] property StageTimerLeadIn
+	float[] Function Get()
+		float[] ret = new float[5]
+		ret[0] = fTimers[5]
+		ret[1] = fTimers[6]
+		ret[2] = fTimers[7]
+		ret[3] = fTimers[8]
+		ret[4] = fTimers[9]
+		return ret
+	EndFunction
+EndProperty
+float[] property StageTimerAggr
+	float[] Function Get()
+		float[] ret = new float[5]
+		ret[0] = fTimers[10]
+		ret[1] = fTimers[11]
+		ret[2] = fTimers[12]
+		ret[3] = fTimers[13]
+		ret[4] = fTimers[14]
+		return ret
+	EndFunction
+EndProperty
+
 ; ------------------------------------------------------- ;
 ; --- Pre 1.50 Config Accessors                       --- ;
 ; ------------------------------------------------------- ;
@@ -1873,16 +1829,10 @@ bool property bOrgasmEffects hidden
 	endFunction
 endProperty
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
-;																																											;
-;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
-;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
-;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
-;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
-;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
-;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
-;																																											;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
+	int idx = (IsFemale as int + Math.LeftShift((IsLeadIn || !IsVictim) as int, 1) + Math.LeftShift(IsAggressive as int, 2)) * 2
+	return sslUtility.BitsToBool(iStripForms[idx], iStripForms[idx + 1])
+endFunction
 
 function ReloadData()
 endFunction
@@ -1908,4 +1858,18 @@ Spell function GetHDTSpell(Actor ActorRef)
 		endWhile
 	endWhile
 	return none
+endFunction
+
+bool function AddCustomBed(Form BaseBed, int BedType = 0)
+	if !BaseBed
+		return false
+	elseIf !BedsList.HasForm(BaseBed)
+		BedsList.AddForm(BaseBed)
+	endIf
+	if BedType == 1 && !BedRollsList.HasForm(BaseBed)
+		BedRollsList.AddForm(BaseBed)
+	elseIf BedType == 2 && !DoubleBedsList.HasForm(BaseBed)
+		DoubleBedsList.AddForm(BaseBed)
+	endIf
+	return true
 endFunction

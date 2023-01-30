@@ -1124,19 +1124,8 @@ Function Strip()
 	If(StripOverride.Length == 2)
 		Strip = StripOverride
 	Else
-		; COMEBACK: Config Menu is too much of an unreadable nightmare to do this properly but eventually Ill have to, eh
-		bool[] s = Config.GetStrip(vanilla_sex == 1, Thread.UseLimitedStrip(), Thread.IsType[0], IsVictim())
-		Strip = new int[2]
-		int i = 0
-		While(i < 32)
-			If(s[i])
-				Strip[0] = Strip[0] + Math.LeftShift(1, i)
-			EndIf
-			i += 1
-		EndWhile
-		Strip[1] = s[32] as int
+		Strip = Config.GetStripSettings(vanilla_sex == 1, Thread.UseLimitedStrip(), Thread.IsType[0], IsVictim())
 	EndIf
-	Log("STRIPPING -> " + Strip)
 	; Gear
 	If(Strip[1])
 		RightHand = ActorRef.GetEquippedObject(1)
@@ -1147,15 +1136,12 @@ Function Strip()
 		If(LeftHand && sslpp.CheckStrip(RightHand) != -1)
 			ActorRef.UnequipItemEX(LeftHand, ActorRef.EquipSlot_LeftHand, false)
 		EndIf
-	Else
-		RightHand = none
-		LeftHand = none
 	EndIf
 	Form[] gear = sslpp.StripActor(ActorRef, Strip[0])
 	Equipment = PapyrusUtil.MergeFormArray(Equipment, gear)
-	If(Math.LogicalAnd(Strip[0], 4) && (vanilla_sex == 0 && Config.UseMaleNudeSuit || vanilla_sex == 1 && Config.UseFemaleNudeSuit))
-		ActorRef.EquipItem(Config.NudeSuit, true, true)
-	EndIf
+	; If(Math.LogicalAnd(Strip[0], 4) && (vanilla_sex == 0 && Config.UseMaleNudeSuit || vanilla_sex == 1 && Config.UseFemaleNudeSuit))
+	; 	ActorRef.EquipItem(Config.NudeSuit, true, true)
+	; EndIf
 	Log("STRIPPING -> Stripped Items: Weapon (Right):" + RightHand + " / Weapon (Left): " + LeftHand + " / Armor: " + Equipment)
 	ActorRef.QueueNiNodeUpdate()
 	; NiOverride High Heels
@@ -1398,8 +1384,10 @@ Function Initialize()
 	StartAnimEvent = ""
 	PlayingAE      = ""
 	; Storage
-	StripOverride  = Utility.CreateIntArray(0)
-	Equipment      = Utility.CreateFormArray(0)
+	StripOverride = Utility.CreateIntArray(0)
+	Equipment = Utility.CreateFormArray(0)
+	RightHand = none
+	LeftHand = none
 	GoToState("Empty")
 EndFunction
 

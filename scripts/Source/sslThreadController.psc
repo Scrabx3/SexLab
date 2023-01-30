@@ -73,43 +73,6 @@ State Animating
 		SendThreadEvent("AnimationChange")
 		RegisterForSingleUpdate(0.2)
 	EndFunction
-
-	; TODO: This here should only allow a swap between same gender positions
-	; Function ChangePositions(bool backwards = false)
-	; 	if ActorCount < 2 || HasCreature
-	; 		return ; Solo/Creature Animation, nobody to swap with
-	; 	endIf
-	; 	UnregisterforUpdate()
-	; 	; GoToState("")
-	; 	; Find position to swap to
-	; 	int AdjustPos = GetAdjustPos()
-	; 	int NewPos = sslUtility.IndexTravel(AdjustPos, ActorCount, backwards)
-	; 	Actor AdjustActor = Positions[AdjustPos]
-	; 	Actor MovedActor  = Positions[NewPos]
-	; 	if MovedActor == AdjustActor
-	; 		Log("MovedActor["+NewPos+"] == AdjustActor["+AdjustPos+"] -- "+Positions, "ChangePositions() Error")
-	; 		RegisterForSingleUpdate(0.2)
-	; 		return
-	; 	endIf
-	; 	; Shuffle actor positions
-	; 	Positions[AdjustPos] = MovedActor
-	; 	Positions[NewPos] = AdjustActor
-	; 	; New adjustment profile
-	; 	; UpdateActorKey()
-	; 	UpdateAdjustKey()
-	; 	Log(AdjustKey, "Adjustment Profile")
-	; 	; Sync new positions
-	; 	AdjustPos = NewPos
-	; 	; GoToState("Animating")
-	; 	ResetPositions()
-	; 	SendThreadEvent("PositionChange")
-	; 	RegisterForSingleUpdate(1.0)
-	; EndFunction
-
-
-	; TODO: Review all these Hotkey Functions. Esp the ones moving the Scene
-	; COMEBACK: For the time being leaving this disabled as I want to know how reliable the keys are and imrpove on them
-	; Rather have people complain about it than leaving bugs in silently decaying unnoticed by me
 	
 	Function AdjustForward(bool backwards = false, bool AdjustStage = false)
 		UnregisterforUpdate()
@@ -290,8 +253,8 @@ State Animating
 			AdjustSchlong(Config.BackwardsPressed())
 		ElseIf(hotkey == kAdjustChange)			; Change Adjusting Position
 			AdjustChange(Config.BackwardsPressed())
-		; ElseIf(hotkey == kRealignActors)
-		; 	RealignActors()
+		ElseIf(hotkey == kRealignActors)
+			RealignActors()
 		; ElseIf(hotkey == kChangePositions)	; Change Positions
 		; 	ChangePositions(Config.BackwardsPressed())
 		ElseIf(hotkey == kRestoreOffsets)		; Restore animation offsets
@@ -405,8 +368,6 @@ Function AdvanceStage(bool backwards = false)
 EndFunction
 Function ChangeAnimation(bool backwards = false)
 EndFunction
-Function ChangePositions(bool backwards = false)
-EndFunction
 Function AdjustForward(bool backwards = false, bool AdjustStage = false)
 EndFunction
 Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
@@ -436,6 +397,40 @@ EndFunction
 ;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+Function ChangePositions(bool backwards = false)
+EndFunction
+; TODO: This here should only allow a swap between same gender positions
+; Function ChangePositions(bool backwards = false)
+; 	if ActorCount < 2 || HasCreature
+; 		return ; Solo/Creature Animation, nobody to swap with
+; 	endIf
+; 	UnregisterforUpdate()
+; 	; GoToState("")
+; 	; Find position to swap to
+; 	int AdjustPos = GetAdjustPos()
+; 	int NewPos = sslUtility.IndexTravel(AdjustPos, ActorCount, backwards)
+; 	Actor AdjustActor = Positions[AdjustPos]
+; 	Actor MovedActor  = Positions[NewPos]
+; 	if MovedActor == AdjustActor
+; 		Log("MovedActor["+NewPos+"] == AdjustActor["+AdjustPos+"] -- "+Positions, "ChangePositions() Error")
+; 		RegisterForSingleUpdate(0.2)
+; 		return
+; 	endIf
+; 	; Shuffle actor positions
+; 	Positions[AdjustPos] = MovedActor
+; 	Positions[NewPos] = AdjustActor
+; 	; New adjustment profile
+; 	; UpdateActorKey()
+; 	UpdateAdjustKey()
+; 	Log(AdjustKey, "Adjustment Profile")
+; 	; Sync new positions
+; 	AdjustPos = NewPos
+; 	; GoToState("Animating")
+; 	ResetPositions()
+; 	SendThreadEvent("PositionChange")
+; 	RegisterForSingleUpdate(1.0)
+; EndFunction
 
 float Function GetAnimationRunTime()
 	return Animation.GetTimersRunTime(Timers)

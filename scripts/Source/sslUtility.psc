@@ -238,6 +238,22 @@ int Function BoolToBit(bool[] abBools) global
 	return ret
 EndFunction
 
+bool[] Function BitsToBool(int n, bool append) global
+	bool[] ret
+	If(append)
+		ret = new bool[33]
+		ret[32] = append
+	Else
+		ret = new bool[32]
+	EndIf
+	int i = 0
+	While(i < 32)
+		ret[i] = Math.LogicalAnd(Math.LeftShift(1, i), n)
+		i += 1
+	EndWhile
+	return ret
+EndFunction
+
 int function IndexTravel(int CurrentIndex, int ArrayLength, bool Reverse = false) global
 	if Reverse
 		CurrentIndex -= 1
