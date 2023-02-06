@@ -1084,9 +1084,9 @@ function ApplyFade(bool forceTest = false)
 	endIf
 endFunction
 
-event OnInit()
+Event OnInit()
 	SetDefaults()
-endEvent
+EndEvent
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
 ;																																											;

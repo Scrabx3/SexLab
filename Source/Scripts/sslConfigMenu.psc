@@ -32,6 +32,10 @@ string PlayerName
 ; --- Configuration Events                            --- ;
 ; ------------------------------------------------------- ;
 
+Function LoadDefaultSettings() native
+Function LoadSettings() native
+Function SaveSettings() native
+
 int Function GetVersion()
 	return SexLabUtil.GetVersion()
 EndFunction
@@ -50,6 +54,8 @@ EndEvent
 Event OnConfigInit()
 	Pages = new string[1]
 	Pages[0] = "Install"
+
+	LoadDefaultSettings()
 
 	; Animation Settings
 	Chances = new string[3]
@@ -236,6 +242,14 @@ endEvent
 ; ------------------------------------------------------- ;
 
 event OnConfigOpen()
+	LoadSettings()
+	If(!Config.AllowCreatures)	; COMEBACK: hacky workaround as my first approach to automate config load didnt work out so well
+		Config.bInstallDefaultsCrt = false
+	EndIf
+	SetToggleOptionValueST(Config.bInstallDefaults, true, "installAnim")
+	SetToggleOptionValueST(Config.AllowCreatures, true, "installCrt")
+	SetToggleOptionValueST(Config.bInstallDefaultsCrt, false, "installCrtAnim")
+
 	If(SystemAlias.IsInstalled)
 		Pages = new string[10]
 		If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
@@ -289,6 +303,7 @@ event OnConfigOpen()
 EndEvent
 
 Event OnConfigClose()
+	SaveSettings()
 	ModEvent.Send(ModEvent.Create("SexLabConfigClose"))
 	; Realign actors if an adjustment in editor was just made
 	If(AutoRealign)
@@ -948,7 +963,6 @@ event OnSelectST()
 		SetOptionFlagsST(OPTION_FLAG_DISABLED)
 		SetTextOptionValueST("Working...")
 		SystemAlias.InstallSystem()
-		ForcePageReset()
 	endIf
 endEvent
 
@@ -3121,7 +3135,7 @@ Form[] ItemsTarget
 bool FullInventoryPlayer
 bool FullInventoryTarget
 
-Form[] Function GetStrippables(Actor akTarget, bool abWornOnly) native global
+Form[] Function GetStrippables(Actor akTarget, bool abWornOnly) native
 
 ; Strip Page to customize if items should never or always be stripped
 Function StripEditor()
@@ -3243,8 +3257,8 @@ function RebuildClean()
 	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
 	; AddTextOptionST("ExportSettings","$SSL_ExportSettings", "$SSL_ClickHere")
 	; AddTextOptionST("ImportSettings","$SSL_ImportSettings", "$SSL_ClickHere")
-	AddEmptyOption()
-	AddEmptyOption()
+	AddToggleOptionST("installAnim", "$SLL_InstallAnimations", Config.bInstallDefaults)
+	AddToggleOptionST("installCrtAnim", "$SLL_InstallAnimationsCreatures", Config.bInstallDefaultsCrt, DoDisable(!Config.AllowCreatures))
 	AddHeaderOption("Registry Info")
 
 	if AnimSlots.GetDisabledCount() > 0 || CreatureSlots.GetDisabledCount() > 0
@@ -4135,6 +4149,7 @@ state CleanSystem
 			; Setup & clean system
 			ResetAllQuests()
 			SystemAlias.SetupSystem()
+			LoadDefaultSettings()
 
 			ModEvent.Send(ModEvent.Create("SexLabReset"))
 			Config.CleanSystemFinish.Show()
