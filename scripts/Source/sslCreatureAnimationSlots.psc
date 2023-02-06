@@ -1,8 +1,19 @@
 scriptname sslCreatureAnimationSlots extends sslAnimationSlots
+{
+	Internal Script expanding sslAnimationSlots with creature exclusive utility
+	Interact with this Script through the main api only
+}
 
-; ------------------------------------------------------- ;
-; --- Creature aniamtion support                      --- ;
-; ------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 string function GetRaceKey(Race RaceRef) global native
 string function GetRaceKeyByID(string RaceID) global native
@@ -24,6 +35,10 @@ sslBaseAnimation[] Function _GetAnimations(int[] akPositions, String[] asTags)
 	return Parent._GetAnimations(akPositions, asTags)
 EndFunction
 
+; ------------------------------------------------------- ;
+; --- Creature aniamtion support                      --- ;
+; ------------------------------------------------------- ;
+
 bool function RaceHasAnimation(Race RaceRef, int ActorCount = -1, int Gender = -1)
 	string[] RaceTypes = GetAllRaceKeys(RaceRef)
 	int i = 0
@@ -37,17 +52,18 @@ bool function RaceHasAnimation(Race RaceRef, int ActorCount = -1, int Gender = -
 endFunction
 
 bool function RaceKeyHasAnimation(string RaceKey, int ActorCount = -1, int Gender = -1)
-	if HasRaceKey(RaceKey)
-		bool UseGender = Gender != -1 && Config.UseCreatureGender
-		int i = Slotted
-		while i
-			i -= 1
-			sslBaseAnimation Slot = GetBySlot(i)
-			if Slot && Slot.Enabled && RaceKey == Slot.RaceType && (ActorCount == -1 || ActorCount == Slot.PositionCount) && ((!UseGender || !Slot.GenderedCreatures) || Slot.Genders[Gender] > 0)
-				return true
-			endIf
-		endWhile
-	endIf
+	If(!HasRaceKey(RaceKey))
+		return false
+	EndIf
+	bool UseGender = Gender != -1 && Config.UseCreatureGender
+	int i = Slotted
+	while i
+		i -= 1
+		sslBaseAnimation Slot = GetBySlot(i)
+		if Slot && Slot.Enabled && RaceKey == Slot.RaceType && (ActorCount == -1 || ActorCount == Slot.PositionCount) && ((!UseGender || !Slot.GenderedCreatures) || Slot.Genders[Gender] > 0)
+			return true
+		endIf
+	endWhile
 	return false
 endFunction
 
@@ -63,85 +79,9 @@ bool function AllowedCreature(Race RaceRef)
 	return Config.AllowCreatures && HasAnimation(RaceRef)
 endFunction
 
-bool function AllowedCreatureCombination(Race RaceRef1, Race RaceRef2)
-	if !Config.AllowCreatures || !RaceRef1 || !RaceRef2
-		return false ; No creatures or missing RaceRef
-	elseIf RaceRef1 == RaceRef2
-		return true ; No need to check same races
-	endIf
-
-	string[] Keys1 = GetAllRaceKeys(RaceRef1)
-	string[] Keys2 = GetAllRaceKeys(RaceRef2)
-	if !Keys1 || !Keys2
-		return false ; Invalid race found
-	endIf
-
-	int k1 = Keys1.Length
-	int k2 = Keys2.Length
-	if k1 < 1 || k2 < 1
-		return false ; a probably unnecessary error check
-
-	elseIf k1 == 1 && k2 == 1 && Keys1[0] != Keys2[0] 
-		return false ; Simple single key mismatch
-
-	elseIf (k1 == 1 && k2 > 1 && Keys2.Find(Keys1[0]) != -1) || \
-	       (k2 == 1 && k1 > 1 && Keys1.Find(Keys2[0]) != -1)
-	   return true ; Matched single key to multikey
-
-	endIf
-	
-	while k1
-		k1 -= 1
-		if Keys2.Find(Keys1[k1]) != -1
-			return true ; Matched between multikey arrays
-		endIf
-	endWhile
-
-	return false ; No matches found
-endFunction
-
-bool function AllowedRaceKeyCombination(string[] Keys1, string[] Keys2)
-	if !Config.AllowCreatures || !Keys1 || !Keys2
-		return false ; No creatures or missing RaceRef
-	endIf
-	
-	int k1 = Keys1.Length
-	int k2 = Keys2.Length
-	if k1 < 1 || k2 < 1
-		return false ; a probably unnecessary error check
-	endIf
-	
-	if Keys1 == Keys2
-		return true ; No need to check same races
-	endIf
-	
-	if k1 == 1 && k2 == 1 && Keys1[0] != Keys2[0] 
-		return false ; Simple single key mismatch
-	elseIf (k1 == 1 && k2 > 1 && Keys2.Find(Keys1[0]) != -1) || \
-	       (k2 == 1 && k1 > 1 && Keys1.Find(Keys2[0]) != -1)
-	   return true ; Matched single key to multikey
-	endIf
-	
-	while k1
-		k1 -= 1
-		if Keys2.Find(Keys1[k1]) != -1
-			return true ; Matched between multikey arrays
-		endIf
-	endWhile
-
-	return false ; No matches found
-endFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
-;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
-;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
-;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
-;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
-;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ------------------------------------------------------- ;
+; --- Initialization						                      --- ;
+; ------------------------------------------------------- ;
 
 function Setup()
 	RegisterRaces()
@@ -152,8 +92,6 @@ endfunction
 function RegisterSlots()
 	CacheID = "SexLab.CreatureTags"
 	if Config.AllowCreatures
-		; Register the creature animations and voices
-		; PreloadCategoryLoaders()
 		(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationDefaults).LoadCreatureAnimations()
 		(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceDefaults).LoadCreatureVoices()
 		ModEvent.Send(ModEvent.Create("SexLabSlotCreatureAnimations"))
@@ -447,6 +385,7 @@ function RegisterRaces()
 	ModEvent.Send(ModEvent.Create("SexLabRegisterCreatureKey"))
 endFunction
 
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
 ;																																											;
 ;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
@@ -628,3 +567,25 @@ sslBaseAnimation[] function FilterCreatureGenders(sslBaseAnimation[] Anims, int 
 	return Output
 endFunction
 
+; These dont support multi race animations
+bool Function AllowedCreatureCombination(Race RaceRef1, Race RaceRef2)
+	If(!Config.AllowCreatures || !RaceRef1 || !RaceRef2)
+		return false
+	ElseIf(RaceRef1 == RaceRef2)
+		return true
+	EndIf
+	return AllowedRaceKeyCombination(GetAllRaceKeys(RaceRef1), GetAllRaceKeys(RaceRef2))
+EndFunction
+bool function AllowedRaceKeyCombination(string[] Keys1, string[] Keys2)
+	If(!Config.AllowCreatures || !Keys1.Length || !Keys2.Length)
+		return false
+	EndIf
+	int i = 0
+	While(i < Keys1.Length)
+		If(Keys2.Find(Keys1[i]) > -1)
+			return true
+		EndIf
+		i += 1
+	EndWhile
+	return false
+EndFunction

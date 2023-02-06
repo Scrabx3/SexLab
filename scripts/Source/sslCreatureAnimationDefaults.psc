@@ -1,9 +1,12 @@
 scriptname sslCreatureAnimationDefaults extends sslAnimationFactory
 
+sslSystemConfig Property config Auto
+
 function LoadCreatureAnimations()
-	; Prepare factory resources (as creature)
+	If(!config.bInstallDefaultsCrt)
+		return
+	EndIf
 	PrepareFactoryCreatures()
-	
 	if Game.GetCameraState() == 0
 		if Utility.IsInMenuMode()
 			MiscUtil.PrintConsole("WARNING! To continue with the SexLab animations setup close the console and all the menu")
@@ -16,31 +19,23 @@ function LoadCreatureAnimations()
 	; Bear
 	if SexLabCreature
 		RegisterAnimation("BearDoggystyle")
-	endIf
-	RegisterCategory("Bear")
-	
+	endIf	
 	; Dog
 	if SexLabCreature
 		RegisterAnimation("CanineDoggystyle")
 		RegisterAnimation("CanineDoggystyle2")
 		RegisterAnimation("CanineMissionary")
 	endIf
-	RegisterCategory("Dog")
-
 	; Chaurus
 	if SexLabCreature
 		RegisterAnimation("ChaurusForward")
 		RegisterAnimation("ChaurusReverse")
 	endIf
-	RegisterCategory("Chaurus")
-
 	; Dragon
 	if SexLabCreature
 		RegisterAnimation("DragonPenetration")
 		RegisterAnimation("DragonTongue")
 	endIf
-	RegisterCategory("Dragon")
-
 	; Draugr
 	if SexLabCreature
 		RegisterAnimation("DraugrDoggystyle")
@@ -50,8 +45,6 @@ function LoadCreatureAnimations()
 		RegisterAnimation("DraugrGangbang4P")
 		RegisterAnimation("DraugrGangbang5P")
 	endIf
-	RegisterCategory("Draugr")
-
 	; Falmer
 	if SexLabCreature
 		RegisterAnimation("FalmerDoggystyle")
@@ -61,59 +54,43 @@ function LoadCreatureAnimations()
 		RegisterAnimation("FalmerGangbang4P")
 		RegisterAnimation("FalmerGangbang5P")
 	endIf
-	RegisterCategory("Falmer")
-
 	; Dawguard Gargoyle
 	if SexLabCreature
 		RegisterAnimation("GargoyleDoggystyle")
 		RegisterAnimation("GargoyleHolding")
 		RegisterAnimation("GargoyleMissionary")
 	endIf
-	RegisterCategory("Gargoyle")
-
 	; Giant
 	if SexLabCreature
 		RegisterAnimation("GiantPenetration")
 		RegisterAnimation("GiantHarrassment")
 		RegisterAnimation("GiantHolding")
 	endIf
-	RegisterCategory("Giant")
-
 	; Horse
 	if SexLabCreature
 		RegisterAnimation("HorseDoggystyle")
 		RegisterAnimation("HorsePanicDoggystyle")
 		RegisterAnimation("HorseGroping")
 	endIf
-	RegisterCategory("Horse")
-
 	; Riekling
 	if SexLabCreature
 		RegisterAnimation("RieklingMissionary")
 		RegisterAnimation("RieklingThreeWay")
 	endIf
-	RegisterCategory("Riekling")
-
 	; SabreCat
 	if SexLabCreature
 		RegisterAnimation("CatDoggystyle")
 	endIf
-	RegisterCategory("SabreCat")
-
 	; Dragonborn Daedra Seeker
 	if SexLabCreature
 		RegisterAnimation("DaedraHugging")
 	endIf
-	RegisterCategory("Seeker")
-
 	; Spider
 	if SexLabCreature
 		RegisterAnimation("SpiderDouble")
 		RegisterAnimation("SpiderPenetration")
 		RegisterAnimation("BigSpiderPenetration")
 	endIf
-	RegisterCategory("Spider")
-
 	; Troll
 	if SexLabCreature
 		RegisterAnimation("TrollDoggystyle")
@@ -122,8 +99,6 @@ function LoadCreatureAnimations()
 		RegisterAnimation("TrollDominate")
 		RegisterAnimation("TrollGrabbing")
 	endIf
-	RegisterCategory("Troll")
-
 	; Werewolf
 	if SexLabCreature
 		RegisterAnimation("WerewolfAggrDoggystyle")
@@ -132,24 +107,18 @@ function LoadCreatureAnimations()
 		RegisterAnimation("WerewolfMissionary")
 		; RegisterAnimation("WerewolfMissionaryFemale")
 	endIf
-	RegisterCategory("Werewolf")
-
 	; Wolf
 	if SexLabCreature
 		RegisterAnimation("WolfDoggystyle")
 		RegisterAnimation("WolfDoggystyle2")
 		RegisterAnimation("WolfMissionary")
 	endIf
-	RegisterCategory("Wolf")
-
 	; Dawnguard Vampire Lord
 	if SexLabCreature
 		RegisterAnimation("VampireLordDoggystyle")
 		RegisterAnimation("VampireLordHolding")
 		RegisterAnimation("VampireLordMissionary")
 	endIf
-	RegisterCategory("VampireLord")
-
 	; Register any remaining custom categories from json loaders
 	RegisterOtherCategories()
 endFunction

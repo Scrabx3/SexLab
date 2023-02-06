@@ -11,16 +11,16 @@ sslSystemConfig property Config auto
 sslSystemAlias property SystemAlias auto
 
 ; Function libraries
-sslActorLibrary ActorLib
-sslThreadLibrary ThreadLib
-sslActorStats Stats
+sslActorLibrary Property ActorLib Auto
+sslThreadLibrary Property ThreadLib Auto
+sslActorStats Property Stats Auto
 
 ; Object registries
-sslThreadSlots ThreadSlots
-sslAnimationSlots AnimSlots
-sslCreatureAnimationSlots CreatureSlots
-sslVoiceSlots VoiceSlots
-sslExpressionSlots ExpressionSlots
+sslThreadSlots Property ThreadSlots Auto
+sslAnimationSlots Property AnimSlots Auto
+sslCreatureAnimationSlots Property CreatureSlots Auto
+sslVoiceSlots Property VoiceSlots Auto
+sslExpressionSlots Property ExpressionSlots Auto
 
 ; Common Data
 Actor TargetRef
@@ -32,134 +32,184 @@ string PlayerName
 ; --- Configuration Events                            --- ;
 ; ------------------------------------------------------- ;
 
-; Proxy to SexLabUtil.psc so modders don't have to add dependency to this script, and thus SkyUI SDK
-int function GetVersion()
+int Function GetVersion()
 	return SexLabUtil.GetVersion()
-endFunction
-string function GetStringVer()
+EndFunction
+String function GetStringVer()
 	return SexLabUtil.GetStringVer()
-endFunction
+EndFunction
 
-event OnVersionUpdate(int version)
-	LoadLibs(false)
-	if CurrentVersion > 0 && CurrentVersion < 15920
-		ResetAllQuests()
-		LoadLibs(true)
-		SystemAlias.SetupSystem()
-	; elseIf CurrentVersion == 0 && Config.DebugMode
-	; 	LoadLibs(true)
-	; 	SystemAlias.SetupSystem()
-	endIf
-endEvent
+Event OnVersionUpdate(int version)
+EndEvent
 
-event OnGameReload()
-	Debug.Trace("SexLab MCM Loaded CurrentVerison: "+CurrentVersion+" / "+SexLabUtil.GetVersion())
-	MiscUtil.PrintConsole("SexLab MCM Loaded CurrentVerison: "+CurrentVersion+" / "+SexLabUtil.GetVersion())
+Event OnGameReload()
 	RegisterForModEvent("SKICP_pageSelected", "OnPageSelected")
 	parent.OnGameReload()
-endEvent
+EndEvent
 
-function LoadLibs(bool Forced = false)
-	; Sync function Libraries - SexLabQuestFramework
-	if Forced || !SexLab || !Config || !ThreadLib || !ThreadSlots || !ActorLib || !Stats || !SystemAlias
-		Form SexLabQuestFramework  = Game.GetFormFromFile(0xD62, "SexLab.esm")
-		if SexLabQuestFramework
-			SexLab      = SexLabQuestFramework as SexLabFramework
-			Config      = SexLabQuestFramework as sslSystemConfig
-			ThreadLib   = SexLabQuestFramework as sslThreadLibrary
-			ThreadSlots = SexLabQuestFramework as sslThreadSlots
-			ActorLib    = SexLabQuestFramework as sslActorLibrary
-			Stats       = SexLabQuestFramework as sslActorStats
-			SystemAlias = SexLab.GetNthAlias(0) as sslSystemAlias
-		endIf
-	endIf
-	; Sync animation registry - SexLabQuestAnimations
-	if Forced || !AnimSlots
-		Form SexLabQuestAnimations = Game.GetFormFromFile(0x639DF, "SexLab.esm")
-		if SexLabQuestAnimations
-			AnimSlots = SexLabQuestAnimations as sslAnimationSlots
-		endIf
-	endIf
-	; Sync secondary object registry - SexLabQuestRegistry
-	if Forced || !CreatureSlots || !VoiceSlots || !ExpressionSlots
-		Form SexLabQuestRegistry   = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-		if SexLabQuestRegistry
-			CreatureSlots   = SexLabQuestRegistry as sslCreatureAnimationSlots
-			ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
-			VoiceSlots      = SexLabQuestRegistry as sslVoiceSlots
-		endIf
-	endIf
-	; Sync data
-	if Forced || !PlayerRef
-		PlayerRef = Game.GetPlayer()
-	endIf
-endFunction
+Event OnConfigInit()
+	Pages = new string[1]
+	Pages[0] = "Install"
+
+	; Animation Settings
+	Chances = new string[3]
+	Chances[0] = "$SSL_Never"
+	Chances[1] = "$SSL_Sometimes"
+	Chances[2] = "$SSL_Always"
+
+	BedOpt = new string[3]
+	BedOpt[0] = "$SSL_Never"
+	BedOpt[1] = "$SSL_Always"
+	BedOpt[2] = "$SSL_NotVictim"
+
+	FadeOpt = new string[5]
+	FadeOpt[0] = "$SSL_Never"
+	FadeOpt[1] = "$SSL_UseBlack"
+	FadeOpt[2] = "$SSL_UseBlur"
+	FadeOpt[3] = "$SSL_SolidBlack"
+	FadeOpt[4] = "$SSL_SolidWhite"
+
+	; Expression Editor
+	Phases = new string[5]
+	Phases[0] = "Phase 1"
+	Phases[1] = "Phase 2"
+	Phases[2] = "Phase 3"
+	Phases[3] = "Phase 4"
+	Phases[4] = "Phase 5"
+
+	Moods = new string[17]
+	Moods[0]  = "Dialogue Anger"
+	Moods[1]  = "Dialogue Fear"
+	Moods[2]  = "Dialogue Happy"
+	Moods[3]  = "Dialogue Sad"
+	Moods[4]  = "Dialogue Surprise"
+	Moods[5]  = "Dialogue Puzzled"
+	Moods[6]  = "Dialogue Disgusted"
+	Moods[7]  = "Mood Neutral"
+	Moods[8]  = "Mood Anger"
+	Moods[9]  = "Mood Fear"
+	Moods[10] = "Mood Happy"
+	Moods[11] = "Mood Sad"
+	Moods[12] = "Mood Surprise"
+	Moods[13] = "Mood Puzzled"
+	Moods[14] = "Mood Disgusted"
+	Moods[15] = "Combat Anger"
+	Moods[16] = "Combat Shout"
+
+	Phonemes = new string[16]
+	Phonemes[0]  = "0: Aah"
+	Phonemes[1]  = "1: BigAah"
+	Phonemes[2]  = "2: BMP"
+	Phonemes[3]  = "3: ChjSh"
+	Phonemes[4]  = "4: DST"
+	Phonemes[5]  = "5: Eee"
+	Phonemes[6]  = "6: Eh"
+	Phonemes[7]  = "7: FV"
+	Phonemes[8]  = "8: i"
+	Phonemes[9]  = "9: k"
+	Phonemes[10] = "10: N"
+	Phonemes[11] = "11: Oh"
+	Phonemes[12] = "12: OohQ"
+	Phonemes[13] = "13: R"
+	Phonemes[14] = "14: Th"
+	Phonemes[15] = "15: W"
+
+	Modifiers = new string[14]
+	Modifiers[0]  = "0: BlinkL"
+	Modifiers[1]  = "1: BlinkR"
+	Modifiers[2]  = "2: BrowDownL"
+	Modifiers[3]  = "3: BrownDownR"
+	Modifiers[4]  = "4: BrowInL"
+	Modifiers[5]  = "5: BrowInR"
+	Modifiers[6]  = "6: BrowUpL"
+	Modifiers[7]  = "7: BrowUpR"
+	Modifiers[8]  = "8: LookDown"
+	Modifiers[9]  = "9: LookLeft"
+	Modifiers[10] = "10: LookRight"
+	Modifiers[11] = "11: LookUp"
+	Modifiers[12] = "12: SquintL"
+	Modifiers[13] = "13: SquintR"
+
+	SoundTreatment = new string[3]
+	SoundTreatment[0] = "$SSL_WaitToEnd"
+	SoundTreatment[1] = "$SSL_KeepPlaying"
+	SoundTreatment[2] = "$SSL_CutOnTime"
+
+	; Timers & Stripping
+	TSModes = new string[3]
+	TSModes[0] = "$SSL_NormalTimersStripping"
+	TSModes[1] = "$SSL_ForeplayTimersStripping"
+	TSModes[2] = "$SSL_AggressiveTimersStripping"
+
+	; Biped items
+	Biped = new string[33]
+	Biped[0]  = "$SSL_Head"
+	Biped[1]  = "$SSL_Hair"
+	Biped[2]  = "$SSL_Torso"
+	Biped[3]  = "$SSL_Hands"
+	Biped[4]  = "$SSL_Forearms"
+	Biped[5]  = "$SSL_Amulet"
+	Biped[6]  = "$SSL_Ring"
+	Biped[7]  = "$SSL_Feet"
+	Biped[8]  = "$SSL_Calves"
+	Biped[9]  = "$SSL_Shield"
+	Biped[10] = "$SSL_Tail"
+	Biped[11] = "$SSL_LongHair"
+	Biped[12] = "$SSL_Circlet"
+	Biped[13] = "$SSL_Ears"
+	Biped[14] = "$SSL_FaceMouth"
+	Biped[15] = "$SSL_Neck"
+	Biped[16] = "$SSL_Chest"
+	Biped[17] = "$SSL_Back"
+	Biped[18] = "$SSL_MiscSlot48"
+	Biped[19] = "$SSL_PelvisOutergarnments"
+	Biped[20] = "$SSL_DecapitatedHead" ; decapitated head [NordRace]
+	Biped[21] = "$SSL_Decapitate" ; decapitate [NordRace]
+	Biped[22] = "$SSL_PelvisUndergarnments"
+	Biped[23] = "$SSL_LegsRightLeg"
+	Biped[24] = "$SSL_LegsLeftLeg"
+	Biped[25] = "$SSL_FaceJewelry"
+	Biped[26] = "$SSL_ChestUndergarnments"
+	Biped[27] = "$SSL_Shoulders"
+	Biped[28] = "$SSL_ArmsLeftArmUndergarnments"
+	Biped[29] = "$SSL_ArmsRightArmOutergarnments"
+	Biped[30] = "$SSL_MiscSlot60"
+	Biped[31] = "$SSL_MiscSlot61"
+	Biped[32] = "$SSL_Weapons"
+EndEvent
 
 ; ------------------------------------------------------- ;
 ; --- Create MCM Pages                                --- ;
 ; ------------------------------------------------------- ;
 
-event OnPageReset(string page)
-	; Manual install pending
+Event OnPageReset(string page)
 	if !SystemAlias.IsInstalled
 		UnloadCustomContent()
 		InstallMenu()
-
-	; Animation Editor
 	elseIf ShowAnimationEditor
 		AnimationEditor()
-
-	; Logo Splash
 	elseif page != ""
 		UnloadCustomContent()
-
-		; General Animation Settings
 		if page == "$SSL_AnimationSettings"
 			AnimationSettings()
-
-		; Toggle Voices + SFX Settings
 		elseIf page == "$SSL_SoundSettings"
 			SoundSettings()
-
-		; Hotkey selection & config
 		elseIf page == "$SSL_PlayerHotkeys"
 			PlayerHotkeys()
-
-		; Timers & stripping
 		elseIf page == "$SSL_TimersStripping"
 			TimersStripping()
-
 		elseIf page == "$SSL_StripEditor"
 			StripEditor()
-
-		; Toggle animations on/off
 		elseIf page == "$SSL_ToggleAnimations"
 			ToggleAnimations()
-
-		; Animation Editor
 		elseIf page == "$SSL_AnimationEditor"
 			AnimationEditor()
-
-		; Toggle expressions
-		; elseIf page == "$SSL_ExpressionSelection"
-		; 	ToggleExpressions()
-
-		; Toggle/Edit Expressions
 		elseIf page == "$SSL_ExpressionEditor"
 			ExpressionEditor()
-
-		; Player Diary/Journal
 		elseIf page == "$SSL_SexDiary" || page == "$SSL_SexJournal"
 			SexDiary()
-
-		; Player Diary/Journal
-		; elseIf page == "Troubleshoot"
-		; 	Troubleshoot()
-
-		; System rebuild & clean
 		elseIf page == "$SSL_RebuildClean"
 			RebuildClean()
-
 		endIf
 	else
 		if PlayerRef.IsInFaction(Config.AnimatingFaction) && (Config.GetThreadControlled() != none || ThreadSlots.FindActorController(PlayerRef) != -1)
@@ -175,7 +225,6 @@ endEvent
 bool ShowAnimationEditor = false
 event OnPageSelected(String a_eventName, String a_strArg, Float a_numArg, Form a_sender)
 	if ShowAnimationEditor && (a_numArg as int) != Pages.Find("$SSL_ToggleAnimations")
-		Log("Page:"+ a_numArg+" ToggleAnimationsPages:"+Pages.Find("$SSL_ToggleAnimations"),"OnPageSelected")
 		ShowAnimationEditor = false
 	elseIf EditOpenMouth && (a_numArg as int) != Pages.Find("$SSL_ExpressionEditor")
 		EditOpenMouth = false
@@ -187,237 +236,67 @@ endEvent
 ; ------------------------------------------------------- ;
 
 event OnConfigOpen()
-	; Make sure we have all the needed libraries
-	LoadLibs()
-	
-	; MCM option pages
-	if !SystemAlias.IsInstalled
-		Pages     = new string[1]
-		Pages[0]  = "Install"
-	else
-		Pages     = new string[10]
-		Pages[0]  = "$SSL_SexDiary"
-		Pages[1]  = "$SSL_AnimationSettings"
-		Pages[2]  = "$SSL_SoundSettings"
-		Pages[3]  = "$SSL_PlayerHotkeys"
-		Pages[4]  = "$SSL_TimersStripping"
-		Pages[5]  = "$SSL_ToggleAnimations"
-		Pages[6]  = "$SSL_AnimationEditor"
-		Pages[7]  = "$SSL_ExpressionEditor"
-		Pages[8]  = "$SSL_StripEditor"
-		Pages[9]  = "$SSL_RebuildClean"
-		; Pages[]  = "Troubleshoot"
-		if PlayerRef.GetLeveledActorBase().GetSex() == 0
+	If(SystemAlias.IsInstalled)
+		Pages = new string[10]
+		If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
 			Pages[0] = "$SSL_SexJournal"
-		endIf
-	endIf
-
-	; Basic player info
+		Else
+			Pages[0] = "$SSL_SexDiary"
+		EndIf
+		Pages[1] = "$SSL_AnimationSettings"
+		Pages[2] = "$SSL_SoundSettings"
+		Pages[3] = "$SSL_PlayerHotkeys"
+		Pages[4] = "$SSL_TimersStripping"
+		Pages[5] = "$SSL_ToggleAnimations"
+		Pages[6] = "$SSL_AnimationEditor"
+		Pages[7] = "$SSL_ExpressionEditor"
+		Pages[8] = "$SSL_StripEditor"
+		Pages[9] = "$SSL_RebuildClean"		
+	EndIf
+	; Player & Target info
 	PlayerName = PlayerRef.GetLeveledActorBase().GetName()
-
-	; Target actor
 	TargetRef = Config.TargetRef
 	EmptyStatToggle = false
-	if TargetRef && TargetRef.Is3DLoaded()
-		TargetName = TargetRef.GetLeveledActorBase().GetName()
-		TargetFlag = OPTION_FLAG_NONE
-	else
+	If(TargetRef)
+		If(TargetRef.Is3DLoaded())
+			TargetName = TargetRef.GetLeveledActorBase().GetName()
+			TargetFlag = OPTION_FLAG_NONE
+		EndIf
+		StatRef = TargetRef
+	Else
 		TargetRef = none
 		TargetName = "$SSL_NoTarget"
 		TargetFlag = OPTION_FLAG_DISABLED
-		Config.TargetRef = none
-	endIf
-	if TargetRef
-		StatRef = TargetRef
-	else
 		StatRef = PlayerRef
-	endIf
-
+	EndIf
 	; Reset animation editor auto selector
 	PreventOverwrite = false
-
 	; All paged menus need this
 	PerPage = 125
-
 	; AnimationEditor
 	AnimEditPage = 1
-
 	; ToggleAnimations
 	TogglePage = 1
 	ta = 0
 	EditTags = false
 	TagFilter = ""
 	TagMode = ""
-
 	; Stripping/Timers toggles
 	ts = 0
-	
-	; Animation Settings
-	if Chances.Length != 3 || Chances.Find("") != -1
-		Chances = new string[3]
-		Chances[0] = "$SSL_Never"
-		Chances[1] = "$SSL_Sometimes"
-		Chances[2] = "$SSL_Always"
-	endIf
-	if BedOpt.Length != 3 || BedOpt.Find("") != -1
-		BedOpt = new string[3]
-		BedOpt[0] = "$SSL_Never"
-		BedOpt[1] = "$SSL_Always"
-		BedOpt[2] = "$SSL_NotVictim"
-	endIf
-	if FadeOpt.Length != 5 || FadeOpt.Find("") != -1
-		FadeOpt = new string[5]
-		FadeOpt[0] = "$SSL_Never"
-		FadeOpt[1] = "$SSL_UseBlack"
-		FadeOpt[2] = "$SSL_UseBlur"
-		FadeOpt[3] = "$SSL_SolidBlack"
-		FadeOpt[4] = "$SSL_SolidWhite"
-	endIf
-
-	; Expression Editor
-	if Phases.Length != 5 || Phases.Find("") != -1
-		Phases = new string[5]
-		Phases[0] = "Phase 1"
-		Phases[1] = "Phase 2"
-		Phases[2] = "Phase 3"
-		Phases[3] = "Phase 4"
-		Phases[4] = "Phase 5"
-	endIf
-
-	if Moods.Length != 17 || Moods.Find("") != -1
-		Moods = new string[17]
-		Moods[0]  = "Dialogue Anger"
-		Moods[1]  = "Dialogue Fear"
-		Moods[2]  = "Dialogue Happy"
-		Moods[3]  = "Dialogue Sad"
-		Moods[4]  = "Dialogue Surprise"
-		Moods[5]  = "Dialogue Puzzled"
-		Moods[6]  = "Dialogue Disgusted"
-		Moods[7]  = "Mood Neutral"
-		Moods[8]  = "Mood Anger"
-		Moods[9]  = "Mood Fear"
-		Moods[10] = "Mood Happy"
-		Moods[11] = "Mood Sad"
-		Moods[12] = "Mood Surprise"
-		Moods[13] = "Mood Puzzled"
-		Moods[14] = "Mood Disgusted"
-		Moods[15] = "Combat Anger"
-		Moods[16] = "Combat Shout"
-	endIf
-
-	if Phonemes.Length != 16 || Phonemes.Find("") != -1
-		Phonemes = new string[16]
-		Phonemes[0]  = "0: Aah"
-		Phonemes[1]  = "1: BigAah"
-		Phonemes[2]  = "2: BMP"
-		Phonemes[3]  = "3: ChjSh"
-		Phonemes[4]  = "4: DST"
-		Phonemes[5]  = "5: Eee"
-		Phonemes[6]  = "6: Eh"
-		Phonemes[7]  = "7: FV"
-		Phonemes[8]  = "8: i"
-		Phonemes[9]  = "9: k"
-		Phonemes[10] = "10: N"
-		Phonemes[11] = "11: Oh"
-		Phonemes[12] = "12: OohQ"
-		Phonemes[13] = "13: R"
-		Phonemes[14] = "14: Th"
-		Phonemes[15] = "15: W"
-	endIf
-
-	if Modifiers.Length != 14 || Modifiers.Find("") != -1
-		Modifiers = new string[14]
-		Modifiers[0]  = "0: BlinkL"
-		Modifiers[1]  = "1: BlinkR"
-		Modifiers[2]  = "2: BrowDownL"
-		Modifiers[3]  = "3: BrownDownR"
-		Modifiers[4]  = "4: BrowInL"
-		Modifiers[5]  = "5: BrowInR"
-		Modifiers[6]  = "6: BrowUpL"
-		Modifiers[7]  = "7: BrowUpR"
-		Modifiers[8]  = "8: LookDown"
-		Modifiers[9]  = "9: LookLeft"
-		Modifiers[10] = "10: LookRight"
-		Modifiers[11] = "11: LookUp"
-		Modifiers[12] = "12: SquintL"
-		Modifiers[13] = "13: SquintR"
-	endIf
-
-	if SoundTreatment.Length != 3 || SoundTreatment.Find("") != -1
-		SoundTreatment = new string[3]
-		SoundTreatment[0] = "$SSL_WaitToEnd"
-		SoundTreatment[1] = "$SSL_KeepPlaying"
-		SoundTreatment[2] = "$SSL_CutOnTime"
-	endIf
-
-	; Timers & Stripping
-	if TSModes.Length != 3 || TSModes.Find("") != -1
-		TSModes = new string[3]
-		TSModes[0] = "$SSL_NormalTimersStripping"
-		TSModes[1] = "$SSL_ForeplayTimersStripping"
-		TSModes[2] = "$SSL_AggressiveTimersStripping"
-	endIf
-
-	; Biped item slots (i + 30)
-	if Biped.Length != 33 || Biped.Find("") != -1
-		Biped = new string[33]
-		Biped[0]  = "$SSL_Head"
-		Biped[1]  = "$SSL_Hair"
-		Biped[2]  = "$SSL_Torso"
-		Biped[3]  = "$SSL_Hands"
-		Biped[4]  = "$SSL_Forearms"
-		Biped[5]  = "$SSL_Amulet"
-		Biped[6]  = "$SSL_Ring"
-		Biped[7]  = "$SSL_Feet"
-		Biped[8]  = "$SSL_Calves"
-		Biped[9]  = "$SSL_Shield"
-		Biped[10] = "$SSL_Tail"
-		Biped[11] = "$SSL_LongHair"
-		Biped[12] = "$SSL_Circlet"
-		Biped[13] = "$SSL_Ears"
-		Biped[14] = "$SSL_FaceMouth"
-		Biped[15] = "$SSL_Neck"
-		Biped[16] = "$SSL_Chest"
-		Biped[17] = "$SSL_Back"
-		Biped[18] = "$SSL_MiscSlot48"
-		Biped[19] = "$SSL_PelvisOutergarnments"
-		Biped[20] = "$SSL_DecapitatedHead" ; decapitated head [NordRace]
-		Biped[21] = "$SSL_Decapitate" ; decapitate [NordRace]
-		Biped[22] = "$SSL_PelvisUndergarnments"
-		Biped[23] = "$SSL_LegsRightLeg"
-		Biped[24] = "$SSL_LegsLeftLeg"
-		Biped[25] = "$SSL_FaceJewelry"
-		Biped[26] = "$SSL_ChestUndergarnments"
-		Biped[27] = "$SSL_Shoulders"
-		Biped[28] = "$SSL_ArmsLeftArmUndergarnments"
-		Biped[29] = "$SSL_ArmsRightArmOutergarnments"
-		Biped[30] = "$SSL_MiscSlot60"
-		Biped[31] = "$SSL_MiscSlot61"
-		Biped[32] = "$SSL_Weapons"
-	endIf
-
 	; Strip Editor
-	; ShowFullInventory = false
-	; Items = GetItems(PlayerRef)
 	FullInventoryPlayer = false
 	FullInventoryTarget = false
-endEvent
+EndEvent
 
-event OnConfigClose()
+Event OnConfigClose()
 	ModEvent.Send(ModEvent.Create("SexLabConfigClose"))
-	; Reset animation editor auto selector
-	PreventOverwrite = false
-	; Clear Player Partners array
-	if PlayerPartners
-		PlayerPartners = PapyrusUtil.ActorArray(0)
-	endIf
 	; Realign actors if an adjustment in editor was just made
-	if AutoRealign
+	If(AutoRealign)
 		AutoRealign = false
-		if ThreadControlled
-			ModEvent.Send(ModEvent.Create(ThreadControlled.Key("RealignActors"))) ; Instead the function because don't allow reopen the Config until the all Menu be fully closed
-		endIf
-	endIf
+		If(ThreadControlled)
+			ThreadControlled.RealignActors()
+		EndIf
+	EndIf
 endEvent
 
 ; ------------------------------------------------------- ;
@@ -907,9 +786,19 @@ EndEvent
 
 event OnSelectST()
 	string[] Options = MapOptions()
+	If(Options[0] == "installAnim")
+		Config.bInstallDefaults = !Config.bInstallDefaults
+		SetToggleOptionValueST(Config.bInstallDefaults)
+	ElseIf(Options[0] == "installCrt")
+		Config.AllowCreatures = !Config.AllowCreatures
+		SetToggleOptionValueST(Config.AllowCreatures)
+		SetOptionFlagsST(DoDisable(!Config.AllowCreatures), false, "installCrtAnim")
+	ElseIf(Options[0] == "installCrtAnim")
+		Config.bInstallDefaultsCrt = !Config.bInstallDefaultsCrt
+		SetToggleOptionValueST(Config.bInstallDefaultsCrt)
 
 	; Sound Settings - Voice Toggle
-	if Options[0] == "Voice"
+	elseif Options[0] == "Voice"
 		sslBaseVoice Slot = VoiceSlots.GetBySlot(Options[1] as int)
 		Slot.Enabled = !Slot.Enabled
 		SetToggleOptionValueST(Slot.Enabled)
@@ -1057,12 +946,8 @@ event OnSelectST()
 	; Install System
 	elseIf Options[0] == "InstallSystem"
 		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("Working")
-
+		SetTextOptionValueST("Working...")
 		SystemAlias.InstallSystem()
-
-		SetTextOptionValueST("$SSL_ClickHere")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
 		ForcePageReset()
 	endIf
 endEvent
@@ -1091,24 +976,19 @@ endEvent
 
 function InstallMenu()
 	SetCursorFillMode(TOP_TO_BOTTOM)
-	AddHeaderOption("SexLab v"+GetStringVer())
-	AddHeaderOption("$SSL_PrerequisiteCheck")
+	AddHeaderOption("SexLab v" + GetStringVer())
 	SystemCheckOptions()
 	SetCursorPosition(1)
-	AddHeaderOption("SexLab v"+GetStringVer()+" by Ashal@LoversLab.com")
-	; Check for critical failure from missing SystemAlias not being found.
-	if !SexLab || !SystemAlias || !Config || !ActorLib || !ThreadLib || !ThreadSlots || !AnimSlots || !CreatureSlots || !VoiceSlots || !ExpressionSlots 
-		AddTextOptionST("InstallError", "CRITICAL ERROR: File Integrity", "README")
-		SetInfoText("CRITICAL ERROR: File Integrity Framework quest / files overwritten...\nUnable to resolve needed variables. Install unable continue as result.\nUsually caused by incompatible SexLab addons. Disable other SexLab addons (NOT SexLab.esm) one by one and trying again until this message goes away. Alternatively, with TES5Edit after the background loader finishes check for any mods overriding SexLab.esm's Quest records. ScocLB.esm & SexlabScocLB.esp are the most common cause of this problem.\nIf using Mod Organizer, check that no mods are overwriting any of SexLab Frameworks files. There should be no red - symbol under flags for your SexLab Framework install in Mod Organizer.")
-		return
-	endIf
+	AddHeaderOption("$SSL_Installation")
 	; Install/Update button
 	string AliasState = SystemAlias.GetState()
-	int opt = OPTION_FLAG_NONE
-	if AliasState == "Updating" || AliasState == "Installing"
-		opt = OPTION_FLAG_DISABLED
-	endIf
-	AddTextOptionST("InstallSystem", "$SSL_InstallUpdateSexLab{"+GetStringVer()+"}", "$SSL_ClickHere", opt)
+	bool flag = AliasState == "Updating" || AliasState == "Installing"
+	AddToggleOptionST("installAnim", "$SLL_InstallAnimations", Config.bInstallDefaults, DoDisable(flag))
+	AddEmptyOption()
+	AddToggleOptionST("installCrt", "$SLL_InstallEnableCreatures", Config.AllowCreatures, DoDisable(flag))
+	AddToggleOptionST("installCrtAnim", "$SLL_InstallAnimationsCreatures", Config.bInstallDefaultsCrt, DoDisable(!Config.AllowCreatures || flag))
+	AddEmptyOption()
+	AddTextOptionST("InstallSystem", "$SSL_InstallUpdateSexLab{"+GetStringVer()+"}", "$SSL_ClickHere", DoDisable(flag))
 	if AliasState == "Updating"
 		AddTextOption("$SSL_CurrentlyUpdating", "!")
 	elseIf AliasState == "Installing"
@@ -1120,7 +1000,6 @@ function SystemCheckOptions()
 	AddTextOption("Skyrim Script Extender", StringIfElse(Config.CheckSystemPart("SKSE"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
 	AddTextOption("SexLabUtil.dll SKSE Plugin", StringIfElse(Config.CheckSystemPart("SexLabUtil"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
 	AddTextOption("PapyrusUtil.dll SKSE Plugin", StringIfElse(Config.CheckSystemPart("PapyrusUtil"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
-	; AddTextOption("SKEE64.dll SKSE Plugin  (3.4+)", StringIfElse(Config.CheckSystemPart("NiOverride"), "<font color='#00FF00'>ok</font>", "<font color='#0000FF'>?</font>"), OPTION_FLAG_DISABLED)
 	AddTextOption("FNIS - Fores New Idles in Skyrim (7.0+)", StringIfElse(Config.CheckSystemPart("FNIS"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
 	AddTextOption("FNIS For Users Behaviors Generated", StringIfElse(Config.CheckSystemPart("FNISGenerated"), "<font color='#00FF00'>ok</font>", "<font color='#0000FF'>?</font>"), OPTION_FLAG_DISABLED)
 	AddTextOption("FNIS SexLab Framework Idles", StringIfElse(Config.CheckSystemPart("FNISSexLabFramework"), "<font color='#00FF00'>ok</font>", "<font color='#0000FF'>?</font>"), OPTION_FLAG_DISABLED)
@@ -2997,7 +2876,7 @@ endState
 ; ------------------------------------------------------- ;
 
 Actor StatRef
-Actor[] PlayerPartners
+
 function SexDiary()
 	SetCursorFillMode(TOP_TO_BOTTOM)
 
@@ -3009,7 +2888,7 @@ function SexDiary()
 
 	AddHeaderOption("$SSL_SexualExperience")
 
-	if Config.InDebugMode 
+	if Config.DebugMode 
 		AddInputOptionST("SetStatTimeSpent", "$SSL_TimeSpentHavingSex", Stats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent") as int))
 		AddInputOptionST("SetStatVaginal", "$SSL_VaginalProficiency", Stats.GetSkillTitle(StatRef, "Vaginal"))
 		AddInputOptionST("SetStatAnal", "$SSL_AnalProficiency", Stats.GetSkillTitle(StatRef, "Anal"))
@@ -3030,9 +2909,7 @@ function SexDiary()
 
 	Actor ActorRef
 	if StatRef == PlayerRef
-		if !PlayerPartners || PlayerPartners.Length < 1
-			PlayerPartners = Stats.MostUsedPlayerSexPartners(3)
-		endIf
+		Actor[] PlayerPartners = Stats.MostUsedPlayerSexPartners(3)
 		int i = 0
 		while i < PlayerPartners.Length
 			if PlayerPartners[i] != none
@@ -3065,7 +2942,7 @@ function SexDiary()
 	AddHeaderOption("$SSL_SexualStats")
 	AddTextOptionST("SetStatSexuality", "$SSL_Sexuality", Stats.GetSexualityTitle(StatRef))
 
-	if Config.InDebugMode 
+	if Config.DebugMode 
 		AddInputOptionST("SetStatMales", "$SSL_MaleSexualPartners", Stats.GetSkill(StatRef, "Males"))
 		AddInputOptionST("SetStatFemales", "$SSL_FemaleSexualPartners", Stats.GetSkill(StatRef, "Females"))
 		AddInputOptionST("SetStatCreatures", "$SSL_CreatureSexualPartners", Stats.GetSkill(StatRef, "Creatures"))
@@ -3363,7 +3240,7 @@ function RebuildClean()
 	endWhile
 
 	SetCursorPosition(1)
-	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.InDebugMode)
+	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
 	; AddTextOptionST("ExportSettings","$SSL_ExportSettings", "$SSL_ClickHere")
 	; AddTextOptionST("ImportSettings","$SSL_ImportSettings", "$SSL_ClickHere")
 	AddEmptyOption()
@@ -3701,7 +3578,6 @@ state AllowCreatures
 		if !Config.AllowCreatures && CreatureSlots.Slotted > 0
 			CreatureSlots.Setup()
 		elseIf Config.AllowCreatures && CreatureSlots.Slotted < 1
-		;	CreatureSlots.Setup()
 			CreatureSlots.RegisterSlots()
 		endIf
 		SetOptionFlagsST(OPTION_FLAG_NONE)

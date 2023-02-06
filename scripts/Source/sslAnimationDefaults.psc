@@ -1,16 +1,12 @@
 scriptname sslAnimationDefaults extends sslAnimationFactory
 
-
-;/ 
-
-For JSON loading animation instructions, see /data/SKSE/Plugins/SexLab/Animations/_README_.txt
-
-/;
+sslSystemConfig Property config Auto
 
 function LoadAnimations()
-	; Prepare factory resources (as non creature)
+	If(!config.bInstallDefaults)
+		return
+	EndIf
 	PrepareFactory()
-
 	if Game.GetCameraState() == 0
 		if Utility.IsInMenuMode()
 			MiscUtil.PrintConsole("WARNING! To continue with the SexLab animations setup close the console and all the menu")
@@ -20,7 +16,6 @@ function LoadAnimations()
 	endIf
 	bool SexLabDefault = Game.GetPlayer().GetAnimationVariableInt("SexLabDefault") >= 16300
 	bool APPack = Game.GetPlayer().GetAnimationVariableInt("SexLabAPAnimations") >= 16300
-
 	; Missionary
 	if SexLabDefault
 		RegisterAnimation("SexLabMissionary")
@@ -41,8 +36,6 @@ function LoadAnimations()
 		RegisterAnimation("APHoldLegUp")
 		RegisterAnimation("APLegUp")
 	endIf
-	RegisterCategory("Missionary")
-
 	; DoggyStyle
 	if SexLabDefault
 		RegisterAnimation("SexLabDoggyStyle")
@@ -60,8 +53,6 @@ function LoadAnimations()
 	if APPack
 		RegisterAnimation("APDoggyStyle")
 	endIf
-	RegisterCategory("DoggyStyle")
-
 	; Cowgirl
 	if SexLabDefault
 		RegisterAnimation("SexLabReverseCowgirl")
@@ -77,8 +68,6 @@ function LoadAnimations()
 	if APPack
 		RegisterAnimation("APCowgirl")
 	endIf
-	RegisterCategory("Cowgirl")
-
 	; Sideways
 	if SexLabDefault
 		RegisterAnimation("SexLabSideways")
@@ -87,8 +76,6 @@ function LoadAnimations()
 	if APPack
 		RegisterAnimation("APShoulder")
 	endIf
-	RegisterCategory("Sideways")
-	
 	; Standing
 	if SexLabDefault
 		RegisterAnimation("SexLabHuggingSex")
@@ -106,8 +93,6 @@ function LoadAnimations()
 	if APPack
 		RegisterAnimation("APStanding")
 	endIf
-	RegisterCategory("Standing")
-	
 	; Anal
 	if SexLabDefault
 		RegisterAnimation("ArrokAnal")
@@ -119,8 +104,6 @@ function LoadAnimations()
 		RegisterAnimation("APAnal")
 		RegisterAnimation("APFaceDown")
 	endIf
-	RegisterCategory("Anal")
-	
 	; Oral
 	if SexLabDefault
 		RegisterAnimation("ArrokBlowjob")
@@ -138,8 +121,6 @@ function LoadAnimations()
 		RegisterAnimation("APHandjob")
 		RegisterAnimation("APSkullFuck")
 	endIf
-	RegisterCategory("Oral")
-	
 	; Boobjob
 	if SexLabDefault
 		RegisterAnimation("SexLabBoobjob")
@@ -148,8 +129,6 @@ function LoadAnimations()
 	if APPack
 		RegisterAnimation("APBoobjob")
 	endIf
-	RegisterCategory("Boobjob")
-
 	; Foreplay
 	if SexLabDefault
 		RegisterAnimation("ArrokForeplay")
@@ -161,8 +140,6 @@ function LoadAnimations()
 		RegisterAnimation("LeitoKissing")
 		RegisterAnimation("LeitoSpoon")
 	endIf
-	RegisterCategory("Foreplay")
-
 	; Lesbian/Gay
 	if SexLabDefault
 		RegisterAnimation("SexLabTribadism")
@@ -170,9 +147,6 @@ function LoadAnimations()
 		RegisterAnimation("ZynLesbian")
 		RegisterAnimation("ZynLicking")
 	endIf
-	RegisterCategory("Lesbian")
-	RegisterCategory("Gay")
-
 	; Footjob
 	if SexLabDefault
 		RegisterAnimation("BleaghFootJob")
@@ -182,8 +156,6 @@ function LoadAnimations()
 		RegisterAnimation("MitosFootjob")
 		RegisterAnimation("MitosTease")
 	endIf
-	RegisterCategory("Footjob")
-
 	; Misc
 	if SexLabDefault
 		RegisterAnimation("MitosLapLove")
@@ -193,8 +165,6 @@ function LoadAnimations()
 	if APPack
 		RegisterAnimation("APFisting")
 	endIf
-	RegisterCategory("Misc")
-
 	; Solo
 	if SexLabDefault
 		RegisterAnimation("BleaghFemaleSolo")
@@ -207,8 +177,6 @@ function LoadAnimations()
 	if APPack
 		RegisterAnimation("APFemaleSolo")
 	endIf
-	RegisterCategory("Solo")
-
 	; 3P+
 	if SexLabDefault
 		RegisterAnimation("ArrokDevilsThreeway")
@@ -220,10 +188,6 @@ function LoadAnimations()
 		RegisterAnimation("ZynFemdom")
 		RegisterAnimation("ZynFourWay")
 	endIf
-	RegisterCategory("Orgy")
-
-	; Register any remaining custom categories from json loaders
-	RegisterOtherCategories()
 endFunction
 
 function ArrokBlowjob(int id)

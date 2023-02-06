@@ -7,7 +7,7 @@ bool Property Enabled Auto Hidden
 string Property Registry Auto Hidden
 bool Property Registered hidden
 	bool Function get()
-		return Registry != "" && Storage == none
+		return Registry != ""
 	EndFunction
 EndProperty
 
@@ -55,26 +55,6 @@ function AddTags(string[] TagList)
 	endWhile
 endFunction
 
-; ------------------------------------------------------- ;
-; --- Phantom Slots                                   --- ;
-; ------------------------------------------------------- ;
-
-; Phantom slots owner
-Form Property Storage Auto Hidden
-bool Property Ephemeral hidden
-	bool function get()
-		return Storage != none
-	endFunction
-endProperty
-
-function MakeEphemeral(string Token, Form OwnerForm)
-	Initialize()
-	Enabled   = true
-	Registry  = Token
-	Storage   = OwnerForm
-	Log("Created Non-Global Object '"+Token+"'", Storage)
-endFunction
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
@@ -94,7 +74,7 @@ endFunction
 
 function Log(string Log, string Type = "NOTICE")
 	Log = Type+" "+Registry+" - "+Log
-	if Config.InDebugMode
+	if Config.DebugMode
 		SexLabUtil.PrintConsole(Log)
 	endIf
 	Debug.Trace("SEXLAB - "+Log)
@@ -125,7 +105,6 @@ function Initialize()
 	SlotID   = -1
 	Enabled  = false
 	bSaved   = false
-	Storage  = none
 	Tags     = Utility.CreateStringArray(0)
 endFunction
 
@@ -190,4 +169,19 @@ endFunction
 
 bool function ToggleTag(string Tag)
 	return (RemoveTag(Tag) || AddTag(Tag)) && HasTag(Tag)
+endFunction
+
+Form Property Storage = none Auto Hidden
+bool Property Ephemeral hidden
+	bool function get()
+		return Storage != none
+	endFunction
+endProperty
+
+function MakeEphemeral(string Token, Form OwnerForm)
+	Initialize()
+	Enabled   = true
+	Registry  = Token
+	Storage   = OwnerForm
+	Log("Created Non-Global Object '"+Token+"'", Storage)
 endFunction

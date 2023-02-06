@@ -549,24 +549,3 @@ endState
 bool function TestSlots()
 	return true
 endFunction
-
-
-; function RegisterCreatureVoices()
-; 	VoiceType CV
-; 	; Falmer
-; 	CV = Game.GetForm(0x1F1D2) as VoiceType
-; 	AddCreatureVoice(CV, Game.GetForm(0x6B955) as Topic) ; Hit
-; 	AddCreatureVoice(CV, Game.GetForm(0x67595) as Topic) ; Death
-; endFunction
-
-; function AddCreatureVoice(VoiceType Creature, Topic VoiceTopic)
-; 	StorageUtil.FormListAdd(Creature, "SexLabVoices", VoiceTopic, false)
-; endFunction
-
-; Topic function GetCreatureVoice(VoiceType Creature)
-; 	int i = StorageUtil.FormListCount(Creature, "SexLabVoices")
-; 	if i > 0
-; 		return StorageUtil.FormListGet(Creature, "SexLabVoices", Utility.RandomInt(0, (i - 1))) as Topic
-; 	endIf
-; 	return none
-; endFunction

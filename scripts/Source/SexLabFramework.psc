@@ -1,68 +1,65 @@
 scriptname SexLabFramework extends Quest
 
-;TODO: MERGE MATCHMAKER INTO THE FRAMEWORK AS AN OPTION TO TOGGLE ON/OFF IN THE MCM.
+; TODO: MERGE MATCHMAKER INTO THE FRAMEWORK AS AN OPTION TO TOGGLE ON/OFF IN THE MCM.
 
-;####################################################################
-;#################### SEXLAB ANIMATION FRAMEWORK ####################
-;####################################################################
-;#------------------------------------------------------------------#
-;#-                                                                -#
-;#-                 Created by Ashal@LoversLab.com                 -#
-;#-              http://www.loverslab.com/user/1-ashal/            -#
-;#-                                                                -#
-;#-                    API Guide For Modders:                      -#
-;#-     http://git.loverslab.com/sexlab/framework/wikis/home       -#
-;#-                                                                -#
-;#------------------------------------------------------------------#
-;####################################################################
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+;																																																																						;
+; 		███████╗███████╗██╗  ██╗██╗      █████╗ ██████╗     ███████╗██████╗  █████╗ ███╗   ███╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗		;
+; 		██╔════╝██╔════╝╚██╗██╔╝██║     ██╔══██╗██╔══██╗    ██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝		;
+; 		███████╗█████╗   ╚███╔╝ ██║     ███████║██████╔╝    █████╗  ██████╔╝███████║██╔████╔██║█████╗  ██║ █╗ ██║██║   ██║██████╔╝█████╔╝ 		;
+; 		╚════██║██╔══╝   ██╔██╗ ██║     ██╔══██║██╔══██╗    ██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝  ██║███╗██║██║   ██║██╔══██╗██╔═██╗ 		;
+; 		███████║███████╗██╔╝ ██╗███████╗██║  ██║██████╔╝    ██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗		;
+; 		╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝     ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝ ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝		;
+;																																																																						;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+;																	Created by Ashal@LoversLab.com [http://www.loverslab.com/user/1-ashal/]																		;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+;																	 SexLab p+ maintained by Scrab [https://www.patreon.com/ScrabJoseline]																		;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
 
-
-;/*  
-* * This is a Property of SexLab and it is important to set it with the name of your mod if you are extending this script SexLab Framework
-* * e.g. "Scriptname mySexLabMod extends SexLabFramework" Letting you call all functions here directly from your script as if they were it's own.
-* * (currently this is unused by SexLab, but may or may not be used in the future.)
-*/;
-string property ModName auto
-
-;/* The current SexLab script version as represented by a basic int version number, for example: 16100 for 1.61 */;
+; Integer ID of the current SexLab version
 int function GetVersion()
 	return SexLabUtil.GetVersion()
 endFunction
 
-;/* The current SexLab script version as represented by a more user friendly string, for example: "1.60b" for 16001 */;
+; A user friendly string representing the current SexLab version
 string function GetStringVer()
 	return SexLabUtil.GetStringVer()
 endFunction
 
-;/* A readonly property that tells you whether or not SexLab is currently enabled and able to start a new scene */;
+; Is SexLab is currently enabled and able to start a new scene?
 bool property Enabled hidden
 	bool function get()
 		return GetState() != "Disabled"
 	endFunction
 endProperty
 
-;/* A readonly property that returns TRUE if SexLab is currently actively playing a sex animation */;
+; Is there any SexLab thread currently active and animating?
 bool property IsRunning hidden
 	bool function get()
 		return ThreadSlots.IsRunning()
 	endFunction
 endProperty
 
-;/* A readonly property that, like IsRunning tells you if, this tells you how many (out of max 15) animations are currently playing */;
+; The number of active/running scenes
 int property ActiveAnimations hidden
 	int function get()
 		return ThreadSlots.ActiveThreads()
 	endFunction
 endProperty
 
-;/* Check if current user has enabled creature animations or not. */;
+; If creatures are currently enabled
 bool property AllowCreatures hidden
 	bool function get()
 		return Config.AllowCreatures
 	endFunction
 endProperty
 
-;/* Check if current user has enabled gender checking for creature animations */;
+; If creatures genders are currently enabled
 bool property CreatureGenders hidden
 	bool function get()
 		return Config.UseCreatureGender
@@ -75,29 +72,42 @@ endProperty
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
+; The preferred way to create a SexLab Scene
+; --- Paramesters:
+;	akPositions: 	The actors to animate
+; asTags:				Requested animation tags (may be empty). Supported prefixes: '-' to disable a tag, '~' for OR-conjunctions
+;								Example: "~A, B, ~C, -D" <=> Animation has tag B, does NOT have tag D and has EITHER tag A or C 
+; akSubmissive:	Must be one of the participating actors. If specified, the given actor is considered submissive for the context of the animation
+; akCenter:			If specified, SexLab will try to place all actors near or on the given reference
+; abAllowBed:		If false, bed usage for this scene will be disabled. Will be ignored if akCenter is set
+; asHook:				A callback string to receive callback events. See 'Hooks' section below for details
+; --- Return:
+; sslThreadController:	An API instance to interact with the started scene. See sslThreadController.psc for more info
+; None:									If an error occured
+
+
 ;/* StartScene 
-* * This is the preferred way of calling a SexLab animation
+* * The preferred way to create a SexLab Scene
 * * 
-* * @param: akPositions - The Actors to animate
-* * @param: asTags			-	The tags to start the animation with (Can be empty). This supports prefixes (no prefix implies a tag to be required/mandatory):
-*	*												Prefix with '-' to disable this tag, '~' for OR conjunctions ("~A, ~B, ~C" <=> A or B or C <=> Animation has at least one of these tags)
-* * @param: akVictim 		- If specified, then the specified actor (that should be one of the list of actors) will be considered as a victim.
-* * @param: akCenter		- If specified, the animation will center around the given reference. Can be any reference
-*	*	@param: abAllowBed	- If false, animations using a bed will disabled for this animation and the animation wont center on a bed (unless given 'akCenter' is a bed)
-* * @param: asHook			- A callback ID-String to be notified about certain stages of the animation. See the 'Hooks' section for details
+* * @param: Actor[] akPositions, The actors to animate
+* * @param: String asTags, Requested animation tags (may be empty). Supported prefixes: '-' to disable a tag, '~' for OR-conjunctions. Example: "~A, B, ~C, -D" <=> Animation has tag B, does NOT have tag D and has EITHER tag A or C
+* * @param: Actor akSubmissive [OPTIONAL], Must be one of the participating actors. If specified, the given actor is considered submissive for the context of the animation
+* * @param: ObjectReference akCenter [OPTIONAL], If specified, SexLab will try to place all actors near or on the given reference
+* * @param: bool abAllowBed [OPTIONAL], If false, bed usage for this scene will be disabled. Will be ignored if akCenter is set
+*	*	@param: String asHook [OPTIONAL], A callback string to receive callback events. See 'Hooks' section below for details
 * *
-* * @return: The thread used to start the animation; or none if something went wrong
+* * @return: An API instance to interact with the started scene. See sslThreadController.psc for more info, or none if an error occured
 */;
-sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
 	sslThreadModel thread = NewThread()
 	If(!thread)
-		LogConsole("StartScene() - Failed to claim an available thread")
+		Log("StartScene() - Failed to claim an available thread")
 		return none
-	ElseIf(!thread.AddActors(akPositions, akVictim))
-		LogConsole("StartScene() - Failed to add some actors to thread")
+	ElseIf(!thread.AddActors(akPositions, akSubmissive))
+		Log("StartScene() - Failed to add some actors to thread")
 		return none
 	ElseIf(!thread.SetAnimationsByTags(asTags, abAllowBed as int))
-		LogConsole("StartScene() - Failed to find valid animations")
+		Log("StartScene() - Failed to find valid animations")
 		return none
 	EndIf
 	thread.CenterOnObject(akCenter)
@@ -106,19 +116,14 @@ sslThreadController Function StartScene(Actor[] akPositions, String asTags, Acto
 	return thread.StartThread()
 EndFunction
 
-;/* StartSceneEx 
-* * An optional wrapper to start a SexLab animation
-* * Useful if the for the animation desired animations have already been found
-*	*	
-* * Parameters and return value match with the "StartScene()" function above
-*/;
-sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+; Alternate way to create a SexLab Scene if the for the scene expected animations have already been evaluated
+sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
 	sslThreadModel thread = NewThread()
 	If(!thread)
-		LogConsole("StartScene() - Failed to claim an available thread")
+		Log("StartScene() - Failed to claim an available thread")
 		return none
-	ElseIf(!thread.AddActors(akPositions, akVictim))
-		LogConsole("StartScene() - Failed to add some actors to thread")
+	ElseIf(!thread.AddActors(akPositions, akSubmissive))
+		Log("StartScene() - Failed to add some actors to thread")
 		return none
 	EndIf
 	thread.SetAnimations(akAnimations)
@@ -145,17 +150,6 @@ sslThreadController Function QuickStart(Actor Actor1, Actor Actor2 = none, Actor
 	Actor[] Positions = SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
 	return StartScene(Positions, AnimationTags, Victim, asHook = Hook)
 EndFunction
-
-;/* NewThread 
-* *	For advanced users: This function picks and returns an (initialized) SexLab thread which can be used to define all details of the scene to be played (Actors,
-* * Beds, Events, Animations, etc). See sslThreadModel for more details
-* * 
-* * @param: TimeOut 				- number of seconds to hold a claim to on this thread without starting an animation before giving up.
-* * @return: sslThreadModel - the full definition of the SexLab Thread that can be used to configure, start, and stop the scene (a.k.a. the SexLab animation)
-*/;
-sslThreadModel function NewThread(float TimeOut = 30.0)
-	return ThreadSlots.PickModel(TimeOut)
-endFunction
 
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -380,36 +374,14 @@ int function TransCreatureCount(Actor[] Positions)
 	return TransCount[2] + TransCount[3]
 endFunction
 
-;/* ValidateActor
-* * Checks if the given actor is a valid target for SexLab animations.
-* * 
-* * @param: ActorRef, the actor to check if it is valid for SexLab Animations.
-* * @return: an int that is 1 if the actor is valid or a negative value if it is not valid
-* *   -1 = The Actor does not exists (it is None)
-* *   -10 = The Actor is already part of a SexLab animation
-* *   -11 = The Actor is forbidden form SexLab animations
-* *   -12 = The Actor does not have the 3D loaded
-* *   -13 = The Actor is dead (He's dead Jim.)
-* *   -14 = The Actor is disabled
-* *   -15 = The Actor is flying (so it cannot be SexLab animated)
-* *   -16 = The Actor is on mount (so it cannot be SexLab animated)
-* *   -17 = The Actor is a creature but creature animations are disabled
-* *   -18 = The Actor is a creature that is not supported by SexLab
-* *   -19 = The Actor is a creature but there are no valid animations for this type of creature
-*/;
-int function ValidateActor(Actor ActorRef)
-	return ActorLib.ValidateActor(ActorRef)
-endFunction
-
 ;/* IsValidActor
 * * Checks if given actor is a valid target for SexLab animation.
-* * Equivalent to ValidateActor() == 1
 * * 
 * * @param: ActorRef, the actor to check if it is valid for SexLab Animations.
 * * @return: True if the actor is valid, and False if it is not.
 */;
 bool function IsValidActor(Actor ActorRef)
-	return ActorLib.IsValidActor(ActorRef)
+	return ActorLib.GetIsActorValid(ActorRef)
 endFunction
 
 ;/* IsActorActive
@@ -2818,7 +2790,6 @@ endFunction
 ;#                                                         START UTILITY FUNCTIONS                                                         #
 ;#                                                        See functions located at:                                                        #
 ;#                                                              SexLabUtil.psc                                                             #
-;#                                                              sslUtility.psc                                                             #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -2844,6 +2815,23 @@ endFunction
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+;																																																																						;
+; 																		 ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗     																			;
+; 																		 ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║     																			;
+; 																		 ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║     																			;
+; 																		 ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║     																			;
+; 																		 ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗																			;
+; 																		 ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝																			;
+;																																																																						;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+;																											This is the end of the public API																											;
+;																		Do not use or access any of the below listed functions or properties																		;	
+; ----------------------------------------------------------------------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -2852,152 +2840,105 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* HookController DEPRECATED!
-* * Use GetController(int tid) and use the new Hook functions.
-* *
-* *
-* * @param: argString - The parameter received on the Event function, it is the thread ID
-* * @return: A sslThreadController corresponding to the ID
-*/;
+;/ DEPRECATED /;
 sslThreadController function HookController(string argString)
 	return ThreadSlots.GetController(argString as int)
 endFunction
 
-;/* HookAnimation DEPRECATED!
-* * SexLab.GetController(tid).Animation
-* *
-* * @param: argString - The parameter received on the Event function, it is the thread ID
-* * @return: a sslBaseAnimation that is the animation being played by the Controller
-*/;
+;/* DEPRECATED! */;
 sslBaseAnimation function HookAnimation(string argString)
 	return ThreadSlots.GetController(argString as int).Animation
 endFunction
 
-;/* HookStage DEPRECATED!
-* * SexLab.GetController(tid).Stage
-* *
-* * @param: argString - The parameter received on the Event function, it is the thread ID
-* * @return: an int with the index of the Stage of the animation being played.
-*/;
+;/* DEPRECATED! */;
 int function HookStage(string argString)
 	return ThreadSlots.GetController(argString as int).Stage
 endFunction
 
-;/* HookVictim DEPRECATED!
-* * SexLab.GetController(tid).Victim
-* *
-* * @param: argString - The parameter received on the Event function, it is the thread ID
-* * @return: An Actor that is the Victim for the Sexlab animation. Can be None if the Victim is undefined
-*/;
+;/* DEPRECATED! */;
 Actor function HookVictim(string argString)
 	return ThreadSlots.GetController(argString as int).VictimRef
 endFunction
 
-;/* HookActors DEPRECATED!
-* * SexLab.GetController(tid).Positions
-* *
-* * @param: argString - The parameter received on the Event function, it is the thread ID
-* * @return: An Actor[] with all the Positions of the SexLab animation played by the controller
-*/;
+;/* DEPRECATED! */;
 Actor[] function HookActors(string argString)
 	return ThreadSlots.GetController(argString as int).Positions
 endFunction
 
-;/* HookTime DEPRECATED!
-* * SexLab.GetController(tid).TotalTime
-* *
-* * @param: argString - The parameter received on the Event function, it is the thread ID
-* * @return: a Float representing the total time the animation played (the animation may not be completed.)
-*/;
+;/* DEPRECATED! */;
 float function HookTime(string argString)
 	return ThreadSlots.GetController(argString as int).TotalTime
 endFunction
 
-;/* HasCreatureAnimation DEPRECATED!
-* * (DEPRECATED) Use HasCreatureRaceAnimation or HasCreatureRaceKeyAnimation
-*/;
+;/* DEPRECATED! */;
 bool function HasCreatureAnimation(Race CreatureRace, int Gender = -1)
 	return CreatureSlots.RaceHasAnimation(CreatureRace, -1, Gender)
 endFunction
 
-
-;/* GetAnimationsByTag DEPRECATED!
-* * (DEPRECATED) Use GetAnimationsByTags
-*/;
+;/* DEPRECATED! */;
 sslBaseAnimation[] function GetAnimationsByTag(int ActorCount, string Tag1, string Tag2 = "", string Tag3 = "", string TagSuppress = "", bool RequireAll = true)
 	return AnimSlots.GetByTags(ActorCount, sslUtility.MakeArgs(",", Tag1, Tag2, Tag3), TagSuppress, RequireAll)
 endFunction
 
-;/* GetCreatureAnimationsByTags DEPRECATED!
-* * (DEPRECATED) Use GetCreatureAnimationsByActorsTags, GetCreatureAnimationsByRaceTags or GetCreatureAnimationsByRaceKeyTags
-*/;
+;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByTags(int ActorCount, string Tags, string TagSuppress = "", bool RequireAll = true)
 	return CreatureSlots.GetByTags(ActorCount, Tags, TagSuppress, RequireAll)
 endFunction
-;/* GetVoiceByTag DEPRECATED!
-* * (DEPRECATED) Use GetVoiceByTags
-*/;
+
+;/* DEPRECATED! */;
 sslBaseVoice function GetVoiceByTag(string Tag1, string Tag2 = "", string TagSuppress = "", bool RequireAll = true)
 	return VoiceSlots.GetByTags(sslUtility.MakeArgs(",", Tag1, Tag2), TagSuppress, RequireAll)
 endFunction
 
-;/* ApplyCum DEPRECATED!
-* * (DEPRECATED) Use AddCum
-*/;
+;/* DEPRECATED! */;
 function ApplyCum(Actor ActorRef, int CumID)
 	ActorLib.ApplyCum(ActorRef, CumID)
 endFunction
 
-;/* StripWeapon DEPRECATED!
-* * (DEPRECATED) Use StripSlots, this function does nothing right now
-*/;
+;/* DEPRECATED! */;
 form function StripWeapon(Actor ActorRef, bool RightHand = true)
 	return none ; ActorLib.StripWeapon(ActorRef, RightHand)
 endFunction
 
-;/* DEPRECATED! *** Do not access this property directly, or you may get wrong results, use the APIs to get the value */;
+;/* DEPRECATED! */;
 sslBaseAnimation[] property Animations hidden
 	sslBaseAnimation[] function get()
-		return AnimSlots.Animations
+		return AnimSlots.GetSlots(0, 128)
 	endFunction
 endProperty
 
-;/* DEPRECATED! *** Do not access this property directly, or you may get wrong results, use the APIs to get the value */;
+;/* DEPRECATED! */;
 sslBaseAnimation[] property CreatureAnimations hidden
 	sslBaseAnimation[] function get()
-		return CreatureSlots.Animations
+		return CreatureSlots.GetSlots(0, 128)
 	endFunction
 endProperty
 
-;/* DEPRECATED! *** Do not access this property directly, or you may get wrong results, use the APIs to get the value */;
+;/* DEPRECATED! */;
 sslBaseVoice[] property Voices hidden
 	sslBaseVoice[] function get()
 		return VoiceSlots.Voices
 	endFunction
 endProperty
 
-;/* DEPRECATED! *** Do not access this property directly, or you may get wrong results, use the APIs to get the value */;
+;/* DEPRECATED! */;
 sslBaseExpression[] property Expressions hidden
 	sslBaseExpression[] function get()
 		return ExpressionSlots.Expressions
 	endFunction
 endProperty
 
-;/* RandomExpressionByTag DEPRECATED!
-* * (DEPRECATED) Use PickExpressionsByTag
-*/;
+;/* DEPRECATED! */;
 sslBaseExpression function RandomExpressionByTag(string Tag)
 	return ExpressionSlots.RandomByTag(Tag)
 endFunction
 
-;/* ApplyPreset DEPRECATED!
-* * (DEPRECATED) Use ApplyPresetFloats
-*/;
+;/* DEPRECATED! */;
 function ApplyPreset(Actor ActorRef, int[] Preset)
 	sslBaseExpression.ApplyPreset(ActorRef, Preset)
 endFunction
 
-;/* DEPRECATED! *** Do not access this property directly, or you may get wrong results, use the APIs to get the value */;
+;/* DEPRECATED! */;
 sslThreadController[] property Threads hidden
 	sslThreadController[] function get()
 		return ThreadSlots.Threads
@@ -3128,13 +3069,16 @@ sslBaseAnimation[] function GetCreatureAnimationsByActorsTags(int ActorCount, Ac
 	return CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, Tags, TagSuppress, RequireAll)
 endFunction
 
+;/* DEPRECIATED*/;
+int function ValidateActor(Actor ActorRef)
+	return ActorLib.ValidateActor(ActorRef)
+endFunction
+
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;# ^^^                                            END DEPRECATED FUNCTIONS - DO NOT USE THEM                                           ^^^ #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-
 
 
 
@@ -3155,124 +3099,75 @@ endFunction
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
 ; Data
-sslSystemConfig property Config auto hidden
-Faction property AnimatingFaction auto hidden
-Actor property PlayerRef auto hidden
+sslSystemConfig property Config Auto
+Actor property PlayerRef Auto
 
 ; Function libraries
-sslActorLibrary property ActorLib auto hidden
-sslThreadLibrary property ThreadLib auto hidden
-sslActorStats property Stats auto hidden
+sslActorLibrary property ActorLib Auto
+sslThreadLibrary property ThreadLib Auto
+sslActorStats property Stats Auto
 
 ; Object registries
-sslThreadSlots property ThreadSlots auto hidden
-sslAnimationSlots property AnimSlots auto hidden
-sslCreatureAnimationSlots property CreatureSlots auto hidden
-sslVoiceSlots property VoiceSlots auto hidden
-sslExpressionSlots property ExpressionSlots auto hidden
-sslObjectFactory property Factory auto hidden
+sslThreadSlots property ThreadSlots Auto
+sslAnimationSlots property AnimSlots Auto
+sslCreatureAnimationSlots property CreatureSlots Auto
+sslVoiceSlots property VoiceSlots Auto
+sslExpressionSlots property ExpressionSlots Auto
+sslObjectFactory property Factory Auto
 
-; Mod Extends support
-SexLabFramework SexLab
-bool IsExtension
-
-function Setup()
-	; Reset function Libraries - SexLabQuestFramework
-	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
-	if SexLabQuestFramework
-		SexLab      = SexLabQuestFramework as SexLabFramework
-		Config      = SexLabQuestFramework as sslSystemConfig
-		ThreadLib   = SexLabQuestFramework as sslThreadLibrary
-		ThreadSlots = SexLabQuestFramework as sslThreadSlots
-		ActorLib    = SexLabQuestFramework as sslActorLibrary
-		Stats       = SexLabQuestFramework as sslActorStats
-	endIf
-	; Reset secondary object registry - SexLabQuestRegistry
-	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-	if SexLabQuestRegistry
-		CreatureSlots   = SexLabQuestRegistry as sslCreatureAnimationSlots
-		ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
-		VoiceSlots      = SexLabQuestRegistry as sslVoiceSlots
-	endIf
-	; Reset animation registry - SexLabQuestAnimations
-	Form SexLabQuestAnimations = Game.GetFormFromFile(0x639DF, "SexLab.esm")
-	if SexLabQuestAnimations
-		AnimSlots = SexLabQuestAnimations as sslAnimationSlots
-	endIf
-	; Reset phantom object registry - SexLabQuestRegistry
-	Form SexLabObjectFactory = Game.GetFormFromFile(0x78818, "SexLab.esm")
-	if SexLabObjectFactory
-		Factory = SexLabObjectFactory as sslObjectFactory
-	endIf
-	; Sync Data
-	PlayerRef        = Game.GetPlayer()
-	AnimatingFaction = Config.AnimatingFaction
-	; Check if main framework file, or extended
-	IsExtension = self != SexLab
-	if IsExtension
-		Log(self+" - Loaded SexLab Extension")
-	else
-		Log(self+" - Loaded SexLabFramework")
-	endIf
+sslThreadModel function NewThread(float TimeOut = 5.0)
+	return ThreadSlots.PickModel(TimeOut)
 endFunction
 
-event OnInit()
-	Setup()
-endEvent
-
-function Log(string Log, string Type = "NOTICE")
-	Log = Type+": "+Log
-	if Config.InDebugMode
-		SexLabUtil.PrintConsole(Log)
-	endIf
-	if IsExtension && ModName != ""
-		Log = ModName+" - "+Log
-	else
-		Log = "SEXLAB - "+Log
-	endIf
-	if Type == "FATAL"
+Function Log(string Log, string Type = "NOTICE")
+	Log = "[SEXLAB] - " + Type + " - " + Log
+	SexLabUtil.PrintConsole(Log)
+	If(Type == "FATAL")
 		Debug.TraceStack(Log)
-	else
+	Else
 		Debug.Trace(Log)
-	endIf
-endFunction
-
-Function LogConsole(String asReport)
-	String msg = "[SEXLAB] - " + asReport
-	SexLabUtil.PrintConsole(msg)
-	If(IsExtension && ModName)
-		msg = "[" + ModName + "] - " + msg
 	EndIf
-	Debug.Trace(msg)
 EndFunction
 
 state Disabled
-	sslThreadModel function NewThread(float TimeOut = 30.0)
+	sslThreadModel function NewThread(float TimeOut = 5.0)
 		Log("NewThread() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+		return none
+	endFunction
+	sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+		Log("StartScene() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+		return none
+	EndFunction
+	sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+		Log("StartSceneEx() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+		return none
+	EndFunction
+	sslThreadController function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
+		Log("QuickStart() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
 		return none
 	endFunction
 	int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
 		Log("StartSex() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
 		return -1
 	endFunction
-	sslThreadController function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
-		Log("QuickStart() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
-		return none
-	endFunction
 	event OnBeginState()
-		if SexLab == self || (!SexLab && self == SexLabUtil.GetAPI())
-			Log("SexLabFramework - Disabled")
-			ModEvent.Send(ModEvent.Create("SexLabDisabled"))
-		endIf
+		Log("SexLabFramework - Disabled")
+		ModEvent.Send(ModEvent.Create("SexLabDisabled"))
 	endEvent
 endState
 
 state Enabled
 	event OnBeginState()
-		if SexLab == self || (!SexLab && self == SexLabUtil.GetAPI())
-			Log("SexLabFramework - Enabled")
-			ModEvent.Send(ModEvent.Create("SexLabEnabled"))
-		endIf
+		Log("SexLabFramework - Enabled")
+		ModEvent.Send(ModEvent.Create("SexLabEnabled"))
 	endEvent
 endState
 
+
+Faction Property AnimatingFaction
+	Faction Function Get()
+		MiscUtil.PrintConsole("Access of an internal property 'AnimatingFaction'. See Log for more information")
+		Debug.TraceStack("Access internal property 'Animating Faction")
+		return Config.AnimatingFaction
+	EndFunction
+EndProperty

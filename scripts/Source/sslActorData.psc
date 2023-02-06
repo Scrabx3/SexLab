@@ -61,13 +61,13 @@ int Function BuildCustomKey(int aiGender, String asRaceKey) native global
 ; --- Comparing & Sorting      				                --- ;
 ; ------------------------------------------------------- ;
 
-; returns a sorted copy of aiKeys
+; return a sorted copy of aiKeys
 int[] Function SortDataKeys(int[] aiKeys) native global
 
-; aiKey < aiCmp
+; return aiKey < aiCmp
 bool Function IsLess(int aiKey, int aiCmp) native global
 
-; Return if aiKey matches aiCmp, that is check if aiKey is allowed to fill a position requiring aiCmp
+; Return if aiKey matches aiCmp. That is, check if aiKey is allowed to fill a position requiring aiCmp
 bool Function Match(int aiKey, int aiCmp) native global
 bool Function MatchArray(int[] aiKeys, int[] aiCmp) native global
 
@@ -110,6 +110,7 @@ int Function AddOverWrite(int aiKey, bool abFemale) native global
 int Function RemoveOverWrite(int aiKey, bool abFemale) native global
 
 ; Adds both male and female flags to the base gender of the given creatures
+; Keys which do not represent a creature remain unchanged
 Function NeutralizeCreatureGender(int[] aiKeys) native global
 
 ; ------------------------------------------------------- ;
@@ -122,7 +123,7 @@ int Function GetLegacyGenderByKey(int aiKey) native global
 ; Animation registration function for pre SLAL2. -1 for overloaded human gender
 int Function BuildByLegacyGender(int aiLegacyGender, String asRaceKey = "human") native global
 
-; Universal keys, primarily intended to support legacy content. They incredibly unreliable and should be avoided
+; Universal keys, primarily intended to support legacy content. They are incredibly unreliable and should be avoided
 int Function BuildBlankKey() native global
 
 ; ------------------------------------------------------- ;

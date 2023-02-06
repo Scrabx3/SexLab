@@ -1,4 +1,7 @@
 scriptname sslSystemConfig extends sslSystemLibrary
+{
+	User Config Storage
+}
 
 ; // TODO: Add a 3rd person mod detection when determining FNIS sensitive variables.
 ; // Disable it when no longer relevant.
@@ -22,100 +25,39 @@ bool property Enabled hidden
 	endFunction
 endProperty
 
-; bool property InDebugMode auto hidden
-bool property DebugMode hidden
-	bool function get()
-		return InDebugMode
-	endFunction
-	function set(bool value)
-		InDebugMode = value
-		if InDebugMode
+bool _DebugMode
+bool Property DebugMode hidden
+	bool Function Get()
+		return _DebugMode
+	EndFunction
+	Function Set(bool abValue)
+		_DebugMode = abValue
+		If(_DebugMode)
 			Debug.OpenUserLog("SexLabDebug")
 			Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
 			MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")
-			if PlayerRef && PlayerRef != none
-				PlayerRef.AddSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
-				PlayerRef.AddSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
-			endIf				
-		else
-			if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
+			PlayerRef.AddSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
+			PlayerRef.AddSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
+		Else
+			If(Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated"))
 				Debug.CloseUserLog("SexLabDebug")
-			endIf
+			EndIf
 			MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")
-			if PlayerRef && PlayerRef != none
-				PlayerRef.RemoveSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
-				PlayerRef.RemoveSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
-			endIf				
-		endIf
-		int eid = ModEvent.Create("SexLabDebugMode")
-		ModEvent.PushBool(eid, value)
-		ModEvent.Send(eid)
-	endFunction
-endProperty
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
+		EndIf
+	EndFunction
+EndProperty
 
 
 Faction property AnimatingFaction auto
 Faction property GenderFaction auto
-Faction property ForbiddenFaction auto
-Weapon property DummyWeapon auto
-Armor property NudeSuit auto
 Armor property CalypsStrapon auto
 Form[] property Strapons auto hidden
 
 Spell property SelectedSpell auto
 
-Spell property CumVaginalOralAnalSpell auto
-Spell property CumOralAnalSpell auto
-Spell property CumVaginalOralSpell auto
-Spell property CumVaginalAnalSpell auto
-Spell property CumVaginalSpell auto
-Spell property CumOralSpell auto
-Spell property CumAnalSpell auto
-
-Spell property Vaginal1Oral1Anal1 auto
-Spell property Vaginal2Oral1Anal1 auto
-Spell property Vaginal2Oral2Anal1 auto
-Spell property Vaginal2Oral1Anal2 auto
-Spell property Vaginal1Oral2Anal1 auto
-Spell property Vaginal1Oral2Anal2 auto
-Spell property Vaginal1Oral1Anal2 auto
-Spell property Vaginal2Oral2Anal2 auto
-Spell property Oral1Anal1 auto
-Spell property Oral2Anal1 auto
-Spell property Oral1Anal2 auto
-Spell property Oral2Anal2 auto
-Spell property Vaginal1Oral1 auto
-Spell property Vaginal2Oral1 auto
-Spell property Vaginal1Oral2 auto
-Spell property Vaginal2Oral2 auto
-Spell property Vaginal1Anal1 auto
-Spell property Vaginal2Anal1 auto
-Spell property Vaginal1Anal2 auto
-Spell property Vaginal2Anal2 auto
-Spell property Vaginal1 auto
-Spell property Vaginal2 auto
-Spell property Oral1 auto
-Spell property Oral2 auto
-Spell property Anal1 auto
-Spell property Anal2 auto
-
-Keyword property CumOralKeyword auto
-Keyword property CumAnalKeyword auto
-Keyword property CumVaginalKeyword auto
-Keyword property CumOralStackedKeyword auto
-Keyword property CumAnalStackedKeyword auto
-Keyword property CumVaginalStackedKeyword auto
-
 Keyword property ActorTypeNPC auto
-Keyword property SexLabActive auto
-Keyword property FurnitureBedRoll auto
-
-; FormList property ValidActorList auto
-; FormList property NoStripList auto
-; FormList property StripList auto
-
-Furniture property BaseMarker auto
-Package property DoNothing auto
 
 Sound property OrgasmFX auto
 Sound property SquishingFX auto
@@ -125,11 +67,9 @@ Sound property SexMixedFX auto
 Sound[] property HotkeyUp auto
 Sound[] property HotkeyDown auto
 
-Static property LocationMarker auto
 FormList property BedsList auto
 FormList property BedRollsList auto
 FormList property DoubleBedsList auto
-Message property UseBed auto
 Message property CleanSystemFinish auto
 Message property CheckSKSE auto
 Message property CheckFNIS auto
@@ -139,29 +79,22 @@ Message property CheckPapyrusUtil auto
 Message property CheckSkyUI auto
 Message property TakeThreadControl auto
 
-Topic property LipSync auto
-VoiceType property SexLabVoiceM auto
-VoiceType property SexLabVoiceF auto
-FormList property SexLabVoices auto
-; FormList property VoicesPlayer auto ; No longer used - v1.56
+Topic property LipSync auto		; only Accessed in sslBaseVoice, probably want to remove this from here
 SoundCategory property AudioSFX auto
 SoundCategory property AudioVoice auto
-
-Idle property IdleReset auto
-
-GlobalVariable property DebugVar1 auto
-GlobalVariable property DebugVar2 auto
-GlobalVariable property DebugVar3 auto
-GlobalVariable property DebugVar4 auto
-GlobalVariable property DebugVar5 auto
 
 ; ------------------------------------------------------- ;
 ; --- Config Properties                               --- ;
 ; ------------------------------------------------------- ;
 
+; Installation
+bool Property bInstallDefaults Auto Hidden
+bool Property bInstallDefaultsCrt Auto Hidden
+
 ; Booleans
 bool property RestrictAggressive auto hidden
 bool property AllowCreatures auto hidden
+bool property UseCreatureGender auto hidden
 bool property NPCSaveVoice auto hidden
 bool property UseStrapons auto hidden
 bool property RedressVictim auto hidden
@@ -179,7 +112,6 @@ bool property ForeplayStage auto hidden
 bool property OrgasmEffects auto hidden
 bool property RaceAdjustments auto hidden
 bool property BedRemoveStanding auto hidden
-bool property UseCreatureGender auto hidden
 bool property LimitedStrip auto hidden
 bool property RestrictSameSex auto hidden
 bool property SeparateOrgasms auto hidden
@@ -516,6 +448,9 @@ endFunction
 ; ------------------------------------------------------- ;
 
 sslThreadController Control
+sslThreadController Function GetThreadControlled()
+	return Control
+EndFunction
 
 event OnKeyDown(int keyCode)
 	if !Utility.IsInMenuMode() && !UI.IsMenuOpen("Console") && !UI.IsMenuOpen("Loading Menu")
@@ -571,57 +506,15 @@ function AddTargetActor(Actor ActorRef)
 	endIf
 endFunction
 
-; Actor function GetNthValidTargetActor(int i)
-; 	Form FormRef = StorageUtil.FormListGet(self, "TargetActors", i)
-; 	if SexLabUtil.IsActor(FormRef)
-; 		return FormRef as Actor
-; 	endIf
-; 	return none
-; endFunction
-
-; Actor[] function GetTargetActors()
-; 	StorageUtil.FormListRemove(self, "TargetActors", TargetRef, true)
-
-; 	Actor[] Target
-; 	int i = StorageUtil.FormListFilterByTypes(self, "TargetActors")
-; 	while i
-
-; 	endWhile
-
-; 	Form[] All = new Form[5]
-; 	StorageUtil.FormListSlice(self, "TargetActors", All)
-
-; 	int i = 5
-; 	while i
-; 		i -= 1
-; 		if All[i]
-; 			if !SexLabUtil.IsActor(FormRef)
-; 				StorageUtil.FormListRemove(self, "TargetActors", All[i])
-; 			else
-
-; 			endIf
-; 		endIf
-
-; 	endWhile
-
-
-
-; endFunction
-
-sslThreadController function GetThreadControlled()
-	return Control
-endFunction
-
 function GetThreadControl(sslThreadController TargetThread)
 	if Control || !(TargetThread.GetState() == "Animating" || TargetThread.GetState() == "Advancing")
 		Log("Failed to control thread "+TargetThread)
-		return ; Control not available
+		return
 	endIf
-	; Set active controlled thread
 	Control = TargetThread
 	if !Control || Control == none
 		Log("Failed to control thread "+TargetThread)
-		return ; Control not available
+		return
 	endIf
 	; Lock players movement
 	PlayerRef.StopCombat()
@@ -629,9 +522,6 @@ function GetThreadControl(sslThreadController TargetThread)
 		PlayerRef.SheatheWeapon()
 	endIf
 	PlayerRef.SetFactionRank(AnimatingFaction, 1)
-	ActorUtil.AddPackageOverride(PlayerRef, DoNothing, 100, 1)
-	PlayerRef.EvaluatePackage()
-	Game.DisablePlayerControls(true, true, false, false, false, false, false, false, 0)
 	Game.SetPlayerAIDriven()
 	; Give player control
 	Control.AutoAdvance = false
@@ -651,9 +541,6 @@ function DisableThreadControl(sslThreadController TargetThread)
 		Control = none
 		; Unlock players movement
 		PlayerRef.RemoveFromFaction(AnimatingFaction)
-		ActorUtil.RemovePackageOverride(PlayerRef, DoNothing)
-		PlayerRef.EvaluatePackage()
-		Game.EnablePlayerControls()
 		Game.SetPlayerAIDriven(false)
 	endIf
 endfunction
@@ -815,17 +702,16 @@ bool function CheckSystem()
 endFunction
 
 function Reload()
-	; DebugMode = true
 	if DebugMode
 		Debug.OpenUserLog("SexLabDebug")
 		Debug.TraceUser("SexLabDebug", "Config Reloading...")
 	endIf
 
-	LoadLibs(false)
-	SexLab = SexLabUtil.GetAPI()
+	; LoadLibs(false)
+	; SexLab = SexLabUtil.GetAPI()
 
 	; SetVehicle Scaling Fix
-	SexLabUtil.VehicleFixMode((DisableScale as int))
+	; SexLabUtil.VehicleFixMode((DisableScale as int))
 
 	; Configure SFX & Voice volumes
 	AudioVoice.SetVolume(VoiceVolume)
@@ -843,22 +729,17 @@ function Reload()
 	RegisterForKey(EndAnimation)
 
 	; Mod compatability checks
-	; - HDT/NiO High Heels
 	HasNiOverride = Config.CheckSystemPart("NiOverride")
 	HasHDTHeels   = Game.GetModByName("hdtHighHeel.esm") != 255
 	if HasHDTHeels && !HDTHeelEffect
 		HDTHeelEffect = Game.GetFormFromFile(0x800, "hdtHighHeel.esm") as MagicEffect
 	endIf
-	; - Frostfall exposure pausing
-	HasFrostfall = Game.GetModByName("Frostfall.esp") != 255; && Game.GetModByName("Campfire.esm") != 255; || Game.GetModByName("Chesko_Frostfall.esp") != 255
+	HasFrostfall = Game.GetModByName("Frostfall.esp") != 255
 	if HasFrostfall && !FrostExceptions
 		FrostExceptions = Game.GetFormFromFile(0x6E7E6, "Frostfall.esp") as FormList
 	endIf
-	; - SOS/SAM Schlongs (currently unused)
-	HasSchlongs = Game.GetModByName("Schlongs of Skyrim - Core.esm") != 255 || Game.GetModByName("SAM - Shape Atlas for Men.esp") != 255
-
-	; - MFG Fix check
-	HasMFGFix = MfgConsoleFunc.ResetPhonemeModifier(PlayerRef) ; TODO: May need to check another way, some players might get upset that their mfg is reset on load
+	HasSchlongs = Game.GetModByName("Schlongs of Skyrim - Core.esm") != 255
+	HasMFGFix = SKSE.GetPluginVersion("mfgfix") > -1
 
 	if !FadeToBlackHoldImod || FadeToBlackHoldImod == none
 		FadeToBlackHoldImod = Game.GetFormFromFile(0xF756E, "Skyrim.esm") as ImageSpaceModifier ;0xF756D **0xF756E 0x10100C** 0xF756F 0xFDC57 0xFDC58 0x 0x 0x
@@ -872,11 +753,6 @@ function Reload()
 	if !ForceBlurVFX || ForceBlurVFX == none
 		ForceBlurVFX = Game.GetFormFromFile(0x8FC3A, "SexLab.esm") as VisualEffect ;0x101967
 	endIf
-
-	; Clean valid actors list
-	StorageUtil.FormListRemove(self, "ValidActors", PlayerRef, true)
-	StorageUtil.FormListRemove(self, "ValidActors", none, true)
-
 
 	; TODO: confirm forms are the same in SSE
 	if GetBedOffsets(Game.GetFormFromFile(0xB8371, "Skyrim.esm"))[3] != 180.0
@@ -903,8 +779,6 @@ function Reload()
 	
 	; Dawnguard additions
 	if Game.GetModByName("Dawnguard.esm") != 255
-		; Serana doesn't have ActorTypeNPC, force validate.
-		StorageUtil.FormListAdd(self, "ValidActors", Game.GetFormFromFile(0x2B6C, "Dawnguard.esm"), false)
 		; Bedroll
 		Form DLC1BedrollGroundF = Game.GetFormFromFile(0xC651, "Dawnguard.esm")
 		if DLC1BedrollGroundF && !BedsList.HasForm(DLC1BedrollGroundF)
@@ -914,76 +788,9 @@ function Reload()
 		endIf
 	endIf
 
-	; Dragonborn additions
-	if Game.GetModByName("Dragonborn.esm") != 255 && !BedsList.HasForm(Game.GetFormFromFile(0x21749, "Dragonborn.esm"))
-		Log("Adding Dragonborn beds to formlist...")
-		; Single Bed
-		Form DLC2DarkElfBed01             = Game.GetFormFromFile(0x21749, "Dragonborn.esm")
-		Form DLC2DarkElfBed01R            = Game.GetFormFromFile(0x35037, "Dragonborn.esm")
-		Form DLC2DarkElfBed01L            = Game.GetFormFromFile(0x35038, "Dragonborn.esm")
-		BedsList.AddForm(DLC2DarkElfBed01)
-		BedsList.AddForm(DLC2DarkElfBed01R)
-		BedsList.AddForm(DLC2DarkElfBed01L)
-		; Double Bed
-		Form DLC2DarkElfBedDouble01       = Game.GetFormFromFile(0x32802, "Dragonborn.esm")
-		Form DLC2DarkElfBedDouble01R      = Game.GetFormFromFile(0x36796, "Dragonborn.esm")
-		Form DLC2DarkElfBedDouble01L      = Game.GetFormFromFile(0x36797, "Dragonborn.esm")
-		BedsList.AddForm(DLC2DarkElfBedDouble01)
-		BedsList.AddForm(DLC2DarkElfBedDouble01R)
-		BedsList.AddForm(DLC2DarkElfBedDouble01L)
-		DoubleBedsList.AddForm(DLC2DarkElfBedDouble01)
-		DoubleBedsList.AddForm(DLC2DarkElfBedDouble01R)
-		DoubleBedsList.AddForm(DLC2DarkElfBedDouble01L)
-		; Bedroll
-		Form BedRollHay01LDirtSnowPath01F = Game.GetFormFromFile(0x18617, "Dragonborn.esm")
-		Form BedRollHay01LDirtSnowPath01R = Game.GetFormFromFile(0x18618, "Dragonborn.esm")
-		Form BedRollHay01LDirtSnowPath    = Game.GetFormFromFile(0x1EE28, "Dragonborn.esm")
-		Form BedrollHay01IceL             = Game.GetFormFromFile(0x25E51, "Dragonborn.esm")
-		Form BedrollHay01IceR             = Game.GetFormFromFile(0x25E52, "Dragonborn.esm")
-		Form BedrollHay01R_Ash            = Game.GetFormFromFile(0x28A68, "Dragonborn.esm")
-		Form BedrollHay01L_Ash            = Game.GetFormFromFile(0x28AA9, "Dragonborn.esm")
-		Form BedrollHay01LDirtPath01L     = Game.GetFormFromFile(0x2C0B2, "Dragonborn.esm")
-		Form BedrollHay01LDirtPath01F     = Game.GetFormFromFile(0x2C0B3, "Dragonborn.esm")
-		Form BedrollHay01LDirtPath01R     = Game.GetFormFromFile(0x2C0B4, "Dragonborn.esm")
-		Form BedrollHay01GlacierL         = Game.GetFormFromFile(0x3D131, "Dragonborn.esm")
-		Form BedrollHay01GlacierR         = Game.GetFormFromFile(0x3D132, "Dragonborn.esm")
-		BedsList.AddForm(BedRollHay01LDirtSnowPath01F)
-		BedsList.AddForm(BedRollHay01LDirtSnowPath01R)
-		BedsList.AddForm(BedRollHay01LDirtSnowPath)
-		BedsList.AddForm(BedrollHay01IceL)
-		BedsList.AddForm(BedrollHay01IceR)
-		BedsList.AddForm(BedrollHay01R_Ash)
-		BedsList.AddForm(BedrollHay01L_Ash)
-		BedsList.AddForm(BedrollHay01LDirtPath01L)
-		BedsList.AddForm(BedrollHay01LDirtPath01F)
-		BedsList.AddForm(BedrollHay01LDirtPath01R)
-		BedsList.AddForm(BedrollHay01GlacierL)
-		BedsList.AddForm(BedrollHay01GlacierR)
-		BedRollsList.AddForm(BedRollHay01LDirtSnowPath01F)
-		BedRollsList.AddForm(BedRollHay01LDirtSnowPath01R)
-		BedRollsList.AddForm(BedRollHay01LDirtSnowPath)
-		BedRollsList.AddForm(BedrollHay01IceL)
-		BedRollsList.AddForm(BedrollHay01IceR)
-		BedRollsList.AddForm(BedrollHay01R_Ash)
-		BedRollsList.AddForm(BedrollHay01L_Ash)
-		BedRollsList.AddForm(BedrollHay01LDirtPath01L)
-		BedRollsList.AddForm(BedrollHay01LDirtPath01F)
-		BedRollsList.AddForm(BedrollHay01LDirtPath01R)
-		BedRollsList.AddForm(BedrollHay01GlacierL)
-		BedRollsList.AddForm(BedrollHay01GlacierR)
-	endIf
-
 	; Remove gender override if player's gender matches normally
 	if PlayerRef.GetFactionRank(GenderFaction) == PlayerRef.GetLeveledActorBase().GetSex()
 		PlayerRef.RemoveFromFaction(GenderFaction)
-	endIf
-
-	; Clear or register creature animations if it's been toggled
-	if !AllowCreatures && CreatureSlots.Slotted > 0
-		CreatureSlots.Setup()
-	elseIf AllowCreatures && CreatureSlots.Slotted < 1
-		CreatureSlots.Setup()
-		CreatureSlots.RegisterSlots()
 	endIf
 
 	; Remove any NPC thread control player has
@@ -1050,163 +857,17 @@ endFunction
 
 function SetDefaults()
 	DebugMode = false
-
-	; Booleans
-	RestrictAggressive = true
-	; AllowCreatures     = false
-	NPCSaveVoice       = false
-	UseStrapons        = true
-	RedressVictim      = true
-	; RagdollEnd         = false
-	; UseMaleNudeSuit    = false
-	; UseFemaleNudeSuit  = false
-	UndressAnimation   = false
-	UseLipSync         = true
-	UseExpressions     = true
-	RefreshExpressions = true
-	ScaleActors        = false
-	UseCum             = true
-	AllowFFCum         = false
-	DisablePlayer      = false
-	AutoTFC            = false
-	AutoAdvance        = true
-	ForeplayStage      = false
-	OrgasmEffects      = false
-	RaceAdjustments    = true
-	BedRemoveStanding  = true
-	UseCreatureGender  = false
-	LimitedStrip       = false
-	RestrictSameSex    = false
-	SeparateOrgasms    = false
-	RemoveHeelEffect   = HasHDTHeels
-	AdjustTargetStage  = false
-	ShowInMap          = false
-	DisableTeleport    = true
-	SeedNPCStats       = true
-	DisableScale       = true ; TMP: enabled by default for testing
-	LipsFixedValue     = true
-
-	; Integers
-	AnimProfile        = 1
-	AskBed             = 1
-	NPCBed             = 0
-	OpenMouthSize      = 80
-	UseFade            = 0
-
-	Backwards          = 54 ; Right Shift
-	AdjustStage        = 157; Right Ctrl
-	AdvanceAnimation   = 57 ; Space
-	ChangeAnimation    = 24 ; O
-	; ChangePositions    = 13 ; =
-	AdjustChange       = 37 ; K
-	AdjustForward      = 38 ; L
-	AdjustSideways     = 40 ; '
-	AdjustUpward       = 39 ; ;
-	RealignActors      = 26 ; [
-	MoveScene          = 27 ; ]
-	RestoreOffsets     = 12 ; -
-	RotateScene        = 22 ; U
-	ToggleFreeCamera   = 81 ; NUM 3
-	EndAnimation       = 207; End
-	TargetActor        = 49 ; N
-	AdjustSchlong      = 46 ; C
-	LipsSoundTime      = 0  ; Don't Cut
-	LipsPhoneme        = 1  ; BigAah
-	LipsMinValue       = 20
-	LipsMaxValue       = 50
-
-
-	; Floats
-	CumTimer           = 120.0
-	ShakeStrength      = 0.7
-	AutoSUCSM          = 5.0
-	MaleVoiceDelay     = 5.0
-	FemaleVoiceDelay   = 4.0
-	ExpressionDelay    = 2.0
-	VoiceVolume        = 1.0
-	SFXDelay           = 3.0
-	SFXVolume          = 1.0
-	LeadInCoolDown     = 0.0
-	LipsMoveTime       = 0.2
-
-	; Stripping
-	iStripForms = new int[16]
-	iStripForms[0] = 1032555423
-	iStripForms[1] = 1
-
-	iStripForms[2] = 1032555423
-	iStripForms[3] = 1
-
-	iStripForms[4] = 4719365
-	iStripForms[5] = 1
-
-	iStripForms[6] = 16901
-	iStripForms[7] = 1
-
-	iStripForms[8] = 83952148
-	iStripForms[9] = 0
-
-	iStripForms[10] = iStripForms[8]
-	iStripForms[11] = iStripForms[9]
-
-	iStripForms[12] = 352389654
-	iStripForms[13] = 1
-
-	iStripForms[14] = iStripForms[12]
-	iStripForms[15] = iStripForms[13]
-
-	; Float timer arrays
-	fTimers = new float[15]
-	; Default timers
-	fTimers[0] = 30.0
-	fTimers[1] = 20.0
-	fTimers[2] = 15.0
-	fTimers[3] = 15.0
-	fTimers[4] = 9.0
-	; Lead In
-	fTimers[5] = 10.0
-	fTimers[6] = 10.0
-	fTimers[7] = 10.0
-	fTimers[8] = 8.0
-	fTimers[9] = 8.0
-	; Aggressive
-	fTimers[10] = 20.0
-	fTimers[11] = 15.0
-	fTimers[12] = 10.0
-	fTimers[13] = 10.0
-	fTimers[14] = 4.0
-
-	OpenMouthMale = new float[17]
-	OpenMouthMale[1] = 0.8
-	OpenMouthMale[16] = 16.0
-
-	OpenMouthFemale = new float[17]
-	OpenMouthFemale[1] = 1.0
-	OpenMouthFemale[16] = 16.0
-
-	BedOffset = new float[4]
-	BedOffset[0] = 0.0
-	BedOffset[2] = 37.0
-
-	; Valid actor types refrence
-	;/ ActorTypes = new int[3]
-	ActorTypes[0] = 43 ; kNPC
-	ActorTypes[1] = 44 ; kLeveledCharacter
-	ActorTypes[2] = 62 ; kCharacter /;
-
 	; Reload config
 	Reload()
-
 	; Reset data
 	LoadStrapons()
-
-	if !HotkeyUp || HotkeyUp.Length != 3 || HotkeyUp.Find(none) != -1
+	if HotkeyUp.Length != 3 || HotkeyUp.Find(none) != -1
 		HotkeyUp = new Sound[3]
 		hotkeyUp[0] = Game.GetFormFromFile(0x8AAF0, "SexLab.esm") as Sound
 		hotkeyUp[1] = Game.GetFormFromFile(0x8AAF1, "SexLab.esm") as Sound
 		hotkeyUp[2] = Game.GetFormFromFile(0x8AAF2, "SexLab.esm") as Sound
 	endIf
-	if !HotkeyDown || HotkeyDown.Length != 3 || HotkeyDown.Find(none) != -1
+	if HotkeyDown.Length != 3 || HotkeyDown.Find(none) != -1
 		HotkeyDown = new Sound[3]
 		hotkeyDown[0] = Game.GetFormFromFile(0x8AAF3, "SexLab.esm") as Sound
 		hotkeyDown[1] = Game.GetFormFromFile(0x8AAF4, "SexLab.esm") as Sound
@@ -1227,262 +888,26 @@ endFunction
 string File
 function ExportSettings()
 	File = "../SexLab/SexlabConfig.json"
-
 	; Set label of export
 	JsonUtil.SetStringValue(File, "ExportLabel", PlayerRef.GetLeveledActorBase().GetName()+" - "+Utility.GetCurrentRealTime() as int)
-
-	; Booleans
-	; ExportBool("RestrictAggressive", RestrictAggressive)
-	; ExportBool("AllowCreatures", AllowCreatures)
-	; ExportBool("NPCSaveVoice", NPCSaveVoice)
-	; ExportBool("UseStrapons", UseStrapons)
-	; ExportBool("RedressVictim", RedressVictim)
-	; ; ExportBool("RagdollEnd", RagdollEnd)
-	; ; ExportBool("UseMaleNudeSuit", UseMaleNudeSuit)
-	; ; ExportBool("UseFemaleNudeSuit", UseFemaleNudeSuit)
-	; ExportBool("UndressAnimation", UndressAnimation)
-	; ExportBool("UseLipSync", UseLipSync)
-	; ExportBool("UseExpressions", UseExpressions)
-	; ExportBool("RefreshExpressions", RefreshExpressions)
-	; ExportBool("ScaleActors", ScaleActors)
-	; ExportBool("UseCum", UseCum)
-	; ExportBool("AllowFFCum", AllowFFCum)
-	; ExportBool("DisablePlayer", DisablePlayer)
-	; ExportBool("AutoTFC", AutoTFC)
-	; ExportBool("AutoAdvance", AutoAdvance)
-	; ExportBool("ForeplayStage", ForeplayStage)
-	; ExportBool("OrgasmEffects", OrgasmEffects)
-	; ExportBool("RaceAdjustments", RaceAdjustments)
-	; ExportBool("BedRemoveStanding", BedRemoveStanding)
-	; ExportBool("UseCreatureGender", UseCreatureGender)
-	; ExportBool("LimitedStrip", LimitedStrip)
-	; ExportBool("RestrictSameSex", RestrictSameSex)
-	; ExportBool("SeparateOrgasms", SeparateOrgasms)
-	; ExportBool("RemoveHeelEffect", RemoveHeelEffect)
-	; ExportBool("AdjustTargetStage", AdjustTargetStage)
-	; ExportBool("ShowInMap", ShowInMap)
-	; ExportBool("DisableTeleport", DisableTeleport)
-	; ExportBool("SeedNPCStats", SeedNPCStats)
-	; ExportBool("DisableScale", DisableScale)
-	; ExportBool("LipsFixedValue", LipsFixedValue)
-
-	; ; Integers
-	; ExportInt("AnimProfile", AnimProfile)
-	; ExportInt("AskBed", AskBed)
-	; ExportInt("NPCBed", NPCBed)
-	; ExportInt("OpenMouthSize", OpenMouthSize)
-	; ExportInt("UseFade", UseFade)
-
-	; ExportInt("Backwards", Backwards)
-	; ExportInt("AdjustStage", AdjustStage)
-	; ExportInt("AdvanceAnimation", AdvanceAnimation)
-	; ExportInt("ChangeAnimation", ChangeAnimation)
-	; ; ExportInt("ChangePositions", ChangePositions)
-	; ExportInt("AdjustChange", AdjustChange)
-	; ExportInt("AdjustForward", AdjustForward)
-	; ExportInt("AdjustSideways", AdjustSideways)
-	; ExportInt("AdjustUpward", AdjustUpward)
-	; ExportInt("RealignActors", RealignActors)
-	; ExportInt("MoveScene", MoveScene)
-	; ExportInt("RestoreOffsets", RestoreOffsets)
-	; ExportInt("RotateScene", RotateScene)
-	; ExportInt("EndAnimation", EndAnimation)
-	; ExportInt("ToggleFreeCamera", ToggleFreeCamera)
-	; ExportInt("TargetActor", TargetActor)
-	; ExportInt("AdjustSchlong", AdjustSchlong)
-	; ExportInt("LipsSoundTime", LipsSoundTime)
-	; ExportInt("LipsPhoneme", LipsPhoneme)
-	; ExportInt("LipsMinValue", LipsMinValue)
-	; ExportInt("LipsMaxValue", LipsMaxValue)
-
-	; ; Floats
-	; ExportFloat("CumTimer", CumTimer)
-	; ExportFloat("ShakeStrength", ShakeStrength)
-	; ExportFloat("AutoSUCSM", AutoSUCSM)
-	; ExportFloat("MaleVoiceDelay", MaleVoiceDelay)
-	; ExportFloat("FemaleVoiceDelay", FemaleVoiceDelay)
-	; ExportFloat("ExpressionDelay", ExpressionDelay)
-	; ExportFloat("VoiceVolume", VoiceVolume)
-	; ExportFloat("SFXDelay", SFXDelay)
-	; ExportFloat("SFXVolume", SFXVolume)
-	; ExportFloat("LeadInCoolDown", LeadInCoolDown)
-	; ExportFloat("LipsMoveTime", LipsMoveTime)
-
-	; ; Float Array
-	; ExportFloatList("OpenMouthMale", OpenMouthMale, 17)
-	; ExportFloatList("OpenMouthFemale", OpenMouthFemale, 17)
-
 	; Export object registry
 	ExportAnimations()
 	ExportCreatures()
 	ExportExpressions()
 	ExportVoices()
-
 	; Save to JSON file
 	JsonUtil.Save(File, true)
 endFunction
 
 function ImportSettings()
 	File = "../SexLab/SexlabConfig.json"
-
-	; Booleans
-	; RestrictAggressive = ImportBool("RestrictAggressive", RestrictAggressive)
-	; AllowCreatures     = ImportBool("AllowCreatures", AllowCreatures)
-	; NPCSaveVoice       = ImportBool("NPCSaveVoice", NPCSaveVoice)
-	; UseStrapons        = ImportBool("UseStrapons", UseStrapons)
-	; RedressVictim      = ImportBool("RedressVictim", RedressVictim)
-	; ; RagdollEnd         = ImportBool("RagdollEnd", RagdollEnd)
-	; ; UseMaleNudeSuit    = ImportBool("UseMaleNudeSuit", UseMaleNudeSuit)
-	; ; UseFemaleNudeSuit  = ImportBool("UseFemaleNudeSuit", UseFemaleNudeSuit)
-	; UndressAnimation   = ImportBool("UndressAnimation", UndressAnimation)
-	; UseLipSync         = ImportBool("UseLipSync", UseLipSync)
-	; UseExpressions     = ImportBool("UseExpressions", UseExpressions)
-	; RefreshExpressions = ImportBool("RefreshExpressions", RefreshExpressions)
-	; ScaleActors        = ImportBool("ScaleActors", ScaleActors)
-	; UseCum             = ImportBool("UseCum", UseCum)
-	; AllowFFCum         = ImportBool("AllowFFCum", AllowFFCum)
-	; DisablePlayer      = ImportBool("DisablePlayer", DisablePlayer)
-	; AutoTFC            = ImportBool("AutoTFC", AutoTFC)
-	; AutoAdvance        = ImportBool("AutoAdvance", AutoAdvance)
-	; ForeplayStage      = ImportBool("ForeplayStage", ForeplayStage)
-	; OrgasmEffects      = ImportBool("OrgasmEffects", OrgasmEffects)
-	; RaceAdjustments    = ImportBool("RaceAdjustments", RaceAdjustments)
-	; BedRemoveStanding  = ImportBool("BedRemoveStanding", BedRemoveStanding)
-	; UseCreatureGender  = ImportBool("UseCreatureGender", UseCreatureGender)
-	; LimitedStrip       = ImportBool("LimitedStrip", LimitedStrip)
-	; RestrictSameSex    = ImportBool("RestrictSameSex", RestrictSameSex)
-	; SeparateOrgasms    = ImportBool("SeparateOrgasms", SeparateOrgasms)
-	; RemoveHeelEffect   = ImportBool("RemoveHeelEffect", RemoveHeelEffect)
-	; AdjustTargetStage  = ImportBool("AdjustTargetStage", AdjustTargetStage)
-	; ShowInMap          = ImportBool("ShowInMap", ShowInMap)
-	; DisableTeleport    = ImportBool("DisableTeleport", DisableTeleport)
-	; SeedNPCStats       = ImportBool("SeedNPCStats", SeedNPCStats)
-	; DisableScale       = ImportBool("DisableScale", DisableScale)
-	; LipsFixedValue     = ImportBool("LipsFixedValue", LipsFixedValue)
-
-	; ; Integers
-	; AnimProfile        = ImportInt("AnimProfile", AnimProfile)
-	; AskBed             = ImportInt("AskBed", AskBed)
-	; NPCBed             = ImportInt("NPCBed", NPCBed)
-	; OpenMouthSize      = ImportInt("OpenMouthSize", OpenMouthSize)
-	; UseFade            = ImportInt("UseFade", UseFade)
-
-	; Backwards          = ImportInt("Backwards", Backwards)
-	; AdjustStage        = ImportInt("AdjustStage", AdjustStage)
-	; AdvanceAnimation   = ImportInt("AdvanceAnimation", AdvanceAnimation)
-	; ChangeAnimation    = ImportInt("ChangeAnimation", ChangeAnimation)
-	; ; ChangePositions    = ImportInt("ChangePositions", ChangePositions)
-	; AdjustChange       = ImportInt("AdjustChange", AdjustChange)
-	; AdjustForward      = ImportInt("AdjustForward", AdjustForward)
-	; AdjustSideways     = ImportInt("AdjustSideways", AdjustSideways)
-	; AdjustUpward       = ImportInt("AdjustUpward", AdjustUpward)
-	; RealignActors      = ImportInt("RealignActors", RealignActors)
-	; MoveScene          = ImportInt("MoveScene", MoveScene)
-	; RestoreOffsets     = ImportInt("RestoreOffsets", RestoreOffsets)
-	; RotateScene        = ImportInt("RotateScene", RotateScene)
-	; EndAnimation       = ImportInt("EndAnimation", EndAnimation)
-	; ToggleFreeCamera   = ImportInt("ToggleFreeCamera", ToggleFreeCamera)
-	; TargetActor        = ImportInt("TargetActor", TargetActor)
-	; AdjustSchlong      = ImportInt("AdjustSchlong", AdjustSchlong)
-	; LipsSoundTime      = ImportInt("LipsSoundTime", LipsSoundTime)
-	; LipsPhoneme        = ImportInt("LipsPhoneme", LipsPhoneme)
-	; LipsMinValue       = ImportInt("LipsMinValue", LipsMinValue)
-	; LipsMaxValue       = ImportInt("LipsMaxValue", LipsMaxValue)
-
-	; ; Floats
-	; CumTimer           = ImportFloat("CumTimer", CumTimer)
-	; ShakeStrength      = ImportFloat("ShakeStrength", ShakeStrength)
-	; AutoSUCSM          = ImportFloat("AutoSUCSM", AutoSUCSM)
-	; MaleVoiceDelay     = ImportFloat("MaleVoiceDelay", MaleVoiceDelay)
-	; FemaleVoiceDelay   = ImportFloat("FemaleVoiceDelay", FemaleVoiceDelay)
-	; ExpressionDelay    = ImportFloat("ExpressionDelay", ExpressionDelay)
-	; VoiceVolume        = ImportFloat("VoiceVolume", VoiceVolume)
-	; SFXDelay           = ImportFloat("SFXDelay", SFXDelay)
-	; SFXVolume          = ImportFloat("SFXVolume", SFXVolume)
-	; LeadInCoolDown     = ImportFloat("LeadInCoolDown", LeadInCoolDown)
-	; LipsMoveTime       = ImportFloat("LipsMoveTime", LipsMoveTime)
-
-	; ; Float Array
-	; OpenMouthMale      = ImportFloatList("OpenMouthMale", OpenMouthMale, 17)
-	; OpenMouthFemale    = ImportFloatList("OpenMouthFemale", OpenMouthFemale, 17)
-
-	; Register creature animations
-	CreatureSlots.RegisterSlots()
-	
 	; Import object registry
 	ImportAnimations()
 	ImportCreatures()
 	ImportExpressions()
 	ImportVoices()
-
 	; Reload settings with imported values
 	Reload()
-endFunction
-
-; Integers
-function ExportInt(string Name, int Value)
-	JsonUtil.SetIntValue(File, Name, Value)
-endFunction
-int function ImportInt(string Name, int Value)
-	return JsonUtil.GetIntValue(File, Name, Value)
-endFunction
-
-; Booleans
-function ExportBool(string Name, bool Value)
-	JsonUtil.SetIntValue(File, Name, Value as int)
-endFunction
-bool function ImportBool(string Name, bool Value)
-	return JsonUtil.GetIntValue(File, Name, Value as int) as bool
-endFunction
-
-; Floats
-function ExportFloat(string Name, float Value)
-	JsonUtil.SetFloatValue(File, Name, Value)
-endFunction
-float function ImportFloat(string Name, float Value)
-	return JsonUtil.GetFloatValue(File, Name, Value)
-endFunction
-
-; Float Arrays
-function ExportFloatList(string Name, float[] Values, int len)
-	JsonUtil.FloatListClear(File, Name)
-	JsonUtil.FloatListCopy(File, Name, Values)
-endFunction
-float[] function ImportFloatList(string Name, float[] Values, int len)
-	if JsonUtil.FloatListCount(File, Name) == len
-		if Values.Length != len
-			Values = Utility.CreateFloatArray(len)
-		endIf
-		int i
-		while i < len
-			Values[i] = JsonUtil.FloatListGet(File, Name, i)
-			i += 1
-		endWhile
-	endIf
-	return Values
-endFunction
-
-; Boolean Arrays
-function ExportBoolList(string Name, bool[] Values, int len)
-	JsonUtil.IntListClear(File, Name)
-	int i
-	while i < len
-		JsonUtil.IntListAdd(File, Name, Values[i] as int)
-		i += 1
-	endWhile
-endFunction
-bool[] function ImportBoolList(string Name, bool[] Values, int len)
-	if JsonUtil.IntListCount(File, Name) == len
-		if Values.Length != len
-			Values = Utility.CreateBoolArray(len)
-		endIf
-		int i
-		while i < len
-			Values[i] = JsonUtil.IntListGet(File, Name, i) as bool
-			i += 1
-		endWhile
-	endIf
-	return Values
 endFunction
 
 ; Animations
@@ -1660,7 +1085,6 @@ function ApplyFade(bool forceTest = false)
 endFunction
 
 event OnInit()
-	parent.OnInit()
 	SetDefaults()
 endEvent
 
@@ -1754,81 +1178,6 @@ float[] property StageTimerAggr
 	EndFunction
 EndProperty
 
-; ------------------------------------------------------- ;
-; --- Pre 1.50 Config Accessors                       --- ;
-; ------------------------------------------------------- ;
-
-bool property bRestrictAggressive hidden
-	bool function get()
-		return RestrictAggressive
-	endFunction
-endProperty
-bool property bAllowCreatures hidden
-	bool function get()
-		return AllowCreatures
-	endFunction
-endProperty
-bool property bUseStrapons hidden
-	bool function get()
-		return UseStrapons
-	endFunction
-endProperty
-bool property bRedressVictim hidden
-	bool function get()
-		return RedressVictim
-	endFunction
-endProperty
-bool property bRagdollEnd hidden
-	bool function get()
-		return RagdollEnd
-	endFunction
-endProperty
-bool property bUndressAnimation hidden
-	bool function get()
-		return UndressAnimation
-	endFunction
-endProperty
-bool property bScaleActors hidden
-	bool function get()
-		return ScaleActors
-	endFunction
-endProperty
-bool property bUseCum hidden
-	bool function get()
-		return UseCum
-	endFunction
-endProperty
-bool property bAllowFFCum hidden
-	bool function get()
-		return AllowFFCum
-	endFunction
-endProperty
-bool property bDisablePlayer hidden
-	bool function get()
-		return DisablePlayer
-	endFunction
-endProperty
-bool property bAutoTFC hidden
-	bool function get()
-		return AutoTFC
-	endFunction
-endProperty
-bool property bAutoAdvance hidden
-	bool function get()
-		return AutoAdvance
-	endFunction
-endProperty
-bool property bForeplayStage hidden
-	bool function get()
-		return ForeplayStage
-	endFunction
-endProperty
-bool property bOrgasmEffects hidden
-	bool function get()
-		return OrgasmEffects
-	endFunction
-endProperty
-
 bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
 	int idx = (IsFemale as int + Math.LeftShift((IsLeadIn || !IsVictim) as int, 1) + Math.LeftShift(IsAggressive as int, 2)) * 2
 	return sslUtility.BitsToBool(iStripForms[idx], iStripForms[idx + 1])
@@ -1838,26 +1187,7 @@ function ReloadData()
 endFunction
 
 Spell function GetHDTSpell(Actor ActorRef)
-	if !HasHDTHeels || !HDTHeelEffect || !ActorRef; || !ActorRef.GetWornForm(Armor.GetMaskForSlot(37))
-		return none
-	endIf
-	int i = ActorRef.GetSpellCount()
-	while i
-		i -= 1
-		Spell SpellRef = ActorRef.GetNthSpell(i)
-		Log(SpellRef.GetName(), "Checking("+SpellRef+") for HDT HighHeels")
-		if SpellRef && StringUtil.Find(SpellRef.GetName(), "Heel") != -1
-			return SpellRef
-		endIf
-		int n = SpellRef.GetNumEffects()
-		while n
-			n -= 1
-			if SpellRef.GetNthEffectMagicEffect(n) == HDTHeelEffect
-				return SpellRef
-			endIf
-		endWhile
-	endWhile
-	return none
+	return sslpp.GetHDTHeelSpell(ActorRef)
 endFunction
 
 bool function AddCustomBed(Form BaseBed, int BedType = 0)

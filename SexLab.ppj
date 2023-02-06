@@ -11,10 +11,11 @@
         <Variable Name="ThisProject" Value="."/>
         <Variable Name="Rel" Value=".\.release"/>
         <Variable Name="MO2" Value=".."/>
-        <Variable Name="Ver" Value="1.6.1"/>
+        <Variable Name="Ver" Value="1.7"/>
     </Variables>
     <Imports>
-        <Import>@ThisProject\Scripts\Source</Import>
+        <!-- <Import>@ThisProject\Scripts\Source</Import> -->
+        <Import>@ThisProject\Source\Scripts</Import>
         <!-- Ressources -->
         <Import>@MO2\PapyrusUtil SE - Modders Scripting Utility Functions\Source\Scripts</Import>
         <Import>@MO2\SkyUI SDK\Source\Scripts</Import>
@@ -30,7 +31,8 @@
         <Import>C:\Program Files (x86)\Steam\steamapps\common\Skyrim Special Edition\Data\Source\Scripts</Import>
     </Imports>
     <Folders>
-        <Folder>@ThisProject\Scripts\Source</Folder>
+        <!-- <Folder>@ThisProject\Scripts\Source</Folder> -->
+        <Folder>@ThisProject\Source\Scripts</Folder>
     </Folders>
     <ZipFiles Output="@Rel">
         <ZipFile Name="@ModName - @Ver" RootDir="@ThisProject" Compression="deflate">

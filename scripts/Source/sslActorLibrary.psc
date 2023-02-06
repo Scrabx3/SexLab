@@ -1,60 +1,45 @@
 scriptname sslActorLibrary extends sslSystemLibrary
 
-import StorageUtil
-
 ; Data
-Faction property AnimatingFaction auto hidden
-Faction property GenderFaction auto hidden
-Faction property ForbiddenFaction auto hidden
-Weapon property DummyWeapon auto hidden
-Armor property NudeSuit auto hidden
+Faction property AnimatingFaction auto
+Faction property GenderFaction auto
+Faction property ForbiddenFaction auto
 
-Spell property CumVaginalOralAnalSpell auto hidden
-Spell property CumOralAnalSpell auto hidden
-Spell property CumVaginalOralSpell auto hidden
-Spell property CumVaginalAnalSpell auto hidden
-Spell property CumVaginalSpell auto hidden
-Spell property CumOralSpell auto hidden
-Spell property CumAnalSpell auto hidden
+Spell property Vaginal1Oral1Anal1 auto
+Spell property Vaginal2Oral1Anal1 auto
+Spell property Vaginal2Oral2Anal1 auto
+Spell property Vaginal2Oral1Anal2 auto
+Spell property Vaginal1Oral2Anal1 auto
+Spell property Vaginal1Oral2Anal2 auto
+Spell property Vaginal1Oral1Anal2 auto
+Spell property Vaginal2Oral2Anal2 auto
+Spell property Oral1Anal1 auto
+Spell property Oral2Anal1 auto
+Spell property Oral1Anal2 auto
+Spell property Oral2Anal2 auto
+Spell property Vaginal1Oral1 auto
+Spell property Vaginal2Oral1 auto
+Spell property Vaginal1Oral2 auto
+Spell property Vaginal2Oral2 auto
+Spell property Vaginal1Anal1 auto
+Spell property Vaginal2Anal1 auto
+Spell property Vaginal1Anal2 auto
+Spell property Vaginal2Anal2 auto
+Spell property Vaginal1 auto
+Spell property Vaginal2 auto
+Spell property Oral1 auto
+Spell property Oral2 auto
+Spell property Anal1 auto
+Spell property Anal2 auto
 
-Spell property Vaginal1Oral1Anal1 auto hidden
-Spell property Vaginal2Oral1Anal1 auto hidden
-Spell property Vaginal2Oral2Anal1 auto hidden
-Spell property Vaginal2Oral1Anal2 auto hidden
-Spell property Vaginal1Oral2Anal1 auto hidden
-Spell property Vaginal1Oral2Anal2 auto hidden
-Spell property Vaginal1Oral1Anal2 auto hidden
-Spell property Vaginal2Oral2Anal2 auto hidden
-Spell property Oral1Anal1 auto hidden
-Spell property Oral2Anal1 auto hidden
-Spell property Oral1Anal2 auto hidden
-Spell property Oral2Anal2 auto hidden
-Spell property Vaginal1Oral1 auto hidden
-Spell property Vaginal2Oral1 auto hidden
-Spell property Vaginal1Oral2 auto hidden
-Spell property Vaginal2Oral2 auto hidden
-Spell property Vaginal1Anal1 auto hidden
-Spell property Vaginal2Anal1 auto hidden
-Spell property Vaginal1Anal2 auto hidden
-Spell property Vaginal2Anal2 auto hidden
-Spell property Vaginal1 auto hidden
-Spell property Vaginal2 auto hidden
-Spell property Oral1 auto hidden
-Spell property Oral2 auto hidden
-Spell property Anal1 auto hidden
-Spell property Anal2 auto hidden
+Keyword property CumOralKeyword auto
+Keyword property CumAnalKeyword auto
+Keyword property CumVaginalKeyword auto
+Keyword property CumOralStackedKeyword auto
+Keyword property CumAnalStackedKeyword auto
+Keyword property CumVaginalStackedKeyword auto
 
-Keyword property CumOralKeyword auto hidden
-Keyword property CumAnalKeyword auto hidden
-Keyword property CumVaginalKeyword auto hidden
-Keyword property CumOralStackedKeyword auto hidden
-Keyword property CumAnalStackedKeyword auto hidden
-Keyword property CumVaginalStackedKeyword auto hidden
-
-Keyword property ActorTypeNPC auto hidden
-
-Furniture property BaseMarker auto hidden
-Package property DoNothing auto hidden
+Keyword property ActorTypeNPC auto
 
 ;/-----------------------------------------------\;
 ;|	Actor Handling/Effect Functions              |;
@@ -66,15 +51,8 @@ endFunction
 
 function ClearCum(Actor ActorRef)
 	if !ActorRef
-		return ; Nothing to do
+		return
 	endIf
-	ActorRef.DispelSpell(CumVaginalSpell)
-	ActorRef.DispelSpell(CumOralSpell)
-	ActorRef.DispelSpell(CumAnalSpell)
-	ActorRef.DispelSpell(CumVaginalOralSpell)
-	ActorRef.DispelSpell(CumVaginalAnalSpell)
-	ActorRef.DispelSpell(CumOralAnalSpell)
-	ActorRef.DispelSpell(CumVaginalOralAnalSpell)
 	ActorRef.DispelSpell(Vaginal1Oral1Anal1)
 	ActorRef.DispelSpell(Vaginal2Oral1Anal1)
 	ActorRef.DispelSpell(Vaginal2Oral2Anal1)
@@ -188,36 +166,13 @@ int function CountCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, boo
 	return Amount
 endFunction
 
-function legacy_AddCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, bool Anal = true)
-	if !ActorRef && !Vaginal && !Oral && !Anal
-		return ; Nothing to do
-	endIf
-	Vaginal = Vaginal || ActorRef.HasMagicEffectWithKeyword(CumVaginalKeyword)
-	Oral = Oral || ActorRef.HasMagicEffectWithKeyword(CumOralKeyword)
-	Anal = Anal || ActorRef.HasMagicEffectWithKeyword(CumAnalKeyword)
-	if Vaginal && !Oral && !Anal
-		CumVaginalSpell.Cast(ActorRef, ActorRef)
-	elseIf Oral && !Vaginal && !Anal
-		CumOralSpell.Cast(ActorRef, ActorRef)
-	elseIf Anal && !Vaginal && !Oral
-		CumAnalSpell.Cast(ActorRef, ActorRef)
-	elseIf Vaginal && Oral && !Anal
-		CumVaginalOralSpell.Cast(ActorRef, ActorRef)
-	elseIf Vaginal && Anal && !Oral
-		CumVaginalAnalSpell.Cast(ActorRef, ActorRef)
-	elseIf Oral && Anal && !Vaginal
-		CumOralAnalSpell.Cast(ActorRef, ActorRef)
-	else
-		CumVaginalOralAnalSpell.Cast(ActorRef, ActorRef)
-	endIf
-endFunction
-
 ;/-----------------------------------------------\;
 ;|	Equipment Functions                          |;
 ;\-----------------------------------------------/;
 
 Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimate = true, bool LeadIn = false)
-	return StripSlots(ActorRef, Config.GetStrip((GetGender(ActorRef) == 1), LeadIn, (VictimRef != none), (VictimRef != none && ActorRef == VictimRef)), DoAnimate)
+	int[] strips = Config.GetStripSettings(GetGender(ActorRef) == 1, LeadIn, VictimRef, ActorRef == VictimRef)
+	return StripActorImpl(ActorRef, strips[0], strips[1], DoAnimate)
 endFunction
 
 function MakeNoStrip(Form ItemRef)
@@ -248,32 +203,32 @@ bool function IsStrippable(Form ItemRef)
 	return !IsNoStrip(ItemRef)
 endFunction
 
-Form[] function StripSlots(Actor ActorRef, bool[] Strip, bool DoAnimate = false, bool AllowNudesuit = true)
-	If(!ActorRef || Strip.Length < 33)
+Form[] Function StripActorImpl(Actor akActor, int aiSlots, bool abStripWeapons = true, bool abAnimate = false)
+	If(!akActor)
 		return Utility.CreateFormArray(0)
 	EndIf
-	DoAnimate = DoAnimate && ActorRef.GetWornForm(0x4)	; Body armor slot
-	If(DoAnimate)
-		int Gender = ActorRef.GetLeveledActorBase().GetSex()
-		Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G" + Gender)
+	abAnimate = abAnimate && akActor.GetWornForm(0x4)	; Body armor slot
+	If(abAnimate)
+		int Gender = akActor.GetLeveledActorBase().GetSex()
+		Debug.SendAnimationEvent(akActor, "Arrok_Undress_G" + Gender)
 		Utility.Wait(0.6)
 	EndIf
-	Form[] ret = sslpp.StripActor(ActorRef, sslUtility.BoolToBit(Strip))
-	If(Strip[32]) ; Weapons
-		Form RightHand = ActorRef.GetEquippedObject(1)
+	Form[] ret = sslpp.StripActor(akActor, aiSlots)
+	If(abStripWeapons)
+		Form RightHand = akActor.GetEquippedObject(1)
 		If(RightHand && IsStrippable(RightHand))
-			ActorRef.UnequipItemEX(RightHand, ActorRef.EquipSlot_RightHand, false)
+			akActor.UnequipItemEX(RightHand, akActor.EquipSlot_RightHand, false)
 			ret = PapyrusUtil.PushForm(ret, LeftHand)
 			StorageUtil.SetIntValue(RightHand, "Hand", 1)
 		EndIf
-		Form LeftHand = ActorRef.GetEquippedObject(0)
+		Form LeftHand = akActor.GetEquippedObject(0)
 		If(LeftHand && IsStrippable(LeftHand))
-			ActorRef.UnequipItemEX(LeftHand, ActorRef.EquipSlot_LeftHand, false)
+			akActor.UnequipItemEX(LeftHand, akActor.EquipSlot_LeftHand, false)
 			ret = PapyrusUtil.PushForm(ret, LeftHand)
 			StorageUtil.SetIntValue(RightHand, "Hand", 2)
 		EndIf
 	EndIf
-	If(DoAnimate)
+	If(abAnimate)
 		Utility.Wait(0.4)
 	EndIf
 	return ret
@@ -283,10 +238,6 @@ function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
 	If(!ActorRef)
 		return
 	EndIf
-	; int n = ActorRef.GetItemCount(NudeSuit)
-	; If(n > 0)
-	; 	ActorRef.RemoveItem(NudeSuit, n, true)
-	; EndIf
 	If(IsVictim && !Config.RedressVictim)
 		return
 	EndIf
@@ -295,7 +246,7 @@ function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
 		If(Stripped[i])
  			int hand = StorageUtil.GetIntValue(Stripped[i], "Hand", 0)
  			If(hand)
-	 			UnsetIntValue(Stripped[i], "Hand")
+	 			StorageUtil.UnsetIntValue(Stripped[i], "Hand")
 			EndIf
 	 		ActorRef.EquipItemEx(Stripped[i], hand, false)
 		EndIf
@@ -307,82 +258,32 @@ EndFunction
 ; --- Actor Validation                                --- ;
 ; ------------------------------------------------------- ;
 
-int function ValidateActor(Actor ActorRef)
-	if !ActorRef
+; If the actor in some state that disallows animation by SL
+bool Function CanAnimateActor(Actor akActor) native global
+bool Function GetIsActorValid(Actor akActor)
+	If(!akActor)
 		Log("ValidateActor(NONE) -- FALSE -- Because they don't exist.")
-		return -1
-	; Remove actors stuck in animating faction /// Just dont have that happen???? Theres obvsly smth wrong if that is ever the case
-	; elseIf ActorRef.IsInFaction(AnimatingFaction) && (ActorRef != PlayerRef || Config.GetThreadControlled() == none) && Config.ThreadSlots.FindActorController(ActorRef) == -1
-	; 	ActorRef.RemoveFromFaction(AnimatingFaction)
-	; 	Log("ValidateActor("+ActorRef.GetLeveledActorBase().GetName()+") -- WARN -- Was in AnimatingFaction but not in a thread")
-	endIf
-	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-	; Primary checks
-	if ActorRef.IsInFaction(AnimatingFaction)
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They appear to already be animating")
-		return -10
-	elseIf !ActorRef.Is3DLoaded()
-		Utility.WaitMenuMode(2.0)
-		if ActorRef.Is3DLoaded()
-			Log("ValidateActor("+BaseRef.GetName()+") -- RECHECK -- The actor wasn't loadded but was after a short wait...")
-			return ValidateActor(ActorRef)
-		endIf
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are not loaded")
-		return -12
-	elseIf ActorRef.IsDead() && ActorRef.GetActorValue("Health") < 1.0
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- He's dead Jim.")
-		return -13
-	elseIf ActorRef.IsDisabled()
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are disabled")
-		return -14
-	elseIf ActorRef.IsFlying()
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are flying.")
-		return -15
-	elseIf ActorRef.IsOnMount()
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are currently mounted.")
-		return -16
-	elseIf ActorRef.IsInFaction(ForbiddenFaction)
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are flagged as forbidden from animating.")
-		return -11
-	elseIf FormListFind(Config, "ValidActors", ActorRef) != -1
-		Log("ValidateActor("+BaseRef.GetName()+") -- TRUE -- HIT")
-		return 1
-	elseIf !CanAnimate(ActorRef)
-		ActorRef.AddToFaction(ForbiddenFaction)
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are not supported for animation.")
-		return -11
-	elseIf ActorRef != PlayerRef && !ActorRef.HasKeyword(ActorTypeNPC)
-		if !Config.AllowCreatures
-			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are possibly a creature but creature animations are currently disabled")
-			return -17
-		elseIf !sslCreatureAnimationSlots.HasCreatureType(ActorRef)
-			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are a creature type that is currently not supported ("+MiscUtil.GetRaceEditorID(BaseRef.GetRace())+")")
-			return -18
-		elseIf !CreatureSlots.HasAnimation(BaseRef.GetRace(), GetGender(ActorRef))
-			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are valid creature type, but have no valid animations currently enabled or installed.")
-			return -19
-		endIf
-	endIf
-	Log("ValidateActor("+BaseRef.GetName()+") -- TRUE -- MISS")
-	FormListAdd(Config, "ValidActors", ActorRef, false)
-	return 1
-endFunction
-
-bool function CanAnimate(Actor ActorRef)
-	if !ActorRef
 		return false
-	endIf
-	Race ActorRace  = ActorRef.GetLeveledActorBase().GetRace()
-	string RaceName = ActorRace.GetName()+MiscUtil.GetRaceEditorID(ActorRace)
-	return !(ActorRace.IsRaceFlagSet(0x00000004) || StringUtil.Find(RaceName, "Moli") != -1 || StringUtil.Find(RaceName, "Child") != -1  || StringUtil.Find(RaceName, "Little") != -1 || StringUtil.Find(RaceName, "117") != -1 || StringUtil.Find(RaceName, "Enfant") != -1 || StringUtil.Find(RaceName, "Teen") != -1 || (StringUtil.Find(RaceName, "Elin") != -1 && ActorRef.GetScale() < 0.92) ||  (StringUtil.Find(RaceName, "Monli") != -1 && ActorRef.GetScale() < 0.92))
-endFunction
-
-bool function IsValidActor(Actor ActorRef)
-	return ValidateActor(ActorRef) == 1
-endFunction
+	EndIf
+	String name = akActor.GetLeveledActorBase().GetName()
+	If(!CanAnimateActor(akActor))
+		Log("ValidateActor(" + name + ") -- FALSE -- They cannot be animated")
+		return false
+	ElseIf(akActor.IsInFaction(AnimatingFaction))
+		Log("ValidateActor(" + name + ") -- FALSE -- They appear to already be animating")
+		return false
+	ElseIf(akActor.IsInFaction(ForbiddenFaction))
+		Log("ValidateActor(" + name + ") -- FALSE -- They are not allowed to be animated")
+		return false
+	ElseIf(!akActor.HasKeyword(ActorTypeNPC) && (!Config.AllowCreatures || !sslCreatureAnimationSlots.HasCreatureType(akActor)))
+		Log("ValidateActor(" + name + ") -- FALSE -- They are an invalid creature")
+		return false
+	EndIf
+	Log("ValidateActor(" + name + ") -- TRUE -- MISS")
+	return true
+EndFunction
 
 function ForbidActor(Actor ActorRef)
-	FormListRemove(Config, "ValidActors", ActorRef, true)
 	if ActorRef
 		ActorRef.AddToFaction(ForbiddenFaction)
 	endIf
@@ -395,7 +296,7 @@ function AllowActor(Actor ActorRef)
 endFunction
 
 bool function IsForbidden(Actor ActorRef)
-	return ActorRef && ActorRef.IsInFaction(ForbiddenFaction) ;|| ActorRef.HasKeyWordString("SexLabForbid")
+	return ActorRef && ActorRef.IsInFaction(ForbiddenFaction)
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -552,80 +453,6 @@ string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0)
 	return SexLabUtil.GetGenderTag(Females, Males, Creatures)
 endFunction
 
-; ------------------------------------------------------- ;
-; --- System Use Only                                 --- ;
-; ------------------------------------------------------- ;
-
-; function Setup()
-; 	parent.Setup()
-; 	FormListClear(Storage, "ValidActors")
-; 	FormListClear(none, "StripList")
-; 	FormListClear(none, "NoStripList")
-; 	; No longer used
-; 	FormListClear(Storage, "StripList")
-; 	FormListClear(Storage, "NoStripList")
-; 	FormListClear(Storage, "Registry")
-; endFunction
-
-function Setup()
-	parent.Setup()
-	; Clear library caches
-	FormListClear(Config, "ValidActors")
-	FormListClear(Config, "StripList")
-	FormListClear(Config, "NoStripList")
-	; Load object data
-	AnimatingFaction = Config.AnimatingFaction
-	GenderFaction    = Config.GenderFaction
-	ForbiddenFaction = Config.ForbiddenFaction
-	DummyWeapon      = Config.DummyWeapon
-	NudeSuit         = Config.NudeSuit
-	ActorTypeNPC     = Config.ActorTypeNPC
-	BaseMarker       = Config.BaseMarker
-	DoNothing        = Config.DoNothing
-	; cum keywords
-	CumOralKeyword           = Config.CumOralKeyword
-	CumAnalKeyword           = Config.CumAnalKeyword
-	CumVaginalKeyword        = Config.CumVaginalKeyword
-	CumVaginalStackedKeyword = Config.CumVaginalStackedKeyword
-	CumOralStackedKeyword    = Config.CumOralStackedKeyword
-	CumAnalStackedKeyword    = Config.CumAnalStackedKeyword
-	; cum spells
-	Vaginal1Oral1Anal1 = Config.Vaginal1Oral1Anal1
-	Vaginal2Oral1Anal1 = Config.Vaginal2Oral1Anal1
-	Vaginal2Oral2Anal1 = Config.Vaginal2Oral2Anal1
-	Vaginal2Oral1Anal2 = Config.Vaginal2Oral1Anal2
-	Vaginal1Oral2Anal1 = Config.Vaginal1Oral2Anal1
-	Vaginal1Oral2Anal2 = Config.Vaginal1Oral2Anal2
-	Vaginal1Oral1Anal2 = Config.Vaginal1Oral1Anal2
-	Vaginal2Oral2Anal2 = Config.Vaginal2Oral2Anal2
-	Oral1Anal1         = Config.Oral1Anal1
-	Oral2Anal1         = Config.Oral2Anal1
-	Oral1Anal2         = Config.Oral1Anal2
-	Oral2Anal2         = Config.Oral2Anal2
-	Vaginal1Oral1      = Config.Vaginal1Oral1
-	Vaginal2Oral1      = Config.Vaginal2Oral1
-	Vaginal1Oral2      = Config.Vaginal1Oral2
-	Vaginal2Oral2      = Config.Vaginal2Oral2
-	Vaginal1Anal1      = Config.Vaginal1Anal1
-	Vaginal2Anal1      = Config.Vaginal2Anal1
-	Vaginal1Anal2      = Config.Vaginal1Anal2
-	Vaginal2Anal2      = Config.Vaginal2Anal2
-	Vaginal1           = Config.Vaginal1
-	Vaginal2           = Config.Vaginal2
-	Oral1              = Config.Oral1
-	Oral2              = Config.Oral2
-	Anal1              = Config.Anal1
-	Anal2              = Config.Anal2
-	; < 1.61 legacy cum spells
-	CumVaginalOralAnalSpell = Config.CumVaginalOralAnalSpell
-	CumOralAnalSpell        = Config.CumOralAnalSpell
-	CumVaginalOralSpell     = Config.CumVaginalOralSpell
-	CumVaginalAnalSpell     = Config.CumVaginalAnalSpell
-	CumVaginalSpell         = Config.CumVaginalSpell
-	CumOralSpell            = Config.CumOralSpell
-	CumAnalSpell            = Config.CumAnalSpell
-endFunction
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
 ;																																											;
 ;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
@@ -660,107 +487,67 @@ Form function StripSlot(Actor ActorRef, int SlotMask)
 	return none
 endFunction
 
-; ------------------------------------------------------- ;
-; --- Pre 1.50 Config Accessors                       --- ;
-; ------------------------------------------------------- ;
+Form[] function StripSlots(Actor ActorRef, bool[] Strip, bool DoAnimate = false, bool AllowNudesuit = true)
+	If(!ActorRef || Strip.Length < 33)
+		return Utility.CreateFormArray(0)
+	EndIf
+	return StripActorImpl(ActorRef, sslUtility.BoolToBit(Strip), Strip[32], DoAnimate)
+EndFunction
 
-float property fMaleVoiceDelay hidden
-	float function get()
-		return Config.MaleVoiceDelay
-	endFunction
-endProperty
-float property fFemaleVoiceDelay hidden
-	float function get()
-		return Config.FemaleVoiceDelay
-	endFunction
-endProperty
-float property fVoiceVolume hidden
-	float function get()
-		return Config.VoiceVolume
-	endFunction
-endProperty
-float property fCumTimer hidden
-	float function get()
-		return Config.CumTimer
-	endFunction
-endProperty
-bool property bDisablePlayer hidden
-	bool function get()
-		return Config.DisablePlayer
-	endFunction
-endProperty
-bool property bScaleActors hidden
-	bool function get()
-		return Config.ScaleActors
-	endFunction
-endProperty
-bool property bUseCum hidden
-	bool function get()
-		return Config.UseCum
-	endFunction
-endProperty
-bool property bAllowFFCum hidden
-	bool function get()
-		return Config.AllowFFCum
-	endFunction
-endProperty
-bool property bUseStrapons hidden
-	bool function get()
-		return Config.UseStrapons
-	endFunction
-endProperty
-bool property bReDressVictim hidden
-	bool function get()
-		return Config.ReDressVictim
-	endFunction
-endProperty
-bool property bRagdollEnd hidden
-	bool function get()
-		return Config.RagdollEnd
-	endFunction
-endProperty
-bool property bUseMaleNudeSuit hidden
-	bool function get()
-		return Config.UseMaleNudeSuit
-	endFunction
-endProperty
-bool property bUseFemaleNudeSuit hidden
-	bool function get()
-		return Config.UseFemaleNudeSuit
-	endFunction
-endProperty
-bool property bUndressAnimation hidden
-	bool function get()
-		return Config.UndressAnimation
-	endFunction
-endProperty
-bool[] property bStripMale hidden
-	bool[] function get()
-		return Config.StripMale
-	endFunction
-endProperty
-bool[] property bStripFemale hidden
-	bool[] function get()
-		return Config.StripFemale
-	endFunction
-endProperty
-bool[] property bStripLeadInFemale hidden
-	bool[] function get()
-		return Config.StripLeadInFemale
-	endFunction
-endProperty
-bool[] property bStripLeadInMale hidden
-	bool[] function get()
-		return Config.StripLeadInMale
-	endFunction
-endProperty
-bool[] property bStripVictim hidden
-	bool[] function get()
-		return Config.StripVictim
-	endFunction
-endProperty
-bool[] property bStripAggressor hidden
-	bool[] function get()
-		return Config.StripAggressor
-	endFunction
-endProperty
+function legacy_AddCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, bool Anal = true)
+	LogRedundant("legacy_AddCum")
+endFunction
+
+bool function IsValidActor(Actor ActorRef)
+	return GetIsActorValid(ActorRef)
+endFunction
+
+int function ValidateActor(Actor ActorRef)
+	If(!ActorRef)
+		Log("ValidateActor(NONE) -- FALSE -- Because they don't exist.")
+		return -1
+	EndIf
+	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
+	; Primary checks
+	if ActorRef.IsInFaction(AnimatingFaction)
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They appear to already be animating")
+		return -10
+	elseIf !ActorRef.Is3DLoaded()
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are not loaded")
+		return -12
+	elseIf ActorRef.IsDead() && ActorRef.GetActorValue("Health") < 1.0
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- He's dead Jim.")
+		return -13
+	elseIf ActorRef.IsDisabled()
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are disabled")
+		return -14
+	elseIf ActorRef.IsFlying()
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are flying.")
+		return -15
+	elseIf ActorRef.IsOnMount()
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are currently mounted.")
+		return -16
+	elseIf ActorRef.IsInFaction(ForbiddenFaction)
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are flagged as forbidden from animating.")
+		return -11
+	elseIf !CanAnimate(ActorRef)
+		ActorRef.AddToFaction(ForbiddenFaction)
+		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are not supported for animation.")
+		return -11
+	elseIf !ActorRef.HasKeyword(ActorTypeNPC)
+		if !Config.AllowCreatures
+			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are possibly a creature but creature animations are currently disabled")
+			return -17
+		elseIf !sslCreatureAnimationSlots.HasCreatureType(ActorRef)
+			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are a creature type that is currently not supported ("+MiscUtil.GetRaceEditorID(BaseRef.GetRace())+")")
+			return -18
+		elseIf !CreatureSlots.HasAnimation(BaseRef.GetRace(), GetGender(ActorRef))
+			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are valid creature type, but have no valid animations currently enabled or installed.")
+			return -19
+		endIf
+	endIf
+	Log("ValidateActor("+BaseRef.GetName()+") -- TRUE -- MISS")
+	return 1
+endFunction
+
+bool function CanAnimate(Actor ActorRef) native

@@ -53,7 +53,7 @@ state AnimSlots
 			return false
 		endif
 
-		if AnimSlots.Slotted < 1 || AnimSlots.Animations.Length < 1
+		if AnimSlots.Slotted < 1
 			Error(101, "sslAnimSlots appears to have no animations registered.")
 			Repair(true)
 			return false
@@ -62,7 +62,7 @@ state AnimSlots
 		; Check health of all animations
 		Notify("Checking Animation Health...")
 		bool dirty = false
-		sslBaseAnimation[] Animations = AnimSlots.Animations
+		sslBaseAnimation[] Animations = AnimSlots.GetSlots(0, 128)
 		int i = AnimSlots.Slotted
 		while i > 0
 			i -= 1

@@ -4,6 +4,8 @@ scriptname sslThreadLibrary extends sslSystemLibrary
 	It is recommended to call these functions through the main API
 }
 
+Keyword property FurnitureBedRoll Auto
+
 ; ------------------------------------------------------- ;
 ; --- Bed Utility			                                --- ;
 ; ------------------------------------------------------- ;
@@ -14,7 +16,7 @@ int Function GetBedType(ObjectReference BedRef)
 		return 0
 	EndIf
 	Form BaseRef = BedRef.GetBaseObject()
-	If(BedRef.HasKeyword(Config.FurnitureBedRoll))
+	If(BedRef.HasKeyword(FurnitureBedRoll))
 		return 1
 	ElseIf(StringUtil.Find(sslpp.GetEditorID(BaseRef), "Double") > -1 || StringUtil.Find(sslpp.GetEditorID(BaseRef), "Single") == -1)
 		return 3
@@ -82,6 +84,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 ; TODO: Move all of these "FindActor" functions into the dll zzzz
+; NOTE: To do this properly Ill need Ashals dll sources first, or redefine RaceKeys in my own dll
 
 Actor function FindAvailableActor(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, string RaceKey = "")
 	if !CenterRef || FindGender > 3 || FindGender < -1 || Radius < 0.1
@@ -398,26 +401,9 @@ endFunction
 ;																																											;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
 
-FormList property BedsList
-	FormList Function Get()
-		return Config.BedsList
-	EndFunction
-EndProperty
-FormList property DoubleBedsList
-	FormList Function Get()
-		return Config.DoubleBedsList
-	EndFunction
-EndProperty
-FormList property BedRollsList
-	FormList Function Get()
-		return Config.BedRollsList
-	EndFunction
-EndProperty
-Keyword property FurnitureBedRoll
-	Keyword Function Get()
-		return Config.FurnitureBedRoll
-	EndFunction
-EndProperty
+FormList property BedsList Auto
+FormList property DoubleBedsList Auto
+FormList property BedRollsList Auto
 
 Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
 	Log("Sort Actors | Original Array = " + Positions)

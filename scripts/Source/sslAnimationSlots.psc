@@ -1,20 +1,27 @@
 scriptname sslAnimationSlots extends Quest
+{
+	Internal base script acing as registry for animation objects
+	Interact with this Script through the main api only
+}
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 import PapyrusUtil
 
 Alias[] Objects
 string[] Registry
 int property Slotted auto hidden
-sslBaseAnimation[] property Animations hidden
-	sslBaseAnimation[] function get()
-		return GetSlots(1, 128)
-	endFunction
-endProperty
 
-Actor property PlayerRef auto
 sslSystemConfig property Config auto
-sslActorLibrary property ActorLib auto
-sslThreadLibrary property ThreadLib auto
 
 ; ------------------------------------------------------- ;
 ; --- Animation Filtering                             --- ;
@@ -190,33 +197,6 @@ int function GetCount(bool IgnoreDisabled = true)
 	return Count
 endFunction
 
-int function FindFirstTagged(string Tags, bool IgnoreDisabled = true, bool Reverse = false)
-	string[] Checking = ClearEmpty(StringSplit(Tags))
-	if !Checking.Length
-		return -1
-	endIf
-	int count
-	int i = 0
-	if !Reverse 
-		i = Slotted
-	endIf
-	while (i && !Reverse) || (i < Slotted && Reverse)
-		if !Reverse 
-			i -= 1
-		endIf
-		if Objects[i]
-			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
-			if ((Slot.Enabled || !IgnoreDisabled) && Slot.HasAllTag(Checking))
-				return i
-			endIf
-		endIf
-		if Reverse 
-			i += 1
-		endIf
-	endWhile
-	return -1
-endFunction
-
 int function CountTagUsage(string Tags, bool IgnoreDisabled = true)
 	string[] Checking = ClearEmpty(StringSplit(Tags))
 	if !Checking.Length
@@ -252,10 +232,10 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function RegisterSlots()
+	CacheID = "SexLab.AnimationTags"
 	ClearAnimCache()
 	ClearTagCache()
 	; Register default animation
-	; PreloadCategoryLoaders()
 	(Game.GetFormFromFile(0x639DF, "SexLab.esm") as sslAnimationDefaults).LoadAnimations()
 	; Send mod event for 3rd party animation
 	ModEvent.Send(ModEvent.Create("SexLabSlotAnimations"))
@@ -494,98 +474,16 @@ function Setup()
 	Slotted  = 0
 	Registry = new string[128] ; Utility.CreateStringArray(164)
 	Objects  = new Alias[128] ; Utility.CreateAliasArray(164, GetNthAlias(0))
-	PlayerRef = Game.GetPlayer()
-	if !Config || !ActorLib || !ThreadLib
-		Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
-		if SexLabQuestFramework
-			Config    = SexLabQuestFramework as sslSystemConfig
-			ThreadLib = SexLabQuestFramework as sslThreadLibrary
-			ActorLib  = SexLabQuestFramework as sslActorLibrary
-		endIf
-	endIf
 
+	CacheID = "SexLab.AnimationTags"
 	JLoaders = "../SexLab/Animations/"
 	if self == Config.CreatureSlots
 		JLoaders += "Creatures/"
 	endIf
 
-	CacheID = "SexLab.AnimationTags"
-
 	RegisterLock = false
 	RegisterSlots()
 	GoToState("")
-endFunction
-
-string property CacheID auto hidden
-string[] function GetTagCache(bool IgnoreCache = false)
-	if IgnoreCache || !StorageUtil.StringListHas(Config, CacheID, "Vaginal") || ((Utility.GetCurrentRealTime() as int) - StorageUtil.GetIntValue(Config, CacheID, 0)) > 360
-		DoCache()
-	endIf
-	return StorageUtil.StringListToArray(Config, CacheID)
-endFunction
-
-bool function HasTagCache(string Tag ,bool IgnoreCache = false)
-	if !Tag || Tag == ""
-		return False
-	endIf
-	if IgnoreCache || !StorageUtil.StringListHas(Config, CacheID, "Vaginal") || ((Utility.GetCurrentRealTime() as int) - StorageUtil.GetIntValue(Config, CacheID, 0)) > 360
-		DoCache()
-	endIf
-	return StorageUtil.StringListHas(Config, CacheID, Tag)
-endFunction
-
-function ClearTagCache()
-	StorageUtil.StringListClear(Config, CacheID)
-	StorageUtil.UnsetIntValue(Config, CacheID)
-endFunction
-
-function DoCache()
-	if !CacheID
-		Log("FAILED TO CACHE TAGS, CACHEID NOT SET")
-		return
-	endIf
-
-	float time = Utility.GetCurrentRealTime()
-
-	; Tags to ignore and will be pushed to front of list later.
-	string[] Override = new string[9]
-	Override[0] = "Vaginal"
-	Override[1] = "Anal"
-	Override[2] = "Oral"
-	Override[3] = "Cowgirl"
-	Override[4] = "Laying"
-	Override[5] = "Missionary"
-	Override[6] = "Standing"
-	Override[7] = "Dirty"
-	Override[8] = "Loving"
-
-	; Find unique tags
-	StorageUtil.StringListClear(Config, CacheID)
-	int Slot
-	while Slot < Slotted
-		if Objects[Slot]
-			string[] Tags = (Objects[Slot] as sslBaseAnimation).GetRawTags()
-			int t = Tags.Length
-			while t > 0
-				t -= 1
-				if Tags[t] != "" && Override.Find(Tags[t]) == -1
-					StorageUtil.StringListAdd(Config, CacheID, Tags[t], false)
-				endIf
-			endWhile
-		endIf
-		Slot += 1
-	endWhile
-	StorageUtil.StringListSort(Config, CacheID)
-	
-	; Push common/important tags to front
-	int i = Override.Length
-	while i
-		i -= 1
-		StorageUtil.StringListInsert(Config, CacheID, 0, Override[i])
-	endWhile
-
-	StorageUtil.SetIntValue(Config, CacheID, Utility.GetCurrentRealTime() as int)
-	Log(CacheID+" finished caching ("+StorageUtil.StringListCount(Config, CacheID)+") tags in ("+(Utility.GetCurrentRealTime() - time)+") seconds -- ");+StorageUtil.StringListToArray(Config, CacheID))
 endFunction
 
 function Log(string msg)
@@ -611,6 +509,35 @@ endState
 ;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
 ;																																											;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+
+
+; The usage of the below functions is considered sub-optimal for the design philosophy of SexLab
+int function FindFirstTagged(string Tags, bool IgnoreDisabled = true, bool Reverse = false)
+	string[] Checking = ClearEmpty(StringSplit(Tags))
+	if !Checking.Length
+		return -1
+	endIf
+	int count
+	int i = 0
+	if !Reverse 
+		i = Slotted
+	endIf
+	while (i && !Reverse) || (i < Slotted && Reverse)
+		if !Reverse 
+			i -= 1
+		endIf
+		if Objects[i]
+			sslBaseAnimation Slot = Objects[i] as sslBaseAnimation
+			if ((Slot.Enabled || !IgnoreDisabled) && Slot.HasAllTag(Checking))
+				return i
+			endIf
+		endIf
+		if Reverse 
+			i += 1
+		endIf
+	endWhile
+	return -1
+endFunction
 
 ; This is only intended to be used as wrapper to link legacy animation getters to the new one
 String[] Function BuildArgTags(String[] asTags, String[] asTagsSuppress, bool abRequireAll)
@@ -1178,4 +1105,77 @@ function OutputCacheLog()
 		Log(CacheInfo(i))
 		i += 1
 	endWhile
+endFunction
+
+
+String Property CacheID Auto Hidden
+string[] function GetTagCache(bool IgnoreCache = false)
+	if IgnoreCache || !StorageUtil.StringListHas(Config, CacheID, "Vaginal") || ((Utility.GetCurrentRealTime() as int) - StorageUtil.GetIntValue(Config, CacheID, 0)) > 360
+		DoCache()
+	endIf
+	return StorageUtil.StringListToArray(Config, CacheID)
+endFunction
+
+bool function HasTagCache(string Tag ,bool IgnoreCache = false)
+	if !Tag || Tag == ""
+		return False
+	endIf
+	if IgnoreCache || !StorageUtil.StringListHas(Config, CacheID, "Vaginal") || ((Utility.GetCurrentRealTime() as int) - StorageUtil.GetIntValue(Config, CacheID, 0)) > 360
+		DoCache()
+	endIf
+	return StorageUtil.StringListHas(Config, CacheID, Tag)
+endFunction
+
+function ClearTagCache()
+	StorageUtil.StringListClear(Config, CacheID)
+	StorageUtil.UnsetIntValue(Config, CacheID)
+endFunction
+
+function DoCache()
+	if !CacheID
+		Log("FAILED TO CACHE TAGS, CACHEID NOT SET")
+		return
+	endIf
+
+	float time = Utility.GetCurrentRealTime()
+
+	; Tags to ignore and will be pushed to front of list later.
+	string[] Override = new string[9]
+	Override[0] = "Vaginal"
+	Override[1] = "Anal"
+	Override[2] = "Oral"
+	Override[3] = "Cowgirl"
+	Override[4] = "Laying"
+	Override[5] = "Missionary"
+	Override[6] = "Standing"
+	Override[7] = "Dirty"
+	Override[8] = "Loving"
+
+	; Find unique tags
+	StorageUtil.StringListClear(Config, CacheID)
+	int Slot
+	while Slot < Slotted
+		if Objects[Slot]
+			string[] Tags = (Objects[Slot] as sslBaseAnimation).GetRawTags()
+			int t = Tags.Length
+			while t > 0
+				t -= 1
+				if Tags[t] != "" && Override.Find(Tags[t]) == -1
+					StorageUtil.StringListAdd(Config, CacheID, Tags[t], false)
+				endIf
+			endWhile
+		endIf
+		Slot += 1
+	endWhile
+	StorageUtil.StringListSort(Config, CacheID)
+	
+	; Push common/important tags to front
+	int i = Override.Length
+	while i
+		i -= 1
+		StorageUtil.StringListInsert(Config, CacheID, 0, Override[i])
+	endWhile
+
+	StorageUtil.SetIntValue(Config, CacheID, Utility.GetCurrentRealTime() as int)
+	Log(CacheID+" finished caching ("+StorageUtil.StringListCount(Config, CacheID)+") tags in ("+(Utility.GetCurrentRealTime() - time)+") seconds -- ");+StorageUtil.StringListToArray(Config, CacheID))
 endFunction

@@ -1,4 +1,20 @@
 scriptname sslAnimationFactory extends Quest hidden
+{
+	Script to manually register animations into SexLabs library
+
+	THIS SCRIPT IS CONSIDERED LEGACY. USE THE MAIN API OR SLAL TO REGISER ANIMATIONS
+}
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 sslAnimationSlots property Slots auto hidden
 
@@ -76,6 +92,13 @@ function PrepareFactoryCreatures()
 	; CacheAutoLoaders("../SexLab/Creatures")
 endFunction
 
+Function Initialize()
+	PrepareFactory()
+Endfunction
+
+; ----------------------------------------------------------------------
+; NOTE: These are used by certain mods manually loading animations into SL
+
 ; Send callback event to start registration
 function RegisterAnimation(string Registrar)
 	; Get free Animation slot
@@ -91,8 +114,6 @@ function RegisterAnimation(string Registrar)
 		int eid = ModEvent.Create(Registrar)
 		ModEvent.PushInt(eid, id)
 		ModEvent.Send(eid)
-		; Utility.WaitMenuMode(0.2)
-		; Debug.Trace("RegisterAnimation["+id+"] - Wait")
 	endIf
 endFunction
 
@@ -103,9 +124,8 @@ sslBaseAnimation function Create(int id)
 	return Slot
 endFunction
 
-function Initialize()
-	PrepareFactory()
-endfunction
+; ----------------------------------------------------------------------
+; NOTE: Below functions seem unused
 
 function RegisterOtherCategories()
 	if StorageUtil.StringListCount(Slots, "categories") > 0

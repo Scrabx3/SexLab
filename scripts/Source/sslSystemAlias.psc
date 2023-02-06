@@ -20,14 +20,11 @@ sslVoiceSlots property VoiceSlots auto
 sslExpressionSlots property ExpressionSlots auto
 sslObjectFactory property Factory auto
 
-Actor PlayerRef
-
 ; ------------------------------------------------------- ;
 ; --- System Startup                                  --- ;
 ; ------------------------------------------------------- ;
 
 event OnPlayerLoadGame()
-	LoadLibs()
 	; Config.DebugMode = true
 	Log("Version "+CurrentVersion+" / "+SexLabUtil.GetVersion(), "LOADED")
 	; Check for install
@@ -55,7 +52,6 @@ endEvent
 event OnInit()
 	GoToState("")
 	Version = 0
-	LoadLibs(false)
 	ForcedOnce = false
 endEvent
 
@@ -98,14 +94,14 @@ bool function SetupSystem()
 	GoToState("Installing")
 
 	; Framework
-	LoadLibs(false)
-	SexLab.Setup()
+	; LoadLibs(false)
+	; SexLab.Setup()
 	Config.Setup()
 
 	; Function libraries
-	ThreadLib.Setup()
-	ActorLib.Setup()
-	Stats.Setup()
+	; ThreadLib.Setup()
+	; ActorLib.Setup()
+	; Stats.Setup()
 
 	; Object registry
 	Factory.Setup()
@@ -118,7 +114,7 @@ bool function SetupSystem()
 	; Finish setup
 	GoToState("Ready")
 	SexLab.GoToState("Enabled")
-	LogAll("SexLab v"+SexLabUtil.GetStringVer()+" - Ready!")
+	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Ready!")
 	; Clean storage lists
 	CleanActorStorage()
 	return true
@@ -127,24 +123,19 @@ endFunction
 event UpdateSystem(int OldVersion, int NewVersion)
 	if OldVersion <= 0 || NewVersion <= 0
 		Debug.TraceAndBox("SEXLAB ERROR: Unknown call to system update: "+OldVersion+"->"+NewVersion)
-
 	elseif NewVersion < OldVersion
 		Debug.TraceAndBox("SEXLAB ERROR: Unsupported version rollback detected ("+OldVersion+"->"+NewVersion+") Proceed at your own risk!")
-
 	elseif OldVersion < NewVersion
 		LogAll("SexLab v"+SexLabUtil.GetStringVer()+" - Updating...")
 		SexLab.GoToState("Disabled")
 		GoToState("Updating")
 		Version = NewVersion
-
 		Config.ExportSettings()
-
 		; Perform update functions
 		if OldVersion >= 16209 && OldVersion < 16402
 			; Some system setup for < 1.64 SE dev BETA 2
 			ExpressionSlots.GoToState("") ; Fix Loock state issue 
 			ExpressionSlots.Setup()
-			
 		elseIf OldVersion >= 16200 && OldVersion < 16209
 			; Some system setup for < 1.63 SE dev beta 9
 			ExpressionSlots.GoToState("") ; Fix Loock state issue 
@@ -153,28 +144,24 @@ event UpdateSystem(int OldVersion, int NewVersion)
 			Config.AllowCreatures = AllowCreatures
 			AnimSlots.Setup()
 			CreatureSlots.Setup()
-			
 		elseIf OldVersion >= 16000 && OldVersion < 16200 ; 1.62
 			if OldVersion == 16000
 				PreloadDone = true
 			endIf
 			ExpressionSlots.GoToState("") ; Fix Loock state issue 
-			SexLab.Setup()
+			; SexLab.Setup()
 			Config.Setup()
 			AnimSlots.Setup()
 			CreatureSlots.Setup()
-
 			ActorLib.Setup()    ; New cum spells
 			ThreadSlots.Setup() ; New alias event arrays
-			
 			; Install creature voices, if needed.
 			if Config.AllowCreatures
 				(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceDefaults).LoadCreatureVoices()
 			endIf
-
 		elseIf OldVersion < 16000
 			; Full system setup for < 1.60
-			SexLab.Setup()
+			; SexLab.Setup()
 			Config.Setup()
 			ThreadLib.Setup()
 			ActorLib.Setup()
@@ -185,11 +172,8 @@ event UpdateSystem(int OldVersion, int NewVersion)
 			AnimSlots.Setup()
 			CreatureSlots.Setup()
 			ThreadSlots.Setup()
-
 		endIf
-
 		Config.ImportSettings()
-
 		; End update functions
 		GoToState("Ready")
 		SexLab.GoToState("Enabled")
@@ -203,12 +187,13 @@ endEvent
 event InstallSystem()
 	ForcedOnce = true
 	; Begin installation
-	LogAll("SexLab v"+SexLabUtil.GetStringVer()+" - Installing...")
+	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Installing...")
 	; Init system
-	if SetupSystem()
+	If(SetupSystem())
+		Stats.EmptyStats(Game.GetPlayer())
 		SendVersionEvent("SexLabInstalled")
 	else
-		Debug.TraceAndBox("SexLab v"+SexLabUtil.GetStringVer()+" - INSTALL ERROR, CHECK YOUR PAPYRUS LOGS!")
+		Debug.TraceAndBox("SexLab v" + SexLabUtil.GetStringVer() + " - INSTALL ERROR, CHECK YOUR PAPYRUS LOGS!")
 		ForcedOnce = false
 	endIf
 endEvent
@@ -291,8 +276,6 @@ function ClearFromActorStorage(Form FormRef)
  	FormListClear(FormRef, "SexPartners")
 	FormListClear(FormRef, "WasVictimOf")
 	FormListClear(FormRef, "WasAggressorTo")
-	FloatListClear(FormRef, "SexLabSkills")
-	FormListRemove(Config, "ValidActors", FormRef, true)
 	FormListRemove(none, "SexLab.SkilledActors", FormRef, true)
 	FormListRemove(none, "SexLab.ActorStorage", FormRef, true)
 endFunction
@@ -342,47 +325,6 @@ function MenuWait()
 	endWhile
 endFunction
 
-function LoadLibs(bool Forced = false)
-	; Sync function Libraries - SexLabQuestFramework
-	if Forced || !SexLab || !Config || !ThreadLib || !ThreadSlots || !ActorLib || !Stats
-		Form SexLabQuestFramework  = Game.GetFormFromFile(0xD62, "SexLab.esm")
-		if SexLabQuestFramework
-			SexLab      = SexLabQuestFramework as SexLabFramework
-			Config      = SexLabQuestFramework as sslSystemConfig
-			ThreadLib   = SexLabQuestFramework as sslThreadLibrary
-			ThreadSlots = SexLabQuestFramework as sslThreadSlots
-			ActorLib    = SexLabQuestFramework as sslActorLibrary
-			Stats       = SexLabQuestFramework as sslActorStats
-		endIf
-	endIf
-	; Sync animation registry - SexLabQuestAnimations
-	if Forced || !AnimSlots
-		Form SexLabQuestAnimations = Game.GetFormFromFile(0x639DF, "SexLab.esm")
-		if SexLabQuestAnimations
-			AnimSlots = SexLabQuestAnimations as sslAnimationSlots
-		endIf
-	endIf
-	; Sync secondary object registry - SexLabQuestRegistry
-	if Forced || !CreatureSlots || !VoiceSlots || !ExpressionSlots
-		Form SexLabQuestRegistry   = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-		if SexLabQuestRegistry
-			CreatureSlots   = SexLabQuestRegistry as sslCreatureAnimationSlots
-			ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
-			VoiceSlots      = SexLabQuestRegistry as sslVoiceSlots
-		endIf
-	endIf
-	; Sync phantom object registry - SexLabObjectFactory
-	if Forced || !Factory
-		Form SexLabObjectFactory = Game.GetFormFromFile(0x78818, "SexLab.esm")
-		if SexLabObjectFactory
-			Factory = SexLabObjectFactory as sslObjectFactory
-		endIf
-	endIf
-	if Forced || !PlayerRef
-		PlayerRef = GetReference() as Actor
-	endIf
-endFunction
-
 state PreloadStorage
 	event OnBeginState()
 		RegisterForSingleUpdate(0.1)
@@ -420,7 +362,7 @@ state PreloadStorage
 		i = Forms.Length
 		while i > 0
 			i -= 1
-			if Forms[i] && !FormListHas(none, "SexLab.ActorStorage", Forms[i]) && (FormListCount(Forms[i], "SexPartners") > 0 || FormListCount(Forms[i], "WasAggressorTo") > 0 || FormListCount(Forms[i], "WasVictimOf") > 0 || FloatListCount(Forms[i], "SexLabSkills") > 0)
+			if Forms[i] && !FormListHas(none, "SexLab.ActorStorage", Forms[i]) && (FormListCount(Forms[i], "SexPartners") > 0 || FormListCount(Forms[i], "WasAggressorTo") > 0 || FormListCount(Forms[i], "WasVictimOf") > 0)
 				sslSystemConfig.StoreActor(Forms[i])
 			endIf
 		endWhile
@@ -429,7 +371,7 @@ state PreloadStorage
 		while i > 0
 			i -= 1
 			Form FormRef = FormListGet(none, "SexLab.SkilledActors", i)
-			if FormRef && FormRef != PlayerRef
+			if FormRef && FormRef != Game.GetPlayer()
 				if IsActor(FormRef)
 					Stats.UpgradeLegacyStats(FormRef, IsImportant(FormRef as Actor, true))
 				else

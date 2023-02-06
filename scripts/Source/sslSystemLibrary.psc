@@ -47,40 +47,26 @@ function LoadLibs(bool Forced = false)
 		endIf
 	endIf
 	; Sync data
-	if Forced || !PlayerRef || PlayerRef == none
-		PlayerRef = Game.GetPlayer()
-	endIf
-	; Watch for SexLabDebugMode event
-	RegisterForModEvent("SexLabDebugMode", "SetDebugMode")
+	PlayerRef = Game.GetPlayer()
 endFunction
 
 function Setup()
-	UnregisterForUpdate()
-	GoToState("")
 	LoadLibs(true)
 endFunction
 
-event OnInit()
-	LoadLibs(false)
-	Debug.Trace("SEXLAB -- Init "+self)
-endEvent
-
-bool property InDebugMode auto hidden
-event SetDebugMode(bool ToMode)
-	InDebugMode = ToMode
-	; SexLabUtil.PrintConsole("SEXLABTEST: "+self+ "SET DEBUG MODE ["+ToMode+"]")
-	; Debug.Trace("SEXLABTEST: "+self+ "SET DEBUG MODE ["+ToMode+"]")
-endEvent
-
-function Log(string msg, string Type = "NOTICE")
+Function Log(string msg, string Type = "NOTICE")
 	msg = Type+": "+msg
-	if InDebugMode
+	If(Config.DebugMode)
 		SexLabUtil.PrintConsole(msg)
 		Debug.TraceUser("SexLabDebug", msg)
-	endIf
-	if Type == "FATAL"
-		Debug.TraceStack("SEXLAB - "+msg)
-	else
-		Debug.Trace("SEXLAB - "+msg)
-	endIf
-endFunction
+	EndIf
+	If(Type == "FATAL")
+		Debug.TraceStack("[SEXLAB] - "+msg)
+	Else
+		Debug.Trace("[SEXLAB] - "+msg)
+	EndIf
+EndFunction
+
+Function LogRedundant(String asFunction)
+	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
+EndFunction
