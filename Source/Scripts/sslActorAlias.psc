@@ -909,32 +909,31 @@ Function PlaceActor(ObjectReference akCenter)
 	Log("PlaceActor on " + ActorRef)
 	LockActor()
 	ActorRef.SetVehicle(akCenter)
-	; Scale after SetVehicle
-	If(Config.DisableScale)
-		ActorScale = 1.0
-		AnimScale = 1.0
-	Else
-		float display = ActorRef.GetScale()
-		ActorRef.SetScale(1.0)
-		float base = ActorRef.GetScale()
-		ActorScale = display / base
-		AnimScale  = ActorScale
-		If(ActorScale > 0.0 && ActorScale != 1.0)
-			ActorRef.SetScale(ActorScale)
-		EndIf
-		If(Thread.ActorCount > 1 && Config.ScaleActors)
-			If(Config.HasNiOverride && !sslActorData.IsCreature(_ActorData) && NioScale > 0.0 && NioScale != 1.0)
-				float FixNioScale = FixNioScale / NioScale
-				NiOverride.AddNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm", FixNioScale)
-				NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
-			EndIf
-			AnimScale = 1.0 / base
-		EndIf
-		If(ActorScale != 1.0 && AnimScale != 1.0)
-			ActorRef.SetScale(AnimScale)
-		EndIf
-		Log("Applying Scale on Actor " + ActorRef + ": ["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"]")
-	EndIf
+	; If(Config.DisableScale)
+	; 	ActorScale = 1.0
+	; 	AnimScale = 1.0
+	; Else
+	; 	float display = ActorRef.GetScale()
+	; 	ActorRef.SetScale(1.0)
+	; 	float base = ActorRef.GetScale()
+	; 	ActorScale = display / base
+	; 	AnimScale  = ActorScale
+	; 	If(ActorScale > 0.0 && ActorScale != 1.0)
+	; 		ActorRef.SetScale(ActorScale)
+	; 	EndIf
+	; 	If(Thread.ActorCount > 1 && Config.ScaleActors)
+	; 		If(Config.HasNiOverride && !sslActorData.IsCreature(_ActorData) && NioScale > 0.0 && NioScale != 1.0)
+	; 			float FixNioScale = FixNioScale / NioScale
+	; 			NiOverride.AddNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm", FixNioScale)
+	; 			NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
+	; 		EndIf
+	; 		AnimScale = 1.0 / base
+	; 	EndIf
+	; 	If(ActorScale != 1.0 && AnimScale != 1.0)
+	; 		ActorRef.SetScale(AnimScale)
+	; 	EndIf
+	; 	Log("Applying Scale on Actor " + ActorRef + ": ["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"]")
+	; EndIf
 EndFunction
 
 float Function HandleStartAnimation()
@@ -990,16 +989,16 @@ Function UnplaceActor()
 	Log("UnplaceActor on " + ActorRef)
 	UnlockActor()
 	ActorRef.SetVehicle(none)
-	If(ActorScale != 1.0 || AnimScale != 1.0)
-		ActorRef.SetScale(ActorScale)
-	EndIf
-	If(Config.HasNiOverride)
-		bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
-		bool UpdateNiOScale = NiOverride.RemoveNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
-		if UpdateNiOPosition || UpdateNiOScale
-			NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
-		endIf
-	EndIf
+	; If(ActorScale != 1.0 || AnimScale != 1.0)
+	; 	ActorRef.SetScale(ActorScale)
+	; EndIf
+	; If(Config.HasNiOverride)
+	; 	bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
+	; 	bool UpdateNiOScale = NiOverride.RemoveNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
+	; 	if UpdateNiOPosition || UpdateNiOScale
+	; 		NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
+	; 	endIf
+	; EndIf
 	Debug.SendAnimationEvent(ActorRef, "SOSFlaccid")
 EndFunction
 

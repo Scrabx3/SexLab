@@ -618,8 +618,8 @@ State Animating
 			AdjustChange(Config.BackwardsPressed())
 		ElseIf(hotkey == kRealignActors)
 			RealignActors()
-		; ElseIf(hotkey == kChangePositions)	; Change Positions
-		; 	ChangePositions(Config.BackwardsPressed())
+		ElseIf(hotkey == kChangePositions)	; Change Positions
+			ChangePositions()
 		ElseIf(hotkey == kRestoreOffsets)		; Reset animation offsets
 			RestoreOffsets()
 		ElseIf(hotkey == kMoveScene)
@@ -1351,15 +1351,6 @@ Function PlayStageAnimations()
 	RealignActors()
 EndFunction
 
-Function ResetStage()
-	int i = 0
-	While(i < Positions.Length)
-		ActorAlias[i].SendDefaultAnimEvent()
-		i += 1
-	EndWhile
-	GoToStage(Stage)
-EndFunction
-
 ; End leadin -> Start default animation
 Function EndLeadInImpl()
 	Stage  = 1
@@ -1982,6 +1973,35 @@ Function MoveScene()
 	GoToStage(1)									; Will re-register the update loop
 EndFunction
 
+Function ChangePositions(bool backwards = false)
+	If(Positions.Length < 2)
+		return
+	EndIf
+	int[] keys = Animation.DataKeys()
+	int pos = GetAdjustPos()
+	int i = pos + 1
+	While(i < Positions.Length + pos)
+		If(i >= Positions.Length)
+			i -= Positions.Length
+		EndIf
+		If(sslActorData.Match(keys[pos], keys[i]) && sslActorData.Match(keys[i], keys[pos]))
+			Actor tmp = Positions[pos]
+			sslActorAlias tmp2 = ActorAlias[pos]
+			Positions[pos] = Positions[i]
+			Positions[i] = tmp
+			ActorAlias[pos] = ActorAlias[i]
+			ActorAlias[i] = tmp2
+			RealignActors()
+			GoToStage(1)
+			SendThreadEvent("PositionChange")
+			return
+		EndIf
+		i += 1
+	EndWhile
+	Debug.Notification("Selected actor cannot switch positions")
+EndFunction
+
+
 Function PlayHotkeyFX(int i, bool backwards)
 	if backwards
 		Config.HotkeyDown[i].Play(PlayerRef)
@@ -2288,38 +2308,6 @@ EndFunction
 ;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-; If this is ever implemented again, mak esure it only allows witching between same-gender positions
-Function ChangePositions(bool backwards = false)
-	; if ActorCount < 2 || HasCreature
-	; 	return ; Solo/Creature Animation, nobody to swap with
-	; endIf
-	; UnregisterforUpdate()
-	; ; GoToState("")
-	; ; Find position to swap to
-	; int AdjustPos = GetAdjustPos()
-	; int NewPos = sslUtility.IndexTravel(AdjustPos, ActorCount, backwards)
-	; Actor AdjustActor = Positions[AdjustPos]
-	; Actor MovedActor  = Positions[NewPos]
-	; if MovedActor == AdjustActor
-	; 	Log("MovedActor["+NewPos+"] == AdjustActor["+AdjustPos+"] -- "+Positions, "ChangePositions() Error")
-	; 	RegisterForSingleUpdate(0.2)
-	; 	return
-	; endIf
-	; ; Shuffle actor positions
-	; Positions[AdjustPos] = MovedActor
-	; Positions[NewPos] = AdjustActor
-	; ; New adjustment profile
-	; ; UpdateActorKey()
-	; UpdateAdjustKey()
-	; Log(AdjustKey, "Adjustment Profile")
-	; ; Sync new positions
-	; AdjustPos = NewPos
-	; ; GoToState("Animating")
-	; ResetPositions()
-	; SendThreadEvent("PositionChange")
-	; RegisterForSingleUpdate(1.0)
-EndFunction
 
 bool Function HasPlayer()
 	return HasPlayer

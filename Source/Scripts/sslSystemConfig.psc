@@ -145,6 +145,7 @@ int property EndAnimation auto hidden
 int property ToggleFreeCamera auto hidden
 int property TargetActor auto hidden
 int property AdjustSchlong auto hidden
+int property ChangePositions auto hidden
 
 ; Floats
 float property CumTimer auto hidden
@@ -1106,7 +1107,6 @@ bool property UseFemaleNudeSuit auto hidden
 bool property RestrictGenderTag auto hidden
 bool property FixVictimPos auto hidden
 bool property ForceSort auto hidden
-int property ChangePositions auto hidden
 
 bool function UsesNudeSuit(bool IsFemale)
 	return false
