@@ -91,12 +91,15 @@ SoundCategory property AudioVoice auto
 bool Property bInstallDefaults Auto Hidden
 bool Property bInstallDefaultsCrt Auto Hidden
 
+; Animation Filtering
+bool Property UseStrapons Auto Hidden		; 'female in male positions?'
+int Property iFutaBehavior Auto Hidden	; 0: Treat as Male, 1: Treat as Female
+
 ; Booleans
 bool property RestrictAggressive auto hidden
 bool property AllowCreatures auto hidden
 bool property UseCreatureGender auto hidden
 bool property NPCSaveVoice auto hidden
-bool property UseStrapons auto hidden
 bool property RedressVictim auto hidden
 bool property UndressAnimation auto hidden
 bool property UseLipSync auto hidden

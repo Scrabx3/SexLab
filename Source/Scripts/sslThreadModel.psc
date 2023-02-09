@@ -1255,10 +1255,20 @@ int[] Function ShiftKeys(int[] aiKeys)
 	int k = aiKeys.Length
 	While(k > 0)
 		k -= 1
-		If(sslActorData.IsFuta(aiKeys[k]) && !sslActorData.IsMaleOverwrite(aiKeys[k]))
-			ActorAlias[k].OverwriteMyGender(false)
-			ArrangePositions()
-			return GetPositionDataConfig()
+		If(sslActorData.IsFuta(aiKeys[k]))
+			If(Config.iFutaBehavior == 0)
+				If(!sslActorData.IsMaleOverwrite(aiKeys[k]))
+					ActorAlias[k].OverwriteMyGender(false)
+					ArrangePositions()
+					return GetPositionDataConfig()
+				EndIf
+			ElseIf(Config.iFutaBehavior == 1)
+				If(!sslActorData.IsFemaleOverwrite(aiKeys[k]))
+					ActorAlias[k].OverwriteMyGender(true)
+					ArrangePositions()
+					return GetPositionDataConfig()
+				EndIf
+			EndIf
 		EndIf
 	EndWhile
 	int i = aiKeys.Length

@@ -1080,6 +1080,7 @@ function AnimationSettings()
 	AddToggleOptionST("UndressAnimation","$SSL_UndressAnimation", Config.UndressAnimation)
 	AddToggleOptionST("RedressVictim","$SSL_VictimsRedress", Config.RedressVictim)
 	AddToggleOptionST("StraponsFemale","$SSL_FemalesUseStrapons", Config.UseStrapons)
+	AddToggleOptionST("FutaBehavior","$SSL_FutaBehavior", Config.iFutaBehavior)
 	AddToggleOptionST("RemoveHeelEffect","$SSL_RemoveHeelEffect", Config.RemoveHeelEffect)
 	AddToggleOptionST("BedRemoveStanding","$SSL_BedRemoveStanding", Config.BedRemoveStanding)
 	; AddToggleOptionST("RagdollEnd","$SSL_RagdollEnding", Config.RagdollEnd)
@@ -3797,6 +3798,22 @@ state StraponsFemale
 		SetInfoText("$SSL_InfoUseStrapons")
 	endEvent
 endState
+
+state FutaBehavior
+	event OnSelectST()
+		Config.iFutaBehavior = 1 - Config.iFutaBehavior
+		SetToggleOptionValueST(Config.iFutaBehavior)
+	endEvent
+	event OnDefaultST()
+		Config.iFutaBehavior = 0
+		SetToggleOptionValueST(Config.UseStrapons)
+	endEvent
+	event OnHighlightST()
+		SetInfoText("$SSL_InfoFutaBehavior")
+	endEvent
+endState
+
+
 state NudeSuitMales
 	event OnSelectST()
 		Config.UseMaleNudeSuit = !Config.UseMaleNudeSuit
