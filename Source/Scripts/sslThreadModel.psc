@@ -1825,11 +1825,12 @@ Function AdjustForward(bool backwards = false, bool AdjustStage = false)
 		PlayHotkeyFX(0, backwards)
 		Animation.AdjustForward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
 		AdjustAlias.RefreshLoc()
-		Utility.Wait(0.5)
+		Utility.Wait(0.1)
 		If(!Input.IsKeyPressed(Hotkeys[kAdjustForward]))
 			RegisterForSingleUpdate(0.2)
 			return
 		EndIf
+		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
@@ -1841,11 +1842,12 @@ Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
 		PlayHotkeyFX(0, backwards)
 		Animation.AdjustSideways(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
 		RealignActors()
-		Utility.Wait(0.5)
+		Utility.Wait(0.1)
 		If(!Input.IsKeyPressed(Hotkeys[kAdjustSideways]))
 			RegisterForSingleUpdate(0.2)
 			return
 		EndIf
+		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
@@ -1857,11 +1859,12 @@ Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
 		PlayHotkeyFX(2, backwards)
 		Animation.AdjustUpward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
 		RealignActors()
-		Utility.Wait(0.5)
+		Utility.Wait(0.1)
 		If(!Input.IsKeyPressed(Hotkeys[kAdjustUpward]))
 			RegisterForSingleUpdate(0.2)
 			return
 		EndIf
+		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
@@ -1881,11 +1884,12 @@ Function RotateScene(bool backwards = false)
 			CenterLocation[5] = CenterLocation[5] + 360.0
 		EndIf
 		CenterOnCoords(CenterLocation[0], CenterLocation[1], CenterLocation[2], 0, 0, CenterLocation[5], true)
-		Utility.Wait(0.5)
+		Utility.Wait(0.1)
 		If(!Input.IsKeyPressed(Hotkeys[kRotateScene]))
 			RegisterForSingleUpdate(0.2)
 			return
 		EndIf
+		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
@@ -1895,7 +1899,6 @@ Function AdjustSchlong(bool backwards = false)
 	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
 	If(Math.Abs(Schlong) <= 9)
 		Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
-		AdjustAlias.GetPositionInfo()
 		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
 		PlayHotkeyFX(2, !backwards)
 	EndIf

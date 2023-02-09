@@ -3166,8 +3166,7 @@ endState
 
 Faction Property AnimatingFaction
 	Faction Function Get()
-		MiscUtil.PrintConsole("Access of an internal property 'AnimatingFaction'. See Log for more information")
-		Debug.TraceStack("Access internal property 'Animating Faction")
+		Log("Access internal property 'Animating Faction", "WARNING")
 		return Config.AnimatingFaction
 	EndFunction
 EndProperty
