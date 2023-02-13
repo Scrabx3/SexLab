@@ -50,14 +50,22 @@ sslThreadController function GetController(int tid)
 endfunction
 
 int function FindActorController(Actor ActorRef)
+	float f = 3.4 * Math.pow(10, 38)	; Float max
+	int ret = -1
 	int i = 0
 	While(i < Threads.Length)
 		If(Threads[i].FindSlot(ActorRef) != -1)
-			return i
+			String s = Threads[i].GetState()
+			If(s == "Animating" || s == "Making")
+				return i
+			ElseIf(Threads[i].StartedAt < f)
+				f = Threads[i].StartedAt
+				ret = i
+			EndIf
 		EndIf
 		i += 1
 	Endwhile
-	return -1
+	return ret
 endFunction
 
 sslThreadController function GetActorController(Actor ActorRef)

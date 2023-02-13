@@ -3813,33 +3813,33 @@ state FutaBehavior
 	endEvent
 endState
 
+; state NudeSuitMales
+; 	event OnSelectST()
+; 		Config.UseMaleNudeSuit = !Config.UseMaleNudeSuit
+; 		SetToggleOptionValueST(Config.UseMaleNudeSuit)
+; 	endEvent
+; 	event OnDefaultST()
+; 		Config.UseMaleNudeSuit = false
+; 		SetToggleOptionValueST(Config.UseMaleNudeSuit)
+; 	endEvent
+; 	event OnHighlightST()
+; 		SetInfoText("$SSL_InfoMaleNudeSuit")
+; 	endEvent
+; endState
+; state NudeSuitFemales
+; 	event OnSelectST()
+; 		Config.UseFemaleNudeSuit = !Config.UseFemaleNudeSuit
+; 		SetToggleOptionValueST(Config.UseFemaleNudeSuit)
+; 	endEvent
+; 	event OnDefaultST()
+; 		Config.UseFemaleNudeSuit = false
+; 		SetToggleOptionValueST(Config.UseFemaleNudeSuit)
+; 	endEvent
+; 	event OnHighlightST()
+; 		SetInfoText("$SSL_InfoFemaleNudeSuit")
+; 	endEvent
+; endState
 
-state NudeSuitMales
-	event OnSelectST()
-		Config.UseMaleNudeSuit = !Config.UseMaleNudeSuit
-		SetToggleOptionValueST(Config.UseMaleNudeSuit)
-	endEvent
-	event OnDefaultST()
-		Config.UseMaleNudeSuit = false
-		SetToggleOptionValueST(Config.UseMaleNudeSuit)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoMaleNudeSuit")
-	endEvent
-endState
-state NudeSuitFemales
-	event OnSelectST()
-		Config.UseFemaleNudeSuit = !Config.UseFemaleNudeSuit
-		SetToggleOptionValueST(Config.UseFemaleNudeSuit)
-	endEvent
-	event OnDefaultST()
-		Config.UseFemaleNudeSuit = false
-		SetToggleOptionValueST(Config.UseFemaleNudeSuit)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoFemaleNudeSuit")
-	endEvent
-endState
 string[] VoiceNames
 state PlayerVoice
 	event OnMenuOpenST()

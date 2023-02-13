@@ -3163,10 +3163,9 @@ state Enabled
 	endEvent
 endState
 
-
+; Redundant but some authors think they are funny linking to this property
 Faction Property AnimatingFaction
 	Faction Function Get()
-		Log("Access internal property 'Animating Faction", "WARNING")
 		return Config.AnimatingFaction
 	EndFunction
 EndProperty

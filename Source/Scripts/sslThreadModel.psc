@@ -798,18 +798,6 @@ Function DisableRedress(Actor ActorRef = none, bool disabling = true)
 	endIf
 EndFunction
 
-Function DisableRagdollEnd(Actor ActorRef = none, bool disabling = true)
-	if ActorRef && Positions.Find(ActorRef) != -1
-		ActorAlias(ActorRef).DoRagdoll = !disabling
-	else
-		ActorAlias[0].DoRagdoll = !disabling
-		ActorAlias[1].DoRagdoll = !disabling
-		ActorAlias[2].DoRagdoll = !disabling
-		ActorAlias[3].DoRagdoll = !disabling
-		ActorAlias[4].DoRagdoll = !disabling
-	endIf
-EndFunction
-
 Function DisablePathToCenter(Actor ActorRef = none, bool disabling = true)
 	if ActorRef && Positions.Find(ActorRef) != -1
 		ActorAlias(ActorRef).DisablePathToCenter(disabling)
@@ -2386,6 +2374,7 @@ Race Property CreatureRef
 			If(!Positions[i].HasKeyword(npc))
 				return Positions[i].GetRace()
 			EndIf
+			i += 1
 		EndWhile
 		return none
 	EndFunction
@@ -2400,6 +2389,18 @@ float[] Property RealTime
 EndProperty
 
 Function UpdateAdjustKey()
+EndFunction
+
+Function DisableRagdollEnd(Actor ActorRef = none, bool disabling = true)
+	if ActorRef && Positions.Find(ActorRef) != -1
+		ActorAlias(ActorRef).DoRagdoll = !disabling
+	else
+		ActorAlias[0].DoRagdoll = !disabling
+		ActorAlias[1].DoRagdoll = !disabling
+		ActorAlias[2].DoRagdoll = !disabling
+		ActorAlias[3].DoRagdoll = !disabling
+		ActorAlias[4].DoRagdoll = !disabling
+	endIf
 EndFunction
 
 bool Function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppress = false)
@@ -2453,5 +2454,5 @@ string[] Function AddString(string[] ArrayValues, string ToAdd, bool RemoveDupes
 EndFunction
 
 string Function GetHook()
-	return Hooks[0] ; v1.35 Legacy support, pre multiple hooks
+	return Hooks[0]
 EndFunction
