@@ -61,7 +61,7 @@ Function SetStripping(int aiSlots, bool abStripWeapons)
 EndFunction
 
 bool Function IsAggressor()
-	return Thread.Victims.Length && !IsVictim()
+	return Thread.IsAggressive && !IsVictim()
 EndFunction
 
 bool function IsVictim()
@@ -908,7 +908,7 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 Function PlaceActor(ObjectReference akCenter)
 	Log("PlaceActor on " + ActorRef)
 	LockActor()
-	ActorRef.SetVehicle(akCenter)
+	; ActorRef.SetVehicle(akCenter)
 	; If(Config.DisableScale)
 	; 	ActorScale = 1.0
 	; 	AnimScale = 1.0
@@ -992,13 +992,13 @@ Function UnplaceActor()
 	; If(ActorScale != 1.0 || AnimScale != 1.0)
 	; 	ActorRef.SetScale(ActorScale)
 	; EndIf
-	; If(Config.HasNiOverride)
-	; 	bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
-	; 	bool UpdateNiOScale = NiOverride.RemoveNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
-	; 	if UpdateNiOPosition || UpdateNiOScale
-	; 		NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
-	; 	endIf
-	; EndIf
+	If(Config.HasNiOverride)
+		bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
+		bool UpdateNiOScale = NiOverride.RemoveNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
+		If(UpdateNiOPosition || UpdateNiOScale)
+			NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
+		EndIf
+	EndIf
 	Debug.SendAnimationEvent(ActorRef, "SOSFlaccid")
 EndFunction
 
@@ -1008,9 +1008,7 @@ Function UnlockActor()
 	ActorRef.RemoveFromFaction(AnimatingFaction)
 	If(ActorRef == PlayerRef)
 		Game.SetPlayerAIDriven(false)
-		If(Config.AutoTFC)
-			MiscUtil.SetFreeCameraState(false)
-		EndIf
+		MiscUtil.SetFreeCameraState(false)
 		; COMEBACK: See LockActor()
     ; UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", true)
 	Else
@@ -1021,6 +1019,7 @@ Function UnlockActor()
 	ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", false)
 EndFunction
 
+; TODO: Completely overhaul this
 Function DoStatistics()
 	Actor VictimRef = Thread.VictimRef
 	if IsVictim()

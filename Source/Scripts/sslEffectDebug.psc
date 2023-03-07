@@ -27,7 +27,37 @@ endFunction
 ; float TimeEnd
 event OnEffectStart(Actor TargetRef, Actor CasterRef)
 	SexLab.QuickStart(CasterRef, TargetRef)
+	; TargetRef.SetDontMove(true)
+	; Actor[] p = new Actor[2]
+	; p[0] = CasterRef
+	; p[1] = TargetRef
+	; float[] o = new float[8]
 
+	; Form xMarker = Game.GetForm(0x3B)
+	; ObjectReference center = CasterRef.PlaceAtMe(xMarker, 1)
+	; TargetRef.SetVehicle(center)
+	; CasterRef.SetVehicle(center)
+
+	; ; sslpp.SetPositionsEx(p, center, o)
+
+	; Utility.Wait(10)
+
+	; TargetRef.SetVehicle(none)
+	; CasterRef.SetVehicle(none)
+	; Debug.Notification("Vehicle cleared")
+
+	; Form carriage = Game.GetForm(0x75C16)
+	; ObjectReference vehicle = CasterRef.PlaceAtMe(carriage, 1, false, true)
+	; vehicle.MoveTo(CasterRef, 500.0)
+	; vehicle.Enable()
+
+	; CasterRef.SetVehicle(vehicle)
+
+	; Idle sway = Game.GetForm(0x106AE3) as Idle
+	; CasterRef.PlayIdle(sway)
+
+	; Idle Reset = Game.GetForm(0xE6538) as Idle
+	; CasterRef.PlayIdle(Reset)
 
 	; Form UmbraBossQuest = Game.GetFormFromFile(0xBFC, "ccbgssse016-umbra.esm")
 	; Log("UmbraBossQuest: "+UmbraBossQuest)

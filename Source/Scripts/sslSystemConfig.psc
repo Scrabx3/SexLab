@@ -715,7 +715,7 @@ function Reload()
 	; SexLab = SexLabUtil.GetAPI()
 
 	; SetVehicle Scaling Fix
-	; SexLabUtil.VehicleFixMode((DisableScale as int))
+	SexLabUtil.VehicleFixMode(DisableScale as int)
 
 	; Configure SFX & Voice volumes
 	AudioVoice.SetVolume(VoiceVolume)

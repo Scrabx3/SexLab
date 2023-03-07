@@ -109,10 +109,10 @@ EndProperty
 float[] Property SkillBonus auto hidden ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
 float[] Property SkillXP auto hidden    ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
 
-bool[] Property IsType auto hidden ; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty
+bool[] Property IsType auto hidden 			; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty
 bool Property IsAggressive hidden
 	bool Function get()
-		return IsType[0] || Victims.Length || Tags.Find("Aggressive")
+		return IsType[0] || GetAllVictims().Length || Tags.Find("Aggressive")
 	endfunction
 	Function set(bool value)
 		IsType[0] = value
@@ -200,23 +200,6 @@ float Property TotalTime hidden
 	EndFunction
 EndProperty
 
-Actor[] property Victims auto hidden
-Actor property VictimRef hidden
-	Actor Function Get()
-		If(Victims.Length)
-			return Victims[0]
-		EndIf
-		return none
-	EndFunction
-	Function Set(Actor ActorRef)
-		If(!ActorRef)
-			return
-		ElseIf(Victims.Find(ActorRef) == -1)
-			Victims = PapyrusUtil.PushActor(Victims, ActorRef)
-		EndIf
-	EndFunction
-EndProperty
-
 bool property DisableOrgasms auto hidden
 
 ; Beds
@@ -299,7 +282,10 @@ string ActorKeys
 ; Animating
 float SkillTime
 
-; Debug testing
+; ------------------------------------------------------- ;
+; --- Data Keys					                              --- ;
+; ------------------------------------------------------- ;
+
 int[] Function GetPositionData()
 	int[] ret = Utility.CreateIntArray(Positions.Length)
 	int j = 0
@@ -310,9 +296,7 @@ int[] Function GetPositionData()
 	return ret
 EndFunction
 
-; Same as GetPositionData() but will account for gender specific configurations
-; Mostly a wrapper to loosely match animation keys/validate animations
-; Remember that GetAnimation() functions have their own backups in place
+; Same as GetPositionData() but will apply config settings before returning
 int[] Function GetPositionDataConfig()
 	int[] ret = GetPositionData()
 	If(!Config.UseCreatureGender)
@@ -915,69 +899,38 @@ bool Function PregnancyRisk(Actor ActorRef, bool AllowFemaleCum = false, bool Al
 		&& (Males > 0 || (AllowFemaleCum && Females > 1 && Config.AllowFFCum) || (AllowCreatureCum && MaleCreatures > 0))
 EndFunction
 
-; Aggressive/Victim Setup
+; ------------------------------------------------------- ;
+; --- Victim Data 				                            --- ;
+; ------------------------------------------------------- ;
+
+Actor[] Function GetAllVictims()
+	Actor[] ret = new Actor[5]
+	int i = 0
+	While(i < Positions.Length)
+		If(ActorAlias[i].IsVictim())
+			ret[i] = Positions[i]
+		EndIf
+		i += 1
+	EndWhile
+	return PapyrusUtil.RemoveActor(ret, none)
+EndFunction
+
 Function SetVictim(Actor ActorRef, bool Victimize = true)
-	If(Positions.Find(ActorRef) == -1)
+	sslActorAlias vic = ActorAlias(ActorRef)
+	If(!vic)
 		return
 	EndIf
-	ActorAlias(ActorRef).SetVictim(Victimize)
-	If(Victimize)
-		Victims = PapyrusUtil.RemoveActor(Victims, ActorRef)
-	ElseIf(Victims.Find(ActorRef) == -1)
-		Victims = PapyrusUtil.PushActor(Victims, ActorRef)
-	EndIf
+	vic.SetVictim(Victimize)
 EndFunction
 
 bool Function IsVictim(Actor ActorRef)
-	return Victims.Find(ActorRef) != -1
+	sslActorAlias vic = ActorAlias(ActorRef)
+	return vic && vic.IsVictim()
 EndFunction
 
 bool Function IsAggressor(Actor ActorRef)
-	return Victims.Length && !IsVictim(ActorRef)
-EndFunction
-
-int Function GetHighestPresentRelationshipRank(Actor ActorRef)
-	if Positions.Length <= 1
-		If(ActorRef == Positions[0])
-			return 0
-		Else
-			return ActorRef.GetRelationshipRank(Positions[0])
-		EndIf
-	endIf
-	int out = -4 ; lowest possible
-	int i = Positions.Length
-	while i > 0 && out < 4
-		i -= 1
-		if Positions[i] != ActorRef
-			int rank = ActorRef.GetRelationshipRank(Positions[i])
-			if rank > out
-				out = rank
-			endIf
-		endIf
-	endWhile
-	return out
-EndFunction
-
-int Function GetLowestPresentRelationshipRank(Actor ActorRef)
-	if Positions.Length <= 1
-		If(ActorRef == Positions[0])
-			return 0
-		Else
-			return ActorRef.GetRelationshipRank(Positions[0])
-		EndIf
-	endIf
-	int out = 4 ; highest possible
-	int i = Positions.Length
-	while i > 0 && out > -4
-		i -= 1
-		if Positions[i] != ActorRef
-			int rank = ActorRef.GetRelationshipRank(Positions[i])
-			if rank < out
-				out = rank
-			endIf
-		endIf
-	endWhile
-	return out
+	sslActorAlias agr = ActorAlias(ActorRef)
+	return agr && agr.IsAggressor()
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -2235,7 +2188,6 @@ Function Initialize()
 	SkillBonus = new float[6]
 	CenterLocation = new float[6]
 	Genders = new int[4]
-	Victims = PapyrusUtil.ActorArray(0)
 	Positions = PapyrusUtil.ActorArray(0)
 	CustomAnimations = sslUtility.AnimationArray(0)
 	PrimaryAnimations = sslUtility.AnimationArray(0)
@@ -2327,6 +2279,29 @@ Function SetBedding(int flag = 0)
 EndFunction
 
 bool Property FastEnd auto hidden
+
+Actor[] property Victims
+	Actor[] Function Get()
+		GetAllVictims()
+	EndFunction
+EndProperty
+
+Actor property VictimRef hidden
+	Actor Function Get()
+		Actor[] vics = GetAllVictims()
+		If(vics.Length)
+			return vics[0]
+		EndIf
+		return none
+	EndFunction
+	Function Set(Actor ActorRef)
+		sslActorAlias vic = ActorAlias(ActorRef)
+		If(!vic)
+			return
+		EndIf
+		vic.SetVictim(true)
+	EndFunction
+EndProperty
 
 ; Unnecessary, just use OnBeginState()/OnEndState()
 Function Action(string FireState)
@@ -2455,4 +2430,48 @@ EndFunction
 
 string Function GetHook()
 	return Hooks[0]
+EndFunction
+
+int Function GetHighestPresentRelationshipRank(Actor ActorRef)
+	if Positions.Length <= 1
+		If(ActorRef == Positions[0])
+			return 0
+		Else
+			return ActorRef.GetRelationshipRank(Positions[0])
+		EndIf
+	endIf
+	int out = -4 ; lowest possible
+	int i = Positions.Length
+	while i > 0 && out < 4
+		i -= 1
+		if Positions[i] != ActorRef
+			int rank = ActorRef.GetRelationshipRank(Positions[i])
+			if rank > out
+				out = rank
+			endIf
+		endIf
+	endWhile
+	return out
+EndFunction
+
+int Function GetLowestPresentRelationshipRank(Actor ActorRef)
+	if Positions.Length <= 1
+		If(ActorRef == Positions[0])
+			return 0
+		Else
+			return ActorRef.GetRelationshipRank(Positions[0])
+		EndIf
+	endIf
+	int out = 4 ; highest possible
+	int i = Positions.Length
+	while i > 0 && out > -4
+		i -= 1
+		if Positions[i] != ActorRef
+			int rank = ActorRef.GetRelationshipRank(Positions[i])
+			if rank < out
+				out = rank
+			endIf
+		endIf
+	endWhile
+	return out
 EndFunction
