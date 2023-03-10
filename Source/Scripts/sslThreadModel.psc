@@ -112,7 +112,7 @@ float[] Property SkillXP auto hidden    ; [0] Foreplay, [1] Vaginal, [2] Anal, [
 bool[] Property IsType auto hidden 			; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty
 bool Property IsAggressive hidden
 	bool Function get()
-		return IsType[0] || GetAllVictims().Length || Tags.Find("Aggressive")
+		return IsType[0] || GetAllVictims().Length || Tags.Find("Aggressive") > -1
 	endfunction
 	Function set(bool value)
 		IsType[0] = value
@@ -1272,7 +1272,7 @@ EndFunction
 
 ; Set active animation data only
 Function SetAnimationImpl(sslBaseAnimation akAnimation)
-	LogConsole("Setting Animation to " + Animation.Name)
+	LogConsole("Setting Animation to " + akAnimation.Name)
 	Animation = akAnimation
 	; IsType = [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty, [6] HadVaginal, [7] HadAnal, [8] HadOral
 	String[] animtags = Animation.GetTags()
