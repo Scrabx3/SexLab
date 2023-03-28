@@ -53,6 +53,13 @@ function ClearCum(Actor ActorRef)
 	if !ActorRef
 		return
 	endIf
+
+	int handle = ModEvent.Create("Sexlab_ClearCum")
+	if handle
+		ModEvent.PushForm(handle, ActorRef)
+		ModEvent.Send(handle)
+	endIf
+
 	ActorRef.DispelSpell(Vaginal1Oral1Anal1)
 	ActorRef.DispelSpell(Vaginal2Oral1Anal1)
 	ActorRef.DispelSpell(Vaginal2Oral2Anal1)
@@ -84,6 +91,15 @@ endFunction
 function AddCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, bool Anal = true)
 	if !ActorRef && !Vaginal && !Oral && !Anal
 		return ; Nothing to do
+	endIf
+
+	int handle = ModEvent.Create("Sexlab_AddCum")
+	if handle
+		ModEvent.PushForm(handle, ActorRef)
+		ModEvent.PushBool(handle, Vaginal)
+		ModEvent.PushBool(handle, Oral)
+		ModEvent.PushBool(handle, Anal)
+		ModEvent.Send(handle)
 	endIf
 
 	int kVaginal = ((Vaginal || ActorRef.HasMagicEffectWithKeyword(CumVaginalStackedKeyword)) as int) + (ActorRef.HasMagicEffectWithKeyword(CumVaginalKeyword) as int)
