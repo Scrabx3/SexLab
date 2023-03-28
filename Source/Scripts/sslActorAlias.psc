@@ -908,7 +908,7 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 Function PlaceActor(ObjectReference akCenter)
 	Log("PlaceActor on " + ActorRef)
 	LockActor()
-	; ActorRef.SetVehicle(akCenter)
+	ActorRef.SetVehicle(akCenter)
 	; If(Config.DisableScale)
 	; 	ActorScale = 1.0
 	; 	AnimScale = 1.0

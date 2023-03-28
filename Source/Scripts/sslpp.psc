@@ -5,6 +5,7 @@ String[] Function RemoveStringEx(String[] asArray, String asRemove) native globa
 
 ; Offsets is a [akReferences.Lenth] x 4 - matrix, each row containing data in the following order: [x offset, y offset, z offset, z angle offset]
 Function SetPositions(Actor[] akReferences, ObjectReference akCenter) native global
+Function LocateReferences(Actor[] akReferences, ObjectReference akCenter, float[] afOffsets) native global
 Function SetPositionsEx(Actor[] akReferences, ObjectReference akCenter, float[] afOffsets) native global
 bool Function MatchTags(String[] asTags, String[] asMatch) native global
 
