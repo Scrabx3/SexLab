@@ -374,6 +374,27 @@ int function TransCreatureCount(Actor[] Positions)
 	return TransCount[2] + TransCount[3]
 endFunction
 
+;/* ValidateActor
+* * Checks if the given actor is a valid target for SexLab animations.
+* * 
+* * @param: ActorRef, the actor to check if it is valid for SexLab Animations.
+* * @return: an int that is 1 if the actor is valid or a negative value if it is not valid
+* *   -1 	= The Actor does not exists (it is None)
+*	*		-2	= The Actor is from a disabled race
+* *   -10 = The Actor is already part of a SexLab animation
+* *   -11 = The Actor is forbidden form SexLab animations
+* *   -12 = The Actor does not have the 3D loaded
+* *   -13 = The Actor is dead (He's dead Jim.)
+* *   -14 = The Actor is disabled
+* *   -15 = The Actor is flying (so it cannot be SexLab animated)
+* *   -16 = The Actor is on mount (so it cannot be SexLab animated)
+* *   -17 = The Actor is a creature but creature animations are disabled
+* *   -18 = The Actor is a creature that is not supported by SexLab
+*/;
+int function ValidateActor(Actor ActorRef)
+	return ActorLib.ValidateActor(ActorRef)
+endFunction
+
 ;/* IsValidActor
 * * Checks if given actor is a valid target for SexLab animation.
 * * 
@@ -381,7 +402,7 @@ endFunction
 * * @return: True if the actor is valid, and False if it is not.
 */;
 bool function IsValidActor(Actor ActorRef)
-	return ActorLib.GetIsActorValid(ActorRef)
+	return ActorLib.IsValidActor(ActorRef)
 endFunction
 
 ;/* IsActorActive
@@ -533,7 +554,7 @@ endFunction
 *	*	@param: akPositions	- The positons to sort
 */;
 Function SortPositions(Actor[] akPositions)
-	SortPositions(akPositions)
+	ThreadLib.SortPositions(akPositions)
 EndFunction
 
 ;/* AddCum
@@ -3067,11 +3088,6 @@ endFunction
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByActorsTags(int ActorCount, Actor[] Positions, string Tags, string TagSuppress = "", bool RequireAll = true)
 	return CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, Tags, TagSuppress, RequireAll)
-endFunction
-
-;/* DEPRECIATED*/;
-int function ValidateActor(Actor ActorRef)
-	return ActorLib.ValidateActor(ActorRef)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
