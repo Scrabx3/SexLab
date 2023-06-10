@@ -187,6 +187,9 @@ endFunction
 ;\-----------------------------------------------/;
 
 Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimate = true, bool LeadIn = false)
+	If(!ActorRef)
+		return Utility.CreateFormArray(0)
+	EndIf
 	int[] strips = Config.GetStripSettings(GetGender(ActorRef) == 1, LeadIn, VictimRef, ActorRef == VictimRef)
 	return StripActorImpl(ActorRef, strips[0], strips[1], DoAnimate)
 endFunction
@@ -219,37 +222,6 @@ bool function IsStrippable(Form ItemRef)
 	return !IsNoStrip(ItemRef)
 endFunction
 
-Form[] Function StripActorImpl(Actor akActor, int aiSlots, bool abStripWeapons = true, bool abAnimate = false)
-	If(!akActor)
-		return Utility.CreateFormArray(0)
-	EndIf
-	abAnimate = abAnimate && akActor.GetWornForm(0x4)	; Body armor slot
-	If(abAnimate)
-		int Gender = akActor.GetLeveledActorBase().GetSex()
-		Debug.SendAnimationEvent(akActor, "Arrok_Undress_G" + Gender)
-		Utility.Wait(0.6)
-	EndIf
-	Form[] ret = sslpp.StripActor(akActor, aiSlots)
-	If(abStripWeapons)
-		Form RightHand = akActor.GetEquippedObject(1)
-		If(RightHand && IsStrippable(RightHand))
-			akActor.UnequipItemEX(RightHand, akActor.EquipSlot_RightHand, false)
-			ret = PapyrusUtil.PushForm(ret, LeftHand)
-			StorageUtil.SetIntValue(RightHand, "Hand", 1)
-		EndIf
-		Form LeftHand = akActor.GetEquippedObject(0)
-		If(LeftHand && IsStrippable(LeftHand))
-			akActor.UnequipItemEX(LeftHand, akActor.EquipSlot_LeftHand, false)
-			ret = PapyrusUtil.PushForm(ret, LeftHand)
-			StorageUtil.SetIntValue(RightHand, "Hand", 2)
-		EndIf
-	EndIf
-	If(abAnimate)
-		Utility.Wait(0.4)
-	EndIf
-	return ret
-EndFunction
-
 function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
 	If(!ActorRef)
 		return
@@ -274,30 +246,10 @@ EndFunction
 ; --- Actor Validation                                --- ;
 ; ------------------------------------------------------- ;
 
-; If the actor in some state that disallows animation by SL
-bool Function CanAnimateActor(Actor akActor) native global
-bool Function GetIsActorValid(Actor akActor)
-	If(!akActor)
-		Log("ValidateActor(NONE) -- FALSE -- Because they don't exist.")
-		return false
-	EndIf
-	String name = akActor.GetLeveledActorBase().GetName()
-	If(!CanAnimateActor(akActor))
-		Log("ValidateActor(" + name + ") -- FALSE -- They cannot be animated")
-		return false
-	ElseIf(akActor.IsInFaction(AnimatingFaction))
-		Log("ValidateActor(" + name + ") -- FALSE -- They appear to already be animating")
-		return false
-	ElseIf(akActor.IsInFaction(ForbiddenFaction))
-		Log("ValidateActor(" + name + ") -- FALSE -- They are not allowed to be animated")
-		return false
-	ElseIf(!akActor.HasKeyword(ActorTypeNPC) && (!Config.AllowCreatures || !sslCreatureAnimationSlots.HasCreatureType(akActor)))
-		Log("ValidateActor(" + name + ") -- FALSE -- They are an invalid creature")
-		return false
-	EndIf
-	Log("ValidateActor(" + name + ") -- TRUE -- MISS")
-	return true
-EndFunction
+bool function IsValidActor(Actor ActorRef)
+	return ValidateActor(ActorRef) > 0
+endFunction
+int function ValidateActor(Actor ActorRef) native
 
 function ForbidActor(Actor ActorRef)
 	if ActorRef
@@ -469,6 +421,45 @@ string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0)
 	return SexLabUtil.GetGenderTag(Females, Males, Creatures)
 endFunction
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+Form[] Function StripActorImpl(Actor akActor, int aiSlots, bool abStripWeapons = true, bool abAnimate = false)
+	abAnimate = abAnimate && akActor.GetWornForm(0x4)	; Body armor slot
+	If(abAnimate)
+		int Gender = akActor.GetLeveledActorBase().GetSex()
+		Debug.SendAnimationEvent(akActor, "Arrok_Undress_G" + Gender)
+		Utility.Wait(0.6)
+	EndIf
+	Form[] ret = sslpp.StripActor(akActor, aiSlots)
+	If(abStripWeapons)
+		Form RightHand = akActor.GetEquippedObject(1)
+		If(RightHand && IsStrippable(RightHand))
+			akActor.UnequipItemEX(RightHand, akActor.EquipSlot_RightHand, false)
+			ret = PapyrusUtil.PushForm(ret, LeftHand)
+			StorageUtil.SetIntValue(RightHand, "Hand", 1)
+		EndIf
+		Form LeftHand = akActor.GetEquippedObject(0)
+		If(LeftHand && IsStrippable(LeftHand))
+			akActor.UnequipItemEX(LeftHand, akActor.EquipSlot_LeftHand, false)
+			ret = PapyrusUtil.PushForm(ret, LeftHand)
+			StorageUtil.SetIntValue(RightHand, "Hand", 2)
+		EndIf
+	EndIf
+	If(abAnimate)
+		Utility.Wait(0.4)
+	EndIf
+	return ret
+EndFunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
 ;																																											;
 ;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
@@ -514,56 +505,6 @@ function legacy_AddCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, bo
 	LogRedundant("legacy_AddCum")
 endFunction
 
-bool function IsValidActor(Actor ActorRef)
-	return GetIsActorValid(ActorRef)
+bool function CanAnimate(Actor ActorRef)
+	return false
 endFunction
-
-int function ValidateActor(Actor ActorRef)
-	If(!ActorRef)
-		Log("ValidateActor(NONE) -- FALSE -- Because they don't exist.")
-		return -1
-	EndIf
-	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-	; Primary checks
-	if ActorRef.IsInFaction(AnimatingFaction)
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They appear to already be animating")
-		return -10
-	elseIf !ActorRef.Is3DLoaded()
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are not loaded")
-		return -12
-	elseIf ActorRef.IsDead() && ActorRef.GetActorValue("Health") < 1.0
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- He's dead Jim.")
-		return -13
-	elseIf ActorRef.IsDisabled()
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are disabled")
-		return -14
-	elseIf ActorRef.IsFlying()
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are flying.")
-		return -15
-	elseIf ActorRef.IsOnMount()
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are currently mounted.")
-		return -16
-	elseIf ActorRef.IsInFaction(ForbiddenFaction)
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are flagged as forbidden from animating.")
-		return -11
-	elseIf !CanAnimate(ActorRef)
-		ActorRef.AddToFaction(ForbiddenFaction)
-		Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are not supported for animation.")
-		return -11
-	elseIf !ActorRef.HasKeyword(ActorTypeNPC)
-		if !Config.AllowCreatures
-			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are possibly a creature but creature animations are currently disabled")
-			return -17
-		elseIf !sslCreatureAnimationSlots.HasCreatureType(ActorRef)
-			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are a creature type that is currently not supported ("+MiscUtil.GetRaceEditorID(BaseRef.GetRace())+")")
-			return -18
-		elseIf !CreatureSlots.HasAnimation(BaseRef.GetRace(), GetGender(ActorRef))
-			Log("ValidateActor("+BaseRef.GetName()+") -- FALSE -- They are valid creature type, but have no valid animations currently enabled or installed.")
-			return -19
-		endIf
-	endIf
-	Log("ValidateActor("+BaseRef.GetName()+") -- TRUE -- MISS")
-	return 1
-endFunction
-
-bool function CanAnimate(Actor ActorRef) native
