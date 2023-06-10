@@ -1387,7 +1387,7 @@ EndFunction
 
 State Ending
 	Event OnBeginState()
-		RegisterForSingleUpdate(0.025)	; 36 in game minutes, ~2 real time minutes with default timescale
+		RegisterForSingleUpdateGameTime(0.05)	; 9 seconds with timescale 20
 		SendThreadEvent("AnimationEnding")
 		HookAnimationEnding()
 		DisableHotkeys()
