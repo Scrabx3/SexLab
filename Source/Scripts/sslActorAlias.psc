@@ -908,7 +908,7 @@ int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, boo
 Function PlaceActor(ObjectReference akCenter)
 	Log("PlaceActor on " + ActorRef)
 	LockActor()
-	ActorRef.SetVehicle(akCenter)
+	; ActorRef.SetVehicle(akCenter)
 	; If(Config.DisableScale)
 	; 	ActorScale = 1.0
 	; 	AnimScale = 1.0
@@ -988,7 +988,7 @@ EndFunction
 Function UnplaceActor()
 	Log("UnplaceActor on " + ActorRef)
 	UnlockActor()
-	ActorRef.SetVehicle(none)
+	; ActorRef.SetVehicle(none)
 	; If(ActorScale != 1.0 || AnimScale != 1.0)
 	; 	ActorRef.SetScale(ActorScale)
 	; EndIf
@@ -1381,17 +1381,19 @@ endFunction
 function OverrideStrip(bool[] SetStrip)
 	if SetStrip.Length != 33
 		Thread.Log("Invalid strip override bool[] - Must be length 33 - was "+SetStrip.Length, "OverrideStrip()")
-	else
-		StripOverride = new int[2]
-		StripOverride[0] = 0
-		int i = 0
-		While(i < 32)
-			If(SetStrip[i])
-				i += Math.LeftShift(1, i)
-			EndIF
-		EndWhile
-		StripOverride[1] = SetStrip[32] as int
-	endIf
+		return
+	endif
+	StripOverride = new int[2]
+	int i = 0
+	int ii = 0
+	While(i < 32)
+		If(SetStrip[i])
+			ii += Math.LeftShift(1, i)
+		EndIF
+		i += 1
+	EndWhile
+	StripOverride[0] = ii
+	StripOverride[1] = SetStrip[32] as int
 endFunction
 
 function SetVictim(bool Victimize)
