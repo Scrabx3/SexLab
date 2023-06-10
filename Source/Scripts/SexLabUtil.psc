@@ -66,7 +66,7 @@ string function ActorName(Actor ActorRef) global
 endFunction
 
 int function GetGender(Actor ActorRef) global
-	return GetAPI().ActorLib.GetGender(ActorRef)
+	return GetAPI().GetGender(ActorRef)
 endFunction
 
 bool function IsActorActive(Actor ActorRef) global
@@ -74,7 +74,7 @@ bool function IsActorActive(Actor ActorRef) global
 endFunction
 
 bool function IsValidActor(Actor ActorRef) global
-	return GetAPI().ActorLib.IsValidActor(ActorRef)
+	return GetAPI().IsValidActor(ActorRef)
 endFunction
 
 bool function HasCreature(Actor ActorRef) global
@@ -86,7 +86,7 @@ bool function HasRace(Race RaceRef) global
 endFunction
 
 string function MakeGenderTag(Actor[] Positions) global
-	int[] Genders = GetAPI().ActorLib.GenderCount(Positions)
+	int[] Genders = GetAPI().GenderCount(Positions)
 	return GetGenderTag(Genders[1], Genders[0], Genders[2] + Genders[3])
 endFunction
 
