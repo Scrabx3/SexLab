@@ -1,11 +1,13 @@
 scriptname sslAnimationDefaults extends sslAnimationFactory
-
-sslSystemConfig Property config Auto
+{
+	Old default animations of SL. ALl of this is legacy and no longer used.
+	These animations are now distributed as an optional package
+}
 
 function LoadAnimations()
-	If(!config.bInstallDefaults)
-		return
-	EndIf
+	; Debug.Messagebox("It is no longer possible to register animations through the Papyrus API. Use the SceneBuilder Tool to generate .slr files instead")
+	; return
+
 	PrepareFactory()
 	if Game.GetCameraState() == 0
 		if Utility.IsInMenuMode()
@@ -196,12 +198,14 @@ function ArrokBlowjob(int id)
 	Base.Name    = "Arrok Blowjob"
 	Base.SoundFX = Sucking
 
+	; Submissive A1, Any
 	int a1 = Base.AddPosition(Female, Oral)
 	Base.AddPositionStage(a1, "Arrok_Blowjob_A1_S1", 0, silent = true, openMouth = true)
 	Base.AddPositionStage(a1, "Arrok_Blowjob_A1_S2", 0, silent = true, openMouth = true)
 	Base.AddPositionStage(a1, "Arrok_Blowjob_A1_S2", 0, silent = true, openMouth = true)
 	Base.AddPositionStage(a1, "Arrok_Blowjob_A1_S3", 0, silent = true, openMouth = true)
 
+	; Aggressor a2, Male/Futa
 	int a2 = Base.AddPosition(Male)
 	Base.AddPositionStage(a2, "Arrok_Blowjob_A2_S1", -120, side = -3.5, sos = -1)
 	Base.AddPositionStage(a2, "Arrok_Blowjob_A2_S2", -120, side = -3.5, sos = -1)
@@ -213,6 +217,7 @@ function ArrokBlowjob(int id)
 	Base.Save(id)
 endFunction
 
+; COPY DONE
 function ArrokBoobjob(int id)
 	sslBaseAnimation Base = Create(id)
 
@@ -388,6 +393,7 @@ function ArrokMaleMasturbation(int id)
 	Base.Save(id)
 endFunction
 
+; DONE
 function ArrokMissionary(int id)
 	sslBaseAnimation Base = Create(id)
 
@@ -754,6 +760,7 @@ function SexLabAggrDoggyStyle(int id)
 	Base.Save(id)
 endFunction
 
+; DONE
 function SexLabAggrMissionary(int id)
 	sslBaseAnimation Base = Create(id)
 
@@ -846,6 +853,7 @@ function SexLabHuggingSex(int id)
 	Base.Save(id)
 endFunction
 
+; DONE
 function SexLabMissionary(int id)
 	sslBaseAnimation Base = Create(id)
 
