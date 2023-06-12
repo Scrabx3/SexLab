@@ -123,9 +123,6 @@ string[] function GetRawTags()
 	return GetTags()
 endFunction
 
-; Below functions are technically fine to use
-; Most are legacy because their usage is ambiguous or go too complicated for basic access & manipulation
-
 bool function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppress = false)
 	bool Valid = ParseTags(CheckTags, RequireAll)
 	return (Valid && !Suppress) || (!Valid && Suppress)

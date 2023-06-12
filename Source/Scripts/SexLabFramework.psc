@@ -84,20 +84,6 @@ endProperty
 ; --- Return:
 ; sslThreadController:	An API instance to interact with the started scene. See sslThreadController.psc for more info
 ; None:									If an error occured
-
-
-;/* StartScene 
-* * The preferred way to create a SexLab Scene
-* * 
-* * @param: Actor[] akPositions, The actors to animate
-* * @param: String asTags, Requested animation tags (may be empty). Supported prefixes: '-' to disable a tag, '~' for OR-conjunctions. Example: "~A, B, ~C, -D" <=> Animation has tag B, does NOT have tag D and has EITHER tag A or C
-* * @param: Actor akSubmissive [OPTIONAL], Must be one of the participating actors. If specified, the given actor is considered submissive for the context of the animation
-* * @param: ObjectReference akCenter [OPTIONAL], If specified, SexLab will try to place all actors near or on the given reference
-* * @param: bool abAllowBed [OPTIONAL], If false, bed usage for this scene will be disabled. Will be ignored if akCenter is set
-*	*	@param: String asHook [OPTIONAL], A callback string to receive callback events. See 'Hooks' section below for details
-* *
-* * @return: An API instance to interact with the started scene. See sslThreadController.psc for more info, or none if an error occured
-*/;
 sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
 	sslThreadModel thread = NewThread()
 	If(!thread)
