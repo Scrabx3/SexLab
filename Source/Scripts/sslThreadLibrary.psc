@@ -83,231 +83,20 @@ EndFunction
 ; --- Cell Searching                              		--- ;
 ; ------------------------------------------------------- ;
 
-; TODO: Move all of these "FindActor" functions into the dll zzzz
-; NOTE: To do this properly Ill need Ashals dll sources first, or redefine RaceKeys in my own dll
+Actor[] function FindAvailableActors(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, string RaceKey = "") native
+Actor function FindAvailableActor(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, string RaceKey = "") native
+Actor function FindAvailableActorInFaction(Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True, string RaceKey = "", bool JustSameFloor = False) native
+Actor function FindAvailableActorWornForm(int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True, string RaceKey = "", bool JustSameFloor = False) native
 
-Actor function FindAvailableActor(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, string RaceKey = "")
-	if !CenterRef || FindGender > 3 || FindGender < -1 || Radius < 0.1
-		return none ; Invalid args
-	endIf
-	; Normalize creature genders search
-	if RaceKey != "" || FindGender >= 2
-		if FindGender == 0 || !Config.UseCreatureGender
-			FindGender = 2
-		elseIf FindGender == 1
-			FindGender = 3
-		endIf
-	endIf
-	; Create supression list
-	Form[] Suppressed = new Form[25]
-	Suppressed[24] = CenterRef
-	Suppressed[23] = IgnoreRef1
-	Suppressed[22] = IgnoreRef2
-	Suppressed[21] = IgnoreRef3
-	Suppressed[20] = IgnoreRef4
-	; Attempt 20 times before giving up.
-	int i = Suppressed.Length - 5
-	while i > 0
-		i -= 1
-		Actor FoundRef = Game.FindRandomActorFromRef(CenterRef, Radius)
-		if !FoundRef || FoundRef == none || (Suppressed.Find(FoundRef) == -1 && CheckActor(FoundRef, FindGender) && (RaceKey == "" || sslCreatureAnimationSlots.GetAllRaceKeys(FoundRef.GetLeveledActorBase().GetRace()).Find(RaceKey) != -1))
-			return FoundRef ; None means no actor in radius, give up now
-		endIf
-		Suppressed[i] = FoundRef
-	endWhile
-	; No actor found in attempts
-	return none
-endFunction
-
-Actor function FindAvailableActorInFaction(Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True, string RaceKey = "", bool JustSameFloor = False)
-	if !CenterRef || !FactionRef || FindGender > 3 || FindGender < -1 || Radius < 0.1
-		return none ; Invalid args
-	endIf
-	; Normalize creature genders search
-	if RaceKey != "" || FindGender >= 2
-		if FindGender == 0 || !Config.UseCreatureGender
-			FindGender = 2
-		elseIf FindGender == 1
-			FindGender = 3
-		endIf
-	endIf
-	; Create supression list
-	Form[] Suppressed = new Form[15] ; Reduce from 25 to 15 to gain speed
-	Suppressed[14] = CenterRef
-	Suppressed[13] = IgnoreRef1
-	Suppressed[12] = IgnoreRef2
-	Suppressed[11] = IgnoreRef3
-	Suppressed[10] = IgnoreRef4
-	; Attempt 20 times before giving up.
-	float Z = CenterRef.GetPositionZ()
-	int i = Suppressed.Length - 5
-	while i > 0
-		i -= 1
-		Actor FoundRef = Game.FindRandomActorFromRef(CenterRef, Radius)
-		if !FoundRef || (Suppressed.Find(FoundRef) == -1 && (!JustSameFloor || SameFloor(FoundRef, Z, 200)) && CheckActor(FoundRef, FindGender) && FoundRef.IsInFaction(FactionRef) == HasFaction && (RaceKey == "" || sslCreatureAnimationSlots.GetAllRaceKeys(FoundRef.GetLeveledActorBase().GetRace()).Find(RaceKey) != -1))
-			return FoundRef ; None means no actor in radius, give up now
-		endIf
-		Suppressed[i] = FoundRef
-	endWhile
-	; No actor found in attempts
-	return none
-endFunction
-
-Actor function FindAvailableActorWornForm(int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True, string RaceKey = "", bool JustSameFloor = False)
-	if !CenterRef || slotMask < 1 || FindGender > 3 || FindGender < -1 || Radius < 0.1
-		return none ; Invalid args
-	endIf
-	; Normalize creature genders search
-	if RaceKey != "" || FindGender >= 2
-		if FindGender == 0 || !Config.UseCreatureGender
-			FindGender = 2
-		elseIf FindGender == 1
-			FindGender = 3
-		endIf
-	endIf
-	; Create supression list
-	Form[] Suppressed = new Form[15] ; Reduce from 25 to 15 to gain speed
-	Suppressed[14] = CenterRef
-	Suppressed[13] = IgnoreRef1
-	Suppressed[12] = IgnoreRef2
-	Suppressed[11] = IgnoreRef3
-	Suppressed[10] = IgnoreRef4
-	; Attempt 20 times before giving up.
-	float Z = CenterRef.GetPositionZ()
-	int i = Suppressed.Length - 5
-	while i > 0
-		i -= 1
-		Actor FoundRef = Game.FindRandomActorFromRef(CenterRef, Radius)
-		if !FoundRef || FoundRef == none
-			return FoundRef ; None means no actor in radius, give up now
-		endIf
-		if (Suppressed.Find(FoundRef) == -1 && (!JustSameFloor || SameFloor(FoundRef, Z, 200)) && CheckActor(FoundRef, FindGender) && (RaceKey == "" || sslCreatureAnimationSlots.GetAllRaceKeys(FoundRef.GetLeveledActorBase().GetRace()).Find(RaceKey) != -1))
-			
-			Form ItemRef = FoundRef.GetWornForm(slotMask)
-			if ((ItemRef && ItemRef != none) == HasWornForm) && (!AvoidNoStripKeyword || !SexLabUtil.HasKeywordSub(ItemRef, "NoStrip"))
-				return FoundRef ; None means no actor in radius, give up now
-			endIf
-		endIf
-		Suppressed[i] = FoundRef
-	endWhile
-	; No actor found in attempts
-	return none
-endFunction
-
-; TODO: probably needs some love
-Actor[] function FindAvailablePartners(actor[] Positions, int total, int males = -1, int females = -1, float radius = 10000.0)
-	int ActorCount = Positions.Length
-	int needed = (total - ActorCount)
-	if needed <= 0
-		return Positions ; Nothing to do
-	endIf
-	actor[] ActorsRef = Positions
-	; Get needed gender counts based on current counts
-	int[] Genders = ActorLib.GenderCount(ActorsRef)
-	males -= Genders[0]
-	females -= Genders[1]
-	; Loop through until filled or we give up
-	int attempts = 30
-	while needed && attempts
-		; Determine needed gender
-		int findGender = -1
-		if males > 0 && females < 1
-			findGender = 0
-		elseif females > 0 && males < 1
-			findGender = 1
-		endIf
-		; Locate actor
-		actor FoundRef
-		if ActorCount == 2
-			FoundRef = FindAvailableActor(ActorsRef[0], radius, findGender, ActorsRef[1])
-		elseif ActorCount == 3
-			FoundRef = FindAvailableActor(ActorsRef[0], radius, findGender, ActorsRef[1], ActorsRef[2])
-		elseif ActorCount == 4
-			FoundRef = FindAvailableActor(ActorsRef[0], radius, findGender, ActorsRef[1], ActorsRef[2], ActorsRef[3])
-		else
-			FoundRef = FindAvailableActor(ActorsRef[0], radius, findGender)
-		endIf
-		; Validate/Add them
-		if !FoundRef
-			return ActorsRef ; None means no actor in radius, give up now
-		elseIf ActorsRef.Find(FoundRef) == -1
-			; Add actor
-			ActorsRef = PapyrusUtil.PushActor(ActorsRef, FoundRef)
-			; Update search counts
-			int gender = ActorLib.GetGender(FoundRef)
-			males   -= (gender == 0) as int
-			females -= (gender == 1) as int
-			needed  -= 1
-		endIf
-		attempts -= 1
-	endWhile
-	; Output whatever we have at this point
-	return ActorsRef
-endFunction
-
+Actor[] function FindAvailablePartners(actor[] Positions, int total, int males = -1, int females = -1, float radius = 10000.0) native
+Actor[] function FindAnimationPartnersImpl(String asAnimID, ObjectReference akCenterRef, float afRadius, Actor[] akIncludes) native
 Actor[] function FindAnimationPartners(sslBaseAnimation Animation, ObjectReference CenterRef, float Radius = 5000.0, Actor IncludedRef1 = none, Actor IncludedRef2 = none, Actor IncludedRef3 = none, Actor IncludedRef4 = none)
-	if !Animation || !CenterRef
-		return PapyrusUtil.ActorArray(0)
-	endIf
-	
-	Actor[] IncludedActors = sslUtility.MakeActorArray(IncludedRef1, IncludedRef2, IncludedRef3, IncludedRef4)
-	Actor[] Positions = PapyrusUtil.ActorArray(5)
-	int i
-	while i < Animation.PositionCount
-		; Determine needed gender and race
-		string RaceKey = ""
-		int FindGender = Animation.GetGender(i)
-		if FindGender > 1
-			RaceKey = Animation.GetRaceTypes()[i]
-		elseif FindGender > 0 && !(Animation.HasTag("Vaginal") || Animation.HasTag("Pussy") || Animation.HasTag("Cunnilingus") || Animation.HasTag("Futa"))
-			FindGender = -1
-		elseif FindGender == 0 && Config.UseStrapons && Animation.UseStrapon(i, 1)
-			FindGender = -1
-		endIf
-
-		; Locate the actor between the included actors
-		int a = IncludedActors.Length
-		while a > 0 
-			a -= 1
-			if CheckActor(IncludedActors[a], FindGender) && (RaceKey == "" || sslCreatureAnimationSlots.GetAllRaceKeys(IncludedActors[a].GetLeveledActorBase().GetRace()).Find(RaceKey) != -1)
-				Positions[i] = IncludedActors[a]
-				IncludedActors = PapyrusUtil.RemoveActor(IncludedActors, IncludedActors[a])
-				a = 0
-			endIf
-		endWhile
-		
-		; Find the nearby actor
-		if !Positions[i] || Positions[i] == none
-			Positions[i] = FindAvailableActor(CenterRef, Radius, FindGender, Positions[1], Positions[2], Positions[3], Positions[4], RaceKey)
-			; One more time just in case
-			if !Positions[i] || Positions[i] == none
-				Positions[i] = FindAvailableActor(CenterRef, Radius, FindGender, Positions[1], Positions[2], Positions[3], Positions[4], RaceKey)
-			endIf
-		endIf
-		
-		if !Positions[i] || Positions[i] == none
-			return PapyrusUtil.RemoveActor(Positions, none)
-		elseIf IncludedActors.Length > 0
-			IncludedActors = PapyrusUtil.RemoveActor(IncludedActors, Positions[i])
-		endIf
-		i += 1
-	endWhile
-	; Output whatever we have at this point
-	return PapyrusUtil.RemoveActor(Positions, none)
-endFunction
-
-; COMEBACK: This here should also become Legacy once things are moved into dll :)
-bool function SameFloor(ObjectReference BedRef, float Z, float Tolerance = 15.0)
-	return BedRef && Math.Abs(Z - BedRef.GetPositionZ()) <= Tolerance
-endFunction
-
-; COMEBACK: ??? - Make this redundant once no longer called here
-bool function CheckActor(Actor CheckRef, int CheckGender = -1)
-	if !CheckRef
-		return false
-	endIf
-	int IsGender = ActorLib.GetGender(CheckRef)
-	return ((CheckGender < 2 && IsGender < 2) || (CheckGender >= 2 && IsGender >= 2)) && (CheckGender == -1 || IsGender == CheckGender) && ActorLib.IsValidActor(CheckRef)
+	Actor[] includes = new Actor[4]
+	includes[0] = IncludedRef1
+	includes[1] = IncludedRef2
+	includes[2] = IncludedRef3
+	includes[3] = IncludedRef4
+	return FindAnimationPartnersImpl(Animation.PROXY_ID, CenterRef, Radius, PapyrusUtil.RemoveActor(includes, none))
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -441,7 +230,18 @@ bool function IsSingleBed(ObjectReference BedRef)
 	return GetBedType(BedRef) == 2
 endFunction
 
-; w/e this these are even good for
+bool function SameFloor(ObjectReference BedRef, float Z, float Tolerance = 15.0)
+	return BedRef && Math.Abs(Z - BedRef.GetPositionZ()) <= Tolerance
+endFunction
+
+bool function CheckActor(Actor CheckRef, int CheckGender = -1)
+	if !CheckRef
+		return false
+	endIf
+	int IsGender = ActorLib.GetGender(CheckRef)
+	return ((CheckGender < 2 && IsGender < 2) || (CheckGender >= 2 && IsGender >= 2)) && (CheckGender == -1 || IsGender == CheckGender) && ActorLib.IsValidActor(CheckRef)
+endFunction
+
 int function FindNext(Actor[] Positions, sslBaseAnimation Animation, int offset, bool FindCreature)
 	while offset
 		offset -= 1

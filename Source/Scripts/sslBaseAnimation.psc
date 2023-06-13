@@ -22,13 +22,7 @@ scriptname sslBaseAnimation extends sslBaseObject
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-String PROXY_ID
-Function SetProxy(String asProxyID)
-	PROXY_ID = asProxyID
-EndFunction
-bool Function HasProxy()
-	return PROXY_ID && SexLabRegistry.SceneExists(PROXY_ID)
-EndFunction
+String Property PROXY_ID Auto Hidden
 
 int Function GetMaxDepth()
 	return SexLabRegistry.GetPathMax(PROXY_ID, "").Length
