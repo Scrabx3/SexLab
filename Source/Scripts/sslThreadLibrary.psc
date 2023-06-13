@@ -1,7 +1,7 @@
 scriptname sslThreadLibrary extends sslSystemLibrary
 {
 	Generic Utility to simplify thread building
-	It is recommended to call these functions through the main API
+	ONLY call these functions through the main API
 }
 
 Keyword property FurnitureBedRoll Auto
@@ -57,27 +57,42 @@ endFunction
 ; --- Position Sorting                                --- ;
 ; ------------------------------------------------------- ;
 
-Function SortPositions(Actor[] akPositions) global
-	int[] keys = sslActorData.BuildDataKeyArray(akPositions)
-	SortPositionsByKeys(akPositions, keys)
-EndFunction
-
-Function SortPositionsByKeys(Actor[] akPositions, int[] aiKeys) global
+; NOTE: Order of actors in SL scenes is unspecified
+; While this function will sort your array with strict ordering, it is highly unlikely that this ordering will
+; be identical to the ordering used by SL to play its scene
+; Hence there is no performance benefit to calling this function for non-personal reasons
+Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
+	Log("Sort Actors | Original Array = " + Positions)
+	int[] genders = ActorLib.GetGendersAll(Positions)
 	int i = 1
-	While(i < aiKeys.Length)
-		int it = aiKeys[i]
-		Actor it_p = akPositions[i]
+	While(i < Positions.Length)
+		Actor it = Positions[i]
+		int _it = genders[i]
 		int n = i - 1
-		While(n >= 0 && sslActorData.IsLess(it, aiKeys[n]))
-			aiKeys[n + 1] = aiKeys[n]
-			akPositions[n + 1] = akPositions[n]
+		While(n >= 0 && !IsLesserGender(genders[n], _it, FemaleFirst))
+			Positions[n + 1] = Positions[n]
+			genders[n + 1] = genders[n]
 			n -= 1
 		EndWhile
-		aiKeys[n + 1] = it
-		akPositions[n + 1] = it_p
+		Positions[n + 1] = it
+		genders[n + 1] = _it
 		i += 1
 	EndWhile
+	Log("Sort Actors | Sorted Array = " + Positions)
+	return Positions
 EndFunction
+bool Function IsLesserGender(int i, int n, bool abFemaleFirst)
+	return n != i && (i == (abFemaleFirst as int) || i == 3 && n == 2 || i < n)
+EndFunction
+
+Function SortActorsByAnimationImpl(String asSceneID, Actor[] akPositions) native
+Actor[] function SortActorsByAnimation(actor[] Positions, sslBaseAnimation Animation = none)
+	If (!Animation || !Animation.PROXY_ID)
+		return SortActors(Positions)
+	EndIf
+	SortActorsByAnimationImpl(Animation.PROXY_ID, Positions)
+	return Positions
+endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Cell Searching                              		--- ;
@@ -194,30 +209,6 @@ FormList property BedsList Auto
 FormList property DoubleBedsList Auto
 FormList property BedRollsList Auto
 
-Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
-	Log("Sort Actors | Original Array = " + Positions)
-	int[] genders = ActorLib.GetGendersAll(Positions)
-	int i = 1
-	While(i < Positions.Length)
-		Actor it = Positions[i]
-		int _it = genders[i]
-		int n = i - 1
-		While(n >= 0 && !IsLesserGender(genders[n], _it, FemaleFirst))
-			Positions[n + 1] = Positions[n]
-			genders[n + 1] = genders[n]
-			n -= 1
-		EndWhile
-		Positions[n + 1] = it
-		genders[n + 1] = _it
-		i += 1
-	EndWhile
-	Log("Sort Actors | Sorted Array = " + Positions)
-	return Positions
-EndFunction
-bool Function IsLesserGender(int i, int n, bool abFemaleFirst)
-	return n != i && (i == (abFemaleFirst as int) || i == 3 && n == 2 || i < n)
-EndFunction
-
 bool Function IsBedRoll(ObjectReference BedRef)
 	return GetBedType(BedRef) == 1
 EndFunction
@@ -258,12 +249,6 @@ bool function LeveledAngle(ObjectReference ObjectRef, float Tolerance = 5.0)
 	return ObjectRef && Math.Abs(ObjectRef.GetAngleX()) <= Tolerance && Math.Abs(ObjectRef.GetAngleY()) <= Tolerance
 endFunction
 
-Actor[] function SortActorsByAnimation(actor[] Positions, sslBaseAnimation Animation = none)
-	SortPositions(Positions)
-	return Positions
-endFunction
-
 Actor[] function SortCreatures(actor[] Positions, sslBaseAnimation Animation = none)
-	SortPositions(Positions)
-	return Positions
+	return SortActorsByAnimation(Positions, Animation)
 endFunction
