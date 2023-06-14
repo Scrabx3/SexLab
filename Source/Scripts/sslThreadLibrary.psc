@@ -1,7 +1,6 @@
 scriptname sslThreadLibrary extends sslSystemLibrary
 {
 	Generic Utility to simplify thread building
-	ONLY call these functions through the main API
 }
 
 Keyword property FurnitureBedRoll Auto
@@ -56,13 +55,17 @@ endFunction
 ; ------------------------------------------------------- ;
 ; --- Position Sorting                                --- ;
 ; ------------------------------------------------------- ;
+;/
+	Note that ordering in SL Scenes is unspecified
+	Further, SL will sort all actors before starting its animation, so calling these functions will not benefit performance in any way
+	
+	SortActors() will strictly sort your array by gender, with females/males (dep. on parameter) before creatures
+	however this sorting is highly unlikely to be the same order that the animation expects. If you wish to sort
+	actors based on an animation, use "SortActorsByAnimation/Impl" instead. The returned arrays ordering may feel random
+	but will be compatible with the given animation. There is no guarantee that some other animation follows the same ordering however
+/;
 
-; NOTE: Order of actors in SL scenes is unspecified
-; While this function will sort your array with strict ordering, it is highly unlikely that this ordering will
-; be identical to the ordering used by SL to play its scene
-; Hence there is no performance benefit to calling this function for non-personal reasons
 Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
-	Log("Sort Actors | Original Array = " + Positions)
 	int[] genders = ActorLib.GetGendersAll(Positions)
 	int i = 1
 	While(i < Positions.Length)
@@ -78,20 +81,18 @@ Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
 		genders[n + 1] = _it
 		i += 1
 	EndWhile
-	Log("Sort Actors | Sorted Array = " + Positions)
 	return Positions
 EndFunction
 bool Function IsLesserGender(int i, int n, bool abFemaleFirst)
 	return n != i && (i == (abFemaleFirst as int) || i == 3 && n == 2 || i < n)
 EndFunction
 
-Function SortActorsByAnimationImpl(String asSceneID, Actor[] akPositions) native
+Actor[] Function SortActorsByAnimationImpl(String asSceneID, Actor[] akPositions, Actor[] akVictims) native
 Actor[] function SortActorsByAnimation(actor[] Positions, sslBaseAnimation Animation = none)
 	If (!Animation || !Animation.PROXY_ID)
 		return SortActors(Positions)
 	EndIf
-	SortActorsByAnimationImpl(Animation.PROXY_ID, Positions)
-	return Positions
+	return SortActorsByAnimationImpl(Animation.PROXY_ID, Positions, PapyrusUtil.ActorArray(0))
 endFunction
 
 ; ------------------------------------------------------- ;
