@@ -1,102 +1,113 @@
 scriptname sslThreadLibrary extends sslSystemLibrary
 {
-	Generic Utility to simplify thread building
+  Generic Utility to simplify thread building
 }
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 Keyword property FurnitureBedRoll Auto
 
 ; ------------------------------------------------------- ;
-; --- Bed Utility			                                --- ;
+; --- Bed Utility                                     --- ;
 ; ------------------------------------------------------- ;
 
 ; 0 - No bed / 1 - Bedroll / 2 - Single Bed / 3 - Double Bed
 int Function GetBedType(ObjectReference BedRef)
-	If(!BedRef || !sslpp.IsBed(BedRef))
-		return 0
-	EndIf
-	Form BaseRef = BedRef.GetBaseObject()
-	If(BedRef.HasKeyword(FurnitureBedRoll))
-		return 1
-	ElseIf(StringUtil.Find(sslpp.GetEditorID(BaseRef), "Double") > -1 || StringUtil.Find(sslpp.GetEditorID(BaseRef), "Single") == -1)
-		return 3
-	EndIf
-	return 2
+  If(!BedRef || !sslpp.IsBed(BedRef))
+    return 0
+  EndIf
+  Form BaseRef = BedRef.GetBaseObject()
+  If(BedRef.HasKeyword(FurnitureBedRoll))
+    return 1
+  ElseIf(StringUtil.Find(sslpp.GetEditorID(BaseRef), "Double") > -1 || StringUtil.Find(sslpp.GetEditorID(BaseRef), "Single") == -1)
+    return 3
+  EndIf
+  return 2
 EndFunction
 
 bool Function IsBedAvailable(ObjectReference BedRef)
-	If(!BedRef || BedRef.IsFurnitureInUse(true))
-		return false
-	EndIf
-	int i = 0
-	While(i < ThreadSlots.Threads.Length)
-		If(ThreadSlots.Threads[i].BedRef == BedRef)
-			return false
-		EndIf
-		i += 1
-	Endwhile
-	return true
+  If(!BedRef || BedRef.IsFurnitureInUse(true))
+    return false
+  EndIf
+  int i = 0
+  While(i < ThreadSlots.Threads.Length)
+    If(ThreadSlots.Threads[i].BedRef == BedRef)
+      return false
+    EndIf
+    i += 1
+  Endwhile
+  return true
 EndFunction
 
 ObjectReference Function FindBed(ObjectReference CenterRef, float Radius = 1000.0, bool IgnoreUsed = true, ObjectReference IgnoreRef1 = none, ObjectReference IgnoreRef2 = none)
-	If(!CenterRef || Radius < 1.0)
-		return none
-	EndIf
-	ObjectReference[] beds = sslpp.FindBeds(CenterRef, Radius)
-	int i = 0
-	While(i < beds.Length)
-		If(beds[i] != IgnoreRef1 && beds[i] != IgnoreRef2 && (IgnoreUsed || !beds[i].IsFurnitureInUse()))
-			return beds[i]
-		EndIf
-		i += 1
-	EndWhile
-	return none
+  If(!CenterRef || Radius < 1.0)
+    return none
+  EndIf
+  ObjectReference[] beds = sslpp.FindBeds(CenterRef, Radius)
+  int i = 0
+  While(i < beds.Length)
+    If(beds[i] != IgnoreRef1 && beds[i] != IgnoreRef2 && (IgnoreUsed || !beds[i].IsFurnitureInUse()))
+      return beds[i]
+    EndIf
+    i += 1
+  EndWhile
+  return none
 endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Position Sorting                                --- ;
 ; ------------------------------------------------------- ;
 ;/
-	Note that ordering in SL Scenes is unspecified
-	Further, SL will sort all actors before starting its animation, so calling these functions will not benefit performance in any way
-	
-	SortActors() will strictly sort your array by gender, with females/males (dep. on parameter) before creatures
-	however this sorting is highly unlikely to be the same order that the animation expects. If you wish to sort
-	actors based on an animation, use "SortActorsByAnimation/Impl" instead. The returned arrays ordering may feel random
-	but will be compatible with the given animation. There is no guarantee that some other animation follows the same ordering however
+  Note that ordering in SL Scenes is unspecified
+  Further, SL will sort all actors before starting its animation, so calling these functions will not benefit performance in any way
+
+  SortActors() will strictly sort your array by gender, with females/males (dep. on parameter) before creatures
+  however this sorting is highly unlikely to be the same order that the animation expects. If you wish to sort
+  actors based on an animation, use "SortActorsByAnimation/Impl" instead. The returned arrays ordering may feel random
+  but will be compatible with the given animation. There is no guarantee that some other animation follows the same ordering however
 /;
 
 Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
-	int[] genders = ActorLib.GetGendersAll(Positions)
-	int i = 1
-	While(i < Positions.Length)
-		Actor it = Positions[i]
-		int _it = genders[i]
-		int n = i - 1
-		While(n >= 0 && !IsLesserGender(genders[n], _it, FemaleFirst))
-			Positions[n + 1] = Positions[n]
-			genders[n + 1] = genders[n]
-			n -= 1
-		EndWhile
-		Positions[n + 1] = it
-		genders[n + 1] = _it
-		i += 1
-	EndWhile
-	return Positions
+  int[] genders = ActorLib.GetGendersAll(Positions)
+  int i = 1
+  While(i < Positions.Length)
+    Actor it = Positions[i]
+    int _it = genders[i]
+    int n = i - 1
+    While(n >= 0 && !IsLesserGender(genders[n], _it, FemaleFirst))
+      Positions[n + 1] = Positions[n]
+      genders[n + 1] = genders[n]
+      n -= 1
+    EndWhile
+    Positions[n + 1] = it
+    genders[n + 1] = _it
+    i += 1
+  EndWhile
+  return Positions
 EndFunction
 bool Function IsLesserGender(int i, int n, bool abFemaleFirst)
-	return n != i && (i == (abFemaleFirst as int) || i == 3 && n == 2 || i < n)
+  return n != i && (i == (abFemaleFirst as int) || i == 3 && n == 2 || i < n)
 EndFunction
 
 Actor[] Function SortActorsByAnimationImpl(String asSceneID, Actor[] akPositions, Actor[] akVictims) native
 Actor[] function SortActorsByAnimation(actor[] Positions, sslBaseAnimation Animation = none)
-	If (!Animation || !Animation.PROXY_ID)
-		return SortActors(Positions)
-	EndIf
-	return SortActorsByAnimationImpl(Animation.PROXY_ID, Positions, PapyrusUtil.ActorArray(0))
+  If (!Animation || !Animation.PROXY_ID)
+    return SortActors(Positions)
+  EndIf
+  return SortActorsByAnimationImpl(Animation.PROXY_ID, Positions, PapyrusUtil.ActorArray(0))
 endFunction
 
 ; ------------------------------------------------------- ;
-; --- Cell Searching                              		--- ;
+; --- Cell Searching                                  --- ;
 ; ------------------------------------------------------- ;
 
 Actor[] function FindAvailableActors(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, string RaceKey = "") native
@@ -107,12 +118,12 @@ Actor function FindAvailableActorWornForm(int slotMask, ObjectReference CenterRe
 Actor[] function FindAvailablePartners(actor[] Positions, int total, int males = -1, int females = -1, float radius = 10000.0) native
 Actor[] function FindAnimationPartnersImpl(String asAnimID, ObjectReference akCenterRef, float afRadius, Actor[] akIncludes) native
 Actor[] function FindAnimationPartners(sslBaseAnimation Animation, ObjectReference CenterRef, float Radius = 5000.0, Actor IncludedRef1 = none, Actor IncludedRef2 = none, Actor IncludedRef3 = none, Actor IncludedRef4 = none)
-	Actor[] includes = new Actor[4]
-	includes[0] = IncludedRef1
-	includes[1] = IncludedRef2
-	includes[2] = IncludedRef3
-	includes[3] = IncludedRef4
-	return FindAnimationPartnersImpl(Animation.PROXY_ID, CenterRef, Radius, PapyrusUtil.RemoveActor(includes, none))
+  Actor[] includes = new Actor[4]
+  includes[0] = IncludedRef1
+  includes[1] = IncludedRef2
+  includes[2] = IncludedRef3
+  includes[3] = IncludedRef4
+  return FindAnimationPartnersImpl(Animation.PROXY_ID, CenterRef, Radius, PapyrusUtil.RemoveActor(includes, none))
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -120,136 +131,136 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function TrackActor(Actor ActorRef, string Callback)
-	StorageUtil.FormListAdd(Config, "TrackedActors", ActorRef, false)
-	StorageUtil.StringListAdd(ActorRef, "SexLabEvents", Callback, false)
+  StorageUtil.FormListAdd(Config, "TrackedActors", ActorRef, false)
+  StorageUtil.StringListAdd(ActorRef, "SexLabEvents", Callback, false)
 endFunction
 
 function TrackFaction(Faction FactionRef, string Callback)
-	If(FactionRef)
-		StorageUtil.FormListAdd(Config, "TrackedFactions", FactionRef, false)
-		StorageUtil.StringListAdd(FactionRef, "SexLabEvents", Callback, false)
-	EndIf
+  If(FactionRef)
+    StorageUtil.FormListAdd(Config, "TrackedFactions", FactionRef, false)
+    StorageUtil.StringListAdd(FactionRef, "SexLabEvents", Callback, false)
+  EndIf
 endFunction
 
 function UntrackActor(Actor ActorRef, string Callback)
-	StorageUtil.StringListRemove(ActorRef, "SexLabEvents", Callback, true)
-	if StorageUtil.StringListCount(ActorRef, "SexLabEvents") < 1
-		StorageUtil.FormListRemove(Config, "TrackedActors", ActorRef, true)
-	endif
+  StorageUtil.StringListRemove(ActorRef, "SexLabEvents", Callback, true)
+  if StorageUtil.StringListCount(ActorRef, "SexLabEvents") < 1
+    StorageUtil.FormListRemove(Config, "TrackedActors", ActorRef, true)
+  endif
 endFunction
 
 function UntrackFaction(Faction FactionRef, string Callback)
-	StorageUtil.StringListRemove(FactionRef, "SexLabEvents", Callback, true)
-	if StorageUtil.StringListCount(FactionRef, "SexLabEvents") < 1
-		StorageUtil.FormListRemove(Config, "TrackedFactions", FactionRef, true)
-	endif
+  StorageUtil.StringListRemove(FactionRef, "SexLabEvents", Callback, true)
+  if StorageUtil.StringListCount(FactionRef, "SexLabEvents") < 1
+    StorageUtil.FormListRemove(Config, "TrackedFactions", FactionRef, true)
+  endif
 endFunction
 
 bool function IsActorTracked(Actor ActorRef)
-	if ActorRef == PlayerRef || StorageUtil.StringListCount(ActorRef, "SexLabEvents") > 0
-		return true
-	endIf
-	Form[] f = StorageUtil.FormListToArray(Config, "TrackedFactions")
-	int i = 0
-	While(i < f.Length)
-		If(ActorRef.IsInFaction(f[i] as Faction))
-			return true
-		EndIf
-		i += 1
-	EndWhile
-	return false
+  if ActorRef == PlayerRef || StorageUtil.StringListCount(ActorRef, "SexLabEvents") > 0
+    return true
+  endIf
+  Form[] f = StorageUtil.FormListToArray(Config, "TrackedFactions")
+  int i = 0
+  While(i < f.Length)
+    If(ActorRef.IsInFaction(f[i] as Faction))
+      return true
+    EndIf
+    i += 1
+  EndWhile
+  return false
 endFunction
 
 function SendTrackedEvent(Actor ActorRef, string Hook = "", int id = -1)
-	If(Hook)
-		Hook = "_" + Hook
-	EndIf
-	If(ActorRef == PlayerRef)
-		SetupActorEvent(PlayerRef, "PlayerTrack" + Hook, id)
-	EndIf
-	String[] genericcallbacks = StorageUtil.StringListToArray(ActorRef, "SexLabEvents")
-	int i = 0
-	While(i < genericcallbacks.Length)
-		SetupActorEvent(PlayerRef, genericcallbacks[i] + Hook, id)
-		i += 1
-	EndWhile
-	Form[] factioncallbacks = StorageUtil.FormListToArray(Config, "TrackedFactions")
-	int n = 0
-	While(n < factioncallbacks.Length)
-		If(ActorRef.IsInFaction(factioncallbacks[n] as Faction))
-			String[] factionevents = StorageUtil.StringListToArray(factioncallbacks[n], "SexLabEvents")
-			int k = 0
-			While(k < factionevents.Length)
-				SetupActorEvent(PlayerRef, factionevents[k] + Hook, id)
-				k += 1
-			EndWhile
-		EndIf
-		n += 1
-	EndWhile
+  If(Hook)
+    Hook = "_" + Hook
+  EndIf
+  If(ActorRef == PlayerRef)
+    SetupActorEvent(PlayerRef, "PlayerTrack" + Hook, id)
+  EndIf
+  String[] genericcallbacks = StorageUtil.StringListToArray(ActorRef, "SexLabEvents")
+  int i = 0
+  While(i < genericcallbacks.Length)
+    SetupActorEvent(PlayerRef, genericcallbacks[i] + Hook, id)
+    i += 1
+  EndWhile
+  Form[] factioncallbacks = StorageUtil.FormListToArray(Config, "TrackedFactions")
+  int n = 0
+  While(n < factioncallbacks.Length)
+    If(ActorRef.IsInFaction(factioncallbacks[n] as Faction))
+      String[] factionevents = StorageUtil.StringListToArray(factioncallbacks[n], "SexLabEvents")
+      int k = 0
+      While(k < factionevents.Length)
+        SetupActorEvent(PlayerRef, factionevents[k] + Hook, id)
+        k += 1
+      EndWhile
+    EndIf
+    n += 1
+  EndWhile
 EndFunction
 
 function SetupActorEvent(Actor ActorRef, string Callback, int id = -1)
-	int eid = ModEvent.Create(Callback)
-	ModEvent.PushForm(eid, ActorRef)
-	ModEvent.PushInt(eid, id)
-	ModEvent.Send(eid)
+  int eid = ModEvent.Create(Callback)
+  ModEvent.PushForm(eid, ActorRef)
+  ModEvent.PushInt(eid, id)
+  ModEvent.Send(eid)
 endFunction
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
-;																																											;
-;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
-;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
-;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
-;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
-;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
-;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
-;																																											;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;                ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;                ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;                ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;                ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;                ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;                ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 FormList property BedsList Auto
 FormList property DoubleBedsList Auto
 FormList property BedRollsList Auto
 
 bool Function IsBedRoll(ObjectReference BedRef)
-	return GetBedType(BedRef) == 1
+  return GetBedType(BedRef) == 1
 EndFunction
 
 bool function IsDoubleBed(ObjectReference BedRef)
-	return GetBedType(BedRef) == 3
+  return GetBedType(BedRef) == 3
 endFunction
 
 bool function IsSingleBed(ObjectReference BedRef)
-	return GetBedType(BedRef) == 2
+  return GetBedType(BedRef) == 2
 endFunction
 
 bool function SameFloor(ObjectReference BedRef, float Z, float Tolerance = 15.0)
-	return BedRef && Math.Abs(Z - BedRef.GetPositionZ()) <= Tolerance
+  return BedRef && Math.Abs(Z - BedRef.GetPositionZ()) <= Tolerance
 endFunction
 
 bool function CheckActor(Actor CheckRef, int CheckGender = -1)
-	if !CheckRef
-		return false
-	endIf
-	int IsGender = ActorLib.GetGender(CheckRef)
-	return ((CheckGender < 2 && IsGender < 2) || (CheckGender >= 2 && IsGender >= 2)) && (CheckGender == -1 || IsGender == CheckGender) && ActorLib.IsValidActor(CheckRef)
+  if !CheckRef
+    return false
+  endIf
+  int IsGender = ActorLib.GetGender(CheckRef)
+  return ((CheckGender < 2 && IsGender < 2) || (CheckGender >= 2 && IsGender >= 2)) && (CheckGender == -1 || IsGender == CheckGender) && ActorLib.IsValidActor(CheckRef)
 endFunction
 
 int function FindNext(Actor[] Positions, sslBaseAnimation Animation, int offset, bool FindCreature)
-	while offset
-		offset -= 1
-		if Animation.HasRace(Positions[offset].GetLeveledActorBase().GetRace()) == FindCreature
-			return offset
-		endIf
-	endwhile
-	return -1
+  while offset
+    offset -= 1
+    if Animation.HasRace(Positions[offset].GetLeveledActorBase().GetRace()) == FindCreature
+      return offset
+    endIf
+  endwhile
+  return -1
 endFunction
 bool function CheckBed(ObjectReference BedRef, bool IgnoreUsed = true)
-	return BedRef && BedRef.IsEnabled() && BedRef.Is3DLoaded() && (!IgnoreUsed || (IgnoreUsed && IsBedAvailable(BedRef)))
+  return BedRef && BedRef.IsEnabled() && BedRef.Is3DLoaded() && (!IgnoreUsed || (IgnoreUsed && IsBedAvailable(BedRef)))
 endFunction
 bool function LeveledAngle(ObjectReference ObjectRef, float Tolerance = 5.0)
-	return ObjectRef && Math.Abs(ObjectRef.GetAngleX()) <= Tolerance && Math.Abs(ObjectRef.GetAngleY()) <= Tolerance
+  return ObjectRef && Math.Abs(ObjectRef.GetAngleX()) <= Tolerance && Math.Abs(ObjectRef.GetAngleY()) <= Tolerance
 endFunction
 
 Actor[] function SortCreatures(actor[] Positions, sslBaseAnimation Animation = none)
-	return SortActorsByAnimation(Positions, Animation)
+  return SortActorsByAnimation(Positions, Animation)
 endFunction
