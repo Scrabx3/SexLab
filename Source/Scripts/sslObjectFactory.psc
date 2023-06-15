@@ -1,4 +1,20 @@
 scriptname sslObjectFactory extends sslSystemLibrary
+{
+  LEGACY SCRIPT. DO NOT USE
+  ANIMATION RELATED OBJECTS ARE HANDLED BY SL NATIVELY USING .SLR FILES
+  PAPYRUS REGISTRATION IS NO LONGER SUPPORTED
+}
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; ------------------------------------------------------- ;
 ; --- Readonly Flags                                  --- ;
@@ -73,162 +89,36 @@ endFunction
 ; --- Ephemeral Animations                            --- ;
 ; ------------------------------------------------------- ;
 
-int ASlotted
-string[] ATokens
-sslBaseAnimation[] Animations
-
 sslBaseAnimation[] function GetOwnerAnimations(Form Owner)
-	bool[] Valid = Utility.CreateBoolArray(ASlotted)
-	int i = ASlotted
-	while i
-		i -= 1
-		Valid[i] = Animations[i] && Animations[i].Registered && Animations[i].Storage == Owner
-	endWhile
-	; Get list of valid Animations
-	i = PapyrusUtil.CountBool(Valid, true)
-	if i == 0
-		return none ; OR empty array?
-	endIf
-	sslBaseAnimation[] Output = sslUtility.AnimationArray(i)
-	int pos = Valid.Find(true)
-	while pos != -1
-		i -= 1
-		Output[i] = Animations[pos]
-		pos += 1
-		if pos < ASlotted
-			pos = Valid.Find(true, pos)
-		else
-			pos = -1
-		endIf
-	endWhile
-	return Output
+	sslBaseAnimation[] ret
+	return ret
 endFunction
-
 sslBaseAnimation function NewAnimation(string Token, Form Owner)
-	if !Owner || Token == "" || FindAnimation(Token) != -1
-		Log("NewAnimation("+Token+") - Failed to create animation - Invalid arguments given - Token given already exists ("+FindAnimation(Token)+") or was empty", "ERROR")
-		return none
-	endIf
-	int i = ATokens.Find("")
-	if i == -1
-		Log("NewAnimation("+Token+") - Failed to create animation - unable to find a free animation slot", "ERROR")
-		return none
-	endIf
-	ATokens[i] = Token
-	if i >= ASlotted
-		ASlotted += 1
-	endIf
-	Animations[i] = GetNthAlias(i) as sslBaseAnimation
-	Animations[i].MakeEphemeral(Token, Owner)
-	return Animations[i]
+	return none
 endFunction
-
 sslBaseAnimation function GetSetAnimation(string Token, string Callback, Form Owner)
-	sslBaseAnimation Slot = GetAnimation(Token)
-	if Slot || Callback == ""
-		Log("GET", "GetSetAnimation("+Token+")")
-		return Slot
-	endIf
-	; Create new animation and send callback
-	Slot = NewAnimation(Token, Owner)
-	if Slot
-		Log("SET", "GetSetAnimation("+Token+")")
-		SendCallback(Callback, Animations.Find(Slot), Owner)
-	endIf
-	return Slot
+	return none
 endFunction
-
 sslBaseAnimation function NewAnimationCopy(string Token, sslBaseAnimation CopyFrom, Form Owner)
-	sslBaseAnimation Slot = NewAnimation(Token, Owner)
-	if Slot
-		Slot = CopyAnimation(Slot, CopyFrom)
-		Slot.Save(Animations.Find(Slot))
-	endIf
-	return Slot
+	return none
 endFunction
-
 sslBaseAnimation function GetAnimation(string Token)
-	int i = FindAnimation(Token)
-	if i < 0 || i >= Animations.Length
-		return none
-	endIf
-	return Animations[i]
+	return none
 endFunction
-
 int function FindAnimation(string Token)
-	return ATokens.Find(Token)
+	return -1
 endFunction
-
 bool function HasAnimation(string Token)
-	return ATokens.Find(Token) != -1
-endFunction
-
-bool function ReleaseAnimation(string Token)
-	int i = FindAnimation(Token)
-	if i != -1
-		Animations[i].Initialize()
-		Animations[i] = none
-		ATokens[i] = ""
-		return true
-	endIf
 	return false
 endFunction
-
-int function ReleaseOwnerAnimations(Form Owner)
-	int Count
-	if Owner
-		int i = Animations.Length
-		while i
-			i -= 1
-			if Animations[i] && Animations[i].Storage == Owner
-				Count += 1
-				ReleaseAnimation(i)
-			endIf
-		endWhile
-	endIf
-	return Count
+bool function ReleaseAnimation(string Token)
+	return false
 endFunction
-
+int function ReleaseOwnerAnimations(Form Owner)
+	return 0
+endFunction
 sslBaseAnimation function MakeAnimationRegistered(string Token)
-	; Get the object to register
-	if FindAnimation(Token) == -1
-		return none
-	endIf
-	sslBaseAnimation Slot = GetAnimation(Token)
-	; Make sure this isn't a duplicate and we have enough info to make it a global
-	if (!Slot.IsCreature && AnimSlots.FindByRegistrar(Token) != -1) || (Slot.IsCreature && CreatureSlots.FindByRegistrar(Token) != -1)
-		Log("MakeAnimationRegistered("+Token+") - Failed to create global animation - has duplicate registry token with another animation already registered globally", "ERROR")
-		return none
-	elseIf Slot.Name == ""
-		Log("MakeAnimationRegistered("+Token+") - Failed to create global animation - has empty name, the name property must be set on the animation to be registered globally", "ERROR")
-		return none
-	elseIf Slot.GetTags().Length < 1
-		Log("MakeAnimationRegistered("+Token+") - Failed to create global animation - has no tags set, atleast one searchable tag is required to be registered globally", "ERROR")
-		return none
-	endIf
-	; Register as creature or normal
-	int id
-	sslBaseAnimation Anim
-	if Slot.IsCreature
-		id   = CreatureSlots.Register(Token)
-		Anim = CreatureSlots.GetBySlot(id)
-	else
-		id   = AnimSlots.Register(Token)
-		Anim = AnimSlots.GetBySlot(id)
-	endIf
-	; Failed to register
-	if !Anim
-		Log("MakeAnimationRegistered("+Token+") - Failed to create global animation - was unable to claim a slot with the global registry", "ERROR")
-		return none
-	endIf
-	; Copy phantom slot onto global slot
-	Anim.Initialize()
-	Anim.Registry = Token
-	Anim.Enabled  = true
-	Anim = CopyAnimation(Anim, Slot)
-	Anim.Save(id)
-	ReleaseAnimation(Token)
-	return Anim
+	return none
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -565,10 +455,6 @@ endFunction
 function Setup()
 	parent.Setup()
 
-	ASlotted   = 0
-	ATokens    = new string[128]
-	Animations = new sslBaseAnimation[128]
-
 	VSlotted = 0
 	VTokens  = new string[128]
 	Voices   = new sslBaseVoice[128]
@@ -582,11 +468,6 @@ endFunction
 
 function Cleanup()
 	; Init slots if empty
-	if ATokens.Length != 128 || Animations.Length != 128
-		ASlotted   = 0
-		ATokens    = new string[128]
-		Animations = new sslBaseAnimation[128]
-	endIf
 	if VTokens.Length != 128 || Voices.Length != 128
 		VSlotted = 0
 		VTokens  = new string[128]
@@ -598,17 +479,7 @@ function Cleanup()
 		Expressions = new sslBaseExpression[128]
 	endIf
 	; Check for empty forms for storage to indicate owner has been disabled
-	int i = ASlotted
-	while i
-		i -= 1
-		if Animations[i] && Animations[i].Registered && !Animations[i].Storage
-			Log("Clearing phantom animation ["+i+"] '"+ATokens[i]+"'")
-			Animations[i].Initialize()
-			Animations[i] = none
-			ATokens[i] = ""
-		endIf
-	endWhile
-	i = VSlotted
+	int i = VSlotted
 	while i
 		i -= 1
 		if Voices[i] && Voices[i].Registered && !Voices[i].Storage
@@ -630,30 +501,8 @@ function Cleanup()
 	endWhile
 endFunction
 
-; TODO: needs rewrite to match current animation script	!IMPORTANT
 sslBaseAnimation function CopyAnimation(sslBaseAnimation Copy, sslBaseAnimation Orig)
-	; Set info
-	Copy.Name = Orig.Name
-	Copy.SoundFX = Orig.SoundFX
-	Copy.AddTags(Orig.GetTags())
-	Copy.SetRaceIDs(Orig.GetRaceIDs())
-	; Loop positions
-	int Position
-	while Position < Orig.PositionCount
-		; Add Position
-		Copy.AddPosition(Orig.GetGender(Position), Orig.GetCum(Position))
-		; Loop through stages
-		int Stage
-		while Stage < Orig.StageCount
-			Stage += 1
-			; Add stage
-			int[]   Flags   = Orig.GetPositionFlags("Global", Position, Stage)
-			float[] Offsets = Orig.GetRawOffsets(Position, Stage)
-			Copy.AddPositionStage(Position, Orig.FetchPositionStage(Position, Stage), Offsets[0], Offsets[1], Offsets[2], Offsets[3], Flags[0] as bool, Flags[1] as bool, Flags[2] as bool, Flags[3])
-		endWhile
-		Position += 1
-	endWhile
-	; Return copied
+	Copy.PROXY_ID = Orig.PROXY_ID
 	return Copy
 endFunction
 
@@ -686,7 +535,6 @@ endFunction
 ; --- DEPRECATED - DO NOT USE                         --- ;
 ; ------------------------------------------------------- ;
 
-; Content Types - no longer used
 int function Misc() global
 	return 0
 endFunction
