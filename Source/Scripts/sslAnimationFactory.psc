@@ -48,11 +48,9 @@ bool property IsCreatureFactory auto hidden
 ; --- Setup                                           --- ;
 ; ------------------------------------------------------- ;
 
-; Prepare the factory for use with the default animation slots
 function PrepareFactory()
 endFunction
 
-; Prepare the factory for use with the default creature animation slots
 function PrepareFactoryCreatures()
 endFunction
 
@@ -63,11 +61,9 @@ Endfunction
 ; --- Registering Animations                          --- ;
 ; ------------------------------------------------------- ;
 
-; Send callback event to start registration
 function RegisterAnimation(string Registrar)
 endFunction
 
-; Gets the Animation resource object for use in the callback, MUST be called at start of callback to get the appropiate resource
 sslBaseAnimation function Create(int id)
   return none
 endFunction
@@ -92,5 +88,5 @@ endFunction
 
 function FactoryLog(string msg)
   MiscUtil.PrintConsole(msg)
-  Debug.Trace("SEXLAB - "+msg)
+  Debug.Trace("[SexLab] - "+msg)
 endFunction
