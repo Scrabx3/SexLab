@@ -20,111 +20,80 @@ sslThreadController[] Property Threads Auto
 ; --- Thread Access                                   --- ;
 ; ------------------------------------------------------- ;
 
-State Ready
-  sslThreadModel Function PickModel(float TimeOut = 5.0)
-    GoToState("Locked")
-    int i = 0
-    While (i < Threads.Length)
-      If (!Threads[i].IsLocked)
-        GoToState("Ready")
-        return Threads[i]
-      EndIf
-      i += 1
-    EndWhile
-    Debug.Trace("[SexLab] Unable to obtain new thread. All threads in locked State", 1)
-    GoToState("Ready")
-    return none
-  EndFunction
-
-  sslThreadController Function GetController(int tid)
-    return Threads[tid]
-  endfunction
-
-  int Function FindActorController(Actor ActorRef)
-    float f = 0
-    int ret = -1
-    int i = 0
-    While (i < Threads.Length)
-      If (Threads[i].FindSlot(ActorRef) != -1)
-        ; An actor may be recognized in multiple threads if it is thrown into multiple scenes back to back
-        ; To ensure this returns the most recent scene, check for active State or start time 
-        String s = Threads[i].GetState()
-        If (s == "Animating" || s == "Making")
-          return i
-        ElseIf (Threads[i].StartedAt > f)
-          f = Threads[i].StartedAt
-          ret = i
-        EndIf
-      EndIf
-      i += 1
-    Endwhile
-    return ret
-  EndFunction
-
-  sslThreadController Function GetActorController(Actor ActorRef)
-    int i = FindActorController(ActorRef)
-    If (i == -1)
-      return none
-    EndIf
-    return GetController(i)
-  EndFunction
-
-  int Function ActiveThreads()
-    int c = 0
-    int i = Threads.Length
-    while i
-      i -= 1
-      c += Threads[i].IsLocked as int
-    endwhile
-    return c
-  endfunction
-
-  bool Function IsRunning()
-    return ActiveThreads() > 0
-  endfunction
-
-  Function StopAll()
-    int i = Threads.Length
-    while i
-      i -= 1
-      StopThread(Threads[i])
-    endWhile
-    ModEvent.Send(ModEvent.Create("SexLabStoppedActive"))
-  EndFunction
-
-  Function StopThread(sslThreadController Slot)
-    SexLabUtil.DebugLog("Force stop-request on thread + " + Slot + " during State " + Slot.GetState(), "", true)
-    Slot.Initialize()
-  EndFunction
-
-  Function Setup()
-    StopAll()
-    GoToState("")
-    Setup()
-  EndFunction
-EndState
-
 sslThreadModel Function PickModel(float TimeOut = 5.0)
+  GoToState("Locked")
+  int i = 0
+  While (i < Threads.Length)
+    If (!Threads[i].IsLocked)
+      GoToState("Ready")
+      return Threads[i]
+    EndIf
+    i += 1
+  EndWhile
+  Debug.Trace("[SexLab] Unable to obtain new thread. All threads in locked State", 1)
+  GoToState("Ready")
   return none
 EndFunction
+
 sslThreadController Function GetController(int tid)
-  return none
+  return Threads[tid]
 endfunction
+
 int Function FindActorController(Actor ActorRef)
-  return -1
+  float f = 0
+  int ret = -1
+  int i = 0
+  While (i < Threads.Length)
+    If (Threads[i].FindSlot(ActorRef) != -1)
+      ; An actor may be recognized in multiple threads if it is thrown into multiple scenes back to back
+      ; To ensure this returns the most recent scene, check for active State or start time 
+      String s = Threads[i].GetState()
+      If (s == "Animating" || s == "Making")
+        return i
+      ElseIf (Threads[i].StartedAt > f)
+        f = Threads[i].StartedAt
+        ret = i
+      EndIf
+    EndIf
+    i += 1
+  Endwhile
+  return ret
 EndFunction
+
 sslThreadController Function GetActorController(Actor ActorRef)
-  return none
+  int i = FindActorController(ActorRef)
+  If (i == -1)
+    return none
+  EndIf
+  return GetController(i)
 EndFunction
+
 int Function ActiveThreads()
-  return 0
+  int c = 0
+  int i = Threads.Length
+  while i
+    i -= 1
+    c += Threads[i].IsLocked as int
+  endwhile
+  return c
 endfunction
+
 bool Function IsRunning()
-  return false
+  return ActiveThreads() > 0
 endfunction
+
 Function StopAll()
+  int i = Threads.Length
+  while i
+    i -= 1
+    StopThread(Threads[i])
+  endWhile
+  ModEvent.Send(ModEvent.Create("SexLabStoppedActive"))
 EndFunction
+
 Function StopThread(sslThreadController Slot)
+  SexLabUtil.DebugLog("Force stop-request on thread + " + Slot + " during State " + Slot.GetState(), "", true)
+  Slot.Initialize()
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -182,6 +151,14 @@ Function InstallSlots()
     i += 1
   EndWhile
 EndFunction
+
+State Ready
+  Function Setup()
+    StopAll()
+    GoToState("")
+    Setup()
+  EndFunction
+EndState
 
 State Locked
   Function Setup()
