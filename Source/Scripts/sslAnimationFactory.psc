@@ -1,18 +1,18 @@
 scriptname sslAnimationFactory extends Quest hidden
 {
-	LEGACY SCRIPTS. DO NOT USE
-	ANIMATIONS ARE HANDLED BY SL NATIVELY USING .SLR FILES
-	PAPYRUS REGISTRATION IS NO LONGER SUPPORTED
+  LEGACY SCRIPTS. DO NOT USE
+  ANIMATIONS ARE HANDLED BY SL NATIVELY USING .SLR FILES
+  PAPYRUS REGISTRATION IS NO LONGER SUPPORTED
 }
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
-;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
-;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
-;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
-;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
-;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
-;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
@@ -69,7 +69,7 @@ endFunction
 
 ; Gets the Animation resource object for use in the callback, MUST be called at start of callback to get the appropiate resource
 sslBaseAnimation function Create(int id)
-	return none
+  return none
 endFunction
 
 function RegisterOtherCategories()
@@ -79,18 +79,18 @@ function RegisterCategory(string Category)
 endFunction
 
 sslBaseAnimation function RegisterJSON(string Filename)
-	return none
+  return none
 endFunction
 
 bool function ValidateJSON(string Filename)
-	return false
+  return false
 endFunction
 
 Sound function StringSFX(string sfx)
-	return none
+  return none
 endFunction
 
 function FactoryLog(string msg)
-	MiscUtil.PrintConsole(msg)
-	Debug.Trace("SEXLAB - "+msg)
+  MiscUtil.PrintConsole(msg)
+  Debug.Trace("SEXLAB - "+msg)
 endFunction
