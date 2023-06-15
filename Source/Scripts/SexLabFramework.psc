@@ -2,68 +2,68 @@ scriptname SexLabFramework extends Quest
 
 ; TODO: MERGE MATCHMAKER INTO THE FRAMEWORK AS AN OPTION TO TOGGLE ON/OFF IN THE MCM.
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-;																																																																						;
-; 		███████╗███████╗██╗  ██╗██╗      █████╗ ██████╗     ███████╗██████╗  █████╗ ███╗   ███╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗		;
-; 		██╔════╝██╔════╝╚██╗██╔╝██║     ██╔══██╗██╔══██╗    ██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝		;
-; 		███████╗█████╗   ╚███╔╝ ██║     ███████║██████╔╝    █████╗  ██████╔╝███████║██╔████╔██║█████╗  ██║ █╗ ██║██║   ██║██████╔╝█████╔╝ 		;
-; 		╚════██║██╔══╝   ██╔██╗ ██║     ██╔══██║██╔══██╗    ██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝  ██║███╗██║██║   ██║██╔══██╗██╔═██╗ 		;
-; 		███████║███████╗██╔╝ ██╗███████╗██║  ██║██████╔╝    ██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗		;
-; 		╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝     ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝ ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝		;
-;																																																																						;
+;                                                                                                                                           ;
+;     ███████╗███████╗██╗  ██╗██╗      █████╗ ██████╗     ███████╗██████╗  █████╗ ███╗   ███╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗    ;
+;     ██╔════╝██╔════╝╚██╗██╔╝██║     ██╔══██╗██╔══██╗    ██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝    ;
+;     ███████╗█████╗   ╚███╔╝ ██║     ███████║██████╔╝    █████╗  ██████╔╝███████║██╔████╔██║█████╗  ██║ █╗ ██║██║   ██║██████╔╝█████╔╝     ;
+;     ╚════██║██╔══╝   ██╔██╗ ██║     ██╔══██║██╔══██╗    ██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝  ██║███╗██║██║   ██║██╔══██╗██╔═██╗     ;
+;     ███████║███████╗██╔╝ ██╗███████╗██║  ██║██████╔╝    ██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗    ;
+;     ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝     ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝ ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝    ;
+;                                                                                                                                           ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-;																	Created by Ashal@LoversLab.com [http://www.loverslab.com/user/1-ashal/]																		;
+;                                  Created by Ashal@LoversLab.com [http://www.loverslab.com/user/1-ashal/]                                  ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-;																	 SexLab p+ maintained by Scrab [https://www.patreon.com/ScrabJoseline]																		;
+;                                     SexLab+ maintained by Scrab [https://www.patreon.com/ScrabJoseline]                                   ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; Integer ID of the current SexLab version
 int function GetVersion()
-	return SexLabUtil.GetVersion()
+  return SexLabUtil.GetVersion()
 endFunction
 
 ; A user friendly string representing the current SexLab version
 string function GetStringVer()
-	return SexLabUtil.GetStringVer()
+  return SexLabUtil.GetStringVer()
 endFunction
 
 ; Is SexLab is currently enabled and able to start a new scene?
 bool property Enabled hidden
-	bool function get()
-		return GetState() != "Disabled"
-	endFunction
+  bool function get()
+    return GetState() != "Disabled"
+  endFunction
 endProperty
 
 ; Is there any SexLab thread currently active and animating?
 bool property IsRunning hidden
-	bool function get()
-		return ThreadSlots.IsRunning()
-	endFunction
+  bool function get()
+    return ThreadSlots.IsRunning()
+  endFunction
 endProperty
 
 ; The number of active/running scenes
 int property ActiveAnimations hidden
-	int function get()
-		return ThreadSlots.ActiveThreads()
-	endFunction
+  int function get()
+    return ThreadSlots.ActiveThreads()
+  endFunction
 endProperty
 
 ; If creatures are currently enabled
 bool property AllowCreatures hidden
-	bool function get()
-		return Config.AllowCreatures
-	endFunction
+  bool function get()
+    return Config.AllowCreatures
+  endFunction
 endProperty
 
 ; If creatures genders are currently enabled
 bool property CreatureGenders hidden
-	bool function get()
-		return Config.UseCreatureGender
-	endFunction
+  bool function get()
+    return Config.UseCreatureGender
+  endFunction
 endProperty
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -74,49 +74,49 @@ endProperty
 
 ; The preferred way to create a SexLab Scene
 ; --- Paramesters:
-;	akPositions: 	The actors to animate
-; asTags:				Requested animation tags (may be empty). Supported prefixes: '-' to disable a tag, '~' for OR-conjunctions
-;								Example: "~A, B, ~C, -D" <=> Animation has tag B, does NOT have tag D and has EITHER tag A or C 
-; akSubmissive:	Must be one of the participating actors. If specified, the given actor is considered submissive for the context of the animation
-; akCenter:			If specified, SexLab will try to place all actors near or on the given reference
-; abAllowBed:		If false, bed usage for this scene will be disabled. Will be ignored if akCenter is set
-; asHook:				A callback string to receive callback events. See 'Hooks' section below for details
+;  akPositions:   The actors to animate
+; asTags:        Requested animation tags (may be empty). Supported prefixes: '-' to disable a tag, '~' for OR-conjunctions
+;                Example: "~A, B, ~C, -D" <=> Animation has tag B, does NOT have tag D and has EITHER tag A or C 
+; akSubmissive:  Must be one of the participating actors. If specified, the given actor is considered submissive for the context of the animation
+; akCenter:      If specified, SexLab will try to place all actors near or on the given reference
+; abAllowBed:    If false, bed usage for this scene will be disabled. Will be ignored if akCenter is set
+; asHook:        A callback string to receive callback events. See 'Hooks' section below for details
 ; --- Return:
-; sslThreadController:	An API instance to interact with the started scene. See sslThreadController.psc for more info
-; None:									If an error occured
-sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
-	sslThreadModel thread = NewThread()
-	If(!thread)
-		Log("StartScene() - Failed to claim an available thread")
-		return none
-	ElseIf(!thread.AddActors(akPositions, akSubmissive))
-		Log("StartScene() - Failed to add some actors to thread")
-		return none
-	ElseIf(!thread.SetAnimationsByTags(asTags, abAllowBed as int))
-		Log("StartScene() - Failed to find valid animations")
-		return none
-	EndIf
-	thread.CenterOnObject(akCenter)
-	thread.DisableBedUse(!abAllowBed)
-	thread.SetHook(asHook)
-	return thread.StartThread()
+; sslThreadController:  An API instance to interact with the started scene. See sslThreadController.psc for more info
+; None:                  If an error occured
+sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowFurni = true, String asHook = "")
+  sslThreadModel thread = NewThread()
+  If(!thread)
+    Log("StartScene() - Failed to claim an available thread")
+    return none
+  ElseIf(!thread.AddActors(akPositions, akSubmissive))
+    Log("StartScene() - Failed to add some actors to thread")
+    return none
+  ElseIf(!thread.SetAnimationsByTags(asTags, abAllowFurni as int))
+    Log("StartScene() - Failed to find valid animations")
+    return none
+  EndIf
+  thread.CenterOnObject(akCenter)
+  thread.DisableBedUse(!abAllowFurni)
+  thread.SetHook(asHook)
+  return thread.StartThread()
 EndFunction
 
 ; Alternate way to create a SexLab Scene if the for the scene expected animations have already been evaluated
 sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
-	sslThreadModel thread = NewThread()
-	If(!thread)
-		Log("StartScene() - Failed to claim an available thread")
-		return none
-	ElseIf(!thread.AddActors(akPositions, akSubmissive))
-		Log("StartScene() - Failed to add some actors to thread")
-		return none
-	EndIf
-	thread.SetAnimations(akAnimations)
-	thread.CenterOnObject(akCenter)
-	thread.DisableBedUse(!abAllowBed)
-	thread.SetHook(asHook)
-	return thread.StartThread()
+  sslThreadModel thread = NewThread()
+  If(!thread)
+    Log("StartScene() - Failed to claim an available thread")
+    return none
+  ElseIf(!thread.AddActors(akPositions, akSubmissive))
+    Log("StartScene() - Failed to add some actors to thread")
+    return none
+  EndIf
+  thread.SetAnimations(akAnimations)
+  thread.CenterOnObject(akCenter)
+  thread.DisableBedUse(!abAllowBed)
+  thread.SetHook(asHook)
+  return thread.StartThread()
 EndFunction
 
 ;/* QuickStart 
@@ -133,15 +133,15 @@ EndFunction
 * * @return: the thread instance that is allocated by the function. NONE if something went wrong and the animation will not start.
 */;
 sslThreadController Function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
-	Actor[] Positions = SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
-	return StartScene(Positions, AnimationTags, Victim, asHook = Hook)
+  Actor[] Positions = SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
+  return StartScene(Positions, AnimationTags, Victim, asHook = Hook)
 EndFunction
 
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;#                                                            THREAD FUNCTIONS                                                             #
-;# 	              									  				Use these Functions to access a running thread 	              		 								  				 #
+;#                                             Use these Functions to access a running thread                                                 #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -152,7 +152,7 @@ EndFunction
 * * @return: sslThreadController - The thread that the given tid belongs to.
 */;
 sslThreadController function GetController(int tid)
-	return ThreadSlots.GetController(tid)
+  return ThreadSlots.GetController(tid)
 endFunction
 
 ;/* FindActorController
@@ -162,7 +162,7 @@ endFunction
 * * @return: int - The id of the ThreadController where the actor is currently in. -1 if the actor couldn't be found in any of the ThreadControllers.
 */;
 int function FindActorController(Actor ActorRef)
-	return ThreadSlots.FindActorController(ActorRef)
+  return ThreadSlots.FindActorController(ActorRef)
 endFunction
 
 ;/* FindActorController
@@ -170,7 +170,7 @@ endFunction
 * * @return: int - The id of the ThreadController where the player is currently in. -1 if the player couldn't be found in any of the ThreadControllers.
 */;
 int function FindPlayerController()
-	return ThreadSlots.FindActorController(PlayerRef)
+  return ThreadSlots.FindActorController(PlayerRef)
 endFunction
 
 ;/* 
@@ -180,7 +180,7 @@ endFunction
 * * @return: sslThreadController - The ThreadController the actor is currently part of. NONE if actor couldn't be found.
 */;
 sslThreadController function GetActorController(Actor ActorRef)
-	return ThreadSlots.GetActorController(ActorRef)
+  return ThreadSlots.GetActorController(ActorRef)
 endFunction
 
 ;/* GetPlayerController
@@ -189,7 +189,7 @@ endFunction
 * * @return: sslThreadController - The ThreadController the player is currently part of. NONE if player couldn't be found.
 */;
 sslThreadController function GetPlayerController()
-	return ThreadSlots.GetActorController(PlayerRef)
+  return ThreadSlots.GetActorController(PlayerRef)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -214,7 +214,7 @@ endFunction
 * * @return: an integer key to use for functions in sslActorData.psc
 */;
 int Function GetActorKey(Actor akActor)
-	sslActorData.BuildDataKey(akActor)
+  sslActorData.BuildDataKey(akActor)
 EndFunction
 
 ;/* GetGender 
@@ -230,7 +230,7 @@ EndFunction
 * *  3 - Female Creature (this value is possible only if Creature Genders are enabled)
 */;
 int function GetGender(Actor ActorRef)
-	return ActorLib.GetGender(ActorRef)
+  return ActorLib.GetGender(ActorRef)
 endFunction
 
 ;/* TreatAsMale 
@@ -239,7 +239,7 @@ endFunction
 * * @param: ActorRef, is the actor to set the SexLab Gender to male.
 */;
 function TreatAsMale(Actor ActorRef)
-	ActorLib.TreatAsMale(ActorRef)
+  ActorLib.TreatAsMale(ActorRef)
 endFunction
 
 ;/* TreatAsFemale 
@@ -248,7 +248,7 @@ endFunction
 * * @param: ActorRef, is the actor to set the SexLab Gender to female.
 */;
 function TreatAsFemale(Actor ActorRef)
-	ActorLib.TreatAsFemale(ActorRef)
+  ActorLib.TreatAsFemale(ActorRef)
 endFunction
 
 ;/* TreatAsGender
@@ -258,7 +258,7 @@ endFunction
 * * @param: AsFemale, if you pass the value True, then the actor will be considered as Female, if you pass the value False, then it will be considered as Male.
 */;
 function TreatAsGender(Actor ActorRef, bool AsFemale)
-	ActorLib.TreatAsGender(ActorRef, AsFemale)
+  ActorLib.TreatAsGender(ActorRef, AsFemale)
 endFunction
 
 ;/* ClearForcedGender
@@ -268,7 +268,7 @@ endFunction
 * * @param: ActorRef, is the actor for whom to clear forced SexLab Gender.
 */;
 function ClearForcedGender(Actor ActorRef)
-	ActorLib.ClearForcedGender(ActorRef)
+  ActorLib.ClearForcedGender(ActorRef)
 endFunction
 
 ;/* GenderCount
@@ -282,7 +282,7 @@ endFunction
 * *   [3] is the number of Females Creatures (is always zero if Creature Genders are NOT enabled, contains the number of female creatures if Creature Genders ARE enabled)
 */;
 int[] function GenderCount(Actor[] Positions)
-	return ActorLib.GenderCount(Positions)
+  return ActorLib.GenderCount(Positions)
 endFunction
 
 ;/* TransGenderCount
@@ -296,7 +296,7 @@ endFunction
 * *   [3] is the number of Transgender Creatures actors treated as Females Creatures (is always zero if the "Creature Genders" option is disabled)
 */;
 int[] function TransGenderCount(Actor[] Positions)
-	return ActorLib.TransCount(Positions)
+  return ActorLib.TransCount(Positions)
 endFunction
 
 ;/* MaleCount
@@ -306,7 +306,7 @@ endFunction
 * * @return: an int with the number of males
 */;
 int function MaleCount(Actor[] Positions)
-	return ActorLib.MaleCount(Positions)
+  return ActorLib.MaleCount(Positions)
 endFunction
 
 ;/* FemaleCount
@@ -316,7 +316,7 @@ endFunction
 * * @return: an int with the number of females
 */;
 int function FemaleCount(Actor[] Positions)
-	return ActorLib.FemaleCount(Positions)
+  return ActorLib.FemaleCount(Positions)
 endFunction
 
 ;/* CreatureCount
@@ -326,7 +326,7 @@ endFunction
 * * @return: an int with the number of creatures (creature sex is not considered, use GenderCount() if you need to distinguish between male and female creatures.)
 */;
 int function CreatureCount(Actor[] Positions)
-	return ActorLib.CreatureCount(Positions)
+  return ActorLib.CreatureCount(Positions)
 endFunction
 
 ;/* TransMaleCount
@@ -336,7 +336,7 @@ endFunction
 * * @return: an int with the number of Transgender actors treated as Males
 */;
 int function TransMaleCount(Actor[] Positions)
-	return ActorLib.TransCount(Positions)[0]
+  return ActorLib.TransCount(Positions)[0]
 endFunction
 
 ;/* TransFemaleCount
@@ -346,7 +346,7 @@ endFunction
 * * @return: an int with the number of Transgender actors treated as Females
 */;
 int function TransFemaleCount(Actor[] Positions)
-	return ActorLib.TransCount(Positions)[1]
+  return ActorLib.TransCount(Positions)[1]
 endFunction
 
 ;/* TransCreatureCount
@@ -356,8 +356,8 @@ endFunction
 * * @return: an int with the number of transgender creatures (creature sex is not considered, use TransGenderCount() if you need to distinguish between male and female creatures.)
 */;
 int function TransCreatureCount(Actor[] Positions)
-	int[] TransCount = ActorLib.TransCount(Positions)
-	return TransCount[2] + TransCount[3]
+  int[] TransCount = ActorLib.TransCount(Positions)
+  return TransCount[2] + TransCount[3]
 endFunction
 
 ;/* ValidateActor
@@ -365,8 +365,8 @@ endFunction
 * * 
 * * @param: ActorRef, the actor to check if it is valid for SexLab Animations.
 * * @return: an int that is 1 if the actor is valid or a negative value if it is not valid
-* *   -1 	= The Actor does not exists (it is None)
-*	*		-2	= The Actor is from a disabled race
+* *   -1   = The Actor does not exists (it is None)
+*  *    -2  = The Actor is from a disabled race
 * *   -10 = The Actor is already part of a SexLab animation
 * *   -11 = The Actor is forbidden form SexLab animations
 * *   -12 = The Actor does not have the 3D loaded
@@ -378,7 +378,7 @@ endFunction
 * *   -18 = The Actor is a creature that is not supported by SexLab
 */;
 int function ValidateActor(Actor ActorRef)
-	return ActorLib.ValidateActor(ActorRef)
+  return ActorLib.ValidateActor(ActorRef)
 endFunction
 
 ;/* IsValidActor
@@ -388,7 +388,7 @@ endFunction
 * * @return: True if the actor is valid, and False if it is not.
 */;
 bool function IsValidActor(Actor ActorRef)
-	return ActorLib.IsValidActor(ActorRef)
+  return ActorLib.IsValidActor(ActorRef)
 endFunction
 
 ;/* IsActorActive
@@ -398,7 +398,7 @@ endFunction
 * * @return: True if the actor is being animated by SexLab, and False if it is not.
 */;
 bool function IsActorActive(Actor ActorRef)
-	return ActorRef.IsInFaction(Config.AnimatingFaction)
+  return ActorRef.IsInFaction(Config.AnimatingFaction)
 endFunction
 
 ;/* ForbidActor
@@ -406,7 +406,7 @@ endFunction
 * * @param: ActorRef, the actor to forbid from SexLab use.
 */;
 function ForbidActor(Actor ActorRef)
-	ActorLib.ForbidActor(ActorRef)
+  ActorLib.ForbidActor(ActorRef)
 endFunction
 
 ;/* AllowActor
@@ -415,7 +415,7 @@ endFunction
 * * @param: ActorRef, the actor to remove from the forbid list.
 */;
 function AllowActor(Actor ActorRef)
-	ActorLib.AllowActor(ActorRef)
+  ActorLib.AllowActor(ActorRef)
 endFunction
 
 ;/* IsForbidden
@@ -425,7 +425,7 @@ endFunction
 * * @return: True if the actor is forbidden from use.
 */;
 bool function IsForbidden(Actor ActorRef)
-	return ActorLib.IsForbidden(ActorRef)
+  return ActorLib.IsForbidden(ActorRef)
 endFunction
 
 ;/* FindAvailableActor
@@ -438,7 +438,7 @@ endFunction
 * * @return: Actor - A valid actor found, if any. None if no valid actor found.
 */;
 Actor function FindAvailableActor(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none)
-	return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4)
+  return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4)
 endFunction
 
 ;/* FindAvailableActorByFaction
@@ -453,7 +453,7 @@ endFunction
 * * @return: Actor - A valid actor found, if any. None if no valid actor found.
 */;
 Actor function FindAvailableActorByFaction(Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True)
-	return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction)
+  return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction)
 endFunction
 
 ;/* FindAvailableActorWornForm
@@ -469,7 +469,7 @@ endFunction
 * * @return: Actor - A valid actor found, if any. None if no valid actor found.
 */;
 Actor function FindAvailableActorWornForm(int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True)
-	return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm)
+  return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm)
 endFunction
 
 ;/* FindAvailableCreature
@@ -483,7 +483,7 @@ endFunction
 * * @return: Actor - A valid creature found, if any. Returns none if no valid creature found.
 **/;
 Actor function FindAvailableCreature(string RaceKey, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = 2, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none)
-	return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, RaceKey)
+  return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, RaceKey)
 endFunction
 
 ;/* FindAvailableCreatureByFaction
@@ -499,7 +499,7 @@ endFunction
 * * @return: Actor - A valid creature found, if any. None if no valid creature found.
 */;
 Actor function FindAvailableCreatureByFaction(string RaceKey, Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True)
-	return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction, RaceKey)
+  return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction, RaceKey)
 endFunction
 
 ;/* FindAvailableCreatureWornForm
@@ -516,7 +516,7 @@ endFunction
 * * @return: Actor - A valid creature found, if any. None if no valid creature found.
 */;
 Actor function FindAvailableCreatureWornForm(string RaceKey, int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True)
-	return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm, RaceKey)
+  return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm, RaceKey)
 endFunction
 
 ;/* FindAvailablePartners
@@ -530,17 +530,17 @@ endFunction
 * * @return: Actor[] - A list of valid actors, the length of the list is the same as the Positions parameter, then number of valid actors can be less than this value.
 */;
 Actor[] function FindAvailablePartners(Actor[] Positions, int TotalActors, int Males = -1, int Females = -1, float Radius = 10000.0)
-	return ThreadLib.FindAvailablePartners(Positions, TotalActors, Males, Females, Radius)
+  return ThreadLib.FindAvailablePartners(Positions, TotalActors, Males, Females, Radius)
 endFunction
 
 ;/* SortPositions
 * * Sort the given array of actors with SexLabs default sorting algorithm
-*	*	The algorithm is stable and in place. Both Creature and regular actors will be sorted
-*	*
-*	*	@param: akPositions	- The positons to sort
+*  *  The algorithm is stable and in place. Both Creature and regular actors will be sorted
+*  *
+*  *  @param: akPositions  - The positons to sort
 */;
 Function SortPositions(Actor[] akPositions)
-	ThreadLib.SortPositions(akPositions)
+  ThreadLib.SortPositions(akPositions)
 EndFunction
 
 ;/* AddCum
@@ -552,7 +552,7 @@ EndFunction
 * * @param: bool Anal [OPTIONAL] - if set to TRUE, then the cum will be applied (or staked if it was already there) to the Anus.
 */;
 function AddCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, bool Anal = true)
-	ActorLib.AddCum(ActorRef, Vaginal, Oral, Anal)
+  ActorLib.AddCum(ActorRef, Vaginal, Oral, Anal)
 endFunction
 
 ;/* ClearCum
@@ -561,7 +561,7 @@ endFunction
 * * @param: Actor ActorRef - The actor you want to remove any trace of cum from the skin, it will actually remove the EffectShaders from the actor.
 */;
 function ClearCum(Actor ActorRef)
-	ActorLib.ClearCum(ActorRef)
+  ActorLib.ClearCum(ActorRef)
 endFunction
 
 ;/* CountCum
@@ -572,16 +572,16 @@ endFunction
 * * @return: an int with the number of stacked layers
 */;
 int function CountCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, bool Anal = true)
-	return ActorLib.CountCum(ActorRef, Vaginal, Oral, Anal)
+  return ActorLib.CountCum(ActorRef, Vaginal, Oral, Anal)
 endFunction
 int function CountCumVaginal(Actor ActorRef)
-	return ActorLib.CountCum(ActorRef, true, false, false)
+  return ActorLib.CountCum(ActorRef, true, false, false)
 endFunction
 int function CountCumOral(Actor ActorRef)
-	return ActorLib.CountCum(ActorRef, false, true, false)
+  return ActorLib.CountCum(ActorRef, false, true, false)
 endFunction
 int function CountCumAnal(Actor ActorRef)
-	return ActorLib.CountCum(ActorRef, false, false, true)
+  return ActorLib.CountCum(ActorRef, false, false, true)
 endFunction
 
 ;/* StripActor
@@ -594,7 +594,7 @@ endFunction
 * * @return: Form[] - An array of all equipment stripped from ActorRef
 */;
 Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimate = true, bool LeadIn = false)
-	return ActorLib.StripActor(ActorRef, VictimRef, DoAnimate, LeadIn)
+  return ActorLib.StripActor(ActorRef, VictimRef, DoAnimate, LeadIn)
 endFunction
 
 
@@ -610,7 +610,7 @@ endFunction
 * * @return: Form[] - An array of all equipment stripped from ActorRef
 */;
 Form[] function StripSlots(Actor ActorRef, bool[] Strip, bool DoAnimate = false, bool AllowNudesuit = true)
-	return ActorLib.StripSlots(ActorRef, Strip, DoAnimate, AllowNudesuit)
+  return ActorLib.StripSlots(ActorRef, Strip, DoAnimate, AllowNudesuit)
 endFunction
 
 ;/* UnstripActor
@@ -621,7 +621,7 @@ endFunction
 * * @param: bool IsVictim - If TRUE and the user has the SexLab MCM option for Victims Redress disabled, the actor will not actually re-equip their gear.
 */;
 function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
-	ActorLib.UnstripActor(ActorRef, Stripped, IsVictim)
+  ActorLib.UnstripActor(ActorRef, Stripped, IsVictim)
 endFunction
 
 ;/* IsStrippable
@@ -631,7 +631,7 @@ endFunction
 * * @return: bool - TRUE if the item does not have the keyword with the word "NoStrip" in it, or is flagged as "Always Strip" in the SexLab MCM Strip Editor.
 */;
 bool function IsStrippable(Form ItemRef)
-	return ActorLib.IsStrippable(ItemRef)
+  return ActorLib.IsStrippable(ItemRef)
 endFunction
 
 ;/* StripSlot
@@ -643,7 +643,7 @@ endFunction
 * * @return: Form - The item equipped on the SlotMask if removed. None if it was not removed or nothing was there.
 */;
 Form function StripSlot(Actor ActorRef, int SlotMask)
-	return ActorLib.StripSlot(ActorRef, SlotMask)
+  return ActorLib.StripSlot(ActorRef, SlotMask)
 endFunction
 
 ;/* WornStrapon
@@ -653,7 +653,7 @@ endFunction
 * * @return: Form - The SexLab registered strapon actor is currently wearing, if any.
 */;
 Form function WornStrapon(Actor ActorRef)
-	return Config.WornStrapon(ActorRef)
+  return Config.WornStrapon(ActorRef)
 endFunction
 
 ;/* HasStrapon
@@ -663,7 +663,7 @@ endFunction
 * * @return: bool - TRUE if the actor has a SexLab registered strapon equipped or in their inventory.
 */;
 bool function HasStrapon(Actor ActorRef)
-	return Config.HasStrapon(ActorRef)
+  return Config.HasStrapon(ActorRef)
 endFunction
 
 ;/* PickStrapon
@@ -673,7 +673,7 @@ endFunction
 * * @return: Form - A randomly selected strapon or the strapon the actor already has in inventory, if any.
 */;
 Form function PickStrapon(Actor ActorRef)
-	return Config.PickStrapon(ActorRef)
+  return Config.PickStrapon(ActorRef)
 endFunction
 
 ;/* EquipStrapon
@@ -683,7 +683,7 @@ endFunction
 * * @return: Form - The strapon equipped, either randomly selected or pre-owned by ActorRef.
 */;
 Form function EquipStrapon(Actor ActorRef)
-	return Config.EquipStrapon(ActorRef)
+  return Config.EquipStrapon(ActorRef)
 endFunction
 
 ;/* UnequipStrapon
@@ -692,7 +692,7 @@ endFunction
 * * @param: Actor ActorRef - The actor to unequip any worn strapon.
 */;
 function UnequipStrapon(Actor ActorRef)
-	Config.UnequipStrapon(ActorRef)
+  Config.UnequipStrapon(ActorRef)
 endFunction
 
 ;/* 
@@ -703,7 +703,7 @@ endFunction
 * * @return: Armor - If form was found and is a valid armor, a copy of the loaded Armor form. 
 */;
 Armor function LoadStrapon(string esp, int id)
-	return Config.LoadStrapon(esp, id)
+  return Config.LoadStrapon(esp, id)
 endFunction
 
 
@@ -716,7 +716,7 @@ endFunction
 * * @return: bool - TRUE if ActorRef was/is present in a bard audience
 */;
 bool function CheckBardAudience(Actor ActorRef, bool RemoveFromAudience = true)
-	return Config.CheckBardAudience(ActorRef, RemoveFromAudience)
+  return Config.CheckBardAudience(ActorRef, RemoveFromAudience)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -742,7 +742,7 @@ endFunction
 * * @return: ObjectReference - The found valid bed within the radius. NONE if no bed found. 
 */;
 ObjectReference function FindBed(ObjectReference CenterRef, float Radius = 1000.0, bool IgnoreUsed = true, ObjectReference IgnoreRef1 = none, ObjectReference IgnoreRef2 = none)
-	return ThreadLib.FindBed(CenterRef, Radius, IgnoreUsed, IgnoreRef1, IgnoreRef2)
+  return ThreadLib.FindBed(CenterRef, Radius, IgnoreUsed, IgnoreRef1, IgnoreRef2)
 endFunction
 
 ;/* IsBedRoll
@@ -752,7 +752,7 @@ endFunction
 * * @return: bool - TRUE if BedRef is considered a bed roll.
 */;
 bool function IsBedRoll(ObjectReference BedRef)
-	return ThreadLib.IsBedRoll(BedRef)
+  return ThreadLib.IsBedRoll(BedRef)
 endFunction
 
 ;/* IsDoubleBed
@@ -762,7 +762,7 @@ endFunction
 * * @return: bool - TRUE if BedRef is considered a 2 person bed.
 */;
 bool function IsDoubleBed(ObjectReference BedRef)
-	return ThreadLib.IsDoubleBed(BedRef)
+  return ThreadLib.IsDoubleBed(BedRef)
 endFunction
 
 ;/* IsSingleBed
@@ -772,7 +772,7 @@ endFunction
 * * @return: bool - TRUE if BedRef is considered a single bed.
 */;
 bool function IsSingleBed(ObjectReference BedRef)
-	return ThreadLib.IsSingleBed(BedRef)
+  return ThreadLib.IsSingleBed(BedRef)
 endFunction
 
 ;/* IsBedAvailable
@@ -782,7 +782,7 @@ endFunction
 * * @return: bool - TRUE if BedRef is not being used, FALSE if a NPC is sleeping on it or is used by another SexLab thread.
 */;
 bool function IsBedAvailable(ObjectReference BedRef)
-	return ThreadLib.IsBedAvailable(BedRef)
+  return ThreadLib.IsBedAvailable(BedRef)
 endFunction
 
 ;/* AddCustomBed
@@ -793,7 +793,7 @@ endFunction
 * * @return: bool - TRUE if bed was successfully added to the bed list. 
 */;
 bool function AddCustomBed(Form BaseBed, int BedType = 0)
-	return Config.AddCustomBed(BaseBed, BedType)
+  return Config.AddCustomBed(BaseBed, BedType)
 endFunction
 
 ;/* SetCustomBedOffset
@@ -807,7 +807,7 @@ endFunction
 * * @return: bool - TRUE if BedRef if the bed succesfully had it's default offsets overriden.
 */;
 bool function SetCustomBedOffset(Form BaseBed, float Forward = 30.0, float Sideward = 0.0, float Upward = 37.0, float Rotation = 0.0)
-	return Config.SetCustomBedOffset(BaseBed, Forward, Sideward, Upward, Rotation)
+  return Config.SetCustomBedOffset(BaseBed, Forward, Sideward, Upward, Rotation)
 endFunction
 
 ;/* ClearCustomBedOffset
@@ -817,7 +817,7 @@ endFunction
 * * @return: bool - TRUE if BedRef if the bed succesfully had it's default offsets restored. FALSE if it didn't have any to begin with.
 */;
 bool function ClearCustomBedOffset(Form BaseBed)
-	return Config.ClearCustomBedOffset(BaseBed)
+  return Config.ClearCustomBedOffset(BaseBed)
 endFunction
 
 ;/* GetBedOffsets
@@ -827,7 +827,7 @@ endFunction
 * * @return: float[] - The array of offsets organized as [Forward, Sideward, Upward, Rotation]. If no customs defined, the default is returned.
 */;
 float[] function GetBedOffsets(Form BaseBed)
-	return Config.GetBedOffsets(BaseBed)
+  return Config.GetBedOffsets(BaseBed)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -891,7 +891,7 @@ endFunction
 * * @param: string Callback - The unique callback name you want to associate with this actor.
 */;
 function TrackActor(Actor ActorRef, string Callback)
-	ThreadLib.TrackActor(ActorRef, Callback)
+  ThreadLib.TrackActor(ActorRef, Callback)
 endFunction
 
 ;/* UntrackActor
@@ -903,7 +903,7 @@ endFunction
 * * @param: string Callback - The unique callback event you want to disable.
 */;
 function UntrackActor(Actor ActorRef, string Callback)
-	ThreadLib.UntrackActor(ActorRef, Callback)
+  ThreadLib.UntrackActor(ActorRef, Callback)
 endFunction
 
 ;/* 
@@ -918,7 +918,7 @@ endFunction
 * * @param: string Callback - The unique callback name you want to associate with this faction's actors.
 */;
 function TrackFaction(Faction FactionRef, string Callback)
-	ThreadLib.TrackFaction(FactionRef, Callback)
+  ThreadLib.TrackFaction(FactionRef, Callback)
 endFunction
 
 ;/* UntrackFaction
@@ -928,7 +928,7 @@ endFunction
 * * @param: string Callback - The unique callback event you want to disable.
 */;
 function UntrackFaction(Faction FactionRef, string Callback)
-	ThreadLib.UntrackFaction(FactionRef, Callback)
+  ThreadLib.UntrackFaction(FactionRef, Callback)
 endFunction
 
 ;/* SendTrackedEvent
@@ -954,7 +954,7 @@ endFunction
 * * 
 */;
 function SendTrackedEvent(Actor ActorRef, string Hook, int id = -1)
-	ThreadLib.SendTrackedEvent(ActorRef, Hook, id)
+  ThreadLib.SendTrackedEvent(ActorRef, Hook, id)
 endFunction
 
 ;/* IsActorTracked
@@ -964,7 +964,7 @@ endFunction
 * * @return: bool - TRUE if the actor has any associated callbacks, or belongs to any tracked factions.
 */;
 bool function IsActorTracked(Actor ActorRef)
-	return ThreadLib.IsActorTracked(ActorRef)
+  return ThreadLib.IsActorTracked(ActorRef)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -981,16 +981,16 @@ endFunction
 
 ;/* GetAnimations
 * * Retrieve a set of animations suitable for the given actors under the specific tag restrictions
-*	*	DO NOT USE to find Creature Animations. Use GetCreatureAnimations() instead (see 'Creature' section below)
+*  *  DO NOT USE to find Creature Animations. Use GetCreatureAnimations() instead (see 'Creature' section below)
 * * 
-* * @param: akPositions 	- The actors you wish to animate. MUST BE EXCLUSIVELY HUMAN
-* * @param: asTags				- The tags to constrain the animation with. Prefix a tag with '-' to disable them
-*	*													You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
-*	*	@param: akVictim			- The Victim of this animation. Some animations may require an explicit victim to be stated
+* * @param: akPositions   - The actors you wish to animate. MUST BE EXCLUSIVELY HUMAN
+* * @param: asTags        - The tags to constrain the animation with. Prefix a tag with '-' to disable them
+*  *                          You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
+*  *  @param: akVictim      - The Victim of this animation. Some animations may require an explicit victim to be stated
 * * @return: sslBaseAnimation - The animation whose name matches, if found.
 */;
 sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags = "", Actor akVictim = none)
-	return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
+  return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
 EndFunction
 
 ;/* GetAnimationByName
@@ -1001,7 +1001,7 @@ EndFunction
 * * @return: sslBaseAnimation - The animation whose name matches, if found.
 */;
 sslBaseAnimation function GetAnimationByName(string FindName)
-	return AnimSlots.GetByName(FindName)
+  return AnimSlots.GetByName(FindName)
 endFunction
 
 ;/* GetAnimationByRegistry
@@ -1012,7 +1012,7 @@ endFunction
 * * @return: sslBaseAnimation - The animation whose registry matches, if found.
 */;
 sslBaseAnimation function GetAnimationByRegistry(string Registry)
-	return AnimSlots.GetByRegistrar(Registry)
+  return AnimSlots.GetByRegistrar(Registry)
 endFunction
 
 ;/* FindAnimationByName
@@ -1022,7 +1022,7 @@ endFunction
 * * @return: int - The registration slot number for the animation.
 */;
 int function FindAnimationByName(string FindName)
-	return AnimSlots.FindByName(FindName)
+  return AnimSlots.FindByName(FindName)
 endFunction
 
 ;/* GetAnimationCount
@@ -1032,7 +1032,7 @@ endFunction
 * * @return: int - The total number of animations.
 */;
 int function GetAnimationCount(bool IgnoreDisabled = true)
-	return AnimSlots.GetCount(IgnoreDisabled)
+  return AnimSlots.GetCount(IgnoreDisabled)
 endFunction
 
 ;/* MergeAnimationLists
@@ -1044,7 +1044,7 @@ endFunction
 * * @return: sslBaseAnimation[] - All the animations from List1 and List2, with any duplicates between them removed.
 */;
 sslBaseAnimation[] function MergeAnimationLists(sslBaseAnimation[] List1, sslBaseAnimation[] List2)
-	return sslUtility.MergeAnimationLists(List1, List2)
+  return sslUtility.MergeAnimationLists(List1, List2)
 endFunction
 
 ;/* RemoveTagged
@@ -1055,7 +1055,7 @@ endFunction
 * * @return: sslBaseAnimation[] - All the animations from Anims that did not have any of the provided tags.
 */;
 sslBaseAnimation[] function RemoveTagged(sslBaseAnimation[] Anims, string Tags)
-	return sslUtility.RemoveTaggedAnimations(Anims, PapyrusUtil.StringSplit(Tags))
+  return sslUtility.RemoveTaggedAnimations(Anims, PapyrusUtil.StringSplit(Tags))
 endFunction
 
 ;/* CountTag
@@ -1066,7 +1066,7 @@ endFunction
 * * @return: int - The number of animations from Anims that contain one of the tags provided.
 */;
 int function CountTag(sslBaseAnimation[] Anims, string Tags)
-	return AnimSlots.CountTag(Anims, Tags)
+  return AnimSlots.CountTag(Anims, Tags)
 endFunction
 
 ;/* CountTagUsage
@@ -1076,11 +1076,11 @@ endFunction
 * * @return: int - The number of animations from Anims that contain one of the tags provided.
 */;
 int function CountTagUsage(string Tags, bool IgnoreDisabled = true)
-	return AnimSlots.CountTagUsage(Tags, IgnoreDisabled)
+  return AnimSlots.CountTagUsage(Tags, IgnoreDisabled)
 endFunction
 
 int function CountCreatureTagUsage(string Tags, bool IgnoreDisabled = true)
-	return CreatureSlots.CountTagUsage(Tags, IgnoreDisabled)
+  return CreatureSlots.CountTagUsage(Tags, IgnoreDisabled)
 endFunction
 
 ;/* GetAllAnimationTags
@@ -1092,7 +1092,7 @@ endFunction
 * * @return: string[] - An alphabetically sorted string array of all unique tags found in the matching animations. 
 */;
 string[] function GetAllAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
-	return AnimSlots.GetAllTags(ActorCount, IgnoreDisabled)
+  return AnimSlots.GetAllTags(ActorCount, IgnoreDisabled)
 endFunction
 
 
@@ -1104,7 +1104,7 @@ endFunction
 * * @return: string[] - An alphabetically sorted string array of all unique tags found in the provided animations. 
 */;
 string[] function GetAllAnimationTagsInArray(sslBaseAnimation[] List)
-	return sslUtility.GetAllAnimationTagsInArray(List)
+  return sslUtility.GetAllAnimationTagsInArray(List)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -1139,16 +1139,16 @@ endFunction
 
 ;/* GetCreatureAnimations
 * * Retrieve a set of animations suitable for the given actors under the specific tag restrictions
-*	*	DO NOT USE for human exclusive animations. Use "GetAnimations()" instead (see Animation section above)
+*  *  DO NOT USE for human exclusive animations. Use "GetAnimations()" instead (see Animation section above)
 * * 
-* * @param: akPositions 	- The actors you wish to animate, both human and creatures
-* * @param: asTags				- The tags to constrain the animation with. Prefix a tag with '-' to disable them
-*	*													You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
-*	*	@param: akVictim			- The Victim of this animation. Some animations may require an explicit victim to be stated
+* * @param: akPositions   - The actors you wish to animate, both human and creatures
+* * @param: asTags        - The tags to constrain the animation with. Prefix a tag with '-' to disable them
+*  *                          You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
+*  *  @param: akVictim      - The Victim of this animation. Some animations may require an explicit victim to be stated
 * * @return: sslBaseAnimation - A list of animations fitting to the given tags
 */;
 sslBaseAnimation[] Function GetCreatureAnimations(Actor[] akPositions, String asTags = "", Actor akVictim = none)
-	return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
+  return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
 EndFunction
 
 ;/* GetCreatureAnimationByName
@@ -1158,7 +1158,7 @@ EndFunction
 * * @return: sslBaseAnimation - The creature animation whose name matches, if found.
 */;
 sslBaseAnimation function GetCreatureAnimationByName(string FindName)
-	return CreatureSlots.GetByName(FindName)
+  return CreatureSlots.GetByName(FindName)
 endFunction
 
 ;/* GetCreatureAnimationByRegistry
@@ -1168,7 +1168,7 @@ endFunction
 * * @return: sslBaseAnimation - The creature animation whose registry matches, if found.
 */;
 sslBaseAnimation function GetCreatureAnimationByRegistry(string Registry)
-	return CreatureSlots.GetByRegistrar(Registry)
+  return CreatureSlots.GetByRegistrar(Registry)
 endFunction
 
 ;/* HasCreatureRaceAnimation
@@ -1180,7 +1180,7 @@ endFunction
 * * @return: bool - TRUE if the given CreatureRace has any valid and enabled animations for ActorCount positions.
 */;
 bool function HasCreatureRaceAnimation(Race CreatureRace, int ActorCount = -1, int Gender = -1)
-	return CreatureSlots.RaceHasAnimation(CreatureRace, ActorCount, Gender)
+  return CreatureSlots.RaceHasAnimation(CreatureRace, ActorCount, Gender)
 endFunction
 
 ;/* HasCreatureRaceKeyAnimation
@@ -1192,7 +1192,7 @@ endFunction
 * * @return: bool - TRUE if the given CreatureRace has any valid and enabled animations for ActorCount positions.
 */;
 bool function HasCreatureRaceKeyAnimation(string RaceKey, int ActorCount = -1, int Gender = -1)
-	return CreatureSlots.RaceKeyHasAnimation(RaceKey, ActorCount, Gender)
+  return CreatureSlots.RaceKeyHasAnimation(RaceKey, ActorCount, Gender)
 endFunction
 
 ;/* AllowedCreature
@@ -1202,7 +1202,7 @@ endFunction
 * * @return: bool - TRUE if the creature has a valid enabled animation AND that creature animations are enabled.
 */;
 bool function AllowedCreature(Race CreatureRace)
-	return CreatureSlots.AllowedCreature(CreatureRace)
+  return CreatureSlots.AllowedCreature(CreatureRace)
 endFunction
 
 ;/* 
@@ -1213,7 +1213,7 @@ endFunction
 * * @return: bool - TRUE if they do have a shared RaceKey.
 */;
 bool function AllowedCreatureCombination(Race CreatureRace, Race CreatureRace2)
-	return CreatureSlots.AllowedCreatureCombination(CreatureRace, CreatureRace2)
+  return CreatureSlots.AllowedCreatureCombination(CreatureRace, CreatureRace2)
 endFunction
 
 ;/* GetAllCreatureAnimationTags
@@ -1225,7 +1225,7 @@ endFunction
 * * @return: string[] - An alphabetically sorted string array of all unique tags found in the matching animations. 
 */;
 string[] function GetAllCreatureAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
-	return CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled)
+  return CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled)
 endFunction
 
 ;/* GetAllBothAnimationTags
@@ -1237,9 +1237,9 @@ endFunction
 * * @return: string[] - An alphabetically sorted string array of all unique tags found in the matching animations. 
 */;
 string[] function GetAllBothAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
-	string[] Output = PapyrusUtil.MergeStringArray(AnimSlots.GetAllTags(ActorCount, IgnoreDisabled), CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled))
-	PapyrusUtil.SortStringArray(Output)
-	return Output
+  string[] Output = PapyrusUtil.MergeStringArray(AnimSlots.GetAllTags(ActorCount, IgnoreDisabled), CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled))
+  PapyrusUtil.SortStringArray(Output)
+  return Output
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -1261,10 +1261,10 @@ endFunction
 * * @return: sslBaseVoice - A suitable voice object for the actor to use.
 */;
 sslBaseVoice function PickVoice(Actor ActorRef)
-	return VoiceSlots.PickVoice(ActorRef)
+  return VoiceSlots.PickVoice(ActorRef)
 endFunction
 sslBaseVoice function GetVoice(Actor ActorRef) ; Alias of PickVoice()
-	return VoiceSlots.PickVoice(ActorRef)
+  return VoiceSlots.PickVoice(ActorRef)
 endFunction
 
 ;/* 
@@ -1275,7 +1275,7 @@ endFunction
 * * @return: sslBaseVoice - A suitable voice object for the actor to use. Does not have to be a registered SexLab voice object.
 */;
 function SaveVoice(Actor ActorRef, sslBaseVoice Saving)
-	VoiceSlots.SaveVoice(ActorRef, Saving)
+  VoiceSlots.SaveVoice(ActorRef, Saving)
 endFunction
 
 ;/* ForgetVoice
@@ -1284,7 +1284,7 @@ endFunction
 * * @param: Actor ActorRef - The actor you want to remove a saved voice from.
 */;
 function ForgetVoice(Actor ActorRef)
-	VoiceSlots.ForgetVoice(ActorRef)
+  VoiceSlots.ForgetVoice(ActorRef)
 endFunction
 
 ;/* GetSavedVoice
@@ -1294,7 +1294,7 @@ endFunction
 * * @return: sslBaseVoice - The actors saved voice object if one exists, otherwise NONE.
 */;
 sslBaseVoice function GetSavedVoice(Actor ActorRef)
-	return VoiceSlots.GetSaved(ActorRef)
+  return VoiceSlots.GetSaved(ActorRef)
 endFunction
 
 ;/* HasCustomVoice
@@ -1304,7 +1304,7 @@ endFunction
 * * @return: sslBaseVoice - A suitable voice object for the actor to use.
 */;
 bool function HasCustomVoice(Actor ActorRef)
-	return VoiceSlots.HasCustomVoice(ActorRef)
+  return VoiceSlots.HasCustomVoice(ActorRef)
 endFunction
 
 ;/* GetVoiceByGender
@@ -1314,7 +1314,7 @@ endFunction
 * * @return: sslBaseVoice - A suitable voice object for the given actor gender.
 */;
 sslBaseVoice function GetVoiceByGender(int Gender)
-	return VoiceSlots.PickGender(Gender)
+  return VoiceSlots.PickGender(Gender)
 endFunction
 
 ;/* GetVoicesByGender
@@ -1324,7 +1324,7 @@ endFunction
 * * @return: sslBaseVoice[] - An array of suitable voices for the given actor gender.
 */;
 sslBaseVoice[] function GetVoicesByGender(int Gender)
-	return VoiceSlots.GetAllGender(Gender)
+  return VoiceSlots.GetAllGender(Gender)
 endFunction
 
 ;/* GetVoiceByName
@@ -1334,7 +1334,7 @@ endFunction
 * * @return: sslBaseVoice - The voice object whose name matches, if found.
 */;
 sslBaseVoice function GetVoiceByName(string FindName)
-	return VoiceSlots.GetByName(FindName)
+  return VoiceSlots.GetByName(FindName)
 endFunction
 
 ;/* FindVoiceByName
@@ -1344,7 +1344,7 @@ endFunction
 * * @return: int - The registration slot number for the voice.
 */;
 int function FindVoiceByName(string FindName)
-	return VoiceSlots.FindByName(FindName)
+  return VoiceSlots.FindByName(FindName)
 endFunction
 
 ;/* GetVoiceBySlot
@@ -1354,7 +1354,7 @@ endFunction
 * * @return: sslBaseVoice - The voice object that currently occupies that slot, NONE if nothing occupies it.
 */;
 sslBaseVoice function GetVoiceBySlot(int slot)
-	return VoiceSlots.GetBySlot(slot)
+  return VoiceSlots.GetBySlot(slot)
 endFunction
 
 ;/* GetVoiceByTags
@@ -1366,7 +1366,7 @@ endFunction
 * * @return: sslBaseVoice - A randomly selected voice object among any that match the provided search arguments.
 */;
 sslBaseVoice function GetVoiceByTags(string Tags, string TagSuppress = "", bool RequireAll = true)
-	return VoiceSlots.GetByTags(Tags, TagSuppress, RequireAll)
+  return VoiceSlots.GetByTags(Tags, TagSuppress, RequireAll)
 endFunction
 
 ;/* GetVoicesByTags
@@ -1378,7 +1378,7 @@ endFunction
 * * @return: sslBaseVoice[] - An array of voices that match the provided search arguments.
 */;
 sslBaseVoice[] function GetVoicesByTags(string Tags, string TagSuppress = "", bool RequireAll = true)
-	return VoiceSlots.GetAllByTags(Tags, TagSuppress, RequireAll)
+  return VoiceSlots.GetAllByTags(Tags, TagSuppress, RequireAll)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -1401,7 +1401,7 @@ endFunction
 * * @return: sslBaseExpression - A randomly selected expression object among any that meet the needed criteria.
 */;
 sslBaseExpression function PickExpression(Actor ActorRef, Actor VictimRef = none)
-	return ExpressionSlots.PickByStatus(ActorRef, (VictimRef && VictimRef == ActorRef), (VictimRef && VictimRef != ActorRef))
+  return ExpressionSlots.PickByStatus(ActorRef, (VictimRef && VictimRef == ActorRef), (VictimRef && VictimRef != ActorRef))
 endFunction
 
 ;/* PickExpressionByStatus
@@ -1413,7 +1413,7 @@ endFunction
 * * @return: sslBaseExpression - A randomly selected expression object among any that meet the needed criteria.
 */;
 sslBaseExpression function PickExpressionByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
-	return ExpressionSlots.PickByStatus(ActorRef, IsVictim, IsAggressor)
+  return ExpressionSlots.PickByStatus(ActorRef, IsVictim, IsAggressor)
 endFunction
 
 ;/* GetExpressionsByStatus
@@ -1425,7 +1425,7 @@ endFunction
 * * @return: sslBaseExpression[] - An array of expressions that meet the needed criteria.
 */;
 sslBaseExpression[] function GetExpressionsByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
-	return ExpressionSlots.GetByStatus(ActorRef, IsVictim, IsAggressor)
+  return ExpressionSlots.GetByStatus(ActorRef, IsVictim, IsAggressor)
 endFunction
 
 ;/* PickExpressionByTag
@@ -1436,11 +1436,11 @@ endFunction
 * * @return: sslBaseExpression - A randomly selected expression object among any that have the provided tag.
 */;
 sslBaseExpression function PickExpressionsByTag(Actor ActorRef, string Tag)
-	sslBaseExpression[] Found =  ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
-	if Found && Found.Length > 0
-		return Found[(Utility.RandomInt(0, (Found.Length - 1)))]
-	endIf
-	return none
+  sslBaseExpression[] Found =  ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
+  if Found && Found.Length > 0
+    return Found[(Utility.RandomInt(0, (Found.Length - 1)))]
+  endIf
+  return none
 endFunction
 
 ;/* GetExpressionsByTag
@@ -1451,7 +1451,7 @@ endFunction
 * * @return: sslBaseExpression[] - An array of expressions that have the provided tag.
 */;
 sslBaseExpression[] function GetExpressionsByTag(Actor ActorRef, string Tag)
-	return ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
+  return ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
 endFunction
 
 ;/* GetExpressionByName
@@ -1461,7 +1461,7 @@ endFunction
 * * @return: sslBaseExpression - The expression object whose name matches, if found.
 */;
 sslBaseExpression function GetExpressionByName(string findName)
-	return ExpressionSlots.GetByName(findName)
+  return ExpressionSlots.GetByName(findName)
 endFunction
 
 ;/* FindExpressionByName
@@ -1471,7 +1471,7 @@ endFunction
 * * @return: int - The registration slot number for the expression.
 */;
 int function FindExpressionByName(string findName)
-	return ExpressionSlots.FindByName(findName)
+  return ExpressionSlots.FindByName(findName)
 endFunction
 
 ;/* GetExpressionBySlot
@@ -1481,7 +1481,7 @@ endFunction
 * * @return: sslBaseExpression - The expression object that currently occupies that slot, NONE if nothing occupies it.
 */;
 sslBaseExpression function GetExpressionBySlot(int slot)
-	return ExpressionSlots.GetBySlot(slot)
+  return ExpressionSlots.GetBySlot(slot)
 endFunction
 
 ;/* OpenMouth
@@ -1495,17 +1495,17 @@ endFunction
 * * @param: Actor ActorRef - The actors whose mouth should open.
 */;
 function OpenMouth(Actor ActorRef)
-	if ActorRef
-		int i
-		while i < ThreadSlots.Threads.Length
-			int ActorSlot = Threads[i].FindSlot(ActorRef)
-			if ActorSlot != -1
-				Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = True
-			endIf
-			i += 1
-		endwhile
-		sslBaseExpression.OpenMouth(ActorRef)
-	endIf
+  if ActorRef
+    int i
+    while i < ThreadSlots.Threads.Length
+      int ActorSlot = Threads[i].FindSlot(ActorRef)
+      if ActorSlot != -1
+        Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = True
+      endIf
+      i += 1
+    endwhile
+    sslBaseExpression.OpenMouth(ActorRef)
+  endIf
 endFunction
 
 ;/* CloseMouth
@@ -1515,17 +1515,17 @@ endFunction
 * * @param: Actor ActorRef - The actors whose mouth should open.
 */;
 function CloseMouth(Actor ActorRef)
-	if ActorRef
-		int i
-		while i < ThreadSlots.Threads.Length
-			int ActorSlot = Threads[i].FindSlot(ActorRef)
-			if ActorSlot != -1
-				Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = False
-			endIf
-			i += 1
-		endwhile
-		sslBaseExpression.CloseMouth(ActorRef)
-	endIf
+  if ActorRef
+    int i
+    while i < ThreadSlots.Threads.Length
+      int ActorSlot = Threads[i].FindSlot(ActorRef)
+      if ActorSlot != -1
+        Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = False
+      endIf
+      i += 1
+    endwhile
+    sslBaseExpression.CloseMouth(ActorRef)
+  endIf
 endFunction
 
 ;/* IsMouthOpen
@@ -1536,7 +1536,7 @@ endFunction
 * * @return: bool - TRUE if the actors mouth appears to be in an open state.
 */;
 bool function IsMouthOpen(Actor ActorRef)
-	return sslBaseExpression.IsMouthOpen(ActorRef)
+  return sslBaseExpression.IsMouthOpen(ActorRef)
 endFunction
 
 ;/* GetCurrentMFG
@@ -1547,7 +1547,7 @@ endFunction
 * * @return: float[] - An float array of Length 32 that match the format and structure of the Preset parameter in the ApplyPresetFloats function.
 */;
 float[] function GetCurrentMFG(Actor ActorRef)
-	return sslBaseExpression.GetCurrentMFG(ActorRef)
+  return sslBaseExpression.GetCurrentMFG(ActorRef)
 endFunction
 
 ;/* ClearMFG
@@ -1557,7 +1557,7 @@ endFunction
 * * @param: Actor ActorRef - The actors whose expression should return to normal.
 */;
 function ClearMFG(Actor ActorRef)
-	sslBaseExpression.ClearMFG(ActorRef)
+  sslBaseExpression.ClearMFG(ActorRef)
 endFunction
 
 ;/* ClearPhoneme
@@ -1567,7 +1567,7 @@ endFunction
 * * @param: Actor ActorRef - The actor to clear phonemes on.
 */;
 function ClearPhoneme(Actor ActorRef)
-	sslBaseExpression.ClearPhoneme(ActorRef)
+  sslBaseExpression.ClearPhoneme(ActorRef)
 endFunction
 
 ;/* ClearModifier
@@ -1577,7 +1577,7 @@ endFunction
 * * @param: Actor ActorRef - The actor to clear modifiers on.
 */;
 function ClearModifier(Actor ActorRef)
-	sslBaseExpression.ClearModifier(ActorRef)
+  sslBaseExpression.ClearModifier(ActorRef)
 endFunction
 
 ;/* ApplyPresetFloats
@@ -1592,7 +1592,7 @@ endFunction
 * *                          Mood Value      = Preset[31]
 */;
 function ApplyPresetFloats(Actor ActorRef, float[] Preset)
-	sslBaseExpression.ApplyPresetFloats(ActorRef, Preset)
+  sslBaseExpression.ApplyPresetFloats(ActorRef, Preset)
 endfunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -1704,7 +1704,7 @@ endfunction
 * * @return: int - the enjoyment calculated for the specific actor between orgasms when separated orgasms is enabled or the total enjoyment when separated orgasms is disabled
 */;
 int function GetEnjoyment(int tid, Actor ActorRef)
-	return ThreadSlots.GetController(tid).GetEnjoyment(ActorRef)
+  return ThreadSlots.GetController(tid).GetEnjoyment(ActorRef)
 endfunction
 
 ;/* IsVictim
@@ -1715,7 +1715,7 @@ endfunction
 * * @return: TRUE if the actor is a Victim for the animation, FALSE otherwise
 */;
 bool function IsVictim(int tid, Actor ActorRef)
-	return ThreadSlots.GetController(tid).IsVictim(ActorRef)
+  return ThreadSlots.GetController(tid).IsVictim(ActorRef)
 endFunction
 
 ;/* IsAggressor
@@ -1726,7 +1726,7 @@ endFunction
 * * @return: TRUE if the actor is the Aggressor for the animation, FALSE otherwise
 */;
 bool function IsAggressor(int tid, Actor ActorRef)
-	return ThreadSlots.GetController(tid).IsAggressor(ActorRef)
+  return ThreadSlots.GetController(tid).IsAggressor(ActorRef)
 endFunction
 
 ;/* IsUsingStrapon
@@ -1737,7 +1737,7 @@ endFunction
 * * @return: TRUE if the actor is using a strapon for the animation, FALSE otherwise
 */;
 bool function IsUsingStrapon(int tid, Actor ActorRef)
-	return ThreadSlots.GetController(tid).ActorAlias(ActorRef).IsUsingStrapon()
+  return ThreadSlots.GetController(tid).ActorAlias(ActorRef).IsUsingStrapon()
 endFunction
 
 ;/* PregnancyRisk
@@ -1750,7 +1750,7 @@ endFunction
 * * @return: TRUE if the actor can become pregnant, FALSE otherwise
 */;
 bool function PregnancyRisk(int tid, Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
-	return ThreadSlots.GetController(tid).PregnancyRisk(ActorRef, AllowFemaleCum, AllowCreatureCum)
+  return ThreadSlots.GetController(tid).PregnancyRisk(ActorRef, AllowFemaleCum, AllowCreatureCum)
 endfunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -1775,12 +1775,12 @@ endfunction
 * * @return: an int that is the position of the newly created stat
 */;
 int function RegisterStat(string Name, string Value, string Prepend = "", string Append = "")
-	return Stats.RegisterStat(Name, Value, Prepend, Append)
+  return Stats.RegisterStat(Name, Value, Prepend, Append)
 endFunction
 
 ; Alters an existing stat that has already been registered from the above
 function Alter(string Name, string NewName = "", string Value = "", string Prepend = "", string Append = "")
-	Stats.Alter(Name, NewName, Value, Prepend, Append)
+  Stats.Alter(Name, NewName, Value, Prepend, Append)
 endFunction
 
 ;/* FindStat
@@ -1789,7 +1789,7 @@ endFunction
 * * @return: an int with the index of the stat, -1 if not found
 */;
 int function FindStat(string Name)
-	return Stats.FindStat(Name)
+  return Stats.FindStat(Name)
 endFunction
 
 ;/* GetActorStat
@@ -1800,7 +1800,7 @@ endFunction
 * * @return: A string with the value of the stat for the actor, if the actor has no stat for the specified value, then the default value is returned
 */;
 string function GetActorStat(Actor ActorRef, string Name)
-	return Stats.GetStat(ActorRef, Name)
+  return Stats.GetStat(ActorRef, Name)
 endFunction
 
 ;/* GetActorStatInt
@@ -1811,7 +1811,7 @@ endFunction
 * * @return: An int  with the value of the stat for the actor, if the actor has no stat for the specified value, then the default value is returned
 */;
 int function GetActorStatInt(Actor ActorRef, string Name)
-	return Stats.GetStatInt(ActorRef, Name)
+  return Stats.GetStatInt(ActorRef, Name)
 endFunction
 
 ;/* GetActorStatFloat
@@ -1822,7 +1822,7 @@ endFunction
 * * @return: A float with the value of the stat for the actor, if the actor has no stat for the specified value, then the default value is returned
 */;
 float function GetActorStatFloat(Actor ActorRef, string Name)
-	return Stats.GetStatFloat(ActorRef, Name)
+  return Stats.GetStatFloat(ActorRef, Name)
 endFunction
 
 ;/* SetActorStat
@@ -1833,55 +1833,55 @@ endFunction
 * * @return: The previous value for the stat (TO BE CONFIRMED!!!!)
 */;
 string function SetActorStat(Actor ActorRef, string Name, string Value)
-	return Stats.SetStat(ActorRef, Name, Value)
+  return Stats.SetStat(ActorRef, Name, Value)
 endFunction
 
 ;/* 
 */;
 int function ActorAdjustBy(Actor ActorRef, string Name, int AdjustBy)
-	return Stats.AdjustBy(ActorRef, Name, AdjustBy)
+  return Stats.AdjustBy(ActorRef, Name, AdjustBy)
 endFunction
 
 ;/* 
 */;
 string function GetActorStatFull(Actor ActorRef, string Name)
-	return Stats.GetStatFull(ActorRef, Name)
+  return Stats.GetStatFull(ActorRef, Name)
 endFunction
 
 ;/* 
 */;
 string function GetStatFull(string Name)
-	return Stats.GetStatFull(PlayerRef, Name)
+  return Stats.GetStatFull(PlayerRef, Name)
 endFunction
 
 ;/* 
 */;
 string function GetStat(string Name)
-	return Stats.GetStat(PlayerRef, Name)
+  return Stats.GetStat(PlayerRef, Name)
 endFunction
 
 ;/* 
 */;
 int function GetStatInt(string Name)
-	return Stats.GetStatInt(PlayerRef, Name)
+  return Stats.GetStatInt(PlayerRef, Name)
 endFunction
 
 ;/* 
 */;
 float function GetStatFloat(string Name)
-	return Stats.GetStatFloat(PlayerRef, Name)
+  return Stats.GetStatFloat(PlayerRef, Name)
 endFunction
 
 ;/* 
 */;
 string function SetStat(string Name, string Value)
-	return Stats.SetStat(PlayerRef, Name, Value)
+  return Stats.SetStat(PlayerRef, Name, Value)
 endFunction
 
 ;/* 
 */;
 int function AdjustBy(string Name, int AdjustBy)
-	return Stats.AdjustBy(PlayerRef, Name, AdjustBy)
+  return Stats.AdjustBy(PlayerRef, Name, AdjustBy)
 endFunction
 
 ;/* CalcSexuality
@@ -1894,7 +1894,7 @@ endFunction
 * * @return: an int between 0 and 100, where 0 is for full homosexual and 100 for full heterosexual. 50 is for bisexual.
 */;
 int function CalcSexuality(bool IsFemale, int males, int females)
-	return Stats.CalcSexuality(IsFemale, males, females)
+  return Stats.CalcSexuality(IsFemale, males, females)
 endFunction
 
 ;/* CalcLevel
@@ -1905,7 +1905,7 @@ endFunction
 * * @return: an inte as result of sqr(total / 2) * curve rounded to the integer value
 */;
 int function CalcLevel(float total, float curve = 0.65)
-	return Stats.CalcLevel(total, curve)
+  return Stats.CalcLevel(total, curve)
 endFunction
 
 ;/* ParseTime
@@ -1915,7 +1915,7 @@ endFunction
 * * @return: a string with the amount of seconds converted in the HH:MM:SS format. If the amount of seconds is zero or negative, then the result is "--:--:--"
 */;
 string function ParseTime(int time)
-	return Stats.ParseTime(time)
+  return Stats.ParseTime(time)
 endFunction
 
 ;/* PlayerSexCount
@@ -1925,7 +1925,7 @@ endFunction
 * * @return: The number of intercourses the actor had with the player
 */;
 int function PlayerSexCount(Actor ActorRef)
-	return Stats.PlayerSexCount(ActorRef)
+  return Stats.PlayerSexCount(ActorRef)
 endFunction
 
 ;/* HadPlayerSex
@@ -1935,7 +1935,7 @@ endFunction
 * * @return: TRUE if the actor had sex with the player
 */;
 bool function HadPlayerSex(Actor ActorRef)
-	return Stats.HadPlayerSex(ActorRef)
+  return Stats.HadPlayerSex(ActorRef)
 endFunction
 
 ;/* MostUsedPlayerSexPartner
@@ -1944,7 +1944,7 @@ endFunction
 * * @return: an Actor that is the partner of the player which had most intercourses with the player
 */;
 Actor function MostUsedPlayerSexPartner()
-	return Stats.MostUsedPlayerSexPartner()
+  return Stats.MostUsedPlayerSexPartner()
 endFunction
 
 ;/* MostUsedPlayerSexPartners
@@ -1954,7 +1954,7 @@ endFunction
 * * @return: Actor[] - An intercourse sorted Actor array with the partners of the player which had most intercourses with the player
 */;
 Actor[] function MostUsedPlayerSexPartners(int MaxActors = 5)
-	return Stats.MostUsedPlayerSexPartners(MaxActors)
+  return Stats.MostUsedPlayerSexPartners(MaxActors)
 endFunction
 
 ;/* LastSexPartner
@@ -1964,7 +1964,7 @@ endFunction
 * * @return: An Actor that was the last actor the ActorRef had sex with
 */;
 Actor function LastSexPartner(Actor ActorRef)
-	return Stats.LastSexPartner(ActorRef)
+  return Stats.LastSexPartner(ActorRef)
 endFunction
 
 ;/* HasHadSexTogether
@@ -1975,7 +1975,7 @@ endFunction
 * * @return: TRUE is the two actors ever had sex together
 */;
 bool function HasHadSexTogether(Actor ActorRef1, Actor ActorRef2)
-	return Stats.HasHadSexTogether(ActorRef1, ActorRef2)
+  return Stats.HasHadSexTogether(ActorRef1, ActorRef2)
 endfunction
 
 ;/* LastAggressor
@@ -1985,7 +1985,7 @@ endfunction
 * * @return: An Actor that was the last aggressor the ActorRef had, None if the actor never had an aggressor
 */;
 Actor function LastAggressor(Actor ActorRef)
-	return Stats.LastAggressor(ActorRef)
+  return Stats.LastAggressor(ActorRef)
 endFunction
 
 ;/* WasVictimOf
@@ -1996,7 +1996,7 @@ endFunction
 * * @return: TRUE AggressorRef was an aggressor of VictimRef
 */;
 bool function WasVictimOf(Actor VictimRef, Actor AggressorRef)
-	return Stats.WasVictimOf(VictimRef, AggressorRef)
+  return Stats.WasVictimOf(VictimRef, AggressorRef)
 endFunction
 
 ;/* LastVictim
@@ -2006,7 +2006,7 @@ endFunction
 * * @return: an Actor that was the last victim of the specified aggressor.
 */;
 Actor function LastVictim(Actor ActorRef)
-	return Stats.LastVictim(ActorRef)
+  return Stats.LastVictim(ActorRef)
 endFunction
 
 ;/* WasAggressorTo
@@ -2017,7 +2017,7 @@ endFunction
 * * @return: TRUE AggressorRef was an aggressor of VictimRef
 */;
 bool function WasAggressorTo(Actor AggressorRef, Actor VictimRef)
-	return Stats.WasAggressorTo(AggressorRef, VictimRef)
+  return Stats.WasAggressorTo(AggressorRef, VictimRef)
 endFunction
 
 ;/* AdjustPurity
@@ -2028,7 +2028,7 @@ endFunction
 * * @return: the resulting value of the stat
 */;
 float function AdjustPurity(Actor ActorRef, float amount)
-	return Stats.AdjustPurity(ActorRef, amount)
+  return Stats.AdjustPurity(ActorRef, amount)
 endFunction
 
 ;/* SetSexuality
@@ -2038,7 +2038,7 @@ endFunction
 * * @param: float amount, is the amount that will specify if the actor is 1=pure homosexual, 50=bisexual, 100=pure heterosexual
 */;
 function SetSexuality(Actor ActorRef, int amount)
-	Stats.SetSkill(ActorRef, "Sexuality", PapyrusUtil.ClampInt(amount, 1, 100))
+  Stats.SetSkill(ActorRef, "Sexuality", PapyrusUtil.ClampInt(amount, 1, 100))
 endFunction
 
 ;/* SetSexualityStraight
@@ -2047,7 +2047,7 @@ endFunction
 * * @param: Actor ActorRef, is the actor for whom to change the sexual orientation (warning this is NOT touching the Sex Gender!)
 */;
 function SetSexualityStraight(Actor ActorRef)
-	Stats.SetSkill(ActorRef, "Sexuality", 100)
+  Stats.SetSkill(ActorRef, "Sexuality", 100)
 endFunction
 
 ;/* SetSexualityBisexual
@@ -2056,7 +2056,7 @@ endFunction
 * * @param: Actor ActorRef, is the actor for whom to change the sexual orientation (warning this is NOT touching the Sex Gender!)
 */;
 function SetSexualityBisexual(Actor ActorRef)
-	Stats.SetSkill(ActorRef, "Sexuality", 50)
+  Stats.SetSkill(ActorRef, "Sexuality", 50)
 endFunction
 
 ;/* SetSexualityGay
@@ -2065,7 +2065,7 @@ endFunction
 * * @param: Actor ActorRef, is the actor for whom to change the sexual orientation (warning this is NOT touching the Sex Gender!)
 */;
 function SetSexualityGay(Actor ActorRef)
-	Stats.SetSkill(ActorRef, "Sexuality", 1)
+  Stats.SetSkill(ActorRef, "Sexuality", 1)
 endFunction
 
 ;/* GetSexuality
@@ -2075,7 +2075,7 @@ endFunction
 * * @return: an int with the sexual orientation of the actor. 1 will be pure homosexual, and 100 will be pure heterosexual
 */;
 int function GetSexuality(Actor ActorRef)
-	return Stats.GetSexuality(ActorRef)
+  return Stats.GetSexuality(ActorRef)
 endFunction
 
 ;/* GetSexualityTitle
@@ -2085,7 +2085,7 @@ endFunction
 * * @return: a string with "Heterosexual" if the sexuality score is greater or equal to 65; "Bisexual" if the score is between 65 and 35; "Gay" or "Lesbian" in case the sexuality is less than 35, of course the value depends on the actual gender of the actor.
 */;
 string function GetSexualityTitle(Actor ActorRef)
-	return Stats.GetSexualityTitle(ActorRef)
+  return Stats.GetSexualityTitle(ActorRef)
 endFunction
 
 ;/* GetSkillTitle
@@ -2097,7 +2097,7 @@ endFunction
 * * @return: a string with the title corresponding to the skill level for the actor
 */;
 string function GetSkillTitle(Actor ActorRef, string Skill)
-	return Stats.GetSkillTitle(ActorRef, Skill)
+  return Stats.GetSkillTitle(ActorRef, Skill)
 endFunction
 
 ;/* GetSkill
@@ -2108,7 +2108,7 @@ endFunction
 * * @return: an int with the raw value of the skill for the actor
 */;
 int function GetSkill(Actor ActorRef, string Skill)
-	return Stats.GetSkill(ActorRef, Skill)
+  return Stats.GetSkill(ActorRef, Skill)
 endFunction
 
 ;/* GetSkillLevel
@@ -2119,7 +2119,7 @@ endFunction
 * * @return: an int with the calculate level of the skill for the actor
 */;
 int function GetSkillLevel(Actor ActorRef, string Skill)
-	return Stats.GetSkillLevel(ActorRef, Skill)
+  return Stats.GetSkillLevel(ActorRef, Skill)
 endFunction
 
 ;/* GetPurity
@@ -2129,7 +2129,7 @@ endFunction
 * * @return: a float with the actual raw value of the "pure" skill
 */;
 float function GetPurity(Actor ActorRef)
-	return Stats.GetPurity(ActorRef)
+  return Stats.GetPurity(ActorRef)
 endFunction
 
 ;/* GetPurityLevel
@@ -2139,7 +2139,7 @@ endFunction
 * * @return: an int with the leveled value of the "pure" skill
 */;
 int function GetPurityLevel(Actor ActorRef)
-	return Stats.GetPurityLevel(ActorRef)
+  return Stats.GetPurityLevel(ActorRef)
 endFunction
 
 ;/* GetPurityTitle
@@ -2150,7 +2150,7 @@ endFunction
 * * @return: a string with the purity title
 */;
 string function GetPurityTitle(Actor ActorRef)
-	return Stats.GetPurityTitle(ActorRef)
+  return Stats.GetPurityTitle(ActorRef)
 endFunction
 
 ;/* IsPure
@@ -2160,7 +2160,7 @@ endFunction
 * * @return: true if the actor is pure
 */;
 bool function IsPure(Actor ActorRef)
-	return Stats.IsPure(ActorRef)
+  return Stats.IsPure(ActorRef)
 endFunction
 
 
@@ -2171,7 +2171,7 @@ endFunction
 * * @return: true if the actor is lewd
 */;
 bool function IsLewd(Actor ActorRef)
-	return Stats.IsLewd(ActorRef)
+  return Stats.IsLewd(ActorRef)
 endFunction
 
 ;/* IsStraight
@@ -2181,7 +2181,7 @@ endFunction
 * * @return: true if the actor has a level of sexuality greater than 65% (mostly heterosexual)
 */;
 bool function IsStraight(Actor ActorRef)
-	return Stats.IsStraight(ActorRef)
+  return Stats.IsStraight(ActorRef)
 endFunction
 
 ;/* IsBisexual
@@ -2191,7 +2191,7 @@ endFunction
 * * @return: true if the actor has a level of sexuality between 35% and 65%
 */;
 bool function IsBisexual(Actor ActorRef)
-	return Stats.IsBisexual(ActorRef)
+  return Stats.IsBisexual(ActorRef)
 endFunction
 
 ;/* IsGay
@@ -2201,7 +2201,7 @@ endFunction
 * * @return: true if the actor has a level of sexuality lower than 35% (mostly homosexual)
 */;
 bool function IsGay(Actor ActorRef)
-	return Stats.IsGay(ActorRef)
+  return Stats.IsGay(ActorRef)
 endFunction
 
 ;/* SexCount
@@ -2211,7 +2211,7 @@ endFunction
 * * @return: an int with the number of times the actor had sex using sexlab
 */;
 int function SexCount(Actor ActorRef)
-	return Stats.SexCount(ActorRef)
+  return Stats.SexCount(ActorRef)
 endFunction
 
 ;/* HadSex
@@ -2221,7 +2221,7 @@ endFunction
 * * @return: true if the actor participated in at least one intercourse
 */;
 bool function HadSex(Actor ActorRef)
-	return Stats.HadSex(ActorRef)
+  return Stats.HadSex(ActorRef)
 endFunction
 
 ;/* LastSexGameTime
@@ -2232,7 +2232,7 @@ endFunction
 */;
 ; Last sex - Game time - float days
 float function LastSexGameTime(Actor ActorRef)
-	return Stats.LastSexGameTime(ActorRef)
+  return Stats.LastSexGameTime(ActorRef)
 endFunction
 
 ;/* DaysSinceLastSex
@@ -2242,7 +2242,7 @@ endFunction
 * * @return: a float with the number of game days passed from the last time the actor had sex
 */;
 float function DaysSinceLastSex(Actor ActorRef)
-	return Stats.DaysSinceLastSex(ActorRef)
+  return Stats.DaysSinceLastSex(ActorRef)
 endFunction
 
 ;/* HoursSinceLastSex
@@ -2252,7 +2252,7 @@ endFunction
 * * @return: a float with the number of game hours passed from the last time the actor had sex
 */;
 float function HoursSinceLastSex(Actor ActorRef)
-	return Stats.HoursSinceLastSex(ActorRef)
+  return Stats.HoursSinceLastSex(ActorRef)
 endFunction
 
 ;/* MinutesSinceLastSex
@@ -2262,7 +2262,7 @@ endFunction
 * * @return: a float with the number of game minutes passed from the last time the actor had sex
 */;
 float function MinutesSinceLastSex(Actor ActorRef)
-	return Stats.MinutesSinceLastSex(ActorRef)
+  return Stats.MinutesSinceLastSex(ActorRef)
 endFunction
 
 ;/* SecondsSinceLastSex
@@ -2272,7 +2272,7 @@ endFunction
 * * @return: a float with the number of game seconds passed from the last time the actor had sex
 */;
 float function SecondsSinceLastSex(Actor ActorRef)
-	return Stats.SecondsSinceLastSex(ActorRef)
+  return Stats.SecondsSinceLastSex(ActorRef)
 endFunction
 
 ;/* LastSexTimerString
@@ -2282,7 +2282,7 @@ endFunction
 * * @return: a string with the game time (same format as returned by Utility.GetCurrentGameTime()) when the actor had sex last time
 */;
 string function LastSexTimerString(Actor ActorRef)
-	return Stats.LastSexTimerString(ActorRef)
+  return Stats.LastSexTimerString(ActorRef)
 endFunction
 
 ;/* LastSexRealTime
@@ -2292,7 +2292,7 @@ endFunction
 * * @return: a float with the game time (same format as returned by Utility.GetCurrentRealTime()) when the actor had sex last time
 */;
 float function LastSexRealTime(Actor ActorRef)
-	return Stats.LastSexRealTime(ActorRef)
+  return Stats.LastSexRealTime(ActorRef)
 endFunction
 
 ;/* DaysSinceLastSexRealTime
@@ -2302,7 +2302,7 @@ endFunction
 * * @return: a float with the number of game days passed from the last time the actor had sex
 */;
 float function DaysSinceLastSexRealTime(Actor ActorRef)
-	return Stats.DaysSinceLastSexRealTime(ActorRef)
+  return Stats.DaysSinceLastSexRealTime(ActorRef)
 endFunction
 
 ;/* HoursSinceLastSexRealTime
@@ -2312,7 +2312,7 @@ endFunction
 * * @return: a float with the number of real time hours passed from the last time the actor had sex
 */;
 float function HoursSinceLastSexRealTime(Actor ActorRef)
-	return Stats.HoursSinceLastSexRealTime(ActorRef)
+  return Stats.HoursSinceLastSexRealTime(ActorRef)
 endFunction
 
 ;/* MinutesSinceLastSexRealTime
@@ -2322,7 +2322,7 @@ endFunction
 * * @return: a float with the number of real time minutes passed from the last time the actor had sex
 */;
 float function MinutesSinceLastSexRealTime(Actor ActorRef)
-	return Stats.MinutesSinceLastSexRealTime(ActorRef)
+  return Stats.MinutesSinceLastSexRealTime(ActorRef)
 endFunction
 
 ;/* SecondsSinceLastSexRealTime
@@ -2332,7 +2332,7 @@ endFunction
 * * @return: a float with the number of real time seconds passed from the last time the actor had sex
 */;
 float function SecondsSinceLastSexRealTime(Actor ActorRef)
-	return Stats.SecondsSinceLastSexRealTime(ActorRef)
+  return Stats.SecondsSinceLastSexRealTime(ActorRef)
 endFunction
 
 ;/* LastSexTimerStringRealTime
@@ -2342,7 +2342,7 @@ endFunction
 * * @return: a string with the real timewhen the actor had sex last time
 */;
 string function LastSexTimerStringRealTime(Actor ActorRef)
-	return Stats.LastSexTimerStringRealTime(ActorRef)
+  return Stats.LastSexTimerStringRealTime(ActorRef)
 endFunction
 
 ;/* AdjustPlayerPurity
@@ -2353,7 +2353,7 @@ endFunction
 * * @return: the resulting value of the stat
 */;
 float function AdjustPlayerPurity(float amount)
-	return Stats.AdjustPurity(PlayerRef, amount)
+  return Stats.AdjustPurity(PlayerRef, amount)
 endFunction
 
 ;/* GetPlayerPurityLevel
@@ -2363,7 +2363,7 @@ endFunction
 * @return: an int with the leveled value of the "pure" skill
 */;
 int function GetPlayerPurityLevel()
-	return Stats.GetPurityLevel(PlayerRef)
+  return Stats.GetPurityLevel(PlayerRef)
 endFunction
 
 ;/* GetPlayerPurityTitle
@@ -2374,7 +2374,7 @@ endFunction
 * @return: a string with the purity title
 */;
 string function GetPlayerPurityTitle()
-	return Stats.GetPurityTitle(PlayerRef)
+  return Stats.GetPurityTitle(PlayerRef)
 endFunction
 
 ;/* GetPlayerSexualityTitle
@@ -2384,7 +2384,7 @@ endFunction
 * @return: a string with "Heterosexual" if the sexuality score of the player is greater or equal to 65; "Bisexual" if the score is between 65 and 35; "Gay" or "Lesbian" in case the sexuality is less than 35, of course the value depends on the actual gender of the player.
 */;
 string function GetPlayerSexualityTitle()
-	return Stats.GetSexualityTitle(PlayerRef)
+  return Stats.GetSexualityTitle(PlayerRef)
 endFunction
 
 ;/* GetPlayerSkillLevel
@@ -2394,7 +2394,7 @@ endFunction
 * @return: an int with the calculate level of the skill for the player
 */;
 int function GetPlayerSkillLevel(string Skill)
-	return Stats.GetSkillLevel(PlayerRef, Skill)
+  return Stats.GetSkillLevel(PlayerRef, Skill)
 endFunction
 
 ;/* GetPlayerSkillTitle
@@ -2406,7 +2406,7 @@ endFunction
 * * @return: a string with the title corresponding to the skill level for the player
 */;
 string function GetPlayerSkillTitle(string Skill)
-	return Stats.GetSkillTitle(PlayerRef, Skill)
+  return Stats.GetSkillTitle(PlayerRef, Skill)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -2432,7 +2432,7 @@ endFunction
 * * @return: sslBaseAnimation, the actual animation registered
 */;
 sslBaseAnimation function RegisterAnimation(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-	return AnimSlots.RegisterAnimation(Registrar, CallbackForm, CallbackAlias)
+  return AnimSlots.RegisterAnimation(Registrar, CallbackForm, CallbackAlias)
 endFunction
 
 ;/* RegisterCreatureAnimation
@@ -2445,7 +2445,7 @@ endFunction
 * * @return: sslBaseAnimation, the actual animation registered
 */;
 sslBaseAnimation function RegisterCreatureAnimation(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-	return CreatureSlots.RegisterAnimation(Registrar, CallbackForm, CallbackAlias)
+  return CreatureSlots.RegisterAnimation(Registrar, CallbackForm, CallbackAlias)
 endFunction
 
 ;/* RegisterVoice
@@ -2458,7 +2458,7 @@ endFunction
 * * @return: sslBaseVoice, the actual SexLabVoice registered
 */;
 sslBaseVoice function RegisterVoice(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-	return VoiceSlots.RegisterVoice(Registrar, CallbackForm, CallbackAlias)
+  return VoiceSlots.RegisterVoice(Registrar, CallbackForm, CallbackAlias)
 endFunction
 
 ;/* RegisterExpression
@@ -2471,7 +2471,7 @@ endFunction
 * * @return: sslBaseVoice, the actual SexLabExpression registered
 */;
 sslBaseExpression function RegisterExpression(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-	return ExpressionSlots.RegisterExpression(Registrar, CallbackForm, CallbackAlias)
+  return ExpressionSlots.RegisterExpression(Registrar, CallbackForm, CallbackAlias)
 endFunction
 
 ;/* NewAnimationObject
@@ -2481,7 +2481,7 @@ endFunction
 * * @return: 
 */;
 sslBaseAnimation function NewAnimationObject(string Token, Form Owner)
-	return Factory.NewAnimation(Token, Owner)
+  return Factory.NewAnimation(Token, Owner)
 endFunction
 
 
@@ -2492,7 +2492,7 @@ endFunction
 * * @return: 
 */;
 sslBaseVoice function NewVoiceObject(string Token, Form Owner)
-	return Factory.NewVoice(Token, Owner)
+  return Factory.NewVoice(Token, Owner)
 endFunction
 
 ;/* NewExpressionObject
@@ -2502,7 +2502,7 @@ endFunction
 * * @return: 
 */;
 sslBaseExpression function NewExpressionObject(string Token, Form Owner)
-	return Factory.NewExpression(Token, Owner)
+  return Factory.NewExpression(Token, Owner)
 endFunction
 
 ;/* GetSetAnimationObject
@@ -2512,7 +2512,7 @@ endFunction
 * * @return: 
 */;
 sslBaseAnimation function GetSetAnimationObject(string Token, string Callback, Form Owner)
-	return Factory.GetSetAnimation(Token, Callback, Owner)
+  return Factory.GetSetAnimation(Token, Callback, Owner)
 endFunction
 
 ;/* GetSetVoiceObject
@@ -2522,7 +2522,7 @@ endFunction
 * * @return: 
 */;
 sslBaseVoice function GetSetVoiceObject(string Token, string Callback, Form Owner)
-	return Factory.GetSetVoice(Token, Callback, Owner)
+  return Factory.GetSetVoice(Token, Callback, Owner)
 endFunction
 
 ;/* GetSetExpressionObject
@@ -2532,7 +2532,7 @@ endFunction
 * * @return: 
 */;
 sslBaseExpression function GetSetExpressionObject(string Token, string Callback, Form Owner)
-	return Factory.GetSetExpression(Token, Callback, Owner)
+  return Factory.GetSetExpression(Token, Callback, Owner)
 endFunction
 
 ;/* NewAnimationObjectCopy
@@ -2542,7 +2542,7 @@ endFunction
 * * @return: 
 */;
 sslBaseAnimation function NewAnimationObjectCopy(string Token, sslBaseAnimation CopyFrom, Form Owner)
-	return Factory.NewAnimationCopy(Token, CopyFrom, Owner)
+  return Factory.NewAnimationCopy(Token, CopyFrom, Owner)
 endFunction
 
 ;/* NewVoiceObjectCopy
@@ -2552,7 +2552,7 @@ endFunction
 * * @return: 
 */;
 sslBaseVoice function NewVoiceObjectCopy(string Token, sslBaseVoice CopyFrom, Form Owner)
-	return Factory.NewVoiceCopy(Token, CopyFrom, Owner)
+  return Factory.NewVoiceCopy(Token, CopyFrom, Owner)
 endFunction
 
 ;/* NewExpressionObjectCopy
@@ -2562,7 +2562,7 @@ endFunction
 * * @return: 
 */;
 sslBaseExpression function NewExpressionObjectCopy(string Token, sslBaseExpression CopyFrom, Form Owner)
-	return Factory.NewExpressionCopy(Token, CopyFrom, Owner)
+  return Factory.NewExpressionCopy(Token, CopyFrom, Owner)
 endFunction
 
 ;/* GetAnimationObject
@@ -2572,7 +2572,7 @@ endFunction
 * * @return: 
 */;
 sslBaseAnimation function GetAnimationObject(string Token)
-	return Factory.GetAnimation(Token)
+  return Factory.GetAnimation(Token)
 endFunction
 
 ;/* GetVoiceObject
@@ -2582,7 +2582,7 @@ endFunction
 * * @return: 
 */;
 sslBaseVoice function GetVoiceObject(string Token)
-	return Factory.GetVoice(Token)
+  return Factory.GetVoice(Token)
 endFunction
 
 ;/* GetExpressionObject
@@ -2592,7 +2592,7 @@ endFunction
 * * @return: 
 */;
 sslBaseExpression function GetExpressionObject(string Token)
-	return Factory.GetExpression(Token)
+  return Factory.GetExpression(Token)
 endFunction
 
 ;/* GetOwnerAnimations
@@ -2602,7 +2602,7 @@ endFunction
 * * @return: 
 */;
 sslBaseAnimation[] function GetOwnerAnimations(Form Owner)
-	return Factory.GetOwnerAnimations(Owner)
+  return Factory.GetOwnerAnimations(Owner)
 endFunction
 
 ;/* GetOwnerVoices
@@ -2612,7 +2612,7 @@ endFunction
 * * @return: 
 */;
 sslBaseVoice[] function GetOwnerVoices(Form Owner)
-	return Factory.GetOwnerVoices(Owner)
+  return Factory.GetOwnerVoices(Owner)
 endFunction
 
 ;/* GetOwnerExpressions
@@ -2622,7 +2622,7 @@ endFunction
 * * @return: 
 */;
 sslBaseExpression[] function GetOwnerExpressions(Form Owner)
-	return Factory.GetOwnerExpressions(Owner)
+  return Factory.GetOwnerExpressions(Owner)
 endFunction
 
 ;/* HasAnimationObject
@@ -2632,7 +2632,7 @@ endFunction
 * * @return: 
 */;
 bool function HasAnimationObject(string Token)
-	return Factory.HasAnimation(Token)
+  return Factory.HasAnimation(Token)
 endFunction
 
 ;/* HasVoiceObject
@@ -2642,7 +2642,7 @@ endFunction
 * * @return: 
 */;
 bool function HasVoiceObject(string Token)
-	return Factory.HasVoice(Token)
+  return Factory.HasVoice(Token)
 endFunction
 
 ;/* HasExpressionObject
@@ -2652,7 +2652,7 @@ endFunction
 * * @return: 
 */;
 bool function HasExpressionObject(string Token)
-	return Factory.HasExpression(Token)
+  return Factory.HasExpression(Token)
 endFunction
 
 ;/* ReleaseAnimationObject
@@ -2662,7 +2662,7 @@ endFunction
 * * @return: 
 */;
 bool function ReleaseAnimationObject(string Token)
-	return Factory.ReleaseAnimation(Token)
+  return Factory.ReleaseAnimation(Token)
 endFunction
 
 ;/* ReleaseVoiceObject
@@ -2672,7 +2672,7 @@ endFunction
 * * @return: 
 */;
 bool function ReleaseVoiceObject(string Token)
-	return Factory.ReleaseVoice(Token)
+  return Factory.ReleaseVoice(Token)
 endFunction
 
 ;/* ReleaseExpressionObject
@@ -2682,7 +2682,7 @@ endFunction
 * * @return: 
 */;
 bool function ReleaseExpressionObject(string Token)
-	return Factory.ReleaseExpression(Token)
+  return Factory.ReleaseExpression(Token)
 endFunction
 
 ;/* ReleaseExpressionObject
@@ -2692,7 +2692,7 @@ endFunction
 * * @return: 
 */;
 int function ReleaseOwnerAnimations(Form Owner)
-	return Factory.ReleaseOwnerAnimations(Owner)
+  return Factory.ReleaseOwnerAnimations(Owner)
 endFunction
 
 ;/* ReleaseOwnerVoices
@@ -2702,7 +2702,7 @@ endFunction
 * * @return: 
 */;
 int function ReleaseOwnerVoices(Form Owner)
-	return Factory.ReleaseOwnerVoices(Owner)
+  return Factory.ReleaseOwnerVoices(Owner)
 endFunction
 
 ;/* ReleaseOwnerExpressions
@@ -2712,7 +2712,7 @@ endFunction
 * * @return: 
 */;
 int function ReleaseOwnerExpressions(Form Owner)
-	return Factory.ReleaseOwnerExpressions(Owner)
+  return Factory.ReleaseOwnerExpressions(Owner)
 endFunction
 
 ;/* MakeAnimationRegistered
@@ -2722,7 +2722,7 @@ endFunction
 * * @return: 
 */;
 sslBaseAnimation function MakeAnimationRegistered(string Token)
-	return Factory.MakeAnimationRegistered(Token)
+  return Factory.MakeAnimationRegistered(Token)
 endFunction
 
 ;/* MakeVoiceRegistered
@@ -2732,7 +2732,7 @@ endFunction
 * * @return: 
 */;
 sslBaseVoice function MakeVoiceRegistered(string Token)
-	return Factory.MakeVoiceRegistered(Token)
+  return Factory.MakeVoiceRegistered(Token)
 endFunction
 
 ;/* MakeExpressionRegistered
@@ -2742,7 +2742,7 @@ endFunction
 * * @return: 
 */;
 sslBaseExpression function MakeExpressionRegistered(string Token)
-	return Factory.MakeExpressionRegistered(Token)
+  return Factory.MakeExpressionRegistered(Token)
 endFunction
 
 ;/* RemoveRegisteredAnimation
@@ -2752,7 +2752,7 @@ endFunction
 * * @return: 
 */;
 bool function RemoveRegisteredAnimation(string Registrar)
-	return AnimSlots.UnregisterAnimation(Registrar)
+  return AnimSlots.UnregisterAnimation(Registrar)
 endFunction
 
 ;/* RemoveRegisteredCreatureAnimation
@@ -2762,7 +2762,7 @@ endFunction
 * * @return: 
 */;
 bool function RemoveRegisteredCreatureAnimation(string Registrar)
-	return CreatureSlots.UnregisterAnimation(Registrar)
+  return CreatureSlots.UnregisterAnimation(Registrar)
 endFunction
 
 ;/* RemoveRegisteredVoice
@@ -2772,7 +2772,7 @@ endFunction
 * * @return: 
 */;
 bool function RemoveRegisteredVoice(string Registrar)
-	return VoiceSlots.UnregisterVoice(Registrar)
+  return VoiceSlots.UnregisterVoice(Registrar)
 endFunction
 
 ;/* RemoveRegisteredExpression
@@ -2782,7 +2782,7 @@ endFunction
 * * @return: 
 */;
 bool function RemoveRegisteredExpression(string Registrar)
-	return ExpressionSlots.UnregisterExpression(Registrar)
+  return ExpressionSlots.UnregisterExpression(Registrar)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -2812,7 +2812,7 @@ endFunction
 * * @return: an Actor[] of the size of the non null actors with the specified actors inside.
 */;
 Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none)
-	return SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
+  return SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -2822,23 +2822,23 @@ endFunction
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-;																																																																						;
-; 																		 ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗     																			;
-; 																		 ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║     																			;
-; 																		 ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║     																			;
-; 																		 ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║     																			;
-; 																		 ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗																			;
-; 																		 ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝																			;
-;																																																																						;
+;                                                                                                                                           ;
+;                                      ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗                                          ;
+;                                      ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║                                          ;
+;                                      ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║                                          ;
+;                                      ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║                                          ;
+;                                      ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗                                     ;
+;                                      ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝                                     ;
+;                                                                                                                                           ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-;																											This is the end of the public API																											;
-;																		Do not use or access any of the below listed functions or properties																		;	
+;                                                     This is the end of the public API                                                     ;
+;                                    Do not use or access any of the below listed functions or properties                                   ;  
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -2849,231 +2849,233 @@ endFunction
 
 ;/ DEPRECATED /;
 sslThreadController function HookController(string argString)
-	return ThreadSlots.GetController(argString as int)
+  return ThreadSlots.GetController(argString as int)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation function HookAnimation(string argString)
-	return ThreadSlots.GetController(argString as int).Animation
+  return ThreadSlots.GetController(argString as int).Animation
 endFunction
 
 ;/* DEPRECATED! */;
 int function HookStage(string argString)
-	return ThreadSlots.GetController(argString as int).Stage
+  return ThreadSlots.GetController(argString as int).Stage
 endFunction
 
 ;/* DEPRECATED! */;
 Actor function HookVictim(string argString)
-	return ThreadSlots.GetController(argString as int).VictimRef
+  return ThreadSlots.GetController(argString as int).VictimRef
 endFunction
 
 ;/* DEPRECATED! */;
 Actor[] function HookActors(string argString)
-	return ThreadSlots.GetController(argString as int).Positions
+  return ThreadSlots.GetController(argString as int).Positions
 endFunction
 
 ;/* DEPRECATED! */;
 float function HookTime(string argString)
-	return ThreadSlots.GetController(argString as int).TotalTime
+  return ThreadSlots.GetController(argString as int).TotalTime
 endFunction
 
 ;/* DEPRECATED! */;
 bool function HasCreatureAnimation(Race CreatureRace, int Gender = -1)
-	return CreatureSlots.RaceHasAnimation(CreatureRace, -1, Gender)
+  return CreatureSlots.RaceHasAnimation(CreatureRace, -1, Gender)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetAnimationsByTag(int ActorCount, string Tag1, string Tag2 = "", string Tag3 = "", string TagSuppress = "", bool RequireAll = true)
-	return AnimSlots.GetByTags(ActorCount, sslUtility.MakeArgs(",", Tag1, Tag2, Tag3), TagSuppress, RequireAll)
+  return AnimSlots.GetByTags(ActorCount, sslUtility.MakeArgs(",", Tag1, Tag2, Tag3), TagSuppress, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByTags(int ActorCount, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByTags(ActorCount, Tags, TagSuppress, RequireAll)
+  return CreatureSlots.GetByTags(ActorCount, Tags, TagSuppress, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseVoice function GetVoiceByTag(string Tag1, string Tag2 = "", string TagSuppress = "", bool RequireAll = true)
-	return VoiceSlots.GetByTags(sslUtility.MakeArgs(",", Tag1, Tag2), TagSuppress, RequireAll)
+  return VoiceSlots.GetByTags(sslUtility.MakeArgs(",", Tag1, Tag2), TagSuppress, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 function ApplyCum(Actor ActorRef, int CumID)
-	ActorLib.ApplyCum(ActorRef, CumID)
+  ActorLib.ApplyCum(ActorRef, CumID)
 endFunction
 
 ;/* DEPRECATED! */;
 form function StripWeapon(Actor ActorRef, bool RightHand = true)
-	return none ; ActorLib.StripWeapon(ActorRef, RightHand)
+  return none ; ActorLib.StripWeapon(ActorRef, RightHand)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] property Animations hidden
-	sslBaseAnimation[] function get()
-		return AnimSlots.GetSlots(0, 128)
-	endFunction
+  sslBaseAnimation[] function get()
+    return AnimSlots.GetSlots(0, 128)
+  endFunction
 endProperty
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] property CreatureAnimations hidden
-	sslBaseAnimation[] function get()
-		return CreatureSlots.GetSlots(0, 128)
-	endFunction
+  sslBaseAnimation[] function get()
+    return CreatureSlots.GetSlots(0, 128)
+  endFunction
 endProperty
 
 ;/* DEPRECATED! */;
 sslBaseVoice[] property Voices hidden
-	sslBaseVoice[] function get()
-		return VoiceSlots.Voices
-	endFunction
+  sslBaseVoice[] function get()
+    return VoiceSlots.Voices
+  endFunction
 endProperty
 
 ;/* DEPRECATED! */;
 sslBaseExpression[] property Expressions hidden
-	sslBaseExpression[] function get()
-		return ExpressionSlots.Expressions
-	endFunction
+  sslBaseExpression[] function get()
+    return ExpressionSlots.Expressions
+  endFunction
 endProperty
 
 ;/* DEPRECATED! */;
 sslBaseExpression function RandomExpressionByTag(string Tag)
-	return ExpressionSlots.RandomByTag(Tag)
+  return ExpressionSlots.RandomByTag(Tag)
 endFunction
 
 ;/* DEPRECATED! */;
 function ApplyPreset(Actor ActorRef, int[] Preset)
-	sslBaseExpression.ApplyPreset(ActorRef, Preset)
+  sslBaseExpression.ApplyPreset(ActorRef, Preset)
 endFunction
 
 ;/* DEPRECATED! */;
 sslThreadController[] property Threads hidden
-	sslThreadController[] function get()
-		return ThreadSlots.Threads
-	endFunction
+  sslThreadController[] function get()
+    return ThreadSlots.Threads
+  endFunction
 endProperty
 
 ;/* DEPRECATED! */;
 bool function IsImpure(Actor ActorRef)
-	return Stats.IsLewd(ActorRef)
+  return Stats.IsLewd(ActorRef)
 endFunction
 
 ;/* DEPRECATED! */;
 int function GetPlayerStatLevel(string Skill)
-	return Stats.GetSkillLevel(PlayerRef, Skill)
+  return Stats.GetSkillLevel(PlayerRef, Skill)
 endFunction
 
 ;/* DEPRECATED! */;
 int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
-	; Claim a thread
-	sslThreadModel Thread = NewThread()
-	if !Thread
-		Log("StartSex() - Failed to claim an available thread")
-		return -1
-	; Add actors list to thread
-	elseIf !Thread.AddActors(Positions, Victim)
-		Log("StartSex() - Failed to add some actors to thread")
-		return -1
-	endIf
-	; Configure our thread with passed arguments
-	Thread.SetAnimations(Anims)
-	Thread.CenterOnObject(CenterOn)
-	Thread.DisableBedUse(!AllowBed)
-	Thread.SetHook(Hook)
-	; Start the animation
-	if Thread.StartThread()
-		return Thread.tid
-	endIf
-	return -1
+  ; TODO: Rewire this call into the new format
+
+  ; Claim a thread
+  sslThreadModel Thread = NewThread()
+  if !Thread
+    Log("StartSex() - Failed to claim an available thread")
+    return -1
+  ; Add actors list to thread
+  elseIf !Thread.AddActors(Positions, Victim)
+    Log("StartSex() - Failed to add some actors to thread")
+    return -1
+  endIf
+  ; Configure our thread with passed arguments
+  Thread.SetAnimations(Anims)
+  Thread.CenterOnObject(CenterOn)
+  Thread.DisableBedUse(!AllowBed)
+  Thread.SetHook(Hook)
+  ; Start the animation
+  if Thread.StartThread()
+    return Thread.tid
+  endIf
+  return -1
 endFunction
 
 ;/* DEPRECATED! */;
 string function MakeAnimationGenderTag(Actor[] Positions)
-	return ActorLib.MakeGenderTag(Positions)
+  return ActorLib.MakeGenderTag(Positions)
 endFunction
 
 ;/* DEPRECATED! */;
 string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0)
-	return ActorLib.GetGenderTag(Females, Males, Creatures)
+  return ActorLib.GetGenderTag(Females, Males, Creatures)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetAnimationsByTags(int ActorCount, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return AnimSlots.GetByTags(ActorCount, Tags, TagSuppress, RequireAll)
+  return AnimSlots.GetByTags(ActorCount, Tags, TagSuppress, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetAnimationsByType(int ActorCount, int Males = -1, int Females = -1, int StageCount = -1, bool Aggressive = false, bool Sexual = true)
-	return AnimSlots.GetByType(ActorCount, Males, Females, StageCount, Aggressive, Sexual)
+  return AnimSlots.GetByType(ActorCount, Males, Females, StageCount, Aggressive, Sexual)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function PickAnimationsByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
-	return AnimSlots.PickByActors(Positions, limit, aggressive)
+  return AnimSlots.PickByActors(Positions, limit, aggressive)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetAnimationsByDefault(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true)
-	return AnimSlots.GetByDefault(Males, Females, IsAggressive, UsingBed, RestrictAggressive)
+  return AnimSlots.GetByDefault(Males, Females, IsAggressive, UsingBed, RestrictAggressive)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetAnimationsByDefaultTags(int Males, int Females, bool IsAggressive = false, bool UsingBed = false, bool RestrictAggressive = true, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	return AnimSlots.GetByDefaultTags(Males, Females, IsAggressive, UsingBed, RestrictAggressive, Tags, TagsSuppressed, RequireAll)
+  return AnimSlots.GetByDefaultTags(Males, Females, IsAggressive, UsingBed, RestrictAggressive, Tags, TagsSuppressed, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
-	return ThreadLib.SortActors(Positions, FemaleFirst)
+  return ThreadLib.SortActors(Positions, FemaleFirst)
 endFunction
 
 ;/* DEPRECATED! */;
 Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)
-	return ThreadLib.SortActors(Positions)
+  return ThreadLib.SortActors(Positions)
 endFunction
 
 ;/* DEPRECATED! */;
 Actor[] function SortCreatures(Actor[] Positions, sslBaseAnimation Animation = none)
-	return ThreadLib.SortActors(Positions)
+  return ThreadLib.SortActors(Positions)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByRace(int ActorCount, Race RaceRef)
-	return CreatureSlots.GetByRace(ActorCount, RaceRef)
+  return CreatureSlots.GetByRace(ActorCount, RaceRef)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByRaceTags(int ActorCount, Race RaceRef, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByRaceTags(ActorCount, RaceRef, Tags, TagSuppress, RequireAll)
+  return CreatureSlots.GetByRaceTags(ActorCount, RaceRef, Tags, TagSuppress, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByRaceGenders(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, bool ForceUse = false)
-	return CreatureSlots.GetByRaceGenders(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, ForceUse)
+  return CreatureSlots.GetByRaceGenders(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, ForceUse)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByRaceGendersTags(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByRaceGendersTags(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, Tags, TagSuppress, RequireAll)
+  return CreatureSlots.GetByRaceGendersTags(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, Tags, TagSuppress, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByRaceKey(int ActorCount, string RaceKey)
-	return CreatureSlots.GetByRaceKey(ActorCount, RaceKey)
+  return CreatureSlots.GetByRaceKey(ActorCount, RaceKey)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByRaceKeyTags(int ActorCount, string RaceKey, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByRaceKeyTags(ActorCount, RaceKey, Tags, TagSuppress, RequireAll)
+  return CreatureSlots.GetByRaceKeyTags(ActorCount, RaceKey, Tags, TagSuppress, RequireAll)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByActors(int ActorCount, Actor[] Positions)
-	return CreatureSlots.GetByCreatureActors(ActorCount, Positions)
+  return CreatureSlots.GetByCreatureActors(ActorCount, Positions)
 endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation[] function GetCreatureAnimationsByActorsTags(int ActorCount, Actor[] Positions, string Tags, string TagSuppress = "", bool RequireAll = true)
-	return CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, Tags, TagSuppress, RequireAll)
+  return CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, Tags, TagSuppress, RequireAll)
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -3118,56 +3120,56 @@ sslExpressionSlots property ExpressionSlots Auto
 sslObjectFactory property Factory Auto
 
 sslThreadModel function NewThread(float TimeOut = 5.0)
-	return ThreadSlots.PickModel(TimeOut)
+  return ThreadSlots.PickModel(TimeOut)
 endFunction
 
 Function Log(string Log, string Type = "NOTICE")
-	Log = "[SEXLAB] - " + Type + " - " + Log
-	SexLabUtil.PrintConsole(Log)
-	If(Type == "FATAL")
-		Debug.TraceStack(Log)
-	Else
-		Debug.Trace(Log)
-	EndIf
+  Log = "[SEXLAB] - " + Type + " - " + Log
+  SexLabUtil.PrintConsole(Log)
+  If(Type == "FATAL")
+    Debug.TraceStack(Log)
+  Else
+    Debug.Trace(Log)
+  EndIf
 EndFunction
 
 state Disabled
-	sslThreadModel function NewThread(float TimeOut = 5.0)
-		Log("NewThread() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
-		return none
-	endFunction
-	sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
-		Log("StartScene() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
-		return none
-	EndFunction
-	sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
-		Log("StartSceneEx() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
-		return none
-	EndFunction
-	sslThreadController function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
-		Log("QuickStart() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
-		return none
-	endFunction
-	int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
-		Log("StartSex() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
-		return -1
-	endFunction
-	event OnBeginState()
-		Log("SexLabFramework - Disabled")
-		ModEvent.Send(ModEvent.Create("SexLabDisabled"))
-	endEvent
+  sslThreadModel function NewThread(float TimeOut = 5.0)
+    Log("NewThread() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    return none
+  endFunction
+  sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+    Log("StartScene() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    return none
+  EndFunction
+  sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+    Log("StartSceneEx() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    return none
+  EndFunction
+  sslThreadController function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
+    Log("QuickStart() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    return none
+  endFunction
+  int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
+    Log("StartSex() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    return -1
+  endFunction
+  event OnBeginState()
+    Log("SexLabFramework - Disabled")
+    ModEvent.Send(ModEvent.Create("SexLabDisabled"))
+  endEvent
 endState
 
 state Enabled
-	event OnBeginState()
-		Log("SexLabFramework - Enabled")
-		ModEvent.Send(ModEvent.Create("SexLabEnabled"))
-	endEvent
+  event OnBeginState()
+    Log("SexLabFramework - Enabled")
+    ModEvent.Send(ModEvent.Create("SexLabEnabled"))
+  endEvent
 endState
 
 ; Redundant but some authors think they are funny linking to this property
 Faction Property AnimatingFaction
-	Faction Function Get()
-		return Config.AnimatingFaction
-	EndFunction
+  Faction Function Get()
+    return Config.AnimatingFaction
+  EndFunction
 EndProperty
