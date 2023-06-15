@@ -1,141 +1,185 @@
-scriptname sslThreadSlots extends Quest
+ScriptName sslThreadSlots extends Quest
 {
-	Internal Script to maintain and access SexLab threads
-	You should NOT be interacting with this Script directly. Use the main API instead
+  Maintain and access SexLab threads
 }
 
-SexLabFramework property SexLab auto
-sslThreadController[] property Threads Auto
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslThreadController[] Property Threads Auto
 
 ; ------------------------------------------------------- ;
-; --- Thread Access 	                                --- ;
+; --- Thread Access                                   --- ;
 ; ------------------------------------------------------- ;
 
-sslThreadModel function PickModel(float TimeOut = 5.0)
-	if SexLab.GetState() == "Disabled"
-		SexLabUtil.DebugLog("Failed to start new thread - SexLab is currently disabled.", "PickModel", true)
-		return none
-	endIf
-	float failsafe = Utility.GetCurrentRealTime() + TimeOut
-	while GetState() == "Locked" && Utility.GetCurrentRealTime() < failsafe
-		Utility.WaitMenuMode(0.1)
-	endWhile
-	GoToState("Locked")
-	sslThreadModel Thread
-	int i
-	while !Thread && i < Threads.Length
-		if !Threads[i].IsLocked
-			Thread = Threads[i].Make()
-		endIf
-		i += 1
-	endWhile
-	; Failsafe - check for possibly stuck/ending threads and use them.
-	if !Thread
-		i = 0
-		while !Thread && i < Threads.Length
-			string ThreadState = Threads[i].GetState()
-			if ThreadState == "Ending"
-				Threads[i].ReportAndFail("Resetting possibly stuck thread: "+Threads[i], "PickModel")
-				Thread = Threads[i].Make()
-			endIf
-			i += 1
-		endWhile
-	endIf
-	GoToState("")
-	return Thread
-endFunction
-
-sslThreadController function GetController(int tid)
-	return Threads[tid]
-endfunction
-
-int function FindActorController(Actor ActorRef)
-	float f = 0
-	int ret = -1
-	int i = 0
-	While(i < Threads.Length)
-		If(Threads[i].FindSlot(ActorRef) != -1)
-			String s = Threads[i].GetState()
-			If(s == "Animating" || s == "Making")
-				return i
-			ElseIf(Threads[i].StartedAt > f)
-				f = Threads[i].StartedAt
-				ret = i
-			EndIf
-		EndIf
-		i += 1
-	Endwhile
-	return ret
-endFunction
-
-sslThreadController function GetActorController(Actor ActorRef)
-	int i = FindActorController(ActorRef)
-	If(i == -1)
-		return none
-	EndIf
-	return GetController(i)
-endFunction
-
-bool function IsRunning()
-	return ActiveThreads() > 0
-endfunction
-
-int function ActiveThreads()
-	int c = 0
-	int i = Threads.Length
-	while i
-		i -= 1
-		c += Threads[i].IsLocked as int
-	endwhile
-	return c
-endfunction
-
-function StopAll()
-	int i = Threads.Length
-	while i
-		i -= 1
-		StopThread(Threads[i])
-	endWhile
-	ModEvent.Send(ModEvent.Create("SexLabStoppedActive"))
-endFunction
-
-function StopThread(sslThreadController Slot)
-	string SlotState = Slot.GetState()
-	if SlotState == "Making"
-		; NOTE: This is bad. We might already have returned that the Animation starts successfully and are currently waiting for
-		; the prepare actor events to finish or the code to create the animation is still running
-		; ---
-		; SexLabUtil.DebugLog("Making during StopAll - Initializing.", Slot, true)
-		; Slot.Initialize()
-	elseIf SlotState == "Ending"
-		; NOTE: Will auto clear itself after Cooldown is done
-		; ---
-		; Slot.Initialize()
-	elseIf SlotState != "Unlocked"
-		SexLabUtil.DebugLog(SlotState+" during StopAll - EndAnimation.", Slot, true)
-		Slot.EndAnimation(true)
-	endIf
-endFunction
-
-; ------------------------------------------------------- ;
-; --- Setup						                                --- ;
-; ------------------------------------------------------- ;
-
-Function Setup()
-	GoToState("Locked")
-	int i = 0
-	While(i < Threads.Length)
-		Threads[i].SetTID(i)
-		i += 1
-	EndWhile
-	GoToState("")
+sslThreadModel Function PickModel(float TimeOut = 5.0)
+  float failsafe = Utility.GetCurrentRealTime() + TimeOut
+  While (GetState() == "Locked" && Utility.GetCurrentRealTime() < failsafe)
+    Utility.WaitMenuMode(0.1)
+  EndWhile
+  GoToState("Locked")
+  int i = 0
+  While (i < Threads.Length)
+    If (!Threads[i].IsLocked)
+      GoToState("")
+      return Threads[i]
+    EndIf
+    i += 1
+  EndWhile
+  Debug.Trace("[SexLab] Unable to obtain new thread. All threads in locked State", 1)
+  GoToState("")
+  return none
 EndFunction
 
-bool function TestSlots()
-	return true
-endFunction
+sslThreadController Function GetController(int tid)
+  return Threads[tid]
+endfunction
 
-state Locked
-	function Setup()
-	endFunction
-endState
+int Function FindActorController(Actor ActorRef)
+  float f = 0
+  int ret = -1
+  int i = 0
+  While (i < Threads.Length)
+    If (Threads[i].FindSlot(ActorRef) != -1)
+      ; An actor may be recognized in multiple threads if it is thrown into multiple scenes back to back
+      ; To ensure this returns the most recent scene, check for active State or start time 
+      String s = Threads[i].GetState()
+      If (s == "Animating" || s == "Making")
+        return i
+      ElseIf (Threads[i].StartedAt > f)
+        f = Threads[i].StartedAt
+        ret = i
+      EndIf
+    EndIf
+    i += 1
+  Endwhile
+  return ret
+EndFunction
+
+sslThreadController Function GetActorController(Actor ActorRef)
+  int i = FindActorController(ActorRef)
+  If (i == -1)
+    return none
+  EndIf
+  return GetController(i)
+EndFunction
+
+int Function ActiveThreads()
+  int c = 0
+  int i = Threads.Length
+  while i
+    i -= 1
+    c += Threads[i].IsLocked as int
+  endwhile
+  return c
+endfunction
+
+bool Function IsRunning()
+  return ActiveThreads() > 0
+endfunction
+
+Function StopAll()
+  int i = Threads.Length
+  while i
+    i -= 1
+    StopThread(Threads[i])
+  endWhile
+  ModEvent.Send(ModEvent.Create("SexLabStoppedActive"))
+EndFunction
+
+Function StopThread(sslThreadController Slot)
+  SexLabUtil.DebugLog("Force stop-request on thread + " + Slot + " during State " + Slot.GetState(), "", true)
+  Slot.Initialize()
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Setup                                            --- ;
+; ------------------------------------------------------- ;
+
+Event OnInit()
+  Setup()
+EndEvent
+
+Function Setup()
+  GoToState("Locked")
+  If (!TestSlots())
+    InstallSlots()
+  Else
+    int i = 0
+    While (i < Threads.Length)
+      Threads[i].SetTID(i)
+      i += 1
+    EndWhile
+  EndIf
+  GoToState("")
+EndFunction
+
+bool Function TestSlots()
+  return Threads.Length == 15 && Threads.Find(none) == -1
+EndFunction
+Function InstallSlots()
+  int[] SlotFormID = new int[15]
+  SlotFormID[0]  = 0x61EEF
+  SlotFormID[1]  = 0x62452
+  SlotFormID[2]  = 0x6C62C
+  SlotFormID[3]  = 0x6C62D
+  SlotFormID[4]  = 0x6C62E
+  SlotFormID[5]  = 0x6C62F
+  SlotFormID[6]  = 0x6C630
+  SlotFormID[7]  = 0x6C631
+  SlotFormID[8]  = 0x6C632
+  SlotFormID[9]  = 0x6C633
+  SlotFormID[10] = 0x6C634
+  SlotFormID[11] = 0x6C635
+  SlotFormID[12] = 0x6C636
+  SlotFormID[13] = 0x6C637
+  SlotFormID[14] = 0x6C638
+
+  Threads = new sslThreadController[15]
+  int i = 0
+  While (i < Threads.Length)
+    Threads[i] = Game.GetFormFromFile(SlotFormID[i], "SexLab.esm") as sslThreadController
+    Threads[i].SetTID(i)
+    i += 1
+  EndWhile
+EndFunction
+
+State Locked
+  Function Setup()
+  EndFunction
+EndState
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslSystemConfig Property Config
+  sslSystemConfig Function Get()
+    return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
+  EndFunction
+  Function Set(sslSystemConfig aSet)
+  EndFunction
+EndProperty
+
+SexLabFramework Property SexLab
+  SexLabFramework Function Get()
+    return Game.GetFormFromFile(0xD62, "SexLab.esm") as SexLabFramework
+  EndFunction
+  Function Set(SexLabFramework aSet)
+  EndFunction
+EndProperty
