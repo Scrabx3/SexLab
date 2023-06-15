@@ -14,33 +14,36 @@ scriptname sslThreadLibrary extends sslSystemLibrary
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-Keyword property FurnitureBedRoll Auto
-
 ; ------------------------------------------------------- ;
 ; --- Bed Utility                                     --- ;
 ; ------------------------------------------------------- ;
 
-; 0 - No bed / 1 - Bedroll / 2 - Single Bed / 3 - Double Bed
-int Function GetBedType(ObjectReference BedRef)
-  If(!BedRef || !sslpp.IsBed(BedRef))
-    return 0
-  EndIf
-  Form BaseRef = BedRef.GetBaseObject()
-  If(BedRef.HasKeyword(FurnitureBedRoll))
-    return 1
-  ElseIf(StringUtil.Find(sslpp.GetEditorID(BaseRef), "Double") > -1 || StringUtil.Find(sslpp.GetEditorID(BaseRef), "Single") == -1)
-    return 3
-  EndIf
-  return 2
+int Property BedType_None = 0 AutoReadOnly
+int Property BedType_BedRoll = 1 AutoReadOnly
+int Property BedType_Single = 2 AutoReadOnly
+int Property BedType_Double = 3 AutoReadOnly
+
+ObjectReference[] Function FindBeds(ObjectReference akCenterRef, float afRadius = 4096.0, float afRadiusZ = 512.0) native
+int Function GetBedType(ObjectReference BedRef) native
+bool Function IsBed(ObjectReference akReference) native
+
+bool Function IsBedRoll(ObjectReference BedRef)
+  return GetBedType(BedRef) == BedType_BedRoll
 EndFunction
+bool function IsDoubleBed(ObjectReference BedRef)
+  return GetBedType(BedRef) == BedType_Single
+endFunction
+bool function IsSingleBed(ObjectReference BedRef)
+  return GetBedType(BedRef) == BedType_Double
+endFunction
 
 bool Function IsBedAvailable(ObjectReference BedRef)
-  If(!BedRef || BedRef.IsFurnitureInUse(true))
+  If(BedRef.IsFurnitureInUse(true))
     return false
   EndIf
   int i = 0
   While(i < ThreadSlots.Threads.Length)
-    If(ThreadSlots.Threads[i].BedRef == BedRef)
+    If(ThreadSlots.Threads[i].IsLocked && ThreadSlots.Threads[i].BedRef == BedRef)
       return false
     EndIf
     i += 1
@@ -49,10 +52,10 @@ bool Function IsBedAvailable(ObjectReference BedRef)
 EndFunction
 
 ObjectReference Function FindBed(ObjectReference CenterRef, float Radius = 1000.0, bool IgnoreUsed = true, ObjectReference IgnoreRef1 = none, ObjectReference IgnoreRef2 = none)
-  If(!CenterRef || Radius < 1.0)
+  If(!CenterRef || Radius < 0.0)
     return none
   EndIf
-  ObjectReference[] beds = sslpp.FindBeds(CenterRef, Radius)
+  ObjectReference[] beds = FindBeds(CenterRef, Radius)
   int i = 0
   While(i < beds.Length)
     If(beds[i] != IgnoreRef1 && beds[i] != IgnoreRef2 && (IgnoreUsed || !beds[i].IsFurnitureInUse()))
@@ -62,6 +65,18 @@ ObjectReference Function FindBed(ObjectReference CenterRef, float Radius = 1000.
   EndWhile
   return none
 endFunction
+
+ObjectReference Function GetNearestUnusedBed(ObjectReference akCenterRef, float afRadius)
+  ObjectReference[] beds = FindBeds(akCenterRef, afRadius)
+  int i = 0
+  While(i < beds.Length)
+    If(IsBedAvailable(beds[i]))
+      return beds[i]
+    EndIf
+    i += 1
+  EndWhile
+  return none
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Position Sorting                                --- ;
@@ -208,30 +223,19 @@ endFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
-;                ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
-;                ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
-;                ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
-;                ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
-;                ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
-;                ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+Keyword property FurnitureBedRoll Auto
 FormList property BedsList Auto
 FormList property DoubleBedsList Auto
 FormList property BedRollsList Auto
-
-bool Function IsBedRoll(ObjectReference BedRef)
-  return GetBedType(BedRef) == 1
-EndFunction
-
-bool function IsDoubleBed(ObjectReference BedRef)
-  return GetBedType(BedRef) == 3
-endFunction
-
-bool function IsSingleBed(ObjectReference BedRef)
-  return GetBedType(BedRef) == 2
-endFunction
 
 bool function SameFloor(ObjectReference BedRef, float Z, float Tolerance = 15.0)
   return BedRef && Math.Abs(Z - BedRef.GetPositionZ()) <= Tolerance
