@@ -46,6 +46,11 @@ String[] Function GetAllRaceKeys(bool abIgnoreAmbiguous) native global
 ; Check if a specific ID belongs to some valid scene object
 bool Function SceneExists(String asID) native global
 
+; Get/Change the enabled state of the given Scene. A disabled scene is excluded from lookup functions
+bool Function IsSceneEnabled(String asID) native global
+Function SetSceneEnabled(String asID, bool abEnabled) native global
+
+; The (human readable) name of the given scene
 String Function GetSceneName(String asID) native global
 
 ; --- Animation
