@@ -24,6 +24,17 @@ scriptname sslBaseAnimation extends sslBaseObject
 
 String Property PROXY_ID Auto Hidden
 
+bool Function _GetEnabled()
+	return SexLabRegistry.IsSceneEnabled(PROXY_ID)
+EndFunction
+Function _SetEnabled(bool aSet)
+	SexLabRegistry.SetSceneEnabled(PROXY_ID, aSet)
+EndFunction
+
+String Function _GetName()
+	return SexLabRegistry.GetSceneName(PROXY_ID)
+EndFunction
+
 int Function GetMaxDepth()
 	return SexLabRegistry.GetPathMax(PROXY_ID, "").Length
 EndFunction

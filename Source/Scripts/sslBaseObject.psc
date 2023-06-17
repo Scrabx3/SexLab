@@ -1,8 +1,39 @@
 scriptname sslBaseObject extends ReferenceAlias hidden
 
 int Property SlotID Auto Hidden
-string Property Name Auto Hidden
-bool Property Enabled Auto Hidden
+
+String _name
+string Property Name
+	String Function Get()
+		return _GetName()
+	EndFunction
+	Function Set(String aSet)
+		_SetName(aSet)
+	EndFunction
+EndProperty
+	; Overriden by child classes to support backwards compatibility
+String Function _GetName()
+	return _name
+EndFunction
+Function _SetName(String aSet)
+	_name = aSet
+EndFunction
+
+bool _enabled
+bool Property Enabled
+	bool Function Get()
+		return _GetName()
+	EndFunction
+	Function Set(bool aSet)
+		_SetEnabled(aSet)
+	EndFunction
+EndProperty
+bool Function _GetEnabled()
+	return _enabled
+EndFunction
+Function _SetEnabled(bool aSet)
+	_enabled
+EndFunction
 
 string Property Registry Auto Hidden
 bool Property Registered hidden

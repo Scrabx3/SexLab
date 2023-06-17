@@ -46,6 +46,8 @@ String[] Function GetAllRaceKeys(bool abIgnoreAmbiguous) native global
 ; Check if a specific ID belongs to some valid scene object
 bool Function SceneExists(String asID) native global
 
+String Function GetSceneName(String asID) native global
+
 ; --- Animation
 
 ; Get the animation events for the n'th position of the given stage
