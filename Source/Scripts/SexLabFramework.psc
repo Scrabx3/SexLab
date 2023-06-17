@@ -84,7 +84,7 @@ endProperty
 ; --- Return:
 ; sslThreadController:  An API instance to interact with the started scene. See sslThreadController.psc for more info
 ; None:                  If an error occured
-sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowFurni = true, String asHook = "")
+sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowFurniture = true, String asHook = "")
   sslThreadModel thread = NewThread()
   If(!thread)
     Log("StartScene() - Failed to claim an available thread")
@@ -92,12 +92,12 @@ sslThreadController Function StartScene(Actor[] akPositions, String asTags, Acto
   ElseIf(!thread.AddActors(akPositions, akSubmissive))
     Log("StartScene() - Failed to add some actors to thread")
     return none
-  ElseIf(!thread.SetAnimationsByTags(asTags, abAllowFurni as int))
+  ElseIf(!thread.SetAnimationsByTags(asTags, abAllowFurniture as int))
     Log("StartScene() - Failed to find valid animations")
     return none
   EndIf
   thread.CenterOnObject(akCenter)
-  thread.DisableBedUse(!abAllowFurni)
+  thread.DisableBedUse(!abAllowFurniture)
   thread.SetHook(asHook)
   return thread.StartThread()
 EndFunction
@@ -533,15 +533,32 @@ Actor[] function FindAvailablePartners(Actor[] Positions, int TotalActors, int M
   return ThreadLib.FindAvailablePartners(Positions, TotalActors, Males, Females, Radius)
 endFunction
 
-;/* SortPositions
-* * Sort the given array of actors with SexLabs default sorting algorithm
-*  *  The algorithm is stable and in place. Both Creature and regular actors will be sorted
-*  *
-*  *  @param: akPositions  - The positons to sort
-*/;
-Function SortPositions(Actor[] akPositions)
-  ThreadLib.SortPositions(akPositions)
-EndFunction
+; Sort a list of actors strictly by gender, putting humans (male or female) first, and creatures last
+; Note that order in SexLab Scenes will **not** follow the same ordering
+; --- Return:
+; The array is modified directly and then returned again { assert(return == Positions) }
+Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
+  return ThreadLib.SortActors(Positions, FemaleFirst)
+endFunction
+
+; Sort a list of actors based on the passed scene. The order of the resulting array is unspecified
+; --- Parameters:
+; asSceneID:      The id of the scene to sort by
+; akPositions:    The actors that should be sorted
+; akSubmissives:  (Optional) A list of actors which are interpreted submissives during the ordering If the passed in actors are less/more than 
+;                   the expected amount of victims, the first listed actors of the array will be implied as submissives instead
+; --- Return:
+; A new array with the sorted positions, or an empty array if the animation is incompatible with the passed in actors
+Actor[] function SortActorsByScene(String asSceneID, Actor[] akPositions, Actor[] akSubmissives)
+  return ThreadLib.SortActorsByAnimationImpl(asSceneID, akPositions, akSubmissives)
+endFunction
+
+; Sort a list of actors based on the passed animation. The order of the resulting array is unspecified
+; --- Return:
+; A new array with the sorted positions, or an empty array if the animation is incompatible with the passed in actors
+Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)
+  return ThreadLib.SortActorsByAnimation(Positions, Animation)
+endFunction
 
 ;/* AddCum
 * * Applies the cum effect to an actor for the given locations
@@ -2415,383 +2432,6 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#                                                         START FACTORY FUNCTIONS                                                         #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;/* RegisterAnimation
-* * Find an available animation slot for the animation and starts the callback to register it.
-* * In case the animation was already registered you get the already registered animation without any update
-* *
-* * @param: string Registrar, the ID of the animation, no spaces allowed.
-* * @param: Form CallbackForm, the script (as object) that has the code to register the animation, the script has to have an Event with the same name of the registrar
-* * @param: ReferenceAlias CallbackAlias, can be used alternatively to CallbackForm, in case the script is inside a ReferenceAlias
-* * @return: sslBaseAnimation, the actual animation registered
-*/;
-sslBaseAnimation function RegisterAnimation(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-  return AnimSlots.RegisterAnimation(Registrar, CallbackForm, CallbackAlias)
-endFunction
-
-;/* RegisterCreatureAnimation
-* * Find an available Creature animation slot for the animation and starts the callback to register it.
-* * In case the Creature animation was already registered you get the already registered Creature animation without any update
-* *
-* * @param: string Registrar, the ID of the Creature animation, no spaces allowed.
-* * @param: Form CallbackForm, the script (as object) that has the code to register the animation, the script has to have an Event with the same name of the registrar
-* * @param: ReferenceAlias CallbackAlias, can be used alternatively to CallbackForm, in case the script is inside a ReferenceAlias
-* * @return: sslBaseAnimation, the actual animation registered
-*/;
-sslBaseAnimation function RegisterCreatureAnimation(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-  return CreatureSlots.RegisterAnimation(Registrar, CallbackForm, CallbackAlias)
-endFunction
-
-;/* RegisterVoice
-* * Find an available SexLabVoice slot and starts the callback to register it.
-* * In case the SexLabVoice was already registered you get the already registered SexLabVoice without any update
-* *
-* * @param: string Registrar, the ID of the SexLabVoice, no spaces allowed.
-* * @param: Form CallbackForm, the script (as object) that has the code to register the SexLabVoice, the script has to have an Event with the same name of the registrar
-* * @param: ReferenceAlias CallbackAlias, can be used alternatively to CallbackForm, in case the script is inside a ReferenceAlias
-* * @return: sslBaseVoice, the actual SexLabVoice registered
-*/;
-sslBaseVoice function RegisterVoice(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-  return VoiceSlots.RegisterVoice(Registrar, CallbackForm, CallbackAlias)
-endFunction
-
-;/* RegisterExpression
-* * Find an available SexLabExpression slot and starts the callback to register it.
-* * In case the SexLabExpression was already registered you get the already registered SexLabExpression without any update
-* *
-* * @param: string Registrar, the ID of the SexLabExpression, no spaces allowed.
-* * @param: Form CallbackForm, the script (as object) that has the code to register the SexLabExpression, the script has to have an Event with the same name of the registrar
-* * @param: ReferenceAlias CallbackAlias, can be used alternatively to CallbackForm, in case the script is inside a ReferenceAlias
-* * @return: sslBaseVoice, the actual SexLabExpression registered
-*/;
-sslBaseExpression function RegisterExpression(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-  return ExpressionSlots.RegisterExpression(Registrar, CallbackForm, CallbackAlias)
-endFunction
-
-;/* NewAnimationObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseAnimation function NewAnimationObject(string Token, Form Owner)
-  return Factory.NewAnimation(Token, Owner)
-endFunction
-
-
-;/* NewVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function NewVoiceObject(string Token, Form Owner)
-  return Factory.NewVoice(Token, Owner)
-endFunction
-
-;/* NewExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function NewExpressionObject(string Token, Form Owner)
-  return Factory.NewExpression(Token, Owner)
-endFunction
-
-;/* GetSetAnimationObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseAnimation function GetSetAnimationObject(string Token, string Callback, Form Owner)
-  return Factory.GetSetAnimation(Token, Callback, Owner)
-endFunction
-
-;/* GetSetVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function GetSetVoiceObject(string Token, string Callback, Form Owner)
-  return Factory.GetSetVoice(Token, Callback, Owner)
-endFunction
-
-;/* GetSetExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function GetSetExpressionObject(string Token, string Callback, Form Owner)
-  return Factory.GetSetExpression(Token, Callback, Owner)
-endFunction
-
-;/* NewAnimationObjectCopy
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseAnimation function NewAnimationObjectCopy(string Token, sslBaseAnimation CopyFrom, Form Owner)
-  return Factory.NewAnimationCopy(Token, CopyFrom, Owner)
-endFunction
-
-;/* NewVoiceObjectCopy
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function NewVoiceObjectCopy(string Token, sslBaseVoice CopyFrom, Form Owner)
-  return Factory.NewVoiceCopy(Token, CopyFrom, Owner)
-endFunction
-
-;/* NewExpressionObjectCopy
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function NewExpressionObjectCopy(string Token, sslBaseExpression CopyFrom, Form Owner)
-  return Factory.NewExpressionCopy(Token, CopyFrom, Owner)
-endFunction
-
-;/* GetAnimationObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseAnimation function GetAnimationObject(string Token)
-  return Factory.GetAnimation(Token)
-endFunction
-
-;/* GetVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function GetVoiceObject(string Token)
-  return Factory.GetVoice(Token)
-endFunction
-
-;/* GetExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function GetExpressionObject(string Token)
-  return Factory.GetExpression(Token)
-endFunction
-
-;/* GetOwnerAnimations
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseAnimation[] function GetOwnerAnimations(Form Owner)
-  return Factory.GetOwnerAnimations(Owner)
-endFunction
-
-;/* GetOwnerVoices
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice[] function GetOwnerVoices(Form Owner)
-  return Factory.GetOwnerVoices(Owner)
-endFunction
-
-;/* GetOwnerExpressions
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression[] function GetOwnerExpressions(Form Owner)
-  return Factory.GetOwnerExpressions(Owner)
-endFunction
-
-;/* HasAnimationObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function HasAnimationObject(string Token)
-  return Factory.HasAnimation(Token)
-endFunction
-
-;/* HasVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function HasVoiceObject(string Token)
-  return Factory.HasVoice(Token)
-endFunction
-
-;/* HasExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function HasExpressionObject(string Token)
-  return Factory.HasExpression(Token)
-endFunction
-
-;/* ReleaseAnimationObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function ReleaseAnimationObject(string Token)
-  return Factory.ReleaseAnimation(Token)
-endFunction
-
-;/* ReleaseVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function ReleaseVoiceObject(string Token)
-  return Factory.ReleaseVoice(Token)
-endFunction
-
-;/* ReleaseExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function ReleaseExpressionObject(string Token)
-  return Factory.ReleaseExpression(Token)
-endFunction
-
-;/* ReleaseExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-int function ReleaseOwnerAnimations(Form Owner)
-  return Factory.ReleaseOwnerAnimations(Owner)
-endFunction
-
-;/* ReleaseOwnerVoices
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-int function ReleaseOwnerVoices(Form Owner)
-  return Factory.ReleaseOwnerVoices(Owner)
-endFunction
-
-;/* ReleaseOwnerExpressions
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-int function ReleaseOwnerExpressions(Form Owner)
-  return Factory.ReleaseOwnerExpressions(Owner)
-endFunction
-
-;/* MakeAnimationRegistered
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseAnimation function MakeAnimationRegistered(string Token)
-  return Factory.MakeAnimationRegistered(Token)
-endFunction
-
-;/* MakeVoiceRegistered
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function MakeVoiceRegistered(string Token)
-  return Factory.MakeVoiceRegistered(Token)
-endFunction
-
-;/* MakeExpressionRegistered
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function MakeExpressionRegistered(string Token)
-  return Factory.MakeExpressionRegistered(Token)
-endFunction
-
-;/* RemoveRegisteredAnimation
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function RemoveRegisteredAnimation(string Registrar)
-  return AnimSlots.UnregisterAnimation(Registrar)
-endFunction
-
-;/* RemoveRegisteredCreatureAnimation
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function RemoveRegisteredCreatureAnimation(string Registrar)
-  return CreatureSlots.UnregisterAnimation(Registrar)
-endFunction
-
-;/* RemoveRegisteredVoice
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function RemoveRegisteredVoice(string Registrar)
-  return VoiceSlots.UnregisterVoice(Registrar)
-endFunction
-
-;/* RemoveRegisteredExpression
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function RemoveRegisteredExpression(string Registrar)
-  return ExpressionSlots.UnregisterExpression(Registrar)
-endFunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                     END FACTORY FUNCTIONS                                                     ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;#                                                         START UTILITY FUNCTIONS                                                         #
@@ -3024,18 +2664,8 @@ sslBaseAnimation[] function GetAnimationsByDefaultTags(int Males, int Females, b
 endFunction
 
 ;/* DEPRECATED! */;
-Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
-  return ThreadLib.SortActors(Positions, FemaleFirst)
-endFunction
-
-;/* DEPRECATED! */;
-Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)
-  return ThreadLib.SortActors(Positions)
-endFunction
-
-;/* DEPRECATED! */;
 Actor[] function SortCreatures(Actor[] Positions, sslBaseAnimation Animation = none)
-  return ThreadLib.SortActors(Positions)
+  return ThreadLib.SortCreatures(Positions, Animation)
 endFunction
 
 ;/* DEPRECATED! */;
@@ -3078,13 +2708,306 @@ sslBaseAnimation[] function GetCreatureAnimationsByActorsTags(int ActorCount, Ac
   return CreatureSlots.GetByCreatureActorsTags(ActorCount, Positions, Tags, TagSuppress, RequireAll)
 endFunction
 
+;/* DEPRECATED! */;
+sslBaseAnimation function RegisterAnimation(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function RegisterCreatureAnimation(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function NewAnimationObject(string Token, Form Owner)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function GetSetAnimationObject(string Token, string Callback, Form Owner)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function NewAnimationObjectCopy(string Token, sslBaseAnimation CopyFrom, Form Owner)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function GetAnimationObject(string Token)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function GetOwnerAnimations(Form Owner)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function MakeAnimationRegistered(string Token)
+  return none
+endFunction
+
+;/* DEPRECATED! */;
+bool function HasAnimationObject(string Token)
+  return Factory.HasAnimation(Token)
+endFunction
+
+;/* DEPRECATED! */;
+bool function ReleaseAnimationObject(string Token)
+  return Factory.ReleaseAnimation(Token)
+endFunction
+
+;/* DEPRECATED! */;
+int function ReleaseOwnerAnimations(Form Owner)
+  return Factory.ReleaseOwnerAnimations(Owner)
+endFunction
+
+;/* DEPRECATED! */;
+bool function RemoveRegisteredAnimation(string Registrar)
+  return AnimSlots.UnregisterAnimation(Registrar)
+endFunction
+
+;/* DEPRECATED! */;
+bool function RemoveRegisteredCreatureAnimation(string Registrar)
+  return CreatureSlots.UnregisterAnimation(Registrar)
+endFunction
+
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;# ^^^                                            END DEPRECATED FUNCTIONS - DO NOT USE THEM                                           ^^^ #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
+;/
+  NOTE: Following functions are not yet legacy but will likely be in some future update. Do not use them to stay compatible with future versions!
+/;
 
+;/* RegisterVoice
+* * Find an available SexLabVoice slot and starts the callback to register it.
+* * In case the SexLabVoice was already registered you get the already registered SexLabVoice without any update
+* *
+* * @param: string Registrar, the ID of the SexLabVoice, no spaces allowed.
+* * @param: Form CallbackForm, the script (as object) that has the code to register the SexLabVoice, the script has to have an Event with the same name of the registrar
+* * @param: ReferenceAlias CallbackAlias, can be used alternatively to CallbackForm, in case the script is inside a ReferenceAlias
+* * @return: sslBaseVoice, the actual SexLabVoice registered
+*/;
+sslBaseVoice function RegisterVoice(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
+  return VoiceSlots.RegisterVoice(Registrar, CallbackForm, CallbackAlias)
+endFunction
+
+;/* RegisterExpression
+* * Find an available SexLabExpression slot and starts the callback to register it.
+* * In case the SexLabExpression was already registered you get the already registered SexLabExpression without any update
+* *
+* * @param: string Registrar, the ID of the SexLabExpression, no spaces allowed.
+* * @param: Form CallbackForm, the script (as object) that has the code to register the SexLabExpression, the script has to have an Event with the same name of the registrar
+* * @param: ReferenceAlias CallbackAlias, can be used alternatively to CallbackForm, in case the script is inside a ReferenceAlias
+* * @return: sslBaseVoice, the actual SexLabExpression registered
+*/;
+sslBaseExpression function RegisterExpression(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
+  return ExpressionSlots.RegisterExpression(Registrar, CallbackForm, CallbackAlias)
+endFunction
+
+;/* NewVoiceObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseVoice function NewVoiceObject(string Token, Form Owner)
+  return Factory.NewVoice(Token, Owner)
+endFunction
+
+;/* NewExpressionObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseExpression function NewExpressionObject(string Token, Form Owner)
+  return Factory.NewExpression(Token, Owner)
+endFunction
+
+;/* GetSetVoiceObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseVoice function GetSetVoiceObject(string Token, string Callback, Form Owner)
+  return Factory.GetSetVoice(Token, Callback, Owner)
+endFunction
+
+;/* GetSetExpressionObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseExpression function GetSetExpressionObject(string Token, string Callback, Form Owner)
+  return Factory.GetSetExpression(Token, Callback, Owner)
+endFunction
+
+;/* NewVoiceObjectCopy
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseVoice function NewVoiceObjectCopy(string Token, sslBaseVoice CopyFrom, Form Owner)
+  return Factory.NewVoiceCopy(Token, CopyFrom, Owner)
+endFunction
+
+;/* NewExpressionObjectCopy
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseExpression function NewExpressionObjectCopy(string Token, sslBaseExpression CopyFrom, Form Owner)
+  return Factory.NewExpressionCopy(Token, CopyFrom, Owner)
+endFunction
+
+;/* GetVoiceObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseVoice function GetVoiceObject(string Token)
+  return Factory.GetVoice(Token)
+endFunction
+
+;/* GetExpressionObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseExpression function GetExpressionObject(string Token)
+  return Factory.GetExpression(Token)
+endFunction
+
+;/* GetOwnerVoices
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseVoice[] function GetOwnerVoices(Form Owner)
+  return Factory.GetOwnerVoices(Owner)
+endFunction
+
+;/* GetOwnerExpressions
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseExpression[] function GetOwnerExpressions(Form Owner)
+  return Factory.GetOwnerExpressions(Owner)
+endFunction
+
+;/* HasVoiceObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+bool function HasVoiceObject(string Token)
+  return Factory.HasVoice(Token)
+endFunction
+
+;/* HasExpressionObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+bool function HasExpressionObject(string Token)
+  return Factory.HasExpression(Token)
+endFunction
+
+;/* ReleaseVoiceObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+bool function ReleaseVoiceObject(string Token)
+  return Factory.ReleaseVoice(Token)
+endFunction
+
+;/* ReleaseExpressionObject
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+bool function ReleaseExpressionObject(string Token)
+  return Factory.ReleaseExpression(Token)
+endFunction
+
+;/* ReleaseOwnerVoices
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+int function ReleaseOwnerVoices(Form Owner)
+  return Factory.ReleaseOwnerVoices(Owner)
+endFunction
+
+;/* ReleaseOwnerExpressions
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+int function ReleaseOwnerExpressions(Form Owner)
+  return Factory.ReleaseOwnerExpressions(Owner)
+endFunction
+
+;/* MakeVoiceRegistered
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseVoice function MakeVoiceRegistered(string Token)
+  return Factory.MakeVoiceRegistered(Token)
+endFunction
+
+;/* MakeExpressionRegistered
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+sslBaseExpression function MakeExpressionRegistered(string Token)
+  return Factory.MakeExpressionRegistered(Token)
+endFunction
+
+;/* RemoveRegisteredVoice
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+bool function RemoveRegisteredVoice(string Registrar)
+  return VoiceSlots.UnregisterVoice(Registrar)
+endFunction
+
+;/* RemoveRegisteredExpression
+* * TODO
+* * 
+* * @param: 
+* * @return: 
+*/;
+bool function RemoveRegisteredExpression(string Registrar)
+  return ExpressionSlots.UnregisterExpression(Registrar)
+endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
