@@ -1,7 +1,7 @@
 scriptname sslAnimationSlots extends Quest
 {
-	Internal base script acing as registry for animation objects
-	Interact with this Script through the main api only
+	Legacy Animation Registry Base Script
+	Use SexLabRegistry.psc instead
 }
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -17,7 +17,7 @@ scriptname sslAnimationSlots extends Quest
 
 int Function GetAllocatedSize() native
 
-int property Slotted()
+int property Slotted
 	int Function Get()
 		return GetAllocatedSize()
 	EndFunction
@@ -156,18 +156,33 @@ sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggr
 		tags_ = PapyrusUtil.PushString(tags_, "-Forced")
 	EndIf
 	If (UsingBed)
-		If (RequireAll)
-			tags_ = PapyrusUtil.RemoveString(tags_, "Furniture")
-			tags_ = PapyrusUtil.RemoveString(tags_, "Standing")
+		int where = tags_.Find("Furniture")
+		If (where == -1)
+			tags_.Find("~Furniture")
+		EndIf
+		If (where == -1)
+			tags_ = PapyrusUtil.PushString(tags_, "-Furniture")
 		Else
-			tags_ = PapyrusUtil.RemoveString(tags_, "~Furniture")
-			tags_ = PapyrusUtil.RemoveString(tags_, "~Standing")
+			tags_[where] = "-Furniture"
+		EndIf
+		where = tags_.Find("Standing")
+		If (where == -1)
+			tags_.Find("~Standing")
+		EndIf
+		If (where == -1)
+			tags_ = PapyrusUtil.PushString(tags_, "-Standing")
+		Else
+			tags_[where] = "-Standing"
 		EndIf
 	Else
-		If (RequireAll)
-			tags_ = PapyrusUtil.RemoveString(tags_, "BedOnly")
+		int where = tags_.Find("BedOnly")
+		If (where == -1)
+			tags_.Find("~BedOnly")
+		EndIf
+		If (where == -1)
+			tags_ = PapyrusUtil.PushString(tags_, "-BedOnly")
 		Else
-			tags_ = PapyrusUtil.RemoveString(tags_, "~BedOnly")
+			tags_[where] = "-BedOnly"
 		EndIf
 	EndIf
 	return AsBaseAnimation(GetByTypeImpl(Males + Females, Males, Females, PapyrusUtil.ClearEmpty(tags_)))
