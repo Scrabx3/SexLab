@@ -8,7 +8,7 @@ ScriptName SexlabRegistry Hidden
 }
 
 ; ------------------------------------------------------- ;
-; --- DEFINE                                          --- ;
+; --- Define                                          --- ;
 ; ------------------------------------------------------- ;
 
 ; Obtain an integer 0-52 representing this actors race
@@ -27,6 +27,21 @@ String[] Function MapRaceIDToRaceKeyA(int aiRaceID) native global
 ; Obtain a list of all supported RaceKeys; An example for an ambiuous races would be
 ; "Canines" which represent dogs and wolves at the same time
 String[] Function GetAllRaceKeys(bool abIgnoreAmbiguous) native global
+
+; ------------------------------------------------------- ;
+; --- Lookup                                          --- ;
+; ------------------------------------------------------- ;
+
+; Lookup Scenes for the stated actors, bounded by the given tags
+String[] Function LookupScenes(Actor[] akPositions, String asTags, Actor akSubmissive, bool abAllowFurnitures) native global
+String[] Function LookupScenesA(Actor[] akPositions, String asTags, Actor[] akSubmissives, bool abAllowFurnitures) native global
+
+; Sort akPosition based on the provided scene. The array will be modified directly, the order of the sorted array is unspecified
+; The extended version will take an array and return the index of the n'th scene which the actors are sorted by
+; If fallbacks are enabled, will attempt to reinterpret the given actors to find an allowed ordering if the first pass was not successful
+; Return false/-1 if the positions couldnt be sorted; E.g. because the scene is incompatible for the stated actors
+bool Function SortByScene(Actor[] akPositions, String asScene, bool abAllowFallback) native global
+int Function SortBySceneEx(Actor[] akPositions, String[] asScenes, bool abAllowFallback) native global
 
 ; ------------------------------------------------------- ;
 ; --- Scenes                                          --- ;
@@ -89,26 +104,26 @@ float Function GetFixedLength(String asID, String asStage) native global
 String[] Function GetClimaxStages(String asID) native global
 
 ; Get compatible sexes of this scenes n'th position
-; Bitflag with following interpretation:
+; Return a bitflag with following interpretation:
 ; Male = 0x1 | Female = 0x2 | Futa = 0x4 | CrtMale = 0x8 | CrtFemale = 0x16
-int Function GetSexP(String asID, int n) native global
+int Function GetpositionSex(String asID, int n) native global
 bool Function GetIsMalePosition(String asID, int n) global
-  return Math.LogicalAnd(GetSexP(asID, n), 0x1)
+  return Math.LogicalAnd(GetpositionSex(asID, n), 0x1)
 EndFunction
 bool Function GetIsFemalePosition(String asID, int n) global
-  return Math.LogicalAnd(GetSexP(asID, n), 0x2)
+  return Math.LogicalAnd(GetpositionSex(asID, n), 0x2)
 EndFunction
 bool Function GetIsFutaPositon(String asID, int n) global
-  return Math.LogicalAnd(GetSexP(asID, n), 0x4)
+  return Math.LogicalAnd(GetpositionSex(asID, n), 0x4)
 EndFunction
 bool Function GetIsCreaturePositon(String asID, int n) global
-  return Math.LogicalAnd(GetSexP(asID, n), 0x24)
+  return Math.LogicalAnd(GetpositionSex(asID, n), 0x24)
 EndFunction
 bool Function GetIsMaleCreaturePositon(String asID, int n) global
-  return Math.LogicalAnd(GetSexP(asID, n), 0x8)
+  return Math.LogicalAnd(GetpositionSex(asID, n), 0x8)
 EndFunction
 bool Function GetIsFemaleCreaturePositon(String asID, int n) global
-  return Math.LogicalAnd(GetSexP(asID, n), 0x16)
+  return Math.LogicalAnd(GetpositionSex(asID, n), 0x16)
 EndFunction
 
 ; Get the racekey ID of this scenes n'th position
