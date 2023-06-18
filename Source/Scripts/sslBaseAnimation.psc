@@ -11,6 +11,24 @@ scriptname sslBaseAnimation extends sslBaseObject
 	See SexlabRegistry.psc for concrete animation access
 }
 
+; Given an array of legacy animations, return all of the Scenes represented by them
+String[] Function AsSceneIDs(sslBaseAnimation[] akAnimations) global
+	String[] ret = Utility.CreateStringArray(akAnimations.Length)
+	int i = 0
+	While (i < akAnimations.Length)
+		String id = akAnimations[i].PROXY_ID
+		If (id && SexLabRegistry.SceneExists(id))
+			ret[i] = id
+		EndIf
+		i += 1
+	EndWhile
+	return PapyrusUtil.ClearEmpty(ret)
+EndFunction
+
+String Function GetSceneID()
+	return PROXY_ID
+EndFunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
@@ -493,7 +511,7 @@ EndFunction
 
 int function GetGender(int Position)
 	If(CreaturePosition(Position))
-		If(SexLabRegistry.GetIsFemaleCreaturePositon(PROXY_ID, Position))
+		If(SexLabRegistry.GetIsFemaleCreaturePositon(PROXY_ID, Position) && !SexLabRegistry.GetIsMaleCreaturePositon(PROXY_ID, Position))
 			return 3
 		Else
 			return 2
