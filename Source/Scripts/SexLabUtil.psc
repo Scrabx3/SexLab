@@ -175,6 +175,9 @@ float function GetCurrentGameRealTime() global native
 
 ; Non native of the above ^ since SE has no access to it
 float function GetCurrentGameRealTimeEx() global
+	If (SKSE.GetVersionMinor() >= 2)
+		return GetCurrentGameRealTime()
+	EndIf
 	Form TimeScale = Game.GetFormFromFile(0x3A, "Skyrim.esm")
 	float fTimeScale = 1
 	if TimeScale && TimeScale != none

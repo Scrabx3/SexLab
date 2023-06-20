@@ -1,9 +1,14 @@
-scriptname sslActorAlias extends ReferenceAlias
+ScriptName sslActorAlias extends ReferenceAlias
 {
 	Alias Script for Actors which are animated by a SexLab Thread
-	There is no reason for you to be here, please use the API Functions defined 
-	in sslThreadController.psc if you wish to access or write alias data
+
+	Instead of accessing this scrit directly, 
+	it is recommended to use the more general functions provided in sslThreadController.psc
 }
+
+bool function IsVictim()
+	return _victim
+endFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
@@ -16,12 +21,6 @@ scriptname sslActorAlias extends ReferenceAlias
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-;/ Notice about cleanup Architecture:
-- Initialize() 		hard reset the Alias and underlying reference. Clears the alias & resets all alias data
-- UnplaceActor() 	soft reset the underlying reference. May only be used while the reference is placed. Use to escape animating state
-- Clear() 				soft reset the Alias. Will fail while the underlying reference is animating
-/;
-
 sslThreadModel Thread
 sslSystemConfig Config
 sslActorStats Stats
@@ -29,30 +28,323 @@ sslActorStats Stats
 Faction AnimatingFaction
 Actor PlayerRef
 
-int vanilla_sex
+; Constants
+String Property STATE_IDLE 		= "Empty" AutoReadOnly
+String Property STATE_SETUP		= "Ready" AutoReadOnly
+String Property STATE_PLAYING = "Animating" AutoReadOnly
+
+String Function GetActorName()
+	return ActorRef.GetLeveledActorBase().GetName()
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Alias Data                                      --- ;
+; ------------------------------------------------------- ;
+
+Actor _ActorRef
+Actor Property ActorRef
+	Actor Function Get()
+		return _ActorRef
+	EndFunction
+EndProperty
+
+int _sex
+bool _victim
+
+; Voice
+sslBaseVoice Voice
+bool IsForcedSilent
+float BaseDelay
+float VoiceDelay
+float ExpressionDelay
+
+; ------------------------------------------------------- ;
+; --- Alias IDLE                                      --- ;
+; ------------------------------------------------------- ;
+;/
+	An Idle state waiting for the owning thread to be initialized
+	In this state, the reference is null and all related data is invalid
+
+	This state will fill the alias and alias related data, then move to the "Ready" state
+/;
+
+Auto State Empty
+	bool Function SetActor(Actor ProspectRef)
+		ForceRefTo(ProspectRef)
+		_ActorRef = ProspectRef
+		_sex = SexLabRegistry.GetSex(ProspectRef)
+
+		TrackedEvent("Added")
+		GoToState("Ready")
+		return true
+	EndFunction
+
+	String Function GetActorName()
+		return "EMPTY"
+	EndFunction
+EndState
+
+bool Function SetActor(Actor ProspectRef)
+	Error("Not in idle phase", "SetActor")
+	return false
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Alias SETUP                                     --- ;
+; ------------------------------------------------------- ;
+;/
+	Pre animation start. The alias is waiting for the underlying thread to begin the animation
+/;
+
+State Ready
+	Event OnBeginState()
+		RegisterForModEvent("SSL_PREPARE_Thread" + Thread.tid, "OnDoPrepare")
+	EndEvent
+	
+	Function SetVictim(bool Victimize)
+		_victim = Victimize
+	EndFunction
+
+	Function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
+		IsForcedSilent = ForceSilence
+		if ToVoice && (_sex > 2) == ToVoice.Creature
+			Voice = ToVoice
+		endIf
+	EndFunction
+
+	Event OnDoPrepare(string asEventName, string asStringArg, float afHasPlayer, form akPathTo)
+		If(ActorRef == PlayerRef)
+			Game.SetPlayerAIDriven()
+		Else
+			Config.CheckBardAudience(ActorRef, true)
+		EndIf
+		Stats.SeedActor(ActorRef)
+		; Delays
+		If(_sex > 2)
+			BaseDelay = 3.0
+		ElseIf(_sex != 1)
+			BaseDelay = Config.FemaleVoiceDelay
+		Else
+			BaseDelay = Config.MaleVoiceDelay
+		EndIf
+		VoiceDelay = BaseDelay
+		ExpressionDelay = Config.ExpressionDelay * BaseDelay
+		String LogInfo = ""
+		; Voice
+		if !Voice && !IsForcedSilent
+			if _sex > 2
+				Voice = Config.VoiceSlots.PickByRaceKey(SexLabRegistry.GetRaceKey(ActorRef))
+			else
+				Voice = Config.VoiceSlots.PickVoice(ActorRef)
+			endIf
+		endIf
+		If(Voice)
+			LogInfo += "Voice[" + Voice.Name + "] "
+		EndIf
+		; Strapon & Expression (for NPC only)
+		If(_sex <= 2)
+			; COMEBACK: This can prbly be moved someplace else
+			If(Config.UseStrapons && _sex == 1)
+				HadStrapon = Config.WornStrapon(ActorRef)
+				If(!HadStrapon)
+					Strapon = Config.GetStrapon()
+				Else
+					Strapon = HadStrapon
+				EndIf
+			EndIf
+			LogInfo += "Strapon[" + Strapon + "] "
+			if !Expression && Config.UseExpressions
+				Expressions = Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim(), Thread.IsType[0] && !IsVictim())
+				if Expressions && Expressions.Length > 0
+					Expression = Expressions[Utility.RandomInt(0, (Expressions.Length - 1))]
+				endIf
+			endIf
+			If(Expression)
+				LogInfo += "Expression[" + Expression.Name + "] "
+			EndIf
+		EndIf
+		; GetBaseEnjoyment()
+		; LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
+		Log(LogInfo)
+		; Position
+		If(ActorRef.GetActorValue("Paralysis") > 0)
+			ActorRef.SetActorValue("Paralysis", 0.0)
+			SendDefaultAnimEvent()
+		EndIf
+		If(DoPathToCenter)
+			ObjectReference pathto = akPathTo as ObjectReference
+			float distance = ActorRef.GetDistance(pathto)
+			If(distance > 256.0 && distance <= 6144.0)
+				float t = SexLabUtil.GetCurrentGameRealTimeEx() + 15.0
+				ActorRef.SetFactionRank(AnimatingFaction, 2)
+				ActorRef.EvaluatePackage()
+				While (ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTimeEx() < t)
+					Utility.Wait(0.045)
+				EndWhile
+			EndIf
+		EndIf
+		ActorRef.SetFactionRank(AnimatingFaction, 1)
+		ActorRef.EvaluatePackage()
+		GoToState(STATE_PLAYING)
+		Thread.PrepareDone()
+	EndEvent
+
+	Event OnEndState()
+		UnregisterForModEvent("SSL_PREPARE_Thread" + Thread.tid)
+	EndEvent
+EndState
+
+Function SetVictim(bool Victimize)
+	Error("Not in idle phase", "SetVictim")
+EndFunction
+Function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
+	Error("Not in idle phase", "SetVoice")
+EndFunction
+Event OnDoPrepare(string asEventName, string asStringArg, float afHasPlayer, form akSender)
+	Error("Preparation request outside a valid state", "OnDoPrepare()")
+EndEvent
+
+; --- Legacy
+Event PrepareActor()
+EndEvent
+Function PathToCenter()
+EndFunction
+
+
+; ------------------------------------------------------- ;
+; --- Alias PLAYING                                   --- ;
+; ------------------------------------------------------- ;
+;/
+	Main logic loop for in-animation actors
+	This state will handle requipment status, orgasms, sounds, etc
+
+	Upon entering, actors have all relevant data set and are waiting for instructions (strip, animationm, ...)
+/;
+
+State Animating
+EndState
+
+
+; ------------------------------------------------------- ;
+; --- State Independent                                   --- ;
+; ------------------------------------------------------- ;
+;/
+	Main logic loop for in-animation actors
+	This state will handle requipment status, orgasms, sounds, etc
+/;
+
+Function SendDefaultAnimEvent(bool Exit = False)
+	; PlayingAE = ""	COMEBACK: Necessary?
+	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
+	If(_sex <= 2)	; Human
+		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
+		return
+	EndIf
+	Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") 	; chicken, hare and slaughterfish before the "ReturnToDefault"
+	Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") 		; rest creature-animal
+	Debug.SendAnimationEvent(ActorRef, "FNISDefault") 				; dwarvenspider and chaurus
+	Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; Werewolves and VampirwLords
+	Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") 			; Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
+	Debug.SendAnimationEvent(ActorRef, "Reset") 							; Hagravens afther the "ReturnToDefault" and Dragons
+EndFunction
+
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+Function GetBaseEnjoyment()
+	; COMEBACK: Everything below still needs reviewing or redoing
+	if _sex <= 2 || sslActorStats.IsSkilled(ActorRef)
+		; Always use players stats for NPCS if present, so players stats mean something more
+		Actor SkilledActor = ActorRef
+		If(Thread.HasPlayer && ActorRef != PlayerRef)
+			SkilledActor = PlayerRef
+		; If a non-creature couple, base skills off partner
+		ElseIf(Thread.ActorCount > 1 && !Thread.HasCreature)
+			SkilledActor = Thread.Positions[sslUtility.IndexTravel(Position, Thread.ActorCount)]
+		EndIf
+		; Get sex skills of partner/player
+		Skills       = Stats.GetSkillLevels(SkilledActor)
+		OwnSkills    = Stats.GetSkillLevels(ActorRef)
+		; Try to prevent orgasms on fist stage resting enjoyment
+		float FirsStageTime
+		if Thread.LeadIn
+			FirsStageTime = Config.StageTimerLeadIn[0]
+		elseIf Thread.IsType[0]
+			FirsStageTime = Config.StageTimerAggr[0]
+		else
+			FirsStageTime = Config.StageTimer[0]
+		endIf
+		BaseEnjoyment -= Math.Abs(CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorData.IsFemale(_ActorData), FirsStageTime, 1, Thread.Animation.StageCount)) as int
+		if BaseEnjoyment < -5
+			BaseEnjoyment += 10
+		endIf
+		; Add Bonus Enjoyment
+		if IsVictim()
+			BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
+			BaseEnjoyment += ((BestRelation - 3) + PapyrusUtil.ClampInt((OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure]) as int,-6,6)) * Utility.RandomInt(1, 10)
+		else
+			BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
+			if IsAggressor()
+				BaseEnjoyment += (-1*((BestRelation - 4) + PapyrusUtil.ClampInt(((Skills[Stats.kLewd]-Skills[Stats.kPure])-(OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure])) as int,-6,6))) * Utility.RandomInt(1, 10)
+			else
+				BaseEnjoyment += (BestRelation + PapyrusUtil.ClampInt((((Skills[Stats.kLewd]+OwnSkills[Stats.kLewd])*0.5)-((Skills[Stats.kPure]+OwnSkills[Stats.kPure])*0.5)) as int,0,6)) * Utility.RandomInt(1, 10)
+			endIf
+		endIf
+	else
+		if IsVictim()
+			BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
+			BaseEnjoyment += (BestRelation - 3) * Utility.RandomInt(1, 10)
+		else
+			BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
+			if IsAggressor()
+				BaseEnjoyment += (-1*(BestRelation - 4)) * Utility.RandomInt(1, 10)
+			else
+				BaseEnjoyment += (BestRelation + 3) * Utility.RandomInt(1, 10)
+			endIf
+		endIf
+	endIf
+EndFunction
+
+
+;/ Notice about cleanup Architecture:
+- Initialize() 		hard reset the Alias and underlying reference. Clears the alias & resets all alias data
+- UnplaceActor() 	soft reset the underlying reference. May only be used while the reference is placed. Use to escape animating state
+- Clear() 				soft reset the Alias. Will fail while the underlying reference is animating
+/;
+
 
 ; ------------------------------------------------------- ;
 ; --- API Related Functions & Data                    --- ;
 ; ------------------------------------------------------- ;
 
-Actor Property ActorRef Auto Hidden
 int Property Position
 	int Function Get()
 		return Thread.Positions.Find(ActorRef)
 	EndFunction
 EndProperty
-
-int _ActorData
-int Function GetActorData()
-	return _ActorData
-EndFunction
-
-String Function GetActorName()
-	If(!ActorRef)
-		return "EMPTY"
-	EndIf
-	return ActorRef.GetLeveledActorBase().GetName()
-EndFunction
 
 Function SetStripping(int aiSlots, bool abStripWeapons)
 	StripOverride = new int[2]
@@ -63,10 +355,6 @@ EndFunction
 bool Function IsAggressor()
 	return Thread.IsAggressive && !IsVictim()
 EndFunction
-
-bool function IsVictim()
-	return sslActorData.IsVictim(_ActorData)
-endFunction
 
 function AdjustEnjoyment(int AdjustBy)
 	BaseEnjoyment += AdjustBy
@@ -79,14 +367,6 @@ endfunction
 float StartWait
 string StartAnimEvent
 bool NoOrgasm
-
-; Voice
-sslBaseVoice Voice
-VoiceType ActorVoice
-float BaseDelay
-float VoiceDelay
-float ExpressionDelay
-bool IsForcedSilent
 
 ; Expression
 sslBaseExpression Expression
@@ -102,9 +382,6 @@ float[] Skills
 float[] OwnSkills
 
 float StartedAt
-float ActorScale
-float AnimScale
-float NioScale
 float LastOrgasm
 int BestRelation
 int BaseEnjoyment
@@ -133,7 +410,7 @@ endProperty
 bool property UseStrapon hidden
 	bool function get()
 		bool flag = Thread.Animation.UseStrapon(Position, Thread.Stage)
-		int gender = Thread.Animation.GetGenderEx(Position)
+		int gender = Thread.Animation.GetGender(Position)
 		return sslActorData.IsFemale(_ActorData) && flag && gender != 1
 	endFunction
 endProperty
@@ -151,81 +428,6 @@ bool property MalePosition hidden
 endProperty
 
 ; ------------------------------------------------------- ;
-; --- Load Alias For Use                              --- ;
-; ------------------------------------------------------- ;
-
-; Default Sate for an unused Alias. While in here, the Alias is empty and can be used for animation
-; The Script will leave this State once an Actor has been properly filled in
-Auto State Empty
-	bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoice, bool abSilent)
-		ForceRefTo(akReference)
-		ActorRef = akReference
-		_ActorData = sslActorData.BuildDataKey(akReference, abIsVictim)
-		vanilla_sex = ActorRef.GetLeveledActorBase().GetSex()
-		; ActorVoice = BaseRef.GetVoiceType()
-		Stats.SeedActor(ActorRef)
-		NioScale = 1.0
-		float TempScale
-		String Node = "NPC"
-		if NetImmerse.HasNode(ActorRef, Node, False)
-			TempScale = NetImmerse.GetNodeScale(ActorRef, Node, False)
-			if TempScale > 0
-				NioScale = NioScale * TempScale
-			endIf
-		endIf
-		Node = "NPC Root [Root]"
-		if NetImmerse.HasNode(ActorRef, Node, False)
-			TempScale = NetImmerse.GetNodeScale(ActorRef, Node, False)
-			if TempScale > 0
-				NioScale = NioScale * TempScale
-			endIf
-		endIf
-
-		if Config.HasNiOverride && !sslActorData.IsCreature(_ActorData)
-			string[] MOD_OVERRIDE_KEY = NiOverride.GetNodeTransformKeys(ActorRef, False, vanilla_sex == 1, "NPC")
-			int idx = 0
-			While idx < MOD_OVERRIDE_KEY.Length
-				if MOD_OVERRIDE_KEY[idx] != "SexLab.esm"
-					TempScale = NiOverride.GetNodeTransformScale(ActorRef, False, vanilla_sex == 1, "NPC", MOD_OVERRIDE_KEY[idx])
-					if TempScale > 0
-						NioScale = NioScale * TempScale
-					endIf
-				else ; Remove SexLab Node if present by error
-					if NiOverride.RemoveNodeTransformScale(ActorRef, False, vanilla_sex == 1, "NPC", MOD_OVERRIDE_KEY[idx])
-						NiOverride.UpdateNodeTransform(ActorRef, False, vanilla_sex == 1, "NPC")
-					endIf
-				endIf
-				idx += 1
-			endWhile
-		endIf
-		; Set base voice/loop delay
-		If(sslActorData.IsCreature(_ActorData))
-			BaseDelay = 3.0
-		ElseIf(vanilla_sex == 1)
-			BaseDelay = Config.FemaleVoiceDelay
-		Else
-			BaseDelay = Config.MaleVoiceDelay
-		EndIf
-		VoiceDelay = BaseDelay
-		ExpressionDelay = Config.ExpressionDelay * BaseDelay
-		; Ready
-		RegisterEvents()
-		TrackedEvent("Added")
-		GoToState("Ready")
-		Log("Completed Actor Setup")
-		return true
-	endFunction
-
-	; No Actor to get a key/data from
-	String function GetActorKey()
-		return ""
-	EndFunction
-	int Function GetActorData()
-		return 0
-	EndFunction
-EndState
-
-; ------------------------------------------------------- ;
 ; --- Actor Prepartion                                --- ;
 ; ------------------------------------------------------- ;
 
@@ -233,40 +435,7 @@ EndState
 ; This state acts as an "preparing" instance, the only way out of it is to either stop the
 ; animation in its entirety or properly begin the animation
 State Ready
-	; Declare all animation related variables for this Actor & move into position
-	; This does NOT have any influence on the underlying actor instance
-	; The alias is considered "ready for animating" when done
-	Event PrepareActor()
-		SetData()
-		; Position
-		If(ActorRef.GetActorValue("Paralysis") > 0)
-			ActorRef.SetActorValue("Paralysis", 0.0)
-			SendDefaultAnimEvent()
-		EndIf
-		If(DoPathToCenter)
-			PathToCenter()
-		EndIf
-		Thread.SyncEventDone()
-	EndEvent
-
 	; Have the Actor path towards center. Latent
-	function PathToCenter()
-		ObjectReference _center = Thread.CenterRef
-		If(ActorRef == _center)
-			return
-		EndIf
-		If(ActorRef.GetDistance(_center) > 6144.0)
-			return
-		EndIf
-		float t = SexLabUtil.GetCurrentGameRealTimeEx() + 15.0
-		ActorRef.SetFactionRank(AnimatingFaction, 2)
-		ActorRef.EvaluatePackage()
-		While (ActorRef.GetDistance(_center) > 256.0 && SexLabUtil.GetCurrentGameRealTimeEx() < t)
-			Utility.Wait(0.035)
-		EndWhile
-		ActorRef.SetFactionRank(AnimatingFaction, 1)
-		ActorRef.EvaluatePackage()
-	EndFunction
 
 	; Called when the main thread wants to start the first animation
 	Function PlayAnimation(String asAnimation)
@@ -282,103 +451,6 @@ State Ready
 		ClearEvents()
 		Parent.Clear()
 		GoToState("Empty")
-	EndFunction
-
-	Function SetData()
-		If(ActorRef == PlayerRef)
-			Game.SetPlayerAIDriven()
-		Else
-			Config.CheckBardAudience(ActorRef, true)
-		EndIf
-		ActorRef.SetFactionRank(AnimatingFaction, 1)
-		ActorRef.EvaluatePackage()
-		String LogInfo = ""
-		; Voice
-		if !Voice && !IsForcedSilent
-			if sslActorData.IsCreature(_ActorData)
-				Voice = Config.VoiceSlots.PickByRaceKey(sslCreatureAnimationSlots.GetRaceKey(ActorRef.GetRace()))
-			else
-				Voice = Config.VoiceSlots.PickVoice(ActorRef)
-			endIf
-		endIf
-		If(Voice)
-			LogInfo += "Voice[" + Voice.Name + "] "
-		EndIf
-		; Strapon & Expression (for NPC only)
-		If(!sslActorData.IsCreature(_ActorData))
-			If(Config.UseStrapons && sslActorData.IsFemale(_ActorData))
-				HadStrapon = Config.WornStrapon(ActorRef)
-				If(!HadStrapon)
-					Strapon = Config.GetStrapon()
-				Else
-					Strapon = HadStrapon
-				EndIf
-			EndIf
-			LogInfo += "Strapn[" + Strapon + "] "
-			if !Expression && Config.UseExpressions
-				Expressions = Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim(), Thread.IsType[0] && !IsVictim())
-				if Expressions && Expressions.Length > 0
-					Expression = Expressions[Utility.RandomInt(0, (Expressions.Length - 1))]
-				endIf
-			endIf
-			If(Expression)
-				LogInfo += "Expression[" + Expression.Name + "] "
-			EndIf
-		EndIf
-		
-		; COMEBACK: Everything below still needs reviewing
-		if !sslActorData.IsCreature(_ActorData) || sslActorStats.IsSkilled(ActorRef)
-			; Always use players stats for NPCS if present, so players stats mean something more
-			Actor SkilledActor = ActorRef
-			If(Thread.HasPlayer && ActorRef != PlayerRef)
-				SkilledActor = PlayerRef
-			; If a non-creature couple, base skills off partner
-			ElseIf(Thread.ActorCount > 1 && !Thread.HasCreature)
-				SkilledActor = Thread.Positions[sslUtility.IndexTravel(Position, Thread.ActorCount)]
-			EndIf
-			; Get sex skills of partner/player
-			Skills       = Stats.GetSkillLevels(SkilledActor)
-			OwnSkills    = Stats.GetSkillLevels(ActorRef)
-			; Try to prevent orgasms on fist stage resting enjoyment
-			float FirsStageTime
-			if Thread.LeadIn
-				FirsStageTime = Config.StageTimerLeadIn[0]
-			elseIf Thread.IsType[0]
-				FirsStageTime = Config.StageTimerAggr[0]
-			else
-				FirsStageTime = Config.StageTimer[0]
-			endIf
-			BaseEnjoyment -= Math.Abs(CalcEnjoyment(Thread.SkillBonus, Skills, Thread.LeadIn, sslActorData.IsFemale(_ActorData), FirsStageTime, 1, Thread.Animation.StageCount)) as int
-			if BaseEnjoyment < -5
-				BaseEnjoyment += 10
-			endIf
-			; Add Bonus Enjoyment
-			if IsVictim()
-				BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
-				BaseEnjoyment += ((BestRelation - 3) + PapyrusUtil.ClampInt((OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure]) as int,-6,6)) * Utility.RandomInt(1, 10)
-			else
-				BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
-				if IsAggressor()
-					BaseEnjoyment += (-1*((BestRelation - 4) + PapyrusUtil.ClampInt(((Skills[Stats.kLewd]-Skills[Stats.kPure])-(OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure])) as int,-6,6))) * Utility.RandomInt(1, 10)
-				else
-					BaseEnjoyment += (BestRelation + PapyrusUtil.ClampInt((((Skills[Stats.kLewd]+OwnSkills[Stats.kLewd])*0.5)-((Skills[Stats.kPure]+OwnSkills[Stats.kPure])*0.5)) as int,0,6)) * Utility.RandomInt(1, 10)
-				endIf
-			endIf
-		else
-			if IsVictim()
-				BestRelation = Thread.GetLowestPresentRelationshipRank(ActorRef)
-				BaseEnjoyment += (BestRelation - 3) * Utility.RandomInt(1, 10)
-			else
-				BestRelation = Thread.GetHighestPresentRelationshipRank(ActorRef)
-				if IsAggressor()
-					BaseEnjoyment += (-1*(BestRelation - 4)) * Utility.RandomInt(1, 10)
-				else
-					BaseEnjoyment += (BestRelation + 3) * Utility.RandomInt(1, 10)
-				endIf
-			endIf
-		endIf
-		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
-		Log(LogInfo)
 	EndFunction
 EndState
 
@@ -786,13 +858,6 @@ bool function NeedsOrgasm()
 	return GetEnjoyment() >= 100 && FullEnjoyment >= 100
 endFunction
 
-function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
-	IsForcedSilent = ForceSilence
-	if ToVoice && sslActorData.IsCreature(_ActorData) == ToVoice.Creature
-		Voice = ToVoice
-	endIf
-endFunction
-
 sslBaseVoice function GetVoice()
 	return Voice
 endFunction
@@ -909,31 +974,6 @@ Function PlaceActor(ObjectReference akCenter)
 	Log("PlaceActor on " + ActorRef)
 	LockActor()
 	; ActorRef.SetVehicle(akCenter)
-	; If(Config.DisableScale)
-	; 	ActorScale = 1.0
-	; 	AnimScale = 1.0
-	; Else
-	; 	float display = ActorRef.GetScale()
-	; 	ActorRef.SetScale(1.0)
-	; 	float base = ActorRef.GetScale()
-	; 	ActorScale = display / base
-	; 	AnimScale  = ActorScale
-	; 	If(ActorScale > 0.0 && ActorScale != 1.0)
-	; 		ActorRef.SetScale(ActorScale)
-	; 	EndIf
-	; 	If(Thread.ActorCount > 1 && Config.ScaleActors)
-	; 		If(Config.HasNiOverride && !sslActorData.IsCreature(_ActorData) && NioScale > 0.0 && NioScale != 1.0)
-	; 			float FixNioScale = FixNioScale / NioScale
-	; 			NiOverride.AddNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm", FixNioScale)
-	; 			NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
-	; 		EndIf
-	; 		AnimScale = 1.0 / base
-	; 	EndIf
-	; 	If(ActorScale != 1.0 && AnimScale != 1.0)
-	; 		ActorRef.SetScale(AnimScale)
-	; 	EndIf
-	; 	Log("Applying Scale on Actor " + ActorRef + ": ["+display+"/"+base+"/"+ActorScale+"/"+AnimScale+"/"+NioScale+"]")
-	; EndIf
 EndFunction
 
 float Function HandleStartAnimation()
@@ -989,16 +1029,6 @@ Function UnplaceActor()
 	Log("UnplaceActor on " + ActorRef)
 	UnlockActor()
 	; ActorRef.SetVehicle(none)
-	; If(ActorScale != 1.0 || AnimScale != 1.0)
-	; 	ActorRef.SetScale(ActorScale)
-	; EndIf
-	If(Config.HasNiOverride)
-		bool UpdateNiOPosition = NiOverride.RemoveNodeTransformPosition(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
-		bool UpdateNiOScale = NiOverride.RemoveNodeTransformScale(ActorRef, false, vanilla_sex == 1, "NPC", "SexLab.esm")
-		If(UpdateNiOPosition || UpdateNiOScale)
-			NiOverride.UpdateNodeTransform(ActorRef, false, vanilla_sex == 1, "NPC")
-		EndIf
-	EndIf
 	Debug.SendAnimationEvent(ActorRef, "SOSFlaccid")
 EndFunction
 
@@ -1113,54 +1143,6 @@ Function UnStrip()
 	EndIf
 EndFunction
 
-Function SendDefaultAnimEvent(bool Exit = False)
-	PlayingAE = ""
-	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
-	If(!sslActorData.IsCreature(_ActorData))
-		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
-		return
-	EndIf
-	String racekey = sslActorData.GetRaceKey(_ActorData)
-	If(racekey != "")
-		if racekey == "Dragons"
-			Debug.SendAnimationEvent(ActorRef, "FlyStopDefault")
-			Debug.SendAnimationEvent(ActorRef, "Reset")
-		elseIf racekey == "Hagravens"
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-			if Exit
-				Debug.SendAnimationEvent(ActorRef, "Reset")
-			endIf
-		elseIf racekey == "Chaurus" || racekey == "ChaurusReapers"
-			Debug.SendAnimationEvent(ActorRef, "FNISDefault")
-		elseIf racekey == "DwarvenSpiders"
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-		elseIf racekey == "Draugrs" || racekey == "Seekers" || racekey == "DwarvenBallistas" || racekey == "DwarvenSpheres" || racekey == "DwarvenCenturions"
-			Debug.SendAnimationEvent(ActorRef, "ForceFurnExit")
-		elseIf racekey == "Trolls"
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-			if Exit
-				Debug.SendAnimationEvent(ActorRef, "ForceFurnExit")
-			endIf
-		elseIf racekey == "Chickens" || racekey == "Rabbits" || racekey == "Slaughterfishes"
-			Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState")
-			if Exit
-				Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-			endIf
-		elseIf racekey == "Werewolves" || racekey == "VampireLords"
-			Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault")
-		Else
-			Debug.SendAnimationEvent(ActorRef, "ReturnToDefault")
-		EndIf
-	ElseIf(Exit)
-		Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") 	; chicken, hare and slaughterfish before the "ReturnToDefault"
-		Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") 		; rest creature-animal
-		Debug.SendAnimationEvent(ActorRef, "FNISDefault") 				; dwarvenspider and chaurus
-		Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; Werewolves and VampirwLords
-		Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") 			; Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
-		Debug.SendAnimationEvent(ActorRef, "Reset") 							; Hagravens afther the "ReturnToDefault" and Dragons
-	EndIf
-EndFunction
-
 ; NOTE: Im not very confident that the idea aimed at here is really beneficial, even with the changes o+
 ; makes to SL this key seems to be contrustred so strictly that it will rarely actually save anything reusable
 ; users might have to manually readjust things with every animation (unnecessarily) due to this complexity here
@@ -1189,15 +1171,8 @@ String function GetActorKey()
 		ActorKey += "M"
 	EndIf
 	If(!Config.ScaleActors)
+		; COMEBACK: If this here isnt being deleted, call my custom GetScale() here
 		float ActorScalePlus
-		If(Config.RaceAdjustments)
-			ActorScalePlus = base.GetHeight()
-		Else
-			ActorScalePlus = ActorRef.GetScale()
-		EndIf
-		If(NioScale)
-			ActorScalePlus = ActorScalePlus * NioScale
-		EndIf
 		ActorKey += ((ActorScalePlus * 25) + 0.5) as int
 	EndIf
 	return ActorKey
@@ -1231,8 +1206,6 @@ function RegisterEvents()
 	string e = Thread.Key("")
 	; Quick Events
 	RegisterForModEvent(e+"Orgasm", "OrgasmEffect")
-	; Sync Events
-	RegisterForModEvent(e+"Prepare", "PrepareActor")
 endFunction
 
 function ClearEvents()
@@ -1248,7 +1221,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Log(string msg, string src = "")
-	msg = "Thread[" + Thread.tid + "] ActorAlias[" + GetActorName() + "/" + _ActorData + "] " + src + " - " + msg
+	msg = "Thread[" + Thread.tid + "] ActorAlias[" + GetActorName() + "] " + src + " - " + msg
 	Debug.Trace("SEXLAB - " + msg)
 	if Config.DebugMode
 		SexLabUtil.PrintConsole(msg)
@@ -1256,11 +1229,11 @@ function Log(string msg, string src = "")
 	endIf
 endFunction
 
-Function Error(String msg)
-	msg = "ActorAlias["+GetActorName()+"] - "+msg
+Function Error(String msg, string src = "")
+	msg = "Thread[" + Thread.tid + "] ActorAlias[" + GetActorName() + "] - ERROR - " + src + " - " + msg
 	Debug.TraceStack("SEXLAB - " + msg)
+	SexLabUtil.PrintConsole(msg)
 	if Config.DebugMode
-		SexLabUtil.PrintConsole(msg)
 		Debug.TraceUser("SexLabDebug", msg)
 	endIf
 EndFunction
@@ -1274,13 +1247,12 @@ Function Initialize()
 		Clear()
 	EndIf
 	; Forms
-	ActorRef = none
+	_ActorRef = none
 	HadStrapon     = none
 	Strapon        = none
 	HDTHeelSpell   = none
 	; Voice
 	Voice          = none
-	ActorVoice     = none
 	IsForcedSilent = false
 	; Expression
 	Expression     = none
@@ -1297,12 +1269,8 @@ Function Initialize()
 	QuitEnjoyment  = 0
 	FullEnjoyment  = 0
 	PathingFlag    = 0
-	_ActorData		 = 0
 	; Floats
 	LastOrgasm     = 0.0
-	ActorScale     = 1.0
-	AnimScale      = 1.0
-	NioScale       = 1.0
 	StartWait      = 0.0
 	; Strings
 	StartAnimEvent = ""
@@ -1330,20 +1298,6 @@ EndFunction
 ; --- State Restricted                                --- ;
 ; ------------------------------------------------------- ;
 
-; Empty
-bool Function SetActor(Actor ProspectRef)
-	return SetActorEx(ProspectRef, false, none, false)
-EndFunction
-bool function SetActorEx(Actor akReference, bool abIsVictim, sslBaseVoice akVoice, bool abSilent)
-	return false
-endFunction
-; Ready
-Event PrepareActor()
-EndEvent
-function PathToCenter()
-endFunction
-Function SetData()
-EndFunction
 ; Animating
 function SyncThread()
 endFunction
@@ -1396,9 +1350,6 @@ function OverrideStrip(bool[] SetStrip)
 	StripOverride[1] = SetStrip[32] as int
 endFunction
 
-function SetVictim(bool Victimize)
-	_ActorData = sslActorData.BuildDataKey(ActorRef, Victimize)
-endFunction
 
 event OnOrgasm()
 	OrgasmEffect()

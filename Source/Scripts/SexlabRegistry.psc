@@ -28,13 +28,29 @@ String[] Function MapRaceIDToRaceKeyA(int aiRaceID) native global
 ; "Canines" which represent dogs and wolves at the same time
 String[] Function GetAllRaceKeys(bool abIgnoreAmbiguous) native global
 
+; Return this actors sex. If overwrite is not ignored, will respect the overwrite flag (set by the user or some mod author)
+; Mapping is as follows:
+; Male = 0 | Female = 1 | Futa = 2 | CrtMale = 3 | CrtFemale = 4
+int Function GetSex(Actor akActor, bool abIgnoreOverwrite = true) native global
+
 ; ------------------------------------------------------- ;
 ; --- Lookup                                          --- ;
 ; ------------------------------------------------------- ;
 
 ; Lookup Scenes for the stated actors, bounded by the given tags
-String[] Function LookupScenes(Actor[] akPositions, String asTags, Actor akSubmissive, bool abAllowFurnitures) native global
-String[] Function LookupScenesA(Actor[] akPositions, String asTags, Actor[] akSubmissives, bool abAllowFurnitures) native global
+; aiFurniturePreference is one of: 0 - Disallow Furnitures | 1 - Allow Furnitures | 2 - Prefer Furnitures (use iff one can be found)
+; if akCenter is set, aiFurniturePreference will be ignored and only animations which are compatible with the given center will be chosen. Example: passing a table
+; will only look for table animations, a non furniture center has no influence on the animations which may be picked
+String[] Function LookupScenes(Actor[] akPositions, String asTags, Actor akSubmissive, int aiFurniturePreference, ObjectReference akCenter) native global
+String[] Function LookupScenesA(Actor[] akPositions, String asTags, Actor[] akSubmissives, int aiFurniturePreference, ObjectReference akCenter) native global
+
+; Check if the given Actors can play the stated scene under the stated tag constraints. Return an array of all valid scenes
+String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor Submissive) native global
+String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] Submissive) native global
+
+; Gets the closests valid center object that the stated scene can use to play
+; Will return none for scenes that dont require some furniture center
+ObjectReference Function GetSceneCenter(String asSceneID) native global
 
 ; Sort akPosition based on the provided scene. The array will be modified directly, the order of the sorted array is unspecified
 ; The extended version will take an array and return the index of the n'th scene which the actors are sorted by
@@ -60,6 +76,8 @@ int Function SortBySceneEx(Actor[] akPositions, String[] asScenes, bool abAllowF
 
 ; Check if a specific ID belongs to some valid scene object
 bool Function SceneExists(String asID) native global
+; Check if all of the given scene ids represent a scene object and return all those that do
+String[] Function SceneExistA(String[] asSceneIDs) native global
 
 ; Get/Change the enabled state of the given Scene. A disabled scene is excluded from lookup functions
 bool Function IsSceneEnabled(String asID) native global
