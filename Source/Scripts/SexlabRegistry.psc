@@ -79,12 +79,19 @@ bool Function SceneExists(String asID) native global
 ; Check if all of the given scene ids represent a scene object and return all those that do
 String[] Function SceneExistA(String[] asSceneIDs) native global
 
+; --- Meta Data
+
 ; Get/Change the enabled state of the given Scene. A disabled scene is excluded from lookup functions
 bool Function IsSceneEnabled(String asID) native global
 Function SetSceneEnabled(String asID, bool abEnabled) native global
 
 ; The (human readable) name of the given scene
 String Function GetSceneName(String asID) native global
+
+; Get all tags of this Scene. Scene tags are a merged representation of all stage tags
+String[] Function GetSceneTags(String asID) native global
+; Get all of this stages tags
+String[] Function GetStageTags(String asID, String asStage) native global
 
 ; --- Animation
 

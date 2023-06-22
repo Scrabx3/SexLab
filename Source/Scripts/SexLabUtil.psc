@@ -173,7 +173,7 @@ int function FloatMinMaxIndex(float[] searchArray, bool findHighestValue = true)
 
 float function GetCurrentGameRealTime() global native
 
-; Non native of the above ^ since SE has no access to it
+; Non native of the above ^ since 1.5 has no access to it
 float function GetCurrentGameRealTimeEx() global
 	If (SKSE.GetVersionMinor() >= 2)
 		return GetCurrentGameRealTime()
@@ -241,9 +241,9 @@ function DebugLog(string Log, string Type = "NOTICE", bool DebugMode = false) gl
 		SexLabUtil.PrintConsole(Log)
 	endIf
 	if Type == "FATAL" || Type == "ERROR" || Type == "DEPRECATED"
-		Debug.TraceStack("[SexLab] - "+Log)
+		Debug.TraceStack("SEXLAB - "+Log)
 	else
-		Debug.Trace("[SexLab] - "+Log)
+		Debug.Trace("SEXLAB - "+Log)
 	endIf
 endFunction
 
