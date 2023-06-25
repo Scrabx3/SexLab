@@ -45,8 +45,10 @@ String[] Function LookupScenes(Actor[] akPositions, String asTags, Actor akSubmi
 String[] Function LookupScenesA(Actor[] akPositions, String asTags, Actor[] akSubmissives, int aiFurniturePreference, ObjectReference akCenter) native global
 
 ; Check if the given Actors can play the stated scene under the stated tag constraints. Return an array of all valid scenes
-String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor Submissive) native global
-String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] Submissive) native global
+bool Function ValidateScene(String asSceneID, Actor[] akPositions, String asTags, Actor akSubmissive) native global
+bool Function ValidateSceneA(String asSceneID, Actor[] akPositions, String asTags, Actor[] akSubmissives) native global
+String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor akSubmissive) native global
+String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] akSubmissive) native global
 
 ; Gets the closests valid center object that the stated scene can use to play
 ; Will return none for scenes that dont require some furniture center
@@ -163,3 +165,9 @@ String[] Function GetRaceKeyPositionA(String asID, int n) native global
 ; returned as [X, Y, Z, Rotation]
 float[] Function GetOffset(String asID, String asStage, int n) native global
 float[] Function GetOffsetRaw(String asID, String asStage, int n) native global
+
+; Get relevant strip info for the specified stage and position
+; Strip Data is represented by a 8 bit flag:
+; None = 0 | Helmet = 0x1 | Gloves = 0x2 | Boots = 0x4 | Unused = 0x8 - 0x80 | All = 0xFF
+int Function GetStripData(String asID, String asStage, int n) native global
+int[] Function GetStripDataA(String asID, String asStage) native global
