@@ -3,6 +3,10 @@ ScriptName sslThreadSlots extends Quest
   Maintain and access SexLab threads
 }
 
+int Function GetTotalThreadCount() global
+  return 15
+EndFunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
