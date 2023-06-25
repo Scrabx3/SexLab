@@ -23,10 +23,13 @@ int Property BedType_BedRoll = 1 AutoReadOnly
 int Property BedType_Single = 2 AutoReadOnly
 int Property BedType_Double = 3 AutoReadOnly
 
-ObjectReference[] Function FindBeds(ObjectReference akCenterRef, float afRadius = 4096.0, float afRadiusZ = 512.0) native
-int Function GetBedType(ObjectReference BedRef) native
-bool Function IsBed(ObjectReference akReference) native
+ObjectReference[] Function FindBeds(ObjectReference akCenterRef, float afRadius = 4096.0, float afRadiusZ = 512.0) native global
+int Function GetBedTypeImpl(ObjectReference akReference) native global
+bool Function IsBed(ObjectReference akReference) native global
 
+int Function GetBedType(ObjectReference BedRef)
+  return GetBedTypeImpl(BedRef)
+EndFunction
 bool Function IsBedRoll(ObjectReference BedRef)
   return GetBedType(BedRef) == BedType_BedRoll
 EndFunction
@@ -52,13 +55,10 @@ bool Function IsBedAvailable(ObjectReference BedRef)
 EndFunction
 
 ObjectReference Function FindBed(ObjectReference CenterRef, float Radius = 1000.0, bool IgnoreUsed = true, ObjectReference IgnoreRef1 = none, ObjectReference IgnoreRef2 = none)
-  If(!CenterRef || Radius < 0.0)
-    return none
-  EndIf
   ObjectReference[] beds = FindBeds(CenterRef, Radius)
   int i = 0
   While(i < beds.Length)
-    If(beds[i] != IgnoreRef1 && beds[i] != IgnoreRef2 && (IgnoreUsed || !beds[i].IsFurnitureInUse()))
+    If(beds[i] != IgnoreRef1 && beds[i] != IgnoreRef2 && (IgnoreUsed || IsBedAvailable(beds[i])))
       return beds[i]
     EndIf
     i += 1
@@ -145,79 +145,24 @@ endFunction
 ; --- Actor Tracking                                  --- ;
 ; ------------------------------------------------------- ;
 
-function TrackActor(Actor ActorRef, string Callback)
-  StorageUtil.FormListAdd(Config, "TrackedActors", ActorRef, false)
-  StorageUtil.StringListAdd(ActorRef, "SexLabEvents", Callback, false)
-endFunction
+Function TrackActorImpl(Actor akActor, String asCallback, bool abTrack) native global
+Function TrackFactionImpl(Faction akFaction, String asCallback, bool abTrack) native global
 
-function TrackFaction(Faction FactionRef, string Callback)
-  If(FactionRef)
-    StorageUtil.FormListAdd(Config, "TrackedFactions", FactionRef, false)
-    StorageUtil.StringListAdd(FactionRef, "SexLabEvents", Callback, false)
-  EndIf
-endFunction
+bool Function IsActorTrackedImpl(Actor akActor) native global
+String[] Function GetAllTrackingEvents(Actor akTrackedActor, String asHook) native global
 
-function UntrackActor(Actor ActorRef, string Callback)
-  StorageUtil.StringListRemove(ActorRef, "SexLabEvents", Callback, true)
-  if StorageUtil.StringListCount(ActorRef, "SexLabEvents") < 1
-    StorageUtil.FormListRemove(Config, "TrackedActors", ActorRef, true)
-  endif
-endFunction
-
-function UntrackFaction(Faction FactionRef, string Callback)
-  StorageUtil.StringListRemove(FactionRef, "SexLabEvents", Callback, true)
-  if StorageUtil.StringListCount(FactionRef, "SexLabEvents") < 1
-    StorageUtil.FormListRemove(Config, "TrackedFactions", FactionRef, true)
-  endif
-endFunction
-
-bool function IsActorTracked(Actor ActorRef)
-  if ActorRef == PlayerRef || StorageUtil.StringListCount(ActorRef, "SexLabEvents") > 0
-    return true
-  endIf
-  Form[] f = StorageUtil.FormListToArray(Config, "TrackedFactions")
+function SendTrackingEvents(Actor akActor, string asHook, int aiID) global
+  String[] events = GetAllTrackingEvents(akActor, asHook)
   int i = 0
-  While(i < f.Length)
-    If(ActorRef.IsInFaction(f[i] as Faction))
-      return true
-    EndIf
+  While (i < events.Length)
+    MakeTrackingEvent(akActor, events[i], aiID)
     i += 1
-  EndWhile
-  return false
-endFunction
-
-function SendTrackedEvent(Actor ActorRef, string Hook = "", int id = -1)
-  If(Hook)
-    Hook = "_" + Hook
-  EndIf
-  If(ActorRef == PlayerRef)
-    SetupActorEvent(PlayerRef, "PlayerTrack" + Hook, id)
-  EndIf
-  String[] genericcallbacks = StorageUtil.StringListToArray(ActorRef, "SexLabEvents")
-  int i = 0
-  While(i < genericcallbacks.Length)
-    SetupActorEvent(PlayerRef, genericcallbacks[i] + Hook, id)
-    i += 1
-  EndWhile
-  Form[] factioncallbacks = StorageUtil.FormListToArray(Config, "TrackedFactions")
-  int n = 0
-  While(n < factioncallbacks.Length)
-    If(ActorRef.IsInFaction(factioncallbacks[n] as Faction))
-      String[] factionevents = StorageUtil.StringListToArray(factioncallbacks[n], "SexLabEvents")
-      int k = 0
-      While(k < factionevents.Length)
-        SetupActorEvent(PlayerRef, factionevents[k] + Hook, id)
-        k += 1
-      EndWhile
-    EndIf
-    n += 1
   EndWhile
 EndFunction
-
-function SetupActorEvent(Actor ActorRef, string Callback, int id = -1)
-  int eid = ModEvent.Create(Callback)
-  ModEvent.PushForm(eid, ActorRef)
-  ModEvent.PushInt(eid, id)
+function MakeTrackingEvent(Actor akActor, string asCallback, int aiID) global
+  int eid = ModEvent.Create(asCallback)
+  ModEvent.PushForm(eid, akActor)
+  ModEvent.PushInt(eid, aiID)
   ModEvent.Send(eid)
 endFunction
 
@@ -267,4 +212,26 @@ endFunction
 
 Actor[] function SortCreatures(actor[] Positions, sslBaseAnimation Animation = none)
   return SortActorsByAnimation(Positions, Animation)
+endFunction
+
+function TrackActor(Actor ActorRef, string Callback)
+  TrackActorImpl(ActorRef, Callback, true)
+endFunction
+function TrackFaction(Faction FactionRef, string Callback)
+  TrackFactionImpl(FactionRef, Callback, true)
+endFunction
+function UntrackActor(Actor ActorRef, string Callback)
+  TrackActorImpl(ActorRef, Callback, false)
+endFunction
+function UntrackFaction(Faction FactionRef, string Callback)
+  TrackFactionImpl(FactionRef, Callback, false)
+endFunction
+bool function IsActorTracked(Actor ActorRef)
+  return IsActorTrackedImpl(ActorRef)
+endFunction
+function SendTrackedEvent(Actor ActorRef, string Hook = "", int id = -1)
+  SendTrackingEvents(ActorRef, Hook, id)
+EndFunction
+function SetupActorEvent(Actor ActorRef, string Callback, int id = -1)
+  return MakeTrackingEvent(ActorRef, Callback, id)
 endFunction
