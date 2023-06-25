@@ -1,36 +1,79 @@
-scriptname sslThreadHook extends ReferenceAlias
+scriptname sslThreadHook extends SexLabThreadHook Hidden
+{
+	Old Thread Hook script
 
-SexLabFramework property SexLab auto hidden
-sslSystemConfig property SexLabConfig auto hidden
+	No longer used, see SexLabThreadHook.psc for an updated version of this feature
+}
 
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-
+; @Interface
 bool function AnimationStarting(sslThreadModel Thread)
 	return false
 endFunction
 
+; @Interface
 bool function AnimationPrepare(sslThreadController Thread)
 	return false
 endFunction
 
+; @Interface
 bool function StageStart(sslThreadController Thread)
 	return false
 endFunction
 
+; @Interface
 bool function StageEnd(sslThreadController Thread)
 	return false
 endFunction
 
+; @Interface
 bool function AnimationEnding(sslThreadController Thread)
 	return false
 endFunction
 
+; @Interface
 bool function AnimationEnd(sslThreadController Thread)
 	return false
 endFunction
 
+; ------------------------------------------------------- ;
+; --- Implementation                                  --- ;
+; ------------------------------------------------------- ;
 
+SexLabFramework property SexLab auto hidden
+sslSystemConfig property SexLabConfig auto hidden
 
+; Called when all of the threads data is set, before the active animation is chosen
+Function OnAnimationStarting(SexLabThread akThread)
+	AnimationStarting(akThread as sslThreadModel)
+	AnimationPrepare(akThread as sslThreadController)
+EndFunction
+
+; Called whenever a new stage is picked, including the very first one
+Function OnStageStart(SexLabThread akThread)
+	StageStart(akThread as sslThreadController)
+EndFunction
+
+; Called whenever a stage ends, including the very last one
+Function OnStageEnd(SexLabThread akThread)
+	StageEnd(akThread as sslThreadController)
+EndFunction
+
+; Called once the animation has ended
+Function OnAnimationEnd(SexLabThread akThread)
+	AnimationEnding(akThread as sslThreadController)
+	AnimationEnd(akThread as sslThreadController)
+EndFunction
 
 Actor[] hkActorFilter
 bool property HasActorFilter hidden

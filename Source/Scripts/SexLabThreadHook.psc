@@ -1,4 +1,4 @@
-ScriptName SexLabThreadHook Hidden
+ScriptName SexLabThreadHook extends ReferenceAlias Hidden
 {
   Interface Script to manipulate a thread execution during its runtime
 
@@ -9,7 +9,7 @@ ScriptName SexLabThreadHook Hidden
   essentially leaving the user clueless about the current state of their scene, so use them with caution and beware of the amount of time you spend processing information here
 
   **HOW TO USE**
-  1) Create a some form object that should receive the incoming events. The object may be any form so long it can hold a script
+  1) Create a reference alias object that should receive the incoming events
   2) Create YOUR OWN custom script and have it extend "SexLabThreadHook", attach it to the Formy you created
   3) Copy the "@Interface" functions you see in this script and paste them into the script you just created and implement them
   4) Call the Register() function (in this script) to register your Hook to SexLab to receive incoming hook events, e.g. in an OnInit Event or similar
@@ -24,23 +24,23 @@ ScriptName SexLabThreadHook Hidden
 ; --- Interface                                       --- ;
 ; ------------------------------------------------------- ;
 ;/
-  The following scripts are to be implemented by some other script extending this one
+  The following scripts are to be implemented/overwritten by your own script
 /;
 
 ; Called when all of the threads data is set, before the active animation is chosen
-Function AnimationStarting(SexLabThread akThread)
+Function OnAnimationStarting(SexLabThread akThread)
 EndFunction
 
 ; Called whenever a new stage is picked, including the very first one
-Function StageStart(SexLabThread akThread)
+Function OnStageStart(SexLabThread akThread)
 EndFunction
 
 ; Called whenever a stage ends, including the very last one
-Function StageEnd(SexLabThread akThread)
+Function OnStageEnd(SexLabThread akThread)
 EndFunction
 
 ; Called once the animation has ended
-Function AnimationEnd(SexLabThread akThread)
+Function OnAnimationEnd(SexLabThread akThread)
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -71,14 +71,14 @@ EndFunction
   Ensure that OnInit() can be called here, i.e. if you overwrite OnInit() call "parent.OnInit()" at before exiting the OnInit event
 
   **USAGE**
-  Function AnimationStarting(SexLabThread akThread)
+  Function OnAnimationStarting(SexLabThread akThread)
     bool ignore_thread_events = ...
     SetLocked(ignore_thread_events)
 
     ...
   EndFunction
 
-  Function StageStart(SexLabThread akThread)
+  Function OnStageStart(SexLabThread akThread)
     If (Islocked(akThread))
       return
     EndIf
