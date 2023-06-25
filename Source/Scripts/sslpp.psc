@@ -23,21 +23,4 @@ Spell Function GetHDTHeelSpell(Actor akActor) native global
 
 String Function GetEditorID(Form akForm) native global
 
-; return an array of bed object refs, sorted by distance from center
-ObjectReference[] Function FindBeds(ObjectReference akCenterRef, float afRadius = 4096.0, float afRadiusZ = 512.0) native global
-
-; if the given reference is a bed. This operates on the 3d of the object directly. Does not check if the bed is used
-bool Function IsBed(ObjectReference akReference) native global
-
-ObjectReference Function GetNearestUnusedBed(ObjectReference akCenterRef, float afRadius) global
-	ObjectReference[] beds = FindBeds(akCenterRef, afRadius)
-	int i = 0
-	While(i < beds.Length)
-		If(!beds[i].IsFurnitureInUse())
-			return beds[i]
-		EndIf
-		i += 1
-	EndWhile
-	return none
-EndFunction
 
