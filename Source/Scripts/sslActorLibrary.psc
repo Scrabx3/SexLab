@@ -246,10 +246,13 @@ EndFunction
 ; --- Actor Validation                                --- ;
 ; ------------------------------------------------------- ;
 
+int Function ValidateActorImpl(Actor akActor) native global
 bool function IsValidActor(Actor ActorRef)
 	return ValidateActor(ActorRef) > 0
 endFunction
-int function ValidateActor(Actor ActorRef) native
+int function ValidateActor(Actor ActorRef)
+	return ValidateActorImpl(ActorRef)
+EndFunction
 
 function ForbidActor(Actor ActorRef)
 	if ActorRef
