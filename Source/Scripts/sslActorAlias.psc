@@ -65,6 +65,10 @@ Function SetStripping(int aiSlots, bool abStripWeapons)
 	_stripCstm[1] = abStripWeapons as int
 EndFunction
 
+Function DisableStripAnimation(bool abDisable)
+	DoUndress = !abDisable
+EndFunction
+
 Function SetAllowRedress(bool abAllowRedress)
 	_AllowRedress = abAllowRedress
 EndFunction
@@ -198,6 +202,16 @@ bool property DoRedress
 	endFunction
 	function set(bool value)
 		_AllowRedress = value
+	endFunction
+endProperty
+
+bool _DoUndress
+bool property DoUndress
+	bool function get()
+		return Config.UndressAnimation && _DoUndress && GetState() != STATE_PLAYING
+	endFunction
+	function set(bool value)
+		_DoUndress = value
 	endFunction
 endProperty
 
@@ -411,10 +425,21 @@ State Paused
 		RegisterForModEvent("SSL_READY_Thread" + Thread.tid, "OnStartPlaying")
 	EndFunction
 	Event OnStartPlaying(string asEventName, string asStringArg, float afNumArg, form akSender)
-		LockActor()
-		_equipment = StripByData(_stripData, _stripCstm)
-		ResolveStrapon()
 		UnregisterForModEvent("SSL_READY_Thread" + Thread.tid)
+		LockActor()
+		If (_sex >= 2)
+			If (DoUndress)
+				DoUndress = false
+				If (_sex == 0)
+					Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G1")
+				Else
+					Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G1")
+				EndIf
+				Utility.Wait(1.0)
+			EndIf
+			_equipment = StripByData(_stripData, _stripCstm)
+			ResolveStrapon()
+		EndIf
 		; Only called once on the first enter to Animating State
 		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		_LastOrgasm = _StartedAt
@@ -998,16 +1023,6 @@ endProperty
 int property Schlong hidden
 	int function get()
 		return 0
-	endFunction
-endProperty
-
-bool _DoUndress
-bool property DoUndress
-	bool function get()
-		return Config.UndressAnimation && _DoUndress && GetState() != STATE_PLAYING
-	endFunction
-	function set(bool value)
-		_DoUndress = value
 	endFunction
 endProperty
 

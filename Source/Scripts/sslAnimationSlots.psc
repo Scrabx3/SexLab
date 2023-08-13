@@ -114,9 +114,7 @@ sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Female
   String[] tags = new String[2]
   tags[0] = "Forced"
   tags[1] = "LeadIn"
-  If (!Config.RestrictAggressive)
-    tags[0] = ""
-  ElseIf (!Aggressive)
+  If (!Aggressive)
     tags[0] = "-Forced"
   EndIf
   If (Sexual)
@@ -128,14 +126,11 @@ sslBaseAnimation[] function GetByType(int ActorCount, int Males = -1, int Female
 endFunction
 
 sslBaseAnimation[] function PickByActors(Actor[] Positions, int Limit = 64, bool Aggressive = false)
-  String[] tags
-  If (Config.RestrictAggressive)
-    tags = new String[1]
-    If (Aggressive)
-      tags[0] = "Forced"
-    Else
-      tags[0] = "-Forced"
-    EndIf
+  String[] tags = new String[1]
+  If (Aggressive)
+    tags[0] = "Forced"
+  Else
+    tags[0] = "-Forced"
   EndIf
   return AsBaseAnimation(PickByActorsImpl(Positions, tags))
 endFunction
