@@ -17,7 +17,7 @@ scriptname SexLabFramework extends Quest
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
 ;                                  Created by Ashal@LoversLab.com [http://www.loverslab.com/user/1-ashal/]                                  ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
-;                                     SexLab+ maintained by Scrab [https://www.patreon.com/ScrabJoseline]                                   ;
+;                                    SexLabP+ maintained by Scrab [https://www.patreon.com/ScrabJoseline]                                   ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
@@ -73,70 +73,44 @@ endProperty
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
 ; The preferred way to create a SexLab Scene
-; --- Paramesters:
-;  akPositions:   The actors to animate
-; asTags:        Requested animation tags (may be empty). Supported prefixes: '-' to disable a tag, '~' for OR-conjunctions
-;                Example: "~A, B, ~C, -D" <=> Animation has tag B, does NOT have tag D and has EITHER tag A or C 
-; akSubmissive:  Must be one of the participating actors. If specified, the given actor is considered submissive for the context of the animation
-; akCenter:      If specified, SexLab will try to place all actors near or on the given reference
-; abAllowBed:    If false, bed usage for this scene will be disabled. Will be ignored if akCenter is set
-; asHook:        A callback string to receive callback events. See 'Hooks' section below for details
+; --- Params:
+; akPositions:    The actors to animate
+; asTags:         Requested animation tags (may be empty). Supported prefixes: '-' to disable a tag, '~' for OR-conjunctions
+;                 Example: "~A, B, ~C, -D" <=> Animation has tag B, does NOT have tag D and has EITHER tag A or C 
+; akSubmissive:   Must be one of the participating actors. If specified, the given actor is considered submissive for the context of the animation
+; akCenter:       If specified, SexLab will try to place all actors near or on the given reference
+; aiFurniture:    Furniture preference. Must be one of the following: 0 - Disable; 1 - Allow; 2 - Prefer
+; asHook:         A callback string to receive callback events. See 'Hooks' section below for details
 ; --- Return:
-; sslThreadController:  An API instance to interact with the started scene. See sslThreadController.psc for more info
-; None:                  If an error occured
-sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowFurniture = true, String asHook = "")
+; SexLabThread:   An API instance to interact with the started scene. See sslThreadController.psc for more info
+; None:           If an error occured
+SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
   sslThreadModel thread = NewThread()
-  If(!thread)
+  If (!thread)
     Log("StartScene() - Failed to claim an available thread")
     return none
-  ElseIf(!thread.AddActors(akPositions, akSubmissive))
+  ElseIf (!thread.AddActors(akPositions, akSubmissive))
     Log("StartScene() - Failed to add some actors to thread")
     return none
-  ElseIf(!thread.SetAnimationsByTags(asTags, abAllowFurniture as int))
+  EndIf
+  String[] scenes = SexLabRegistry.LookupScenes(akPositions, asTags, akSubmissive, aiFurniture, akCenter)
+  If (!scenes.Length)
     Log("StartScene() - Failed to find valid animations")
     return none
   EndIf
+  thread.SetScenes(scenes)
   thread.CenterOnObject(akCenter)
-  thread.DisableBedUse(!abAllowFurniture)
+  thread.SetFurnitureStatus(aiFurniture)
   thread.SetHook(asHook)
   return thread.StartThread()
 EndFunction
 
-; Alternate way to create a SexLab Scene if the for the scene expected animations have already been evaluated
-sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akSubmissive = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
-  sslThreadModel thread = NewThread()
-  If(!thread)
-    Log("StartScene() - Failed to claim an available thread")
-    return none
-  ElseIf(!thread.AddActors(akPositions, akSubmissive))
-    Log("StartScene() - Failed to add some actors to thread")
-    return none
-  EndIf
-  thread.SetAnimations(akAnimations)
-  thread.CenterOnObject(akCenter)
-  thread.DisableBedUse(!abAllowBed)
-  thread.SetHook(asHook)
-  return thread.StartThread()
+; Wrapper function for StartScene which takes Actors one-by-one instead of an array
+SexLabThread Function StartSceneQuick(Actor akActor1, Actor akActor2 = none, Actor akActor3 = none, Actor akActor4 = none, Actor akActor5 = none, \
+                                        Actor akSubmissive = none, String asTags = "", String asHook = "")
+  Actor[] Positions = SexLabUtil.MakeActorArray(akActor1, akActor2, akActor3, akActor4, akActor5)
+  return StartScene(Positions, asTags, akSubmissive, asHook = asHook)
 EndFunction
-
-;/* QuickStart 
-* * This is a very easy and quick function to start a Sexlab animation without requiring more than a single line of code.
-* * The difference between StartSex and QuickStart is that StartSex requires a list of animations (at least one), while QuickStart grabs the animations using animation Tags\
-* * This function is actually a wrapper around StartSex, that gets the animations by tags and then delegates StartSex to do the job.
-* * 
-* * @param: Actor Actor1, is the first position of the animation, and it is mandatory
-* * @param: Actor Actor2 ... Actor5 [OPTIONAL], are the other actors involved in the animation.
-* * @param: Actor Victim [OPTIONAL], if this Actor specified, then the specified actor (that should be one of the list of actors) will be considered as a victim.
-* * @param: string Hook [OPTIONAL], you can specify a Hook for the animation, to register for the animation events (AnimationStart, AnimationEnd, OrgasmStart, etc.) See the Hooks section for further description
-* * @param: string AnimationTags [OPTIONAL], is the list of tags the animation has to have. You can add more than one tag by separating them by commas "," (Example: "Oral, Aggressive, FemDom"), the animations will be collected if they have at least one of the specified tags.
-* *
-* * @return: the thread instance that is allocated by the function. NONE if something went wrong and the animation will not start.
-*/;
-sslThreadController Function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
-  Actor[] Positions = SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
-  return StartScene(Positions, AnimationTags, Victim, asHook = Hook)
-EndFunction
-
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -996,20 +970,6 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* GetAnimations
-* * Retrieve a set of animations suitable for the given actors under the specific tag restrictions
-*  *  DO NOT USE to find Creature Animations. Use GetCreatureAnimations() instead (see 'Creature' section below)
-* * 
-* * @param: akPositions   - The actors you wish to animate. MUST BE EXCLUSIVELY HUMAN
-* * @param: asTags        - The tags to constrain the animation with. Prefix a tag with '-' to disable them
-*  *                          You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
-*  *  @param: akVictim      - The Victim of this animation. Some animations may require an explicit victim to be stated
-* * @return: sslBaseAnimation - The animation whose name matches, if found.
-*/;
-sslBaseAnimation[] Function GetAnimations(Actor[] akPositions, String asTags = "", Actor akVictim = none)
-  return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
-EndFunction
-
 ;/* GetAnimationByName
 * * Get a single animation by name. Ignores if a user has the animation enabled or not.
 * * The animation will NOT include creatures. Use GetCreatureAnimationByName() if you want an animation that is including Creatures.
@@ -1153,20 +1113,6 @@ endFunction
 ;#    String raceKey = sslCreatureAnimationSlots.GetRaceKeyByID(raceID)                                                                    #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;/* GetCreatureAnimations
-* * Retrieve a set of animations suitable for the given actors under the specific tag restrictions
-*  *  DO NOT USE for human exclusive animations. Use "GetAnimations()" instead (see Animation section above)
-* * 
-* * @param: akPositions   - The actors you wish to animate, both human and creatures
-* * @param: asTags        - The tags to constrain the animation with. Prefix a tag with '-' to disable them
-*  *                          You can also prefix two or more tags with '~', stating that only of them needs to be present (~A, ~B <=> A or B)
-*  *  @param: akVictim      - The Victim of this animation. Some animations may require an explicit victim to be stated
-* * @return: sslBaseAnimation - A list of animations fitting to the given tags
-*/;
-sslBaseAnimation[] Function GetCreatureAnimations(Actor[] akPositions, String asTags = "", Actor akVictim = none)
-  return AnimSlots.GetAnimations(akPositions, asTags, akVictim)
-EndFunction
 
 ;/* GetCreatureAnimationByName
 ** Gets a single creature animation by name. Ignores if a user has the animation enabled or not.
@@ -2480,12 +2426,12 @@ endFunction
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#                                                 DEPRECATED FUNCTIONS - DO NOT USE THEM                                                  #
-;#         Replace these functions, if used in your mod, with the applicable new versions for easier usage and better performance.         #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
+;#-----------------------------------------------------------------------------------------------------------------------------------------#;
+;#                                                                                                                                         #;
+;#                                                 DEPRECATED FUNCTIONS - DO NOT USE THEM                                                  #;
+;#         Replace these functions, if used in your mod, with the applicable new versions for easier usage and better performance.         #;
+;#                                                                                                                                         #;
+;#-----------------------------------------------------------------------------------------------------------------------------------------#;
 
 ;/ DEPRECATED /;
 sslThreadController function HookController(string argString)
@@ -2604,29 +2550,31 @@ endFunction
 
 ;/* DEPRECATED! */;
 int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
-  ; TODO: Rewire this call into the new format
-
-  ; Claim a thread
-  sslThreadModel Thread = NewThread()
-  if !Thread
+  sslThreadModel thread = NewThread()
+  If (!thread)
     Log("StartSex() - Failed to claim an available thread")
     return -1
-  ; Add actors list to thread
-  elseIf !Thread.AddActors(Positions, Victim)
+  ElseIf (!thread.AddActors(Positions, Victim))
     Log("StartSex() - Failed to add some actors to thread")
     return -1
-  endIf
-  ; Configure our thread with passed arguments
-  Thread.SetAnimations(Anims)
-  Thread.CenterOnObject(CenterOn)
-  Thread.DisableBedUse(!AllowBed)
-  Thread.SetHook(Hook)
-  ; Start the animation
-  if Thread.StartThread()
-    return Thread.tid
-  endIf
+  ElseIf(!Anims.Length)
+    Log("StartSex() - No valid animations")
+  EndIf
+  thread.SetAnimations(Anims)
+  thread.CenterOnObject(CenterOn)
+  thread.DisableBedUse(!AllowBed)
+  thread.SetHook(Hook)
+  If (thread.StartThread())
+    return thread.GetThreadID()
+  EndIf
   return -1
-endFunction
+EndFunction
+
+;/* DEPRECATED! */;
+sslThreadController Function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
+  Actor[] Positions = SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
+  return StartScene(Positions, AnimationTags, Victim, asHook = Hook) as sslThreadController
+EndFunction
 
 ;/* DEPRECATED! */;
 string function MakeAnimationGenderTag(Actor[] Positions)
@@ -3061,12 +3009,8 @@ state Disabled
     Log("NewThread() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
     return none
   endFunction
-  sslThreadController Function StartScene(Actor[] akPositions, String asTags, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
+  SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
     Log("StartScene() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
-    return none
-  EndFunction
-  sslThreadController Function StartSceneEx(Actor[] akPositions, sslBaseAnimation[] akAnimations, Actor akVictim = none, ObjectReference akCenter = none, bool abAllowBed = true, String asHook = "")
-    Log("StartSceneEx() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
     return none
   EndFunction
   sslThreadController function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
