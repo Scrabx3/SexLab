@@ -1,12 +1,145 @@
-ScriptName sslThreadModel extends Quest Hidden
+ScriptName sslThreadModel extends SexLabThread Hidden
 {
-	Internal class for primary scene management. Builds and controls scene-flow and keeps track of scene actors
+	Internal class for primary scene management. 
+	Implements SexLabThread, builds and controls scene-flow and keeps track of scene actors
 
 	To start a scene, please check the functions provided in the main API (SexLabFramework.psc)
 	To access, read and write scene related data see sslThreadController.psc
 }
 
-Actor[] Function GetVictims()
+; TODO: SFX Sounds are currently not supported
+; They should be handled by the dll and will require some registration from the front end to become active
+
+int Function GetThreadID()
+	return tid
+EndFunction
+
+String Function GetActiveScene()
+	return _ActiveScene
+EndFunction
+
+String Function GetActiveStage()
+	return _ActiveStage
+EndFunction
+
+; Set of scenes currently used by the thread
+String[] Function GetPlayingScenes()
+	return Scenes
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Position Access                                 --- ;
+; ------------------------------------------------------- ;
+;/
+	Functions to check if a specific Actor is part of the scene and how they are categorized in that scene
+/;
+
+bool Function HasPlayer()
+	return HasPlayer
+EndFunction
+bool Function HasActor(Actor ActorRef)
+	return Positions.Find(ActorRef) != -1
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Submission                                      --- ;
+; ------------------------------------------------------- ;
+;/
+	Functions to view and manipulate the submissive flag for individual actors
+/;
+
+bool Property IsAggressive hidden
+	bool Function get()
+		return GetAllVictims().Length || _ThreadTags.Find("Forced") > -1
+	endfunction
+	Function set(bool value)
+	EndFunction
+EndProperty
+
+Actor[] Function GetAllVictims()
+	Actor[] ret = new Actor[5]
+	int i = 0
+	While(i < Positions.Length)
+		If(ActorAlias[i].IsVictim())
+			ret[i] = Positions[i]
+		EndIf
+		i += 1
+	EndWhile
+	return PapyrusUtil.RemoveActor(ret, none)
+EndFunction
+
+Function SetVictim(Actor ActorRef, bool Victimize = true)
+	sslActorAlias vic = ActorAlias(ActorRef)
+	If(vic)
+		vic.SetVictim(Victimize)
+	EndIf
+EndFunction
+
+bool Function IsVictim(Actor ActorRef)
+	sslActorAlias vic = ActorAlias(ActorRef)
+	return vic && vic.IsVictim()
+EndFunction
+
+bool Function IsAggressor(Actor ActorRef)
+	sslActorAlias agr = ActorAlias(ActorRef)
+	return agr && agr.IsAggressor()
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Tagging System                                  --- ;
+; ------------------------------------------------------- ;
+;/
+	Threads store the tags shared with every scene it is allowed to use; I.e. if we have 2 scenes:
+	["doggy", "loving", "behind"] and ["doggy", "loving", "hugging", "kissing"], then the thread tags will be ["doggy", "loving"]
+
+	Tags are read only, as they directly represent the underlying available scenes
+/;
+
+bool Function HasTag(String Tag)
+	return _ThreadTags.Find(Tag) != -1
+EndFunction
+
+bool Function CheckTags(String[] CheckTags, bool RequireAll = true, bool Suppress = false)
+	int i = 0
+	While (i < CheckTags.Length)
+		If (HasTag(CheckTags[i]))
+			If (!RequireAll || Suppress)
+				return !Suppress
+			EndIf
+		EndIf
+		i += 1
+	EndWhile
+	return !Suppress
+EndFunction
+
+String[] Function GetTags()
+	return PapyrusUtil.ClearEmpty(_ThreadTags)
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Event Hooks                                     --- ;
+; ------------------------------------------------------- ;
+
+Function SetHook(string AddHooks)
+	string[] newHooks = PapyrusUtil.StringSplit(AddHooks)
+	_Hooks = PapyrusUtil.MergeStringArray(_Hooks, newHooks, true)
+EndFunction
+
+Function RemoveHook(string DelHooks)
+	string[] remove = PapyrusUtil.StringSplit(DelHooks)
+	int i = 0
+	While (i < remove.Length)
+		int where = _Hooks.Find(remove[i])
+		If(where > -1)
+			_Hooks[where] = ""
+		EndIf
+		i += 1
+	EndWhile
+	_Hooks = PapyrusUtil.ClearEmpty(_Hooks)
+EndFunction
+
+string[] Function GetHooks()
+	return PapyrusUtil.ClearEmpty(_Hooks)
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -34,27 +167,31 @@ bool Property HasPlayer Hidden
 	EndFunction
 EndProperty
 
+sslSystemConfig Property Config Auto
+Package Property DoNothingPackage Auto	; used in the alias scripts
+
 ; Constants
 int Property POSITION_COUNT_MAX = 5 AutoReadOnly
 
 String Property STATE_IDLE 		= "Unlocked" AutoReadOnly
 String Property STATE_SETUP 	= "Making" AutoReadOnly
-String Property STATE_PLAYING = "Animation" AutoReadOnly
+String Property STATE_SETUP_M	= "Making_M" AutoReadOnly
+String Property STATE_PLAYING = "Animating" AutoReadOnly
 String Property STATE_END 		= "Ending" AutoReadOnly
 
 ; ------------------------------------------------------- ;
 ; --- Thread Status                                   --- ;
 ; ------------------------------------------------------- ;
 
-int Property Status_UNDEF 	= 0 AutoReadOnly
-int Property Status_IDLE	 	= 1 AutoReadOnly
-int Property Status_SETUP 	= 2 AutoReadOnly
-int Property Status_INSCENE = 3 AutoReadOnly
-int Property Status_ENDING	= 4 AutoReadOnly
+int Property STATUS_UNDEF 	= 0 AutoReadOnly
+int Property STATUS_IDLE	 	= 1 AutoReadOnly
+int Property STATUS_SETUP 	= 2 AutoReadOnly
+int Property STATUS_INSCENE = 3 AutoReadOnly
+int Property STATUS_ENDING	= 4 AutoReadOnly
 
 bool Property IsLocked hidden
 	bool Function get()
-		return GetStatus() != Status_IDLE
+		return GetStatus() != STATUS_IDLE
 	EndFunction
 EndProperty
 
@@ -62,7 +199,7 @@ EndProperty
 ; Should this ever be called, then the Thread was in an unspecified state and will be reset
 int Function GetStatus()
 	Fatal("Undefined Status. Resetting thread...")
-	return Status_UNDEF
+	return STATUS_UNDEF
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -71,39 +208,58 @@ EndFunction
 
 sslActorAlias[] Property ActorAlias Auto
 Actor[] Property Positions Auto Hidden
+Actor[] Property Submissives Auto Hidden
 
 String _ActiveScene	              ; The currently playing Animation
 String _StartScene	              ; The first animation this thread player
-String[] CustomScenes						  ; animation overrides (will always be used if not empty)
-String[] PrimaryScenes			      ; set of valid animations
-String[] LeadInScenes						  ; set of valid lead-in (intro) animations
+String[] _CustomScenes						; animation overrides (will always be used if not empty)
+String[] _PrimaryScenes			      ; set of valid animations
+String[] _LeadInScenes						; set of valid lead-in (intro) animations
 String[] Property Scenes Hidden	  ; currently active set of animation
 	String[] Function get()
-		If(CustomScenes.Length > 0)
-			return CustomScenes
+		If(_CustomScenes.Length > 0)
+			return _CustomScenes
 		ElseIf(LeadIn)
-			return LeadInScenes
+			return _LeadInScenes
 		Else
-			return PrimaryScenes
+			return _PrimaryScenes
 		EndIf
 	EndFunction
 EndProperty
+float[] _BaseCoordinates
+float[] _InUseCoordinates
+
+String _ActiveStage
+String[] _StageHistory
 
 int Property FURNI_DISALLOW = 0 AutoReadOnly
 int Property FURNI_ALLOW 		= 1 AutoReadOnly
 int Property FURNI_PREFER 	= 2 AutoReadOnly
 int _furniStatus
 
-ObjectReference _center										; the actual center object the animation is using
 ReferenceAlias Property CenterAlias Auto	; the alias referencing _center
 ObjectReference Property CenterRef Hidden	; shorthand for CenterAlias
 	ObjectReference Function Get()
-		return _center
+		return CenterAlias.GetReference()
 	EndFunction
 	Function Set(ObjectReference akNewCenter)
-		CenterOnObjectImpl(akNewCenter)
+		CenterOnObject(akNewCenter)
 	EndFunction
 EndProperty
+
+float Property StartedAt Auto Hidden
+float Property TotalTime Hidden
+	float Function get()
+		return SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt
+	EndFunction
+EndProperty
+
+bool property DisableOrgasms auto hidden
+bool Property AutoAdvance auto hidden
+bool Property LeadIn auto hidden
+
+String[] _ThreadTags
+String[] _Hooks
 
 ; ------------------------------------------------------- ;
 ; --- Thread IDLE                                     --- ;
@@ -121,7 +277,7 @@ Auto State Unlocked
 	EndFunction
 
 	int Function GetStatus()
-		return Status_IDLE
+		return STATUS_IDLE
 	EndFunction
 EndState
 
@@ -155,14 +311,14 @@ State Making
 		If(!ActorRef)
 			Fatal("Failed to add actor -- Actor is a figment of your imagination", "AddActor(NONE)")
 			return -1
-		ElseIf(ActorCount >= POSITION_COUNT_MAX)
+		ElseIf(Positions.Length >= POSITION_COUNT_MAX)
 			Fatal("Failed to add actor -- Thread has reached actor limit", "AddActor(" + ActorRef.GetLeveledActorBase().GetName() + ")")
 			return -1
 		ElseIf(Positions.Find(ActorRef) != -1)
 			Fatal("Failed to add actor -- They have been already added to this thread", "AddActor(" + ActorRef.GetLeveledActorBase().GetName() + ")")
 			return -1
 		EndIf
-		int ERRC = ActorLib.ValidateActor(ActorRef)
+		int ERRC = sslActorLibrary.ValidateActorImpl(ActorRef)
 		If(ERRC < 0)
 			Fatal("Failed to add actor -- They are not a valid target for animation | Error Code: " + ERRC, "AddActor(" + ActorRef.GetLeveledActorBase().GetName() + ")")
 			return -1
@@ -190,46 +346,40 @@ State Making
 	EndFunction
 
 	Function SetScenes(String[] asScenes)
-		PrimaryScenes = SexLabRegistry.SceneExistA(asScenes)
+		_PrimaryScenes = SexLabRegistry.SceneExistA(asScenes)
+	EndFunction
+	Function ClearScenes()
+		_PrimaryScenes = Utility.CreateStringArray(0)
 	EndFunction
   Function SetForcedScenes(String[] asScenes)
-    CustomScenes = SexLabRegistry.SceneExistA(asScenes)
+    _CustomScenes = SexLabRegistry.SceneExistA(asScenes)
   EndFunction
+	Function ClearForcedScenes()
+		_CustomScenes = Utility.CreateStringArray(0)
+	EndFunction
   Function SetLeadScenes(String[] asScenes)
-    LeadInScenes = SexLabRegistry.SceneExistA(asScenes)
-    LeadIn = LeadInScenes.Length > 0
+    _LeadInScenes = SexLabRegistry.SceneExistA(asScenes)
+    LeadIn = _LeadInScenes.Length > 0
   EndFunction
+	Function ClearLeadInScenes()
+		_LeadInScenes = Utility.CreateStringArray(0)
+    LeadIn = false
+	EndFunction
   Function SetStartingScene(String asFirstScene)
     If (SexLabRegistry.SceneExists(asFirstScene))
       _StartScene = asFirstScene
     EndIf
   EndFunction
-	Function AddScene(String asSceneID)
-		If (!asSceneID || !SexLabRegistry.SceneExists(asSceneID))
-			return
-		EndIf
-		If(CustomScenes.Length > 0)
-			CustomScenes = PapyrusUtil.PushString(CustomScenes, _StartScene)
-		ElseIf(LeadIn)
-			LeadInScenes = PapyrusUtil.PushString(LeadInScenes, _StartScene)
-		Else
-			PrimaryScenes = PapyrusUtil.PushString(PrimaryScenes, _StartScene)
-		EndIf
-	EndFunction
 
 	Function DisableLeadIn(bool disabling = true)
 		LeadIn = !disabling
 	EndFunction
-	Function SetFurniStatus(int aiStatus)
+	Function SetFurnitureStatus(int aiStatus)
 		_furniStatus = PapyrusUtil.ClampInt(aiStatus, FURNI_DISALLOW, FURNI_PREFER)
 	EndFunction
 
 	Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
-		CenterOnObjectImpl(CenterOn)
-	EndFunction
-	Function CenterOnObjectImpl(ObjectReference akNewCenter)
-		CenterAlias.ForceRefTo(akNewCenter)
-		_center = akNewCenter
+		CenterAlias.ForceRefTo(CenterOn)
 	EndFunction
 
   sslThreadController Function StartThread()
@@ -241,27 +391,26 @@ State Making
 			return none
 		EndIf
 		; Validate Animations
-		Actor[] victims_ = GetAllVictims()
-		CustomScenes = SexLabRegistry.ValidateScenesA(CustomScenes, Positions, "", victims_)
-		If(CustomScenes.Length)
+		_CustomScenes = SexLabRegistry.ValidateScenesA(_CustomScenes, Positions, "", Submissives)
+		If(_CustomScenes.Length)
 			If(LeadIn)
 				Log("LeadIn detected on custom Animations. Disabling LeadIn")
 				LeadIn = false
 			EndIf
 		Else  ; only validate if these arent overwritten by custom scenes
-      PrimaryScenes = SexLabRegistry.ValidateScenesA(PrimaryScenes, Positions, "", victims_)
-			If(!PrimaryScenes.Length)
-        PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", victims_, _furniStatus, _center)
-				If (!PrimaryScenes.Length)
+      _PrimaryScenes = SexLabRegistry.ValidateScenesA(_PrimaryScenes, Positions, "", Submissives)
+			If(!_PrimaryScenes.Length)
+        _PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", Submissives, _furniStatus, CenterRef)
+				If (!_PrimaryScenes.Length)
 					Fatal("Failed to start Thread -- No valid animations for given actors")
 					return none
 				EndIf
 			EndIf
 			If(LeadIn)
-				LeadInScenes = SexLabRegistry.ValidateScenesA(LeadInScenes, Positions, "", victims_)
-				If(!LeadInScenes.Length)
-					LeadInScenes = SexLabRegistry.LookupScenesA(Positions, "LeadIn", victims_, _furniStatus, _center)
-					LeadIn = LeadInScenes.Length
+				_LeadInScenes = SexLabRegistry.ValidateScenesA(_LeadInScenes, Positions, "", Submissives)
+				If(!_LeadInScenes.Length)
+					_LeadInScenes = SexLabRegistry.LookupScenesA(Positions, "LeadIn", Submissives, _furniStatus, CenterRef)
+					LeadIn = _LeadInScenes.Length
 				EndIf
 			EndIf
 		EndIf
@@ -272,24 +421,62 @@ State Making
   sslThreadController Function StartThreadUnchecked()
 		UnregisterForUpdate()
 		SendThreadEvent("AnimationStarting")
-		ThreadHooks = Config.GetThreadHooks()
-		HookAnimationStarting()
+		; ThreadHooks = Config.GetThreadHooks()	; TODO: Rewire this
+		RunHook(HOOKID_STARTING)
 		If(_StartScene && Scenes.Find(_StartScene) == -1)
 			AddScene(_StartScene)
 		EndIf
-		_ActiveScene = GetSetCenterObject(Scenes, _StartScene)
+		String[] out = new String[16]
+		CenterRef = FindCenter(Scenes, _StartScene, out, _furniStatus)
+		int where = out.Find("")
+		If (where == -1)
+			where = out.Length - 1
+		EndIf
+		_ActiveScene = out[Utility.RandomInt(0, where)]
 		If (!_ActiveScene)
 			Fatal("Failed to start Thread -- No valid animation applicable to current environment")
 			return none
+		ElseIf (!SexLabRegistry.SortByScene(Positions, _ActiveScene, true))
+			Fatal("Failed to start Thread -- Actors arent compatible with the requested animation")
+			return none
 		EndIf
-		_prepareAsyncCount = 0
-		; TODO: HasPlayer && Config.FadeoutMode -------------------v
-		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid, "", HasPlayer as float)
-		; TODO: Additional fade out settings
-		PrepareDone()
+		GoToState(STATE_SETUP_M)
     return self as sslThreadController
   EndFunction
 	
+	Function EndAnimation(bool Quickly = false)
+		Initialize()
+	EndFunction
+
+	int Function GetStatus()
+		return STATUS_SETUP
+	EndFunction
+EndState
+
+; An immediate state to disallow setting additional data while aliases process setup
+State Making_M
+	Event OnBeginState()
+		; Send event to all local aliases and have them prepare asynch. Also finidh remaining (private) setup tasks here
+		_prepareAsyncCount = 0
+		; TODO: Change to HasPlayer && Config.FadeoutMode ---------v
+		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid, "", HasPlayer as float)
+		; TODO: Additional fade out settings
+
+		_BaseCoordinates = GetBaseCoordinates(_ActiveScene)
+		_InUseCoordinates = new float[4]	; Copy to trace back changes made by the user during scene
+		_InUseCoordinates[0] = _BaseCoordinates[0]
+		_InUseCoordinates[1] = _BaseCoordinates[1]
+		_InUseCoordinates[2] = _BaseCoordinates[2]
+		_InUseCoordinates[3] = _BaseCoordinates[3]
+		SortAliasesToPositions()
+		If (_CustomScenes.Length)
+			_ThreadTags = SexLabRegistry.GetCommonTags(_CustomScenes)
+		Else
+			_ThreadTags = SexLabRegistry.GetCommonTags(_PrimaryScenes)
+		EndIf
+		PrepareDone()
+	EndEvent
+
 	; Invoked n times by Aliases and once by StartThreadUnchecked, then continue to next state
 	Function PrepareDone()
 		If(_prepareAsyncCount <= Positions.Length)
@@ -301,7 +488,7 @@ State Making
 				AutoAdvance = true
 			Else
 				AutoAdvance = Config.AutoAdvance
-				EnableHotkeys()
+				; EnableHotkeys()	TODO: reimplement dis
 			EndIf
 		ElseIf (Config.ShowInMap && PlayerRef.GetDistance(CenterRef) > 750)
 			SetObjectiveDisplayed(0, True)
@@ -312,12 +499,16 @@ State Making
 			Config.RemoveFade()
 		EndIf
 	EndFunction
+	
+	Function EndAnimation(bool Quickly = false)
+		_prepareAsyncCount = -2147483648
+		Initialize()
+	EndFunction
 
 	int Function GetStatus()
-		return Status_SETUP
+		return STATUS_SETUP
 	EndFunction
 EndState
-
 
 sslThreadController Function StartThread()
 	Log("Cannot start thread outside of setup phase", "StartThread()")
@@ -338,55 +529,71 @@ EndFunction
 Function SetScenes(String[] asScenes)
 	Log("Primary scenes can only be set during setup", "SetScenes()")
 EndFunction
+Function ClearScenes()
+	Log("Primary scenes can only be cleared during setup", "SetScenes()")
+EndFunction
 Function SetForcedScenes(String[] asScenes)
 	Log("Forced animations can only be set during setup", "SetForcedScenes()")
+EndFunction
+Function ClearForcedScenes()
+	Log("Forced animations can only be cleared during setup", "SetForcedScenes()")
 EndFunction
 Function SetLeadScenes(String[] asScenes)
 	Log("LeadIn animations can only be set during setup", "SetLeadScenes()")
 EndFunction
+Function ClearLeadInScenes()
+	Log("LeadIn animations can only be cleared during setup", "SetLeadScenes()")
+EndFunction
 Function SetStartingScene(String asFirstAnimation)
 	Log("Start animations can only be set during setup", "SetStartingScene()")
-EndFunction
-Function AddScene(String asSceneID)
-	Log("Manipulating available default scenes can only be done during setup", "AddScene()")
 EndFunction
 Function DisableLeadIn(bool disabling = true)
 	Log("Lead in status can only be set during setup", "DisableLeadIn()")
 EndFunction
-Function SetFurniStatus(int aiStatus)
-	Log("Furniture status can only be set during setup", "SetFurniStatus()")
+Function SetFurnitureStatus(int aiStatus)
+	Log("Furniture status can only be set during setup", "SetFurnitureStatus()")
 EndFunction
 
 ; Given an array of Scenes, select some valid Scene within the array, using the currently selected center as comparable
 ; If no scene is allowed with the current center, will set a new center
 ; Return the Scene to be played
-String Function GetSetCenterObject(String[] asSceneIDs, String asScenePrefered) native
+ObjectReference Function FindCenter(String[] asSceneIDs, String asScenePrefered, String[] asOut, int aiFurniStatus) native
+float[] Function GetBaseCoordinates(String asScene) native
 
 ; --- Legacy
 
 Function SetAnimations(sslBaseAnimation[] AnimationList)
-	If(AnimationList.Length && AnimationList.Find(none) == -1)
+	If (AnimationList.Length && AnimationList.Find(none) == -1)
 		SetScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
 	EndIf
 EndFunction
+Function ClearAnimations()
+	ClearScenes()
+EndFunction
 Function SetForcedAnimations(sslBaseAnimation[] AnimationList)
-	if AnimationList.Length && AnimationList.Find(none) == -1
+	If (AnimationList.Length && AnimationList.Find(none) == -1)
 		SetForcedScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
-	endIf
+	EndIf
+EndFunction
+Function ClearForcedAnimations()
+	ClearForcedScenes()
 EndFunction
 Function SetLeadAnimations(sslBaseAnimation[] AnimationList)
 	if AnimationList.Length && AnimationList.Find(none) == -1
 		SetLeadScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
 	endIf
 EndFunction
+Function ClearLeadAnimations()
+	ClearLeadInScenes()
+EndFunction
 Function SetStartingAnimation(sslBaseAnimation FirstAnimation)
 	SetStartingScene(FirstAnimation.PROXY_ID)
 EndFunction
 Function DisableBedUse(bool disabling = true)
-	SetFurniStatus((!disabling) as int)
+	SetFurnitureStatus((!disabling) as int)
 EndFunction
 Function SetBedFlag(int flag = 0)
-	SetFurniStatus(flag + 1)	; New Status is [0, 2] instead of [-1, 1]
+	SetFurnitureStatus(flag + 1)	; New Status is [0, 2] instead of [-1, 1]
 EndFunction
 Function SetBedding(int flag = 0)
 	SetBedFlag(flag)
@@ -400,7 +607,360 @@ EndFunction
 	By this time, most Scene information is read only
 /;
 
+float _StageTimer			; Additional past default time, to delay the completion of a stage
+float[] _CustomTimers	; Custom set of timers to use for this animation
+float[] Property Timers hidden
+	{In use timer set of the active scene}
+	float[] Function Get()
+		If (_CustomTimers.Length)
+			return _CustomTimers
+		ElseIf (LeadIn)
+			return Config.StageTimerLeadIn
+		ElseIf (IsAggressive)
+			return Config.StageTimerAggr
+		EndIf
+		return Config.StageTimer
+	EndFunction
+	Function Set(float[] value)
+		_CustomTimers = value
+	EndFunction
+EndProperty
 
+State Animating
+	Event OnBeginState()
+		SetFurnitureIgnored(true)
+		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
+		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
+		int[] sex_ = SexLabRegistry.GetPositionSexA(_ActiveScene)
+		int i = 0
+		While (i < Positions.Length)
+			ActorAlias[i].ReadyActor(strips_[i], sex_[i])
+			i += 1
+		EndWhile
+		SendModEvent("SSL_READY_Thread" + tid)
+		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
+		_StageHistory = new String[1]
+		_StageHistory[0] = _ActiveStage
+		ReStartTimer()
+		SendThreadEvent("AnimationStart")
+		If(LeadIn)
+			SendThreadEvent("LeadInStart")
+		EndIf
+		SendThreadEvent("StageStart")
+		RunHook(HOOKID_STAGESTART)
+	EndEvent
+
+	bool Function ResetScene(String asNewScene)
+		If (!SexLabRegistry.SortByScene(Positions, asNewScene, true))
+			Log("Cannot reset scene. New Scene is not compatible with given positions")
+			return false
+		EndIf
+		RecordSkills()
+		SetBonuses()
+		UnregisterForUpdate()
+		SortAliasesToPositions()
+		_ActiveScene = asNewScene
+		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
+		int[] sex_ = SexLabRegistry.GetPositionSexA(_ActiveScene)
+		int i = 0
+		While (i < Positions.Length)
+			ActorAlias[i].TryLock()
+			ActorAlias[i].ResetPosition(strips_[i], sex_[i])
+			i += 1
+		EndWhile
+		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
+		_StageHistory = new String[1]
+		_StageHistory[0] = _ActiveStage
+		ReStartTimer()
+		SendThreadEvent("StageStart")
+		RunHook(HOOKID_STAGESTART)
+		return true
+	EndFunction
+
+	Function PlayNext(int aiNextBranch)
+		UnregisterForUpdate()
+		SendThreadEvent("StageEnd")
+		RunHook(HOOKID_STAGEEND)
+		String newStage = SexLabRegistry.BranchTo(_ActiveScene, _ActiveStage, aiNextBranch)
+		If (!newStage)
+			Log("Invalid branch or previous stage is sink, ending scene")
+			If(LeadIn)
+				EndLeadIn()
+			Else
+				EndAnimation()
+			EndIf
+			If(!LeadIn && !DisableOrgasms)
+				; COMEBACK: Check the Orgasm behavior in use
+				SendThreadEvent("OrgasmEnd")
+			EndIF
+			return
+		ElseIf(!Leadin && !DisableOrgasms && SexLabRegistry.GetNodeType(_ActiveScene, newStage) == 2)
+			; End of animation orgasm
+
+			; COMEBACK: Check the Orgasm behavior in use
+			SendThreadEvent("OrgasmStart")
+			TriggerOrgasm()
+		EndIf
+		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
+		int i = 0
+		While (i < Positions.Length)
+			ActorAlias[i].TryLock()
+			ActorAlias[i].UpdateNext(strips_[i])
+			i += 1
+		EndWhile
+		PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
+		_StageHistory = PapyrusUtil.PushString(_StageHistory, _ActiveStage)
+		ReStartTimer()
+		SendThreadEvent("StageStart")
+		RunHook(HOOKID_STAGESTART)
+	EndFunction
+
+	; NOTE: This here counts from 1 instead of 0
+	Function GoToStage(int ToStage)
+		If (ToStage <= 1)
+			ResetScene(_ActiveScene)
+		ElseIf(ToStage > _StageHistory.Length)
+			PlayNext(0)
+		Else
+			; Dont need to bother about stripping here as were playing an already played stage
+			int i = 0
+			While (i < Positions.Length)
+				ActorAlias[i].TryLock()
+				i += 1
+			EndWhile
+			_ActiveStage = _StageHistory[ToStage - 1]
+			PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
+			ReStartTimer()
+			SendThreadEvent("StageStart")
+			RunHook(HOOKID_STAGESTART)
+		EndIf
+	EndFunction
+
+	Function ReStartTimer()
+		If (!AutoAdvance)
+			return
+		EndIf
+		_StageTimer = 0
+		RegisterForSingleUpdate(GetTimer())
+	EndFunction
+
+	Function UpdateTimer(float AddSeconds = 0.0)
+		If (AddSeconds < 0)
+			_StageTimer = 0
+			return
+		EndIf
+		_StageTimer += AddSeconds
+	EndFunction
+
+	Function SetTimers(float[] SetTimers)
+		If (!SetTimers.Length)
+			Log("SetTimers() - Empty timers given.", "ERROR")
+			return
+		EndIf
+		Timers = SetTimers
+	EndFunction
+
+	float Function GetTimer()
+		float timer = SexLabRegistry.GetFixedLength(_ActiveScene, _ActiveStage)
+		If (!timer)
+			return GetStageTimer(0)
+		EndIf
+		return timer
+	EndFunction
+
+	float Function GetStageTimer(int maxstage)
+		int stageIdx = _StageHistory.Find(_ActiveStage)
+		int lastTimerIdx = Timers.Length - 1
+		If (stageIdx <= lastTimerIdx)
+			return Timers[stageIdx]
+		EndIf
+		return Timers[lastTimerIdx]
+	Endfunction
+	
+	Event OnUpdate()
+		If (_StageTimer > 0)
+			RegisterForSingleUpdate(_StageTimer)
+			_StageTimer = 0
+			return
+		EndIf
+		GoToStage(_StageHistory.Length + 1)
+	EndEvent
+
+	Function TriggerOrgasm()
+		SendModEvent("SSL_ORGASM_Thread" + tid)
+	EndFunction
+
+	Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
+		If (!CenterOn)
+			return
+		ElseIf(CenterOn != CenterRef)
+			SetFurnitureIgnored(false)
+			; TODO: Validate animation furniture stuffz or else reselect
+			CenterAlias.ForceRefTo(CenterOn)
+			SetFurnitureIgnored(true)
+		EndIf
+		If(resync)
+			RealignActors()
+			SendThreadEvent("ActorsRelocated")
+		EndIf
+	EndFunction
+
+	Function RealignActors()
+		PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
+	EndFunction
+
+	Function ChangeActorsEx(Actor[] akNewPositions, Actor[] akSubmissives)
+		akNewPositions = PapyrusUtil.RemoveActor(akNewPositions, none)
+		If(akNewPositions.Length == Positions.Length)	; Equality
+			int i = 0
+			While(i < akNewPositions.Length)
+				If(Positions.Find(akNewPositions[i]) == -1)
+					i = akNewPositions.Length
+				EndIf
+				i += 1
+			EndWhile
+			If(i == akNewPositions.Length)
+				return
+			EndIf
+		ElseIf(!akNewPositions.Length || akNewPositions.Length > POSITION_COUNT_MAX)
+			return
+		EndIf
+		UnregisterforUpdate()
+		SendThreadEvent("ActorChangeStart")
+		int i = 0
+		While(i < Positions.Length)	; Remove actors that are no longer used
+			int w = akNewPositions.Find(Positions[i])
+			If(w == -1)
+				ActorAlias[i].Initialize()
+			EndIf
+			i += 1
+		EndWhile
+		int n = 0
+		While(n < akNewPositions.Length)
+			int w = Positions.Find(akNewPositions[n])
+			If(w == -1)
+				sslActorAlias slot = PickAlias(akNewPositions[n])
+				If(slot.SetActor(akNewPositions[n]))	; Add actor and move to playing state
+					slot.OnDoPrepare("", "", 0.0, none)	; TODO: Validate args here to not do pathing stuffz
+				EndIf
+			EndIf
+			n += 1
+		EndWhile
+		Submissives = akSubmissives
+		; Validate Animations or get new
+		If (!SexLabRegistry.ValidateSceneA(_ActiveScene, Positions, "", Submissives))
+			ClearForcedScenes()
+			_PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", Submissives, _furniStatus, CenterRef)
+			If (!_PrimaryScenes.Length)
+				Log("Changing scene actors but no animation for new positions")
+				EndAnimation()
+				return
+			ElseIf (LeadIn)
+				_LeadInScenes = SexLabRegistry.LookupScenesA(Positions, "LeadIn", Submissives, _furniStatus, CenterRef)
+				If (!_LeadInScenes.Length)
+					EndLeadIn()
+					return
+				EndIf
+			EndIf
+			ResetScene(Scenes[Utility.RandomInt(0, Scenes.Length - 1)])
+		Else
+			ResetScene(_ActiveScene)
+		EndIf
+		SendThreadEvent("ActorChangeEnd")
+	EndFunction
+	Function PrepareDone()
+		; Avoid the log since we expect this to be invoked when ChangeActorEx() is called
+	EndFunction
+
+	function EndLeadIn()
+		If (!LeadIn)
+			return
+		EndIf
+		LeadIn = false
+		UnregisterForUpdate()
+		SendThreadEvent("LeadInEnd")
+		SkillXP[0] = SkillXP[0] + (TotalTime / 10.0)
+		If (!ResetScene(Scenes[Utility.RandomInt(0, Scenes.Length - 1)]))
+			EndAnimation()
+		EndIf
+	endFunction
+
+	Function Initialize()
+		EndAnimation()
+	EndFunction
+	Function EndAnimation(bool Quickly = false)
+		GoToState(STATE_END)
+	EndFunction
+
+	int Function GetStatus()
+		return STATUS_INSCENE
+	EndFunction
+
+	Event OnEndState()
+		UnregisterForUpdate()
+		SetFurnitureIgnored(false)
+	EndEvent
+EndState
+
+Function RealignActors()
+	Log("Cannot align actors outside the playing state", "RealignActors()")
+EndFunction
+Function ChangeActorsEx(Actor[] akNewPositions, Actor[] akSubmissives)
+	Log("Cannot change positions outside the playing state", "ChangeActorsEx()")
+EndFunction
+bool Function ResetScene(String asNewScene)
+	Log("Cannot reset outside the playing state", "ResetScene()")
+	return false
+EndFunction
+Function EndLeadIn()
+	Log("Cannot end leadin outside the playing state", "EndLeadIn()")
+EndFunction
+Function PlayNext(int aiNextBranch)
+	Log("Cannot play next branch outside the playing state", "EndLeadIn()")
+EndFunction
+Function GoToStage(int ToStage)
+	Log("Cannot change playing branch outside the playing state", "GoToStage()")
+EndFunction
+Function TriggerOrgasm()
+	Log("Cannot trigger orgasms outside the playing state", "TriggerOrgasm()")
+EndFunction
+Function ReStartTimer()
+	Log("Cannot re/start timers outside of playing state", "ReStartTimer()")
+EndFunction
+Function UpdateTimer(float AddSeconds = 0.0)
+	Log("Cannot upate timers outside of playing state", "UpdateTimer()")
+EndFunction
+Function SetTimers(float[] SetTimers)
+	Log("Cannot set timers outside of playing state", "SetTimers()")
+EndFunction
+float Function GetTimer()
+	Log("timers are not defined outside of playing state", "GetTimer()")
+	return 0.0
+EndFunction
+float Function GetStageTimer(int maxstage)
+	Log("timers are not defined outside of playing state", "GetStageTimer()")
+	return 0.0
+Endfunction
+
+Function ChangeActors(Actor[] NewPositions)
+	Actor[] argSub = PapyrusUtil.ActorArray(NewPositions.Length)
+	int i = 0
+	int ii = 0
+	While (i < Submissives.Length)
+		If (NewPositions.Find(Submissives[i]) > -1)
+			argSub[ii] = Submissives[i]
+			ii += 1
+		EndIf
+		i += 1
+	EndWhile
+	ChangeActorsEx(NewPositions, PapyrusUtil.RemoveActor(argSub, none))
+EndFunction
+Function PlayStageAnimations()
+	RealignActors()
+EndFunction
+
+; Set location for all positions, incl offset, and play their respected animation. Positions are assumed to be sorted by scene
+String Function PlaceAndPlay(Actor[] akPositions, float[] afCoordinates, String asSceneID, String asStageID) native
 
 ; ------------------------------------------------------- ;
 ; --- Thread END                                      --- ;
@@ -411,7 +971,78 @@ EndFunction
 	2) Reset the thread after a short buffer duration back to the idle state
 /;
 
+State Ending
+	Event OnBeginState()
+		RegisterForSingleUpdateGameTime(0.1)	; 18s with TimeScale = 20
+		DisableHotkeys()
+		; Config.DisableThreadControl(self as sslThreadController)	; TODO: this should be moved to sslThreadController
+		If(IsObjectiveDisplayed(0))
+			SetObjectiveDisplayed(0, False)
+		EndIf
+		RecordSkills()
+		int i = 0
+		While(i < Positions.Length)
+			ActorAlias[i].DoStatistics()
+			ActorAlias[i].Clear()
+			i += 1
+		EndWhile
+		SendThreadEvent("AnimationEnding")
+		SendThreadEvent("AnimationEnd")
+		RunHook(HOOKID_END)
+	EndEvent
 
+	Event OnUpdateGameTime()
+		Initialize()
+	EndEvent
+	Event OnEndState()
+		UnregisterForUpdateGameTime()
+		Log("Returning to thread pool...")
+	EndEvent
+
+	int Function GetStatus()
+		return STATUS_ENDING
+	EndFunction
+EndState
+
+; ------------------------------------------------------- ;
+; --- State Independent                               --- ;
+; ------------------------------------------------------- ;
+;/
+	Functions whichs behavior is not dependent on the currently playing state
+/;
+
+Function AddScene(String asSceneID)
+	If (!asSceneID || !SexLabRegistry.SceneExists(asSceneID))
+		return
+	EndIf
+	If(_CustomScenes.Length > 0)
+		_CustomScenes = PapyrusUtil.PushString(_CustomScenes, _StartScene)
+	ElseIf(LeadIn)
+		_LeadInScenes = PapyrusUtil.PushString(_LeadInScenes, _StartScene)
+	Else
+		_PrimaryScenes = PapyrusUtil.PushString(_PrimaryScenes, _StartScene)
+	EndIf
+EndFunction
+
+sslActorAlias Function PickAlias(Actor ActorRef)
+	int i
+	while i < 5
+		if ActorAlias[i].ForceRefIfEmpty(ActorRef)
+			return ActorAlias[i]
+		endIf
+		i += 1
+	endWhile
+	return none
+EndFunction
+
+Function SetFurnitureIgnored(bool disabling = true)
+	If (CenterRef as Actor)
+		return
+	EndIf
+	CenterRef.SetDestroyed(disabling)
+	CenterRef.BlockActivation(disabling)
+	CenterRef.SetNoFavorAllowed(disabling)
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Function Declarations                           --- ;
@@ -422,65 +1053,176 @@ EndFunction
 	is reason to implement them
 /;
 
-
 Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
-	CenterOnObjectImpl(CenterOn)
-	If(resync)	;	&& GetState() == "Animating") RealignActors() is empty if not in Animating State
-		RealignActors()
-		SendThreadEvent("ActorsRelocated")
+	Log("Invalid State", "CenterOnObject()")
+EndFunction
+Function EndAnimation(bool Quickly = false)
+	Log("Invalid state", "EndAnimation()")
+EndFunction
+Function PrepareDone()
+	Log("Invalid state", "PrepareDone()")
+EndFunction
+
+; The following functions are implemented by sslThreadController.psc
+Function DisableHotkeys()
+	Log("Invalid function call", "DisableHotkeys()")
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Actor Alias                                     --- ;
+; ------------------------------------------------------- ;
+;/
+	QoL accessors for the specified Actor
+/;
+
+int Function FindSlot(Actor ActorRef)
+	return Positions.Find(ActorRef)
+EndFunction
+
+sslActorAlias Function ActorAlias(Actor ActorRef)
+	return PositionAlias(FindSlot(ActorRef))
+EndFunction
+
+sslActorAlias Function PositionAlias(int Position)
+	If(Position < 0 || Position >= Positions.Length)
+		return none
+	EndIf
+	return ActorAlias[Position]
+EndFunction
+
+Function SortAliasesToPositions()
+	sslActorAlias[] newAliases = new sslActorAlias[5]
+	int i = 0
+	While (i < ActorAlias.Length)
+		Actor it = ActorAlias[i].GetActorReference()
+		If (it)
+			int where = Positions.Find(it)
+			newAliases[where] = ActorAlias[i]
+		EndIf
+		i += 1
+	EndWhile
+	ActorAlias = newAliases
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Thread Hooks & Events                           --- ;
+; ------------------------------------------------------- ;
+;/
+	Interface to send blocking and non blocking hooks
+/;
+
+int Property HOOKID_STARTING 		= 0 AutoReadOnly
+int Property HOOKID_STAGESTART 	= 1 AutoReadOnly
+int Property HOOKID_STAGEEND 		= 2 AutoReadOnly
+int Property HOOKID_END 				= 3 AutoReadOnly
+SexLabThreadHook[] ThreadHooks
+
+Function RunHook(int aiHookID)
+	int i = 0
+	While (i < ThreadHooks.Length)
+		If (HOOKID_STAGESTART)
+			ThreadHooks[i].OnStageStart(self)
+		ElseIf (HOOKID_STAGEEND)
+			ThreadHooks[i].OnStageEnd(self)
+		ElseIf (HOOKID_STARTING)
+			ThreadHooks[i].OnAnimationStarting(self)
+		ElseIf (HOOKID_END)
+			ThreadHooks[i].OnAnimationEnd(self)
+		EndIf
+		i += 1
+	EndWhile
+EndFunction
+
+Function SendThreadEvent(string HookEvent)
+	Log(HookEvent, "Event Hook")
+	SetupThreadEvent(HookEvent)
+	int i = _Hooks.Length
+	while i
+		i -= 1
+		SetupThreadEvent(HookEvent + "_" + _Hooks[i])
+	endWhile
+EndFunction
+Function SetupThreadEvent(string HookEvent)
+	int eid = ModEvent.Create("Hook"+HookEvent)
+	if eid
+		ModEvent.PushInt(eid, thread_id)
+		ModEvent.PushBool(eid, HasPlayer)
+		ModEvent.Send(eid)
+	endIf
+	SendModEvent(HookEvent, thread_id)
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Initialization                                  --- ;
+; ------------------------------------------------------- ;
+;/
+	Functions for re/initialization
+/;
+
+; This is only called once when the Framework is first initialized
+Function SetTID(int id)
+	thread_id = id
+	Log(self, "Setup")
+	int i = 0
+	While(i < ActorAlias.Length)
+		ActorAlias[i].Setup()
+		i += 1
+	EndWhile
+	Initialize()
+EndFunction
+
+; Reset this thread to base status
+Function Initialize()
+	UnregisterForUpdate()
+	DisableHotkeys()
+	Config.DisableThreadControl(self as sslThreadController)
+	int i = 0
+	While(i < ActorAlias.Length)
+		ActorAlias[i].Initialize()
+		i += 1
+	EndWhile
+	CenterAlias.TryToClear()
+	; TODO: reset public variables here
+	; Enter thread selection pool
+	GoToState("Unlocked")
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Logging                                         --- ;
+; ------------------------------------------------------- ;
+;/
+	Generic logging utility
+/;
+
+Function Log(string msg, string src = "")
+	msg = "Thread[" + thread_id + "] " + src + " - " + msg
+	Debug.Trace("SEXLAB - " + msg)
+	If(Config.DebugMode)
+		SexLabUtil.PrintConsole(msg)
+		Debug.TraceUser("SexLabDebug", msg)
 	EndIf
 EndFunction
 
-Function CenterOnObjectImpl(ObjectReference akNewCenter)
-	If(!akNewCenter)
-		return
+Function LogConsole(String asReport)
+	String msg = "Thread[" + thread_id + "] - " + asReport
+	SexLabUtil.PrintConsole(msg)
+	Debug.Trace("SEXLAB - " + msg)
+EndFunction
+
+Function LogRedundant(String asFunction)
+	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
+EndFunction
+
+Function Fatal(string msg, string src = "", bool halt = true)
+	msg = "Thread["+thread_id+"] - FATAL - " + src + " - " + msg
+	Debug.TraceStack("SEXLAB - " + msg)
+	SexLabUtil.PrintConsole(msg)
+	If(Config.DebugMode)
+		Debug.TraceUser("SexLabDebug", msg)
 	EndIf
-	_Center = akNewCenter.PlaceAtMe(xMarker)
-	CenterAlias.ForceRefTo(akNewCenter)
-	CenterLocation[0] = akNewCenter.GetPositionX()
-	CenterLocation[1] = akNewCenter.GetPositionY()
-	CenterLocation[2] = akNewCenter.GetPositionZ()
-	CenterLocation[3] = akNewCenter.GetAngleX()
-	CenterLocation[4] = akNewCenter.GetAngleY()
-	CenterLocation[5] = akNewCenter.GetAngleZ()
-	If(sslpp.IsBed(akNewCenter))
-		BedStatus[1] = ThreadLib.GetBedType(akNewCenter)
-		BedRef = akNewCenter
-		SetFurnitureIgnored(true)
-		float offsetX
-		float offsetY
-		float offsetZ
-		float offsAnZ
-		If(BedStatus[1] == 1)
-			offsetZ = 7.5 ; Average Z offset for bedrolls
-			offsAnZ = 180 ; bedrolls are usually rotated 180° on Z
-		Else
-			int offset = -31 ; + ((_Positions_var.find(playerref) > -1) as int) * 36
-			offsetX = Math.Cos(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
-			offsetY = Math.Sin(sslUtility.TrigAngleZ(CenterLocation[5])) * offset
-			offsetZ = 45 ; Z offset for beds
-		EndIf
-		float scale = akNewCenter.GetScale()
-		If(scale != 1.0)
-			offsetX *= scale
-			offsetY *= scale
-			If(CenterLocation[2] < 0)
-				offsetZ *= (2 - scale) ; Assming Scale will always be in [0; 2)
-			Else
-				offsetZ *= scale
-			EndIf
-		EndIf
-		CenterLocation[0] = CenterLocation[0] + offsetX
-		CenterLocation[1] = CenterLocation[1] + offsetY
-		CenterLocation[2] = CenterLocation[2] + offsetZ
-		CenterLocation[5] = CenterLocation[5] - offsAnZ
-		_Center.SetPosition(CenterLocation[0], CenterLocation[1], CenterLocation[2])
-		_Center.SetAngle(CenterLocation[3], CenterLocation[4], CenterLocation[5])
-	Else
-		BedStatus[1] = 0
-		BedRef = none
+	If (halt)
+		Initialize()
 	EndIf
-	Log("Creating new Center Ref from = " + akNewCenter + " at Coordinates = " + CenterLocation + "(New Center is Bed Type: " + BedStatus[1] + ")")
 EndFunction
 
 
@@ -495,6 +1237,46 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+sslThreadLibrary Property ThreadLib
+	sslThreadLibrary Function Get()
+		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslThreadLibrary
+	EndFunction
+	Function Set(sslThreadLibrary aSet)
+	EndFunction
+EndProperty
+sslAnimationSlots Property AnimSlots
+	sslAnimationSlots Function Get()
+		return Game.GetFormFromFile(0x639DF, "SexLab.esm") as sslAnimationSlots
+	EndFunction
+	Function Set(sslAnimationSlots aSet)
+	EndFunction
+EndProperty
+sslCreatureAnimationSlots Property CreatureSlots
+	sslCreatureAnimationSlots Function Get()
+		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationSlots
+	EndFunction
+	Function Set(sslCreatureAnimationSlots aSet)
+	EndFunction
+EndProperty
+sslActorLibrary property ActorLib
+  sslActorLibrary Function Get()
+    return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary
+  EndFunction
+  Function Set(sslActorLibrary aSet)
+  EndFunction
+EndProperty
+
+int Property ActorCount
+	int Function Get()
+		return Positions.Length
+	EndFunction
+EndProperty
+Actor[] property Victims
+	Actor[] Function Get()
+		GetAllVictims()
+	EndFunction
+EndProperty
+
 int[] Property Genders
 	int[] Function Get()
 		int[] g = ActorLib.GetGendersAll(Positions)
@@ -508,225 +1290,6 @@ int[] Property Genders
 	Function Set(int[] aSet)
 	EndFunction
 EndProperty
-
-sslBaseAnimation Property Animation
-	sslBaseAnimation Function Get()
-		return sslBaseAnimation.GetOrSetBaseAnimation(_ActiveScene, none, true) as sslBaseAnimation
-	EndFunction
-	Function Set(sslBaseAnimation aSet)
-		SetAnimationImpl(aSet)
-	EndFunction
-EndProperty
-sslBaseAnimation Property StartingAnimation
-	sslBaseAnimation Function Get()
-		return sslBaseAnimation.GetOrSetBaseAnimation(_StartScene, none, true) as sslBaseAnimation
-	EndFunction
-	Function Set(sslBaseAnimation aSet)
-		SetStartingAnimation(aSet)
-	EndFunction
-EndProperty
-sslBaseAnimation[] Property Animations hidden
-	sslBaseAnimation[] Function get()
-		return sslBaseAnimation.AsBaseAnimations(Scenes)
-	EndFunction
-EndProperty
-
-Function AddAnimation(sslBaseAnimation AddAnimation, bool ForceTo = false)
-	If(!AddAnimation)
-		return
-	EndIf
-	AddScene(AddAnimation.PROXY_ID)
-EndFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-
-
-
-; Properties
-sslSystemConfig Property Config Auto
-sslActorStats Property Stats Auto
-sslActorLibrary Property ActorLib Auto
-sslThreadLibrary Property ThreadLib Auto
-sslAnimationSlots Property AnimSlots Auto
-sslCreatureAnimationSlots Property CreatureSlots Auto
-
-Message Property UseBed Auto
-Static Property xMarker Auto
-Package Property DoNothingPackage Auto	; used in the alias scripts
-; Furniture Property BaseMarker Auto		; trying xMarker cause of complains about alignments
-
-
-; Actor Info
-; assert(ActorAlias[i].GetRef() == Positions[i])
-
-
-; Thread status
-int Property Stage Auto Hidden
-bool Property AutoAdvance auto hidden
-bool Property LeadIn auto hidden
-
-string Property AdjustKey
-	String Function Get()
-		return "Global"
-		; TODO: reimplement this
-		; if !Config.RaceAdjustments && Config.ScaleActors
-		; 	AdjustKey = "Global"
-		; else
-		; 	int i
-		; 	string NewKey
-		; 	while i < ActorCount
-		; 		NewKey += PositionAlias(i).GetActorKey()
-		; 		i += 1
-		; 		if i < ActorCount
-		; 			NewKey += "."
-		; 		endIf
-		; 	endWhile
-		; 	AdjustKey = NewKey
-		; endIf
-	EndFunction
-EndProperty
-
-; Animation Info
-Sound Property SoundFX auto hidden
-string[] Property AnimEvents auto hidden
-
-; Stat Tracking Info
-float[] Property SkillBonus auto hidden ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
-float[] Property SkillXP auto hidden    ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
-
-bool[] Property IsType auto hidden 			; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty
-bool Property IsAggressive hidden
-	bool Function get()
-		return IsType[0] || GetAllVictims().Length || Tags.Find("Aggressive") > -1
-	endfunction
-	Function set(bool value)
-		IsType[0] = value
-	EndFunction
-EndProperty
-bool Property IsVaginal hidden
-	bool Function get()
-		return IsType[1]
-	endfunction
-	Function set(bool value)
-		IsType[1] = value
-	EndFunction
-EndProperty
-bool Property IsAnal hidden
-	bool Function get()
-		return IsType[2]
-	endfunction
-	Function set(bool value)
-		IsType[2] = value
-	EndFunction
-EndProperty
-bool Property IsOral hidden
-	bool Function get()
-		return IsType[3]
-	endfunction
-	Function set(bool value)
-		IsType[3] = value
-	EndFunction
-EndProperty
-bool Property IsLoving hidden
-	bool Function get()
-		return IsType[4]
-	endfunction
-	Function set(bool value)
-		IsType[4] = value
-	EndFunction
-EndProperty
-bool Property IsDirty hidden
-	bool Function get()
-		return IsType[5]
-	endfunction
-	Function set(bool value)
-		IsType[5] = value
-	EndFunction
-EndProperty
-
-; Timer Info
-bool UseCustomTimers
-float[] CustomTimers
-float[] ConfigTimers
-float[] Property Timers hidden
-	float[] Function get()
-		if UseCustomTimers
-			return CustomTimers
-		endIf
-		return ConfigTimers
-	EndFunction
-	Function set(float[] value)
-	if !value.Length
-		Log("Set() - Empty timers given for Property Timers.", "ERROR")
-	else
-		CustomTimers    = value
-		UseCustomTimers = true
-	endIf
-	EndFunction
-EndProperty
-
-; Thread info
-float[] Property CenterLocation Auto Hidden
-
-float Property StartedAt auto hidden
-float Property TotalTime hidden
-	float Function get()
-		return SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt
-	EndFunction
-EndProperty
-
-bool property DisableOrgasms auto hidden
-
-; Beds
-; BedStatus[0] = -1 forbid, 0 allow, 1 force
-; BedStatus[1] = 0 none, 1 bedroll, 2 single, 3 double
-int[] Property BedStatus auto hidden
-
-ObjectReference Property BedRef auto hidden
-int Property BedTypeID hidden
-	int Function get()
-		return BedStatus[1]
-	EndFunction
-EndProperty
-bool Property UsingBed hidden
-	bool Function get()
-		return BedStatus[1] > 0
-	EndFunction
-EndProperty
-bool Property UsingBedRoll hidden
-	bool Function get()
-		return BedStatus[1] == 1
-	EndFunction
-EndProperty
-bool Property UsingSingleBed hidden
-	bool Function get()
-		return BedStatus[1] == 2
-	EndFunction
-EndProperty
-bool Property UsingDoubleBed hidden
-	bool Function get()
-		return BedStatus[1] == 3
-	EndFunction
-EndProperty
-bool Property UseNPCBed hidden
-	bool Function get()
-		int NPCBed = Config.NPCBed
-		return NPCBed == 2 || (NPCBed == 1 && (Utility.RandomInt(0, 1) as bool))
-	EndFunction
-EndProperty
-
-; Genders
 int Property Males hidden
 	int Function get()
 		return Genders[0]
@@ -759,234 +1322,503 @@ int Property FemaleCreatures hidden
 	EndFunction
 EndProperty
 
-; Local readonly
-string[] Hooks
-string[] Tags
-string ActorKeys
-
-; Animating
-float SkillTime
-
-; ------------------------------------------------------- ;
-; --- Thread Making API                               --- ;
-; ------------------------------------------------------- ;
-
-; ------------------------------------------------------- ;
-; --- Animation Loop		                              --- ;
-; ------------------------------------------------------- ;
-
-; SFX
-float SFXDelay
-float SFXTimer
-
-; Processing
-bool TimedStage
-float StageTimer
-
-State Animating
-	Event OnBeginState()
-		SendThreadEvent("AnimationStart")
-		If(LeadIn)
-			SendThreadEvent("LeadInStart")
-		EndIf
-		StartedAt = Utility.GetCurrentRealTime()
-		SkillTime = SkillTime
-		SFXDelay = Config.SFXDelay
-		PlayStageAnimations()
-		ResolveTimers()
-		StageTimer = StartedAt + GetTimer()
-		RegisterForSingleUpdate(0.5)
-		SendThreadEvent("StageStart")
-		HookStageStart()
-	EndEvent
-
-	Function GoToStage(int ToStage)
-		UnregisterForUpdate()
-		SendThreadEvent("StageEnd")
-		HookStageEnd()
-		Log("Going to Stage: " + ToStage)
-		Stage = ToStage
-		If(Stage > Animation.StageCount)
-			Log("Stage > Animation.StageCount")
-			If(LeadIn)
-				EndLeadInImpl()
-			Else
-				EndAnimation()
-			EndIf
-			return
-		EndIf
-		PlayStageAnimations()
-		If(!LeadIn && Stage >= Animation.StageCount && !DisableOrgasms)
-			SendThreadEvent("OrgasmStart")
-			TriggerOrgasm()
-		EndIf
-		SFXDelay = PapyrusUtil.ClampFloat(Config.SFXDelay - (Stage * 0.3), 0.5, 30.0)
-		ResolveTimers()
-		StageTimer = SexLabUtil.GetCurrentGameRealTimeEx() + GetTimer()
-		RegisterForSingleUpdate(0.5)
-		SendThreadEvent("StageStart")
-		HookStageStart()
+int Property Stage
+	int Function Get()
+		return _StageHistory.Length
 	EndFunction
-	
-	Event OnUpdate()
-		float rt = SexLabUtil.GetCurrentGameRealTimeEx()
-		If((AutoAdvance || TimedStage || Animation.HasTimer(Stage)) && StageTimer < rt)
-			GoToStage(Stage + 1)
-			return
-		EndIf
-		; Play SFX	
-		; IDEA: Decouple from main loop and use actor specific ones instead
-		If(SoundFX && SFXTimer < rt)
-			SoundFX.Play(_Center)
-			SFXTimer = rt + SFXDelay
-		EndIf
-		RegisterForSingleUpdate(0.5)
-	EndEvent
-	
-	Event OnKeyDown(int KeyCode)
-		MiscUtil.PrintConsole("OnKeyDown > " + KeyCode)
-		If(Utility.IsInMenuMode())
-			Log("Input while locked. Skipping ...")
-			return
-		EndIf
-		int hotkey = Hotkeys.Find(KeyCode)
-		If(hotkey == kAdvanceAnimation)
-			AdvanceStage(Config.BackwardsPressed())
-		ElseIf(hotkey == kChangeAnimation)
-			ChangeAnimation(Config.BackwardsPressed())
-		ElseIf(hotkey == kAdjustForward)
-			AdjustForward(Config.BackwardsPressed(), Config.AdjustStagePressed())
-		ElseIf(hotkey == kAdjustUpward)
-			AdjustUpward(Config.BackwardsPressed(), Config.AdjustStagePressed())
-		ElseIf(hotkey == kAdjustSideways)
-			AdjustSideways(Config.BackwardsPressed(), Config.AdjustStagePressed())
-		ElseIf(hotkey == kRotateScene)
-			RotateScene(Config.BackwardsPressed())
-		ElseIf(hotkey == kAdjustSchlong)
-			AdjustSchlong(Config.BackwardsPressed())
-		ElseIf(hotkey == kAdjustChange)			; Change Adjusting Position
-			AdjustChange(Config.BackwardsPressed())
-		ElseIf(hotkey == kRealignActors)
-			RealignActors()
-		ElseIf(hotkey == kChangePositions)	; Change Positions
-			ChangePositions()
-		ElseIf(hotkey == kRestoreOffsets)		; Reset animation offsets
-			RestoreOffsets()
-		ElseIf(hotkey == kMoveScene)
-			MoveScene()
-		ElseIf(hotkey == kEndAnimation)
-			If(Config.BackwardsPressed())
-				Config.ThreadSlots.StopAll()
-			Else
-				EndAnimation()
-			EndIf
-			return
-		EndIf
-	EndEvent
-
-	; TODO: This should realign actors on native level
-	Function RealignActors()
-		; float[] offsets = Animation.PositionOffsets(AdjustKey, Stage)
-		; sslpp.SetPositionsEx(Positions, _Center, offsets)
+	Function Set(int aSet)
+		return GoToStage(aSet)
 	EndFunction
+EndProperty
 
-; ------------------------------------------------------- ;
-; --- TODO: REVIEW EVERYTHING BELOW                   --- ;
-; ------------------------------------------------------- ;
+string[] Property AnimEvents
+	String[] Function Get()
+		return SexLabRegistry.GetAnimationEventA(_ActiveScene, _ActiveStage)
+	EndFunction
+EndProperty
 
-	Function TriggerOrgasm()
-		UnregisterForUpdate()
-		if SoundFX
-			SoundFX.Play(_Center)
+string Property AdjustKey
+	String Function Get()
+		return "Global"
+	EndFunction
+EndProperty
+
+bool[] Property IsType	; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty, [6] HadVaginal, [7] HadAnal, [8] HadOral
+	bool[] Function Get()
+		bool[] ret = new bool [9]
+		ret[0] = IsAggressive
+		ret[1] = IsVaginal
+		ret[2] = IsAnal
+		ret[3] = IsOral
+		ret[4] = IsLoving
+		ret[5] = IsDirty
+		int i = 0
+		While (i < _StageHistory.Length - 1)
+			ret[6] = ret[6] || SexlabRegistry.IsStageTag(_ActiveScene, _StageHistory[i], "Vaginal")
+			ret[7] = ret[7] || SexlabRegistry.IsStageTag(_ActiveScene, _StageHistory[i], "Anal")
+			ret[8] = ret[8] || SexlabRegistry.IsStageTag(_ActiveScene, _StageHistory[i], "Oral")
+			i += 1
+		EndWhile
+		return ret
+	EndFUnction
+	Function Set(bool[] aSet)
+	EndFunction
+EndProperty
+bool Property IsVaginal hidden
+	bool Function get()
+		return SexlabRegistry.IsSceneTag(_ActiveScene, "Vaginal")
+	endfunction
+	Function set(bool value)
+	EndFunction
+EndProperty
+bool Property IsAnal hidden
+	bool Function get()
+		return SexlabRegistry.IsSceneTag(_ActiveScene, "Anal")
+	endfunction
+	Function set(bool value)
+	EndFunction
+EndProperty
+bool Property IsOral hidden
+	bool Function get()
+		return SexlabRegistry.IsSceneTag(_ActiveScene, "Oral")
+	endfunction
+	Function set(bool value)
+	EndFunction
+EndProperty
+bool Property IsLoving hidden
+	bool Function get()
+		return SexlabRegistry.IsSceneTag(_ActiveScene, "Loving")
+	endfunction
+	Function set(bool value)
+	EndFunction
+EndProperty
+bool Property IsDirty hidden
+	bool Function get()
+		return SexlabRegistry.IsSceneTag(_ActiveScene, "Dirty") || SexlabRegistry.IsSceneTag(_ActiveScene, "Forced")
+	endfunction
+	Function set(bool value)
+	EndFunction
+EndProperty
+
+int[] Property BedStatus
+	int[] Function Get()
+		int[] ret = new int[2]
+		ret[0] = _furniStatus - 1
+		ret[1] = BedTypeID
+	EndFunction
+	Function Set(int[] aSet)
+	EndFunction
+EndProperty
+ObjectReference Property BedRef
+	ObjectReference Function Get()
+		If (sslThreadLibrary.IsBed(CenterRef))
+			return CenterRef
+		EndIf
+		return none
+	EndFunction
+	Function Set(ObjectReference aSet)
+	EndFunction
+EndProperty
+int Property BedTypeID hidden
+	int Function get()
+		return sslThreadLibrary.GetBedTypeImpl(CenterRef)
+	EndFunction
+EndProperty
+bool Property UsingBed hidden
+	bool Function get()
+		return BedRef != none
+	EndFunction
+EndProperty
+bool Property UsingBedRoll hidden
+	bool Function get()
+		return BedTypeID == 1
+	EndFunction
+EndProperty
+bool Property UsingSingleBed hidden
+	bool Function get()
+		return BedTypeID == 2
+	EndFunction
+EndProperty
+bool Property UsingDoubleBed hidden
+	bool Function get()
+		return BedTypeID == 3
+	EndFunction
+EndProperty
+bool Property UseNPCBed hidden
+	bool Function get()
+		int NPCBed = Config.NPCBed
+		return NPCBed == 2 || (NPCBed == 1 && (Utility.RandomInt(0, 1) as bool))
+	EndFunction
+EndProperty
+
+Actor property VictimRef hidden
+	Actor Function Get()
+		Actor[] vics = GetAllVictims()
+		If(vics.Length)
+			return vics[0]
+		EndIf
+		return none
+	EndFunction
+	Function Set(Actor ActorRef)
+		sslActorAlias vic = ActorAlias(ActorRef)
+		If(!vic)
+			return
+		EndIf
+		vic.SetVictim(true)
+	EndFunction
+EndProperty
+
+float[] Property CenterLocation
+	float[] Function Get()
+		float[] ret = new float[6]
+		ret[0] = CenterRef.GetPositionX()
+		ret[1] = CenterRef.GetPositionY()
+		ret[2] = CenterRef.GetPositionZ()
+		ret[3] = CenterRef.GetAngleX()
+		ret[4] = CenterRef.GetAngleY()
+		ret[5] = CenterRef.GetAngleZ()
+		return ret
+	EndFunction
+	Function Set(float[] aSet)
+	EndFunction
+EndProperty
+
+sslBaseAnimation Property Animation
+	sslBaseAnimation Function Get()
+		return sslBaseAnimation.GetOrSetBaseAnimation(_ActiveScene, none, true) as sslBaseAnimation
+	EndFunction
+	Function Set(sslBaseAnimation aSet)
+		SetAnimationImpl(aSet)
+	EndFunction
+EndProperty
+sslBaseAnimation Property StartingAnimation
+	sslBaseAnimation Function Get()
+		return sslBaseAnimation.GetOrSetBaseAnimation(_StartScene, none, true) as sslBaseAnimation
+	EndFunction
+	Function Set(sslBaseAnimation aSet)
+		SetStartingAnimation(aSet)
+	EndFunction
+EndProperty
+sslBaseAnimation[] Property Animations hidden
+	sslBaseAnimation[] Function get()
+		return sslBaseAnimation.AsBaseAnimations(Scenes)
+	EndFunction
+EndProperty
+
+Function AddAnimation(sslBaseAnimation AddAnimation, bool ForceTo = false)
+	If(!AddAnimation)
+		return
+	EndIf
+	AddScene(AddAnimation.PROXY_ID)
+EndFunction
+Function SetAnimation(int aid = -1)
+	if aid < 0 || aid >= Animations.Length
+		aid = Utility.RandomInt(0, (Animations.Length - 1))
+	endIf
+	SetAnimationImpl(Animations[aid])
+EndFunction
+Function SetAnimationImpl(sslBaseAnimation akAnimation)
+	ResetScene(akAnimation.PROXY_ID)
+EndFunction
+
+bool function AddTag(string Tag)
+	return false
+endFunction
+bool function RemoveTag(string Tag)
+	return false
+endFunction
+bool function ToggleTag(string Tag)
+	return false
+endFunction
+bool function AddTagConditional(string Tag, bool AddTag)
+	return false
+endFunction
+String[] Function AddString(string[] ArrayValues, string ToAdd, bool RemoveDupes = true)
+	if ToAdd != ""
+		string[] Output = ArrayValues
+		if !RemoveDupes || Output.length < 1
+			return PapyrusUtil.PushString(Output, ToAdd)
+		elseIf Output.Find(ToAdd) == -1
+			int i = Output.Find("")
+			if i != -1
+				Output[i] = ToAdd
+			else
+				Output = PapyrusUtil.PushString(Output, ToAdd)
+			endIf
 		endIf
-		QuickEvent("Orgasm")
-		RegisterForSingleUpdate(0.5)
-	EndFunction
+		return Output
+	endIf
+	return ArrayValues
+EndFunction
 
-	Function ChangeActors(Actor[] NewPositions)
-		NewPositions = PapyrusUtil.RemoveActor(NewPositions, none)
-		If(NewPositions.Length == Positions.Length)
-			int i = 0
-			While(i < NewPositions.Length)
-				If(Positions.Find(NewPositions[i]) == -1)
-					i = NewPositions.Length
-				EndIf
-				i += 1
-			EndWhile
-			If(i == NewPositions.Length)
-				return
-			EndIf
-		ElseIf(!NewPositions.Length || NewPositions.Length > POSITION_COUNT_MAX)
-			return
+Sound Property SoundFX
+	Sound Function Get()
+		return none
+	EndFunction
+	Function Set(Sound aSet)
+	EndFunction
+EndProperty
+
+function SyncEvent(int id, float WaitTime)
+endFunction
+function SyncEventDone(int id)
+endFunction
+Function SyncDone()
+EndFunction
+Function RefreshDone()
+EndFunction
+Function ResetDone()
+EndFunction
+Function StripDone()
+EndFunction
+Function OrgasmDone()
+EndFunction
+Function StartupDone()
+EndFunction
+
+sslBaseAnimation[] Function GetForcedAnimations()
+	return sslBaseAnimation.AsBaseAnimations(_CustomScenes)
+EndFunction
+sslBaseAnimation[] Function GetAnimations()
+	return sslBaseAnimation.AsBaseAnimations(_PrimaryScenes)
+EndFunction
+sslBaseAnimation[] Function GetLeadAnimations()
+	return sslBaseAnimation.AsBaseAnimations(_LeadInScenes)
+EndFunction
+
+int Function GetHighestPresentRelationshipRank(Actor ActorRef)
+	if Positions.Length <= 1
+		If(ActorRef == Positions[0])
+			return 0
+		Else
+			return ActorRef.GetRelationshipRank(Positions[0])
 		EndIf
-		UnregisterforUpdate()
-		SendThreadEvent("ActorChangeStart")
+	endIf
+	int out = -4 ; lowest possible
+	int i = Positions.Length
+	while i > 0 && out < 4
+		i -= 1
+		if Positions[i] != ActorRef
+			int rank = ActorRef.GetRelationshipRank(Positions[i])
+			if rank > out
+				out = rank
+			endIf
+		endIf
+	endWhile
+	return out
+EndFunction
+
+int Function GetLowestPresentRelationshipRank(Actor ActorRef)
+	if Positions.Length <= 1
+		If(ActorRef == Positions[0])
+			return 0
+		Else
+			return ActorRef.GetRelationshipRank(Positions[0])
+		EndIf
+	endIf
+	int out = 4 ; highest possible
+	int i = Positions.Length
+	while i > 0 && out > -4
+		i -= 1
+		if Positions[i] != ActorRef
+			int rank = ActorRef.GetRelationshipRank(Positions[i])
+			if rank < out
+				out = rank
+			endIf
+		endIf
+	endWhile
+	return out
+EndFunction
+
+string Function GetHook()
+	return _Hooks[0]
+EndFunction
+
+Function Action(string FireState)
+endfunction
+Function FireAction()
+EndFunction
+Function EndAction()
+EndFunction
+
+Function InitShares()
+EndFunction
+
+int Function FilterAnimations()
+	LogRedundant("FilterAnimations")
+	return 0
+EndFunction
+
+Function HookAnimationStarting()
+EndFunction
+Function HookStageStart()
+EndFunction
+Function HookStageEnd()
+EndFunction
+Function HookAnimationEnd()
+EndFunction
+
+Function SendTrackedEvent(Actor ActorRef, string Hook = "")
+	sslThreadLibrary.SendTrackingEvents(ActorRef, Hook, thread_id)
+EndFunction
+Function SetupActorEvent(Actor ActorRef, string Callback)
+	sslThreadLibrary.MakeTrackingEvent(ActorRef, Callback, thread_id)
+EndFunction
+
+Function UpdateAdjustKey()
+EndFunction
+
+String Function Key(string Callback)
+	return ""	; "SSL_" + thread_id + "_" + Callback
+EndFunction
+Function QuickEvent(string Callback)
+	; ModEvent.Send(ModEvent.Create(Key(Callback)))
+endfunction
+
+Race Property CreatureRef
+	Race Function Get()
+		Keyword npc = Keyword.GetKeyword("ActorTypeNPC")
 		int i = 0
 		While(i < Positions.Length)
-			int w = NewPositions.Find(Positions[i])
-			If(w == -1)
-				ActorAlias[i].Initialize()
+			If(!Positions[i].HasKeyword(npc))
+				return Positions[i].GetRace()
 			EndIf
 			i += 1
 		EndWhile
-		int n = 0
-		While(n < NewPositions.Length)
-			int w = Positions.Find(NewPositions[n])
-			If(w == -1)
-				sslActorAlias slot = PickAlias(NewPositions[n])
-				If(slot.SetActor(NewPositions[n]))
-					slot.SetData()
-					If(NewPositions[n].GetActorValue("Paralysis") > 0)
-						NewPositions[n].SetActorValue("Paralysis", 0.0)
-						slot.SendDefaultAnimEvent()
-						slot.PlaceActor(_Center)
-					EndIf
-				EndIf
-			EndIf
-			n += 1
-		EndWhile
-		ArrangePositions()
-		RealignActors()
-
-		int[] keys = GetPositionDataConfig()
-		If(!Animation.MatchKeys(keys))
-			If(Genders[2] || Genders[3])
-				PrimaryAnimations = CreatureSlots._GetAnimations(keys, Tags)
-			Else
-				PrimaryAnimations = AnimSlots._GetAnimations(keys, Tags)
-			EndIf
-			If(!PrimaryAnimations.Length)
-				If(Genders[2] || Genders[3])
-					PrimaryAnimations = CreatureSlots._GetAnimations(keys, none)
-				Else
-					PrimaryAnimations = AnimSlots._GetAnimations(keys, none)
-				EndIf
-			EndIf
-			If(PrimaryAnimations.Length)
-				int r = Utility.RandomInt(0, PrimaryAnimations.Length - 1)
-				Animation = PrimaryAnimations[r]
-				If(LeadIn)
-					EndLeadInImpl()
-				Else
-					GoToStage(Stage)
-				EndIf
-			Else
-				Log("ERROR - Changing Actors but no animations available to animate new Set. Ending animation...")
-				EndAnimation()
-			EndIf
-		Else
-			GoToStage(Stage)
-		EndIf
-		SendThreadEvent("ActorChangeEnd")
+		return none
 	EndFunction
+	Function Set(Race aSet)
+	EndFunction
+EndProperty
 
-	Event OnEndState()
-		UnregisterForUpdate()
-		If(!LeadIn && Stage >= Animation.StageCount && !DisableOrgasms)
-			SendThreadEvent("OrgasmEnd")
-		EndIF
-	EndEvent
-EndState
+float[] Property RealTime
+	float[] Function Get()
+		float[] ret = new float[1]
+		ret[0] = SexLabUtil.GetCurrentGameRealTimeEx()
+		return ret
+	EndFunction
+	Function Set(float[] aSet)
+	EndFunction
+EndProperty
+
+bool Property FastEnd auto hidden
+
+Actor Function GetPlayer()
+	return PlayerRef
+EndFunction
+Actor Function GetVictim()
+	return VictimRef
+EndFunction
+float Function GetTime()
+	return StartedAt
+endfunction
+
+Function RemoveFade()
+	if HasPlayer
+		Config.RemoveFade()
+	endIf
+EndFunction
+Function ApplyFade()
+	if HasPlayer
+		Config.ApplyFade()
+	endIf
+EndFunction
+
+bool Function IsPlayerActor(Actor ActorRef)
+	return ActorRef == PlayerRef
+EndFunction
+bool Function IsPlayerPosition(int Position)
+	return Position == Positions.Find(PlayerRef)
+EndFunction
+int Function GetPosition(Actor ActorRef)
+	return Positions.Find(ActorRef)
+EndFunction
+int Function GetPlayerPosition()
+	return Positions.Find(PlayerRef)
+EndFunction
+
+Function DisableRagdollEnd(Actor ActorRef = none, bool disabling = true)
+EndFunction
+
+Function SetStartAnimationEvent(Actor ActorRef, string EventName = "IdleForceDefaultState", float PlayTime = 0.1)
+EndFunction
+Function SetEndAnimationEvent(Actor ActorRef, string EventName = "IdleForceDefaultState")
+EndFunction
+
+bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
+	bool InStart = GetStatus() == STATUS_SETUP
+	If (_furniStatus == FURNI_DISALLOW)
+		return false
+	ElseIf (InStart && !HasPlayer && Config.NPCBed == 0 || HasPlayer && Config.AskBed == 0)
+		return false
+	EndIf
+	int i = 0
+	While (i < Positions.Length)
+		ObjectReference furni = Positions[i].GetFurnitureReference()
+		If (furni)
+			int BedType = sslThreadLibrary.GetBedTypeImpl(furni)
+			If (BedType > 0 && (Positions.Length < 4 || BedType != 2))
+				CenterOnObject(furni)
+				return true
+			EndIf
+		EndIf
+		i += 1
+	EndWhile
+ 	ObjectReference FoundBed
+	Radius *= _furniStatus	; Double radius is preferring a furniture
+	If (HasPlayer)
+		If (!InStart || Config.AskBed == 1 || (Config.AskBed == 2 && (!IsVictim(PlayerRef) || UseNPCBed)))
+			FoundBed = ThreadLib.GetNearestUnusedBed(PlayerRef, Radius)
+			AskPlayer = AskPlayer && (!InStart || !(Config.AskBed == 2 && IsVictim(PlayerRef)))
+		EndIf
+	ElseIf (UseNPCBed)
+		FoundBed = ThreadLib.GetNearestUnusedBed(Positions[0], Radius)
+	EndIf
+	; Found a bed AND EITHER forced use OR don't care about players choice OR or player approved
+	if FoundBed && (_furniStatus == FURNI_PREFER || (!AskPlayer || (AskPlayer && (Config.UseBed.Show() as bool))))
+		CenterOnObject(FoundBed)
+		return true
+	endIf
+	return false
+EndFunction
+
+Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
+	Form xMarker = Game.GetForm(0x3B)
+	ObjectReference new_center = CenterRef.PlaceAtMe(xMarker)
+	new_center.SetAngle(RotX, RotY, RotZ)
+	new_center.SetPosition(LocX, LocY, LocZ)
+	CenterOnObject(new_center, resync)
+EndFunction
+
+; COMEBACK: This is used in the MoveScene function (child script). Idk if theres any point or nah
+int Function AreUsingFurniture(Actor[] ActorList)	
+	int i = 0
+	While(i < ActorList.Length)
+		ObjectReference ref = ActorList[i].GetFurnitureReference()
+		If(ref)
+			return sslThreadLibrary.GetBedTypeImpl(ref)
+		EndIf
+		i += 1
+	EndWhile
+	return -1
+EndFunction
+
+; Function used to find and set the currently active Timer array
+; Timers property now does this explicetly on each access
+Function ResolveTimers()
+EndFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; ------------------------------------------------------- ;
 ; --- Actor Setup                                     --- ;
@@ -1067,14 +1899,6 @@ Function ForcePathToCenter(Actor ActorRef = none, bool forced = true)
 	endIf
 EndFunction
 
-Function SetStartAnimationEvent(Actor ActorRef, string EventName = "IdleForceDefaultState", float PlayTime = 0.1)
-	ActorAlias(ActorRef).SetStartAnimationEvent(EventName, PlayTime)
-EndFunction
-
-Function SetEndAnimationEvent(Actor ActorRef, string EventName = "IdleForceDefaultState")
-	ActorAlias(ActorRef).SetEndAnimationEvent(EventName)
-EndFunction
-
 ; Orgasms
 Function DisableAllOrgasms(bool OrgasmsDisabled = true)
 	DisableOrgasms = OrgasmsDisabled
@@ -1147,531 +1971,18 @@ int Function GetPain(Actor ActorRef)
 EndFunction
 
 ; Actor Information
-int Function GetPlayerPosition()
-	return Positions.Find(PlayerRef)
-EndFunction
-
-int Function GetPosition(Actor ActorRef)
-	return Positions.Find(ActorRef)
-EndFunction
-
 bool Function PregnancyRisk(Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
 	return ActorRef && HasActor(ActorRef) && ActorCount > 1 && ActorAlias(ActorRef).PregnancyRisk() \
 		&& (Males > 0 || (AllowFemaleCum && Females > 1 && Config.AllowFFCum) || (AllowCreatureCum && MaleCreatures > 0))
 EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Victim Data 				                            --- ;
-; ------------------------------------------------------- ;
-
-Actor[] Function GetAllVictims()
-	Actor[] ret = new Actor[5]
-	int i = 0
-	While(i < Positions.Length)
-		If(ActorAlias[i].IsVictim())
-			ret[i] = Positions[i]
-		EndIf
-		i += 1
-	EndWhile
-	return PapyrusUtil.RemoveActor(ret, none)
-EndFunction
-
-Function SetVictim(Actor ActorRef, bool Victimize = true)
-	sslActorAlias vic = ActorAlias(ActorRef)
-	If(!vic)
-		return
-	EndIf
-	vic.SetVictim(Victimize)
-EndFunction
-
-bool Function IsVictim(Actor ActorRef)
-	sslActorAlias vic = ActorAlias(ActorRef)
-	return vic && vic.IsVictim()
-EndFunction
-
-bool Function IsAggressor(Actor ActorRef)
-	sslActorAlias agr = ActorAlias(ActorRef)
-	return agr && agr.IsAggressor()
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Animation Setup                                 --- ;
-; ------------------------------------------------------- ;
-
-sslBaseAnimation[] Function GetForcedAnimations()
-	sslBaseAnimation[] Output = sslUtility.AnimationArray(CustomAnimations.Length)
-	int i = CustomAnimations.Length
-	while i > 0
-		i -= 1
-		Output[i] = CustomAnimations[i]
-	endWhile
-	return Output
-EndFunction
-
-Function ClearForcedAnimations()
-	CustomAnimations = sslUtility.AnimationArray(0)
-EndFunction
-
-sslBaseAnimation[] Function GetAnimations()
-	sslBaseAnimation[] Output = sslUtility.AnimationArray(PrimaryAnimations.Length)
-	int i = PrimaryAnimations.Length
-	while i > 0
-		i -= 1
-		Output[i] = PrimaryAnimations[i]
-	endWhile
-	return Output
-EndFunction
-
-Function ClearAnimations()
-	PrimaryAnimations = sslUtility.AnimationArray(0)
-EndFunction
-
-sslBaseAnimation[] Function GetLeadAnimations()
-	sslBaseAnimation[] Output = sslUtility.AnimationArray(LeadAnimations.Length)
-	int i = LeadAnimations.Length
-	while i > 0
-		i -= 1
-		Output[i] = LeadAnimations[i]
-	endWhile
-	return Output
-EndFunction
-
-Function ClearLeadAnimations()
-	LeadAnimations = sslUtility.AnimationArray(0)
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Thread Settings                                 --- ;
-; ------------------------------------------------------- ;
-
-; If any of the given Actors is using a Furniture
-; return: -1 if not, 1+ for bed, 0 for any other furniture
-int Function AreUsingFurniture(Actor[] ActorList)	
-	int i = 0
-	While(i < ActorList.Length)
-		ObjectReference ref = ActorList[i].GetFurnitureReference()
-		If(ref)
-			return ThreadLib.GetBedType(ref)
-		EndIf
-		i += 1
-	EndWhile
-	return -1
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Event Hooks                                     --- ;
-; ------------------------------------------------------- ;
-
-Function SetHook(string AddHooks)
-	string[] newHooks = PapyrusUtil.StringSplit(AddHooks)
-	Hooks = sslpp.MergeStringArrayEx(Hooks, newHooks, true)
-EndFunction
-
-string[] Function GetHooks()
-	return PapyrusUtil.ClearEmpty(Hooks)
-EndFunction
-
-Function RemoveHook(string DelHooks)
-	string[] remove = PapyrusUtil.StringSplit(DelHooks)
-	int i = 0
-	While(i < remove.Length)
-		int where = Hooks.Find(remove[i])
-		If(where > -1)
-			Hooks[where] = ""
-		EndIf
-		i += 1
-	EndWhile
-	Hooks = PapyrusUtil.ClearEmpty(Hooks)
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Tagging System                                  --- ;
-; ------------------------------------------------------- ;
-
-string[] Function GetTags()
-	return PapyrusUtil.ClearEmpty(Tags)
-EndFunction
-
-bool Function HasTag(string Tag)
-	return Tags.Find(Tag) != -1
-EndFunction
-
-bool Function AddTag(string Tag)
-	if Tag != "" && Tags.Find(Tag) == -1
-		Tags = PapyrusUtil.PushString(Tags, Tag)
-		return true
-	endIf
-	return false
-EndFunction
-
-bool Function AddTags(String[] asTags)
-	Tags = sslpp.MergeStringArrayEx(Tags, asTags, true)
-	return true
-EndFunction
-
-bool Function RemoveTag(string Tag)
-	if Tag != "" && Tags.Find(Tag) != -1
-		Tags = PapyrusUtil.RemoveString(Tags, Tag)
-		return true
-	endIf
-	return false
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Actor Alias                                     --- ;
-; ------------------------------------------------------- ;
-
-int Function FindSlot(Actor ActorRef)
-	return Positions.Find(ActorRef)
-EndFunction
-
-sslActorAlias Function ActorAlias(Actor ActorRef)
-	return PositionAlias(FindSlot(ActorRef))
-EndFunction
-
-sslActorAlias Function PositionAlias(int Position)
-	If(Position < 0 || Position >= Positions.Length)
-		return none
-	EndIf
-	return ActorAlias[Position]
-EndFunction
-
-; ------------------------------------------------------- ;
-; ---	Animation	Start                                 --- ;
-; ------------------------------------------------------- ;
-
-int[] Function ShiftKeys(int[] aiKeys)
-	; IDEA: Shift Futas first to female, then to male
-	int k = aiKeys.Length
-	While(k > 0)
-		k -= 1
-		If(sslActorData.IsFuta(aiKeys[k]))
-			If(Config.iFutaBehavior == 0)
-				If(!sslActorData.IsMaleOverwrite(aiKeys[k]))
-					ActorAlias[k].OverwriteMyGender(false)
-					ArrangePositions()
-					return GetPositionDataConfig()
-				EndIf
-			ElseIf(Config.iFutaBehavior == 1)
-				If(!sslActorData.IsFemaleOverwrite(aiKeys[k]))
-					ActorAlias[k].OverwriteMyGender(true)
-					ArrangePositions()
-					return GetPositionDataConfig()
-				EndIf
-			EndIf
-		EndIf
-	EndWhile
-	int i = aiKeys.Length
-	While(i > 0)
-		i -= 1
-		If(sslActorData.IsFemale(aiKeys[i]) && !sslActorData.IsMaleOverwrite(aiKeys[i]))
-			ActorAlias[i].OverwriteMyGender(false)
-			ArrangePositions()
-			return GetPositionDataConfig()
-		EndIf
-	EndWhile
-	return Utility.CreateIntArray(0)
-EndFunction
-
-; Assume all Actors have all necessary data set
-; Final preperations before starting the animation. Stripping, Position, ...
-Function PlaceActors()
-	float w = 0.0
-	int i = 0
-	While(i < Positions.Length)
-		ActorAlias[i].PlaceActor(_Center)
-		If(!sslActorData.IsCreature(ActorAlias[i].GetActorData()))
-			ActorAlias[i].Strip()
-			float ww = ActorAlias[i].HandleStartAnimation()
-			If(ww > w)
-				w = ww
-			EndIf
-		EndIf
-		i += 1
-	EndWhile
-	; If placing includes an animation, wait for longest to finish
-	If(w > 0)
-		Utility.Wait(w)
-	EndIf
-	RealignActors()
-EndFunction
-
-; ------------------------------------------------------- ;
-; ---	Animation				                                --- ;
-; ------------------------------------------------------- ;
-
-; TODO: THis here should set the _ActiveScene variable
-
-; Set the Active Animation & update the stage
-; This should only be called from State "Animating"
-Function SetAnimation(int aid = -1)
-	if aid < 0 || aid >= Animations.Length
-		aid = Utility.RandomInt(0, (Animations.Length - 1))
-	endIf
-	RecordSkills()
-	SetAnimationImpl(Animations[aid])
-	; This is only called when changing animation from an active one
-	int i = 0
-	While(i < Positions.Length)
-		ActorAlias[i].SendDefaultAnimEvent()
-		i += 1
-	EndWhile
-	Utility.Wait(0.2)
-	GoToStage(1)
-EndFunction
-
-; Set active animation data only
-Function SetAnimationImpl(sslBaseAnimation akAnimation)
-	LogConsole("Setting Animation to " + akAnimation.Name)
-	Animation = akAnimation
-	; IsType = [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty, [6] HadVaginal, [7] HadAnal, [8] HadOral
-	String[] animtags = Animation.GetTags()
-	IsType[1] = animtags.Find("Vaginal") != -1
-	IsType[2] = animtags.Find("Anal") != -1
-	IsType[3] = animtags.Find("Oral") != -1
-	IsType[4] = animtags.Find("Loving") != -1
-	IsType[5] = animtags.Find("Dirty") != -1
-	SetBonuses()
-	SoundFX = Animation.GetSoundFX(Stage)
-EndFunction
-
-Function PlayStageAnimations()
-	; split into 2 loops to minimize possible delays for anim event calls
-	int i = 0
-	While(i < Positions.Length)
-		ActorAlias[i].SyncThread()
-		i += 1
-	EndWhile
-	Animation.GetAnimEvents(AnimEvents, Stage)
-	Log("Playing Stage Animations for animation " + Animation.Name + " with Events = " + AnimEvents)
-	int n = 0
-	While(n < Positions.Length)
-		ActorAlias[n].PlayAnimation(AnimEvents[n])
-		n += 1
-	EndWhile
-	RealignActors()
-EndFunction
-
-; End leadin -> Start default animation
-Function EndLeadInImpl()
-	Stage  = 1
-	LeadIn = false
-	SetAnimation()
-	; Add runtime to foreplay skill xp
-	SkillXP[0] = SkillXP[0] + (TotalTime / 10.0)
-	; Restrip with new strip options
-	int i = 0
-	While(i < Positions.Length)
-		ActorAlias[i].Strip()
-		i += 1
-	EndWhile
-	StorageUtil.SetFloatValue(Config, "SexLab.LastLeadInEnd", SexLabUtil.GetCurrentGameRealTimeEx())
-	SendThreadEvent("LeadInEnd")
-	GoToStage(1)
-EndFunction
-
-; ------------------------------------------------------- ;
-; ---	Timers  				                                --- ;
-; ------------------------------------------------------- ;
-
-; COMEBACK: Check if this works as intended
-Function ResolveTimers()
-	TimedStage = Animation.HasTimer(Stage)
-	If(TimedStage)
-		Log("Stage has timer: "+Animation.GetTimer(Stage))
-	EndIf
-	If(!UseCustomTimers)
-		if LeadIn
-			ConfigTimers = Config.StageTimerLeadIn
-		elseIf IsAggressive
-			ConfigTimers = Config.StageTimerAggr
-		else
-			ConfigTimers = Config.StageTimer
-		endIf
-	EndIf
-EndFunction
-
-Function UpdateTimer(float AddSeconds = 0.0)
-	TimedStage = true
-	StageTimer += AddSeconds
-EndFunction
-
-Function SetTimers(float[] SetTimers)
-	if !SetTimers || SetTimers.Length < 1
-		Log("SetTimers() - Empty timers given.", "ERROR")
-	else
-		CustomTimers    = SetTimers
-		UseCustomTimers = true
-	endIf
-EndFunction
-
-float Function GetTimer()
-	TimedStage = Animation.HasTimer(Stage)
-	if TimedStage
-		return Animation.GetTimer(Stage)
-	endIf
-	return GetStageTimer(Animation.StageCount)
-EndFunction
-
-float Function GetStageTimer(int maxstage)
-	int last = Timers.Length - 1
-	if Stage < last
-		return Timers[(Stage - 1)]
-	elseIf Stage >= maxstage
-		return Timers[last]
-	endIf
-	return Timers[(last - 1)]
-endfunction
-
-; ------------------------------------------------------- ;
-; ---	Animation	End		                                --- ;
-; ------------------------------------------------------- ;
-
-Function EndAnimation(bool Quickly = false)
-	; UnregisterForUpdate()
-	; Apparently the OnUpdate() cycle can carry over into a new state despite being unregistered
-	; Removing this wait causes the OnUpdate() Event to sometimes be called before the OnBeginState() can finish
-	; Utility.Wait(0.6)
-	GoToState("Ending")
-EndFunction
-
-State Ending
-	Event OnBeginState()
-		RegisterForSingleUpdateGameTime(0.05)	; 9 seconds with timescale 20
-		SendThreadEvent("AnimationEnding")
-		HookAnimationEnding()
-		DisableHotkeys()
-		Config.DisableThreadControl(self as sslThreadController)
-		If(IsObjectiveDisplayed(0))
-			SetObjectiveDisplayed(0, False)
-		EndIf
-		RecordSkills()
-		UnplaceActors()
-		If(UsingBed)
-			SetFurnitureIgnored(false)
-		EndIf
-		int i = 0
-		While(i < Positions.Length)
-			ActorAlias[i].DoStatistics()
-			ActorAlias[i].Clear()
-			i += 1
-		EndWhile
-		SendThreadEvent("AnimationEnd")
-		HookAnimationEnd()
-	EndEvent
-
-	Event OnUpdateGameTime()
-		Log("Animation End Timeout over, initializing...")
-		Initialize()
-	EndEvent
-	Event OnEndState()
-		Log("Returning to thread pool...")
-	EndEvent
-
-	Function EndAnimation(bool Quickly = false)
-	EndFunction
-EndState
-
-; Only call on placed actors, will unplace all actors, allowing them to move freely again
-; Will take them out of the animation if currently animating
-Function UnplaceActors()
-	int i = 0
-	While(i < Positions.Length)
-		ActorAlias[i].UnplaceActor()
-		If(!sslActorData.IsCreature(ActorAlias[i].GetActorData()))
-			ActorAlias[i].Unstrip()
-			ActorAlias[i].RemoveStrapon()
-		EndIf
-		i += 1
-	EndWhile
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Tagging                                         --- ;
-; ------------------------------------------------------- ;
-
-Function AddCommonTags(String[] asScenes) ; TODO: move out of here and rewrite
-	; String[] commons = akAnimations[0].GetTags()
-	; int i = 1
-	; While(i < akAnimations.Length)
-	; 	String[] animtags = akAnimations[i].GetTags()
-	; 	int k = commons.Length
-	; 	While(k > 0)
-	; 		k -= 1
-	; 		If(animtags.Find(commons[k]) == -1)
-	; 			commons = sslpp.RemoveStringEx(commons, commons[k])
-	; 			If(!commons.Length)
-	; 				return
-	; 			EndIf
-	; 		EndIf
-	; 	EndWhile
-	; 	i += 1
-	; EndWhile
-	; AddTags(commons)
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Center                                          --- ;
-; ------------------------------------------------------- ;
-
-Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, float RotX = 0.0, float RotY = 0.0, float RotZ = 0.0, bool resync = true)
-	_Center.SetPosition(LocX, LocY, LocZ)
-	_Center.SetAngle(CenterLocation[3], CenterLocation[4], RotZ)
-	CenterLocation[0] = LocX
-	CenterLocation[1] = LocY
-	CenterLocation[2] = LocZ
-	CenterLocation[5] = RotZ
-	If(resync)
-		RealignActors()
-		SendThreadEvent("ActorsRelocated")
-	EndIf
-EndFunction
-
-bool Function CenterOnBed(bool AskPlayer = true, float Radius = 750.0)
-	CenterOnBedEx(AskPlayer, Radius, true)
-EndFunction
-
-bool Function CenterOnBedEx(bool abAskPlayer = true, float afRadius = 750.0, bool abResync)
-	If(BedStatus[0] == -1)
-		return false
-	ElseIf(GetState() == "Making" && (!HasPlayer && Config.NPCBed == 0 || HasPlayer && Config.AskBed == 0))
-		return false
-	EndIf
- 	ObjectReference FoundBed
-	int i = 0
-	While (i < Positions.Length)
-		FoundBed = Positions[i].GetFurnitureReference()
-		int BedType = ThreadLib.GetBedType(FoundBed)	; 0 if no bed
-		If(BedType > 0 && (Positions.Length <= 2 || BedType != 2))
-			CenterOnObject(FoundBed, abResync)
-			return true
-		Else
-			i += 1
-		EndIf
-	EndWhile
-	afRadius *= 1 + BedStatus[0]
-	If(HasPlayer)
-		; Config.AskBed: 0 - Never, 1 - Alwys, 2 - If not victim
-		If(;/ !InStart || /; Config.AskBed == 1 || Config.AskBed == 2 && (!IsVictim(PlayerRef) || UseNPCBed))
-			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, afRadius)
-			abAskPlayer = abAskPlayer && (;/ !InStart || /; Config.AskBed < 1 || !IsVictim(PlayerRef))
-		EndIf
-	Else
-		abAskPlayer = false
-		If(!FoundBed && UseNPCBed)
-			FoundBed = sslpp.GetNearestUnusedBed(PlayerRef, afRadius)
-		EndIf
-	EndIf
-	If(FoundBed && (BedStatus[0] == 1 || !abAskPlayer || UseBed.Show() as bool))
-		CenterOnObject(FoundBed, abResync)
-		return true
-	endIf
-	return false
-EndFunction
-
-; ------------------------------------------------------- ;
 ; --- Skill System			                              --- ;
 ; ------------------------------------------------------- ;
+
+float[] Property SkillBonus auto hidden ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
+float[] Property SkillXP auto hidden    ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
+float SkillTime
 
 Function RecordSkills()
 	float TimeNow = SexLabUtil.GetCurrentGameRealTimeEx()
@@ -1713,783 +2024,4 @@ Function SetBonuses()
 	if IsType[5]
 		SkillBonus[5] = SkillXP[5]
 	endIf
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Misc Utility					                          --- ;
-; ------------------------------------------------------- ;
-
-Function SetFurnitureIgnored(bool disabling = true)
-	If(!BedRef)
-		return
-	EndIf
-	BedRef.SetDestroyed(disabling)
-	BedRef.BlockActivation(disabling)
-	BedRef.SetNoFavorAllowed(disabling)
-EndFunction
-
-sslActorAlias Function PickAlias(Actor ActorRef)
-	int i
-	while i < 5
-		if ActorAlias[i].ForceRefIfEmpty(ActorRef)
-			return ActorAlias[i]
-		endIf
-		i += 1
-	endWhile
-	return none
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Hotkey functions                                --- ;
-; ------------------------------------------------------- ;
-
-sslActorAlias AdjustAlias		; The actor currently selected for position adjustments
-
-int[] Hotkeys
-int kAdvanceAnimation = 0
-int kChangeAnimation  = 1
-int kChangePositions  = 2
-int kAdjustChange     = 3
-int kAdjustForward    = 4
-int kAdjustSideways   = 5
-int kAdjustUpward     = 6
-int kRealignActors    = 7
-int kRestoreOffsets   = 8
-int kMoveScene        = 9
-int kRotateScene      = 10
-int kEndAnimation     = 11
-int kAdjustSchlong    = 12
-
-Function EnableHotkeys(bool forced = false)
-	If(!HasPlayer && !forced)
-		return
-	EndIf
-	Hotkeys = new int[13]
-	Hotkeys[kAdvanceAnimation] = Config.AdvanceAnimation
-	Hotkeys[kChangeAnimation] = Config.ChangeAnimation
-	Hotkeys[kChangePositions] = Config.ChangePositions
-	Hotkeys[kAdjustSideways] = Config.AdjustSideways
-	Hotkeys[kRestoreOffsets] = Config.RestoreOffsets
-	Hotkeys[kAdjustForward] = Config.AdjustForward
-	Hotkeys[kRealignActors] = Config.RealignActors
-	Hotkeys[kAdjustSchlong] = Config.AdjustSchlong
-	Hotkeys[kAdjustUpward] = Config.AdjustUpward
-	Hotkeys[kAdjustChange] = Config.AdjustChange
-	Hotkeys[kEndAnimation] = Config.EndAnimation
-	Hotkeys[kRotateScene] = Config.RotateScene
-	Hotkeys[kMoveScene] = Config.MoveScene
-	int i = 0
-	While(i < Hotkeys.Length)
-		RegisterForKey(Hotkeys[i])
-		i += 1
-	Endwhile
-EndFunction
-
-Function DisableHotkeys()
-	UnregisterForAllKeys()
-EndFunction
-
-int Function GetAdjustPos()
-	int AdjustPos = -1
-	if AdjustAlias && AdjustAlias.ActorRef
-		AdjustPos = Positions.Find(AdjustAlias.ActorRef)
-	endIf
-	if AdjustPos == -1 && Config.TargetRef
-		AdjustPos = Positions.Find(Config.TargetRef)
-	endIf
-	if AdjustPos == -1
-		AdjustPos = (ActorCount > 1) as int
-	endIf
-	if Positions[AdjustPos] != PlayerRef
-		Config.TargetRef = Positions[AdjustPos]
-	endIf
-	AdjustAlias = PositionAlias(AdjustPos)
-	return AdjustPos
-EndFunction
-
-Function AdvanceStage(bool backwards = false)
-	If(!backwards)
-		GoToStage(Stage + 1)
-	Elseif(Config.IsAdjustStagePressed())
-		GoToStage(1)
-	ElseIf(Stage > 1)
-		GoToStage(Stage - 1)
-	EndIf
-EndFunction
-
-Function ChangeAnimation(bool backwards = false)
-	If(Animations.Length <= 1)
-		return
-	EndIf
-	UnregisterForUpdate()
-	Log("Changing Animation")
-	If(!Config.AdjustStagePressed())	; Forward/Backward
-		SetAnimation(sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards))
-	Else	; Random
-		int current = Animations.Find(Animation)
-		int r = Utility.RandomInt(0, Animations.Length - 1)
-		While(r == current)
-			r = Utility.RandomInt(0, Animations.Length - 1)
-		EndWhile
-		SetAnimation(r)
-	endIf
-	SendThreadEvent("AnimationChange")
-	RegisterForSingleUpdate(0.2)
-EndFunction
-
-Function AdjustForward(bool backwards = false, bool AdjustStage = false)
-	UnregisterforUpdate()
-	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
-	int AdjustPos = GetAdjustPos()
-	While(true)
-		PlayHotkeyFX(0, backwards)
-		Animation.AdjustForward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-		AdjustAlias.RefreshLoc()
-		Utility.Wait(0.1)
-		If(!Input.IsKeyPressed(Hotkeys[kAdjustForward]))
-			RegisterForSingleUpdate(0.2)
-			return
-		EndIf
-		Utility.Wait(0.4)
-	EndWhile
-EndFunction
-
-Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
-	UnregisterforUpdate()
-	int AdjustPos = GetAdjustPos()
-	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
-	While(true)
-		PlayHotkeyFX(0, backwards)
-		Animation.AdjustSideways(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-		RealignActors()
-		Utility.Wait(0.1)
-		If(!Input.IsKeyPressed(Hotkeys[kAdjustSideways]))
-			RegisterForSingleUpdate(0.2)
-			return
-		EndIf
-		Utility.Wait(0.4)
-	EndWhile
-EndFunction
-
-Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
-	UnregisterforUpdate()
-	int AdjustPos = GetAdjustPos()
-	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
-	While(true) 
-		PlayHotkeyFX(2, backwards)
-		Animation.AdjustUpward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-		RealignActors()
-		Utility.Wait(0.1)
-		If(!Input.IsKeyPressed(Hotkeys[kAdjustUpward]))
-			RegisterForSingleUpdate(0.2)
-			return
-		EndIf
-		Utility.Wait(0.4)
-	EndWhile
-EndFunction
-
-Function RotateScene(bool backwards = false)
-	UnregisterForUpdate()
-	float Amount = 15.0
-	If(Config.IsAdjustStagePressed())
-		Amount = 180.0
-	EndIf
-	Amount = PapyrusUtil.SignFloat(backwards, Amount)
-	While(true)	; Pseudo do-while loop
-		PlayHotkeyFX(1, !backwards)
-		CenterLocation[5] = CenterLocation[5] + Amount
-		If(CenterLocation[5] >= 360.0)
-			CenterLocation[5] = CenterLocation[5] - 360.0
-		ElseIf(CenterLocation[5] < 0.0)
-			CenterLocation[5] = CenterLocation[5] + 360.0
-		EndIf
-		CenterOnCoords(CenterLocation[0], CenterLocation[1], CenterLocation[2], 0, 0, CenterLocation[5], true)
-		Utility.Wait(0.1)
-		If(!Input.IsKeyPressed(Hotkeys[kRotateScene]))
-			RegisterForSingleUpdate(0.2)
-			return
-		EndIf
-		Utility.Wait(0.4)
-	EndWhile
-EndFunction
-
-Function AdjustSchlong(bool backwards = false)
-	int Amount  = PapyrusUtil.SignInt(backwards, 1)
-	int AdjustPos = GetAdjustPos()
-	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
-	If(Math.Abs(Schlong) <= 9)
-		Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
-		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
-		PlayHotkeyFX(2, !backwards)
-	EndIf
-EndFunction
-
-Function AdjustChange(bool backwards = false)
-	If(Positions.Length <= 1)
-		return
-	EndIf
-	int i = GetAdjustPos()
-	i = sslUtility.IndexTravel(i, ActorCount, backwards)
-	If(Positions[i] != PlayerRef)
-		Config.TargetRef = Positions[i]
-	EndIf
-	AdjustAlias = ActorAlias[i]
-	Config.SelectedSpell.Cast(Positions[i])	; SFX for visual feedback
-	PlayHotkeyFX(0, !backwards)
-	String msg = "Adjusting Position For: " + AdjustAlias.GetActorName()
-	Debug.Notification(msg)
-	SexLabUtil.PrintConsole(msg)
-EndFunction
-
-Function RestoreOffsets()
-	Animation.RestoreOffsets(AdjustKey)
-	RealignActors()
-EndFunction
-
-Function MoveScene()
-	UnregisterForUpdate()
-	; Processing Furnitures
-	If(BedStatus[1])
-		SetFurnitureIgnored(false)
-	EndIf
-	; Make sure the player cannot activate anything, change worldspaces or start combat on their own
-	Game.DisablePlayerControls(false, true, false, false, true)
-	sslActorAlias PlayerSlot = ActorAlias(PlayerRef)
-	int n = 0
-	While(n < Positions.Length)
-		Debug.Trace("Resetting Actor: " + n)
-		If(ActorAlias[n] == PlayerSlot)
-			ActorAlias[n].UnplaceActor()
-		Else
-			ActorAlias[n].SendDefaultAnimEvent(true)
-		EndIf
-		n += 1
-	EndWhile
-	Utility.Wait(1)
-	; TODO: Make some message objects to display here
-	Debug.Messagebox("You have 30 secs to position yourself to a new center location.\nHold down the 'Move Scene' hotkey to relocate the center instantly to your current position")
-	int i = 0
-	While(i < 60 && !Input.IsKeyPressed(Hotkeys[kMoveScene]))
-		Utility.Wait(0.5)
-		i += 1
-	EndWhile
-	Game.DisablePlayerControls()	; make sure player isnt moving before resync
-	float x = PlayerRef.X
-	float y = PlayerRef.Y
-	float z = PlayerRef.Z
-	Utility.Wait(0.5)							; wait for momentum to stop
-	While(x != PlayerRef.X || y != PlayerRef.Y || z != PlayerRef.Z)
-		x = PlayerRef.X
-		y = PlayerRef.Y
-		z = PlayerRef.Z
-		Utility.Wait(0.5)
-	EndWhile
-	If(PlayerSlot)
-		PlayerSlot.PlaceActor(_Center)
-	EndIf
-	If(BedStatus[1] >= 2)					; Bed or DoubleBled
-		CenterOnBedEx(false, 300.0, true)
-	Else
-		CenterOnObject(PlayerRef, true)
-	EndIf
-	Game.EnablePlayerControls()		; placing doesnt interact with player controls
-	GoToStage(1)									; Will re-register the update loop
-EndFunction
-
-Function ChangePositions(bool backwards = false)
-	If(Positions.Length < 2)
-		return
-	EndIf
-	int[] keys = Animation.DataKeys()
-	int pos = GetAdjustPos()
-	int i = pos + 1
-	While(i < Positions.Length + pos)
-		If(i >= Positions.Length)
-			i -= Positions.Length
-		EndIf
-		If(sslActorData.Match(keys[pos], keys[i]) && sslActorData.Match(keys[i], keys[pos]))
-			Actor tmp = Positions[pos]
-			sslActorAlias tmp2 = ActorAlias[pos]
-			Positions[pos] = Positions[i]
-			Positions[i] = tmp
-			ActorAlias[pos] = ActorAlias[i]
-			ActorAlias[i] = tmp2
-			RealignActors()
-			GoToStage(1)
-			SendThreadEvent("PositionChange")
-			return
-		EndIf
-		i += 1
-	EndWhile
-	Debug.Notification("Selected actor cannot switch positions")
-EndFunction
-
-
-Function PlayHotkeyFX(int i, bool backwards)
-	if backwards
-		Config.HotkeyDown[i].Play(PlayerRef)
-	else
-		Config.HotkeyUp[i].Play(PlayerRef)
-	endIf
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Thread Hooks & Events                           --- ;
-; ------------------------------------------------------- ;
-
-sslThreadHook[] ThreadHooks
-Function HookAnimationStarting()
-	int i = 0
-	While (i < ThreadHooks.Length)
-		If ThreadHooks[i].CanRunHook(Positions, Tags)
-			If (ThreadHooks[i].AnimationStarting(self))
-				Log("Blocking Hook AnimationStarting("+self+") - "+ThreadHooks[i])
-			EndIf
-			If (ThreadHooks[i].AnimationPrepare(self as sslThreadController))
-				Log("Blocking Hook AnimationPrepare("+self+") - "+ThreadHooks[i])
-			EndIf
-		EndIf
-		i += 1
-	endWhile
-EndFunction
-
-Function HookStageStart()
-	int i = Config.GetThreadHookCount()
-	while i > 0
-		i -= 1
-		if ThreadHooks[i] && ThreadHooks[i].CanRunHook(Positions, Tags) && ThreadHooks[i].StageStart(self as sslThreadController)
-			Log("Global Hook StageStart("+self+") - "+ThreadHooks[i])
-		; else
-		; 	Log("HookStageStart() - Skipping["+i+"]: "+ThreadHooks[i])
-		endIf
-	endWhile
-EndFunction
-
-Function HookStageEnd()
-	int i = Config.GetThreadHookCount()
-	while i > 0
-		i -= 1
-		if ThreadHooks[i] && ThreadHooks[i].CanRunHook(Positions, Tags) && ThreadHooks[i].StageEnd(self as sslThreadController)
-			Log("Global Hook StageEnd("+self+") - "+ThreadHooks[i])
-		; else
-		; 	Log("HookStageEnd() - Skipping["+i+"]: "+ThreadHooks[i])
-		endIf
-	endWhile
-EndFunction
-
-Function HookAnimationEnding()
-	int i = Config.GetThreadHookCount()
-	while i > 0
-		i -= 1
-		if ThreadHooks[i] && ThreadHooks[i].CanRunHook(Positions, Tags) && ThreadHooks[i].AnimationEnding(self as sslThreadController)
-			Log("Global Hook AnimationEnding("+self+") - "+ThreadHooks[i])
-		; else
-		; 	Log("HookAnimationEnding() - Skipping["+i+"]: "+ThreadHooks[i])
-		endIf
-	endWhile
-EndFunction
-
-Function HookAnimationEnd()
-	int i = Config.GetThreadHookCount()
-	while i > 0
-		i -= 1
-		if ThreadHooks[i] && ThreadHooks[i].CanRunHook(Positions, Tags) && ThreadHooks[i].AnimationEnd(self as sslThreadController)
-			Log("Global Hook AnimationEnd("+self+") - "+ThreadHooks[i])
-		; else
-		; 	Log("HookAnimationEnd() - Skipping["+i+"]: "+ThreadHooks[i])
-		endIf
-	endWhile
-EndFunction
-
-Function SendThreadEvent(string HookEvent)
-	Log(HookEvent, "Event Hook")
-	SetupThreadEvent(HookEvent)
-	int i = Hooks.Length
-	while i
-		i -= 1
-		SetupThreadEvent(HookEvent+"_"+Hooks[i])
-	endWhile
-	; Legacy support for < v1.50 - To be removed eventually
-	if HasPlayer
-		SendModEvent("Player"+HookEvent, thread_id)
-	endIf
-EndFunction
-
-Function SetupThreadEvent(string HookEvent)
-	int eid = ModEvent.Create("Hook"+HookEvent)
-	if eid
-		ModEvent.PushInt(eid, thread_id)
-		ModEvent.PushBool(eid, HasPlayer)
-		ModEvent.Send(eid)
-		; Log("Thread Hook Sent: "+HookEvent)
-	endIf
-	SendModEvent(HookEvent, thread_id)
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Alias Events									                  --- ;
-; ------------------------------------------------------- ;
-
-int preparesDone = 0	; Sync Event complete counter
-bool SyncLock = false	; pseudo mutex
-
-String Function Key(string Callback)
-	return "SSL_" + thread_id + "_" + Callback
-EndFunction
-
-Function QuickEvent(string Callback)
-	ModEvent.Send(ModEvent.Create(Key(Callback)))
-endfunction
-
-function SyncEvent(int id, float WaitTime)
-endFunction
-function SyncEventDone(int id)
-endFunction
-
-; ------------------------------------------------------- ;
-; --- Thread Setup    								                --- ;
-; ------------------------------------------------------- ;
-
-Function Log(string msg, string src = "")
-	msg = "Thread[" + thread_id + "] " + src + " - " + msg
-	Debug.Trace("SEXLAB - " + msg)
-	If(Config.DebugMode)
-		SexLabUtil.PrintConsole(msg)
-		Debug.TraceUser("SexLabDebug", msg)
-	EndIf
-EndFunction
-
-Function LogConsole(String asReport)
-	String msg = "Thread[" + thread_id + "] - " + asReport
-	SexLabUtil.PrintConsole(msg)
-	Debug.Trace("SEXLAB - " + msg)
-EndFunction
-
-Function LogRedundant(String asFunction)
-	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
-EndFunction
-
-Function Fatal(string msg, string src = "", bool halt = true)
-	msg = "Thread["+thread_id+"] - FATAL - " + src + " - " + msg
-	Debug.TraceStack("SEXLAB - " + msg)
-	SexLabUtil.PrintConsole(msg)
-	If(Config.DebugMode)
-		Debug.TraceUser("SexLabDebug", msg)
-	EndIf
-	If (halt)
-		Initialize()
-	EndIf
-EndFunction
-
-; This is only called once when the Framework is first initialized
-Function SetTID(int id)
-	thread_id = id
-	Log(self, "Setup")
-	int i = 0
-	While(i < ActorAlias.Length)
-		ActorAlias[i].Setup()
-		i += 1
-	EndWhile
-	Initialize()
-EndFunction
-
-; Reset this thread to base status
-Function Initialize()
-	UnregisterForUpdate()
-	DisableHotkeys()
-	Config.DisableThreadControl(self as sslThreadController)
-	int i = 0
-	While(i < ActorAlias.Length)
-		ActorAlias[i].Initialize()
-		i += 1
-	EndWhile
-	CenterAlias.TryToClear()
-	; Forms
-	Animation = none
-	CenterRef = none
-	SoundFX = none
-	BedRef = none
-	StartingAnimation = none
-	; Boolean
-	UseCustomTimers = false
-	DisableOrgasms = false
-	AutoAdvance = true
-	LeadIn = false
-	; Floats
-	StartedAt = 0.0
-	SkillTime = 0.0
-	; Integers
-	Stage = 1
-	; Storage Data
-	AnimEvents = new string[5]
-	IsType = new bool[9]
-	BedStatus = new int[2]
-	SkillXP = new float[6]
-	SkillBonus = new float[6]
-	CenterLocation = new float[6]
-	Genders = new int[4]
-	Positions = PapyrusUtil.ActorArray(0)
-	CustomAnimations = sslUtility.AnimationArray(0)
-	PrimaryAnimations = sslUtility.AnimationArray(0)
-	LeadAnimations = sslUtility.AnimationArray(0)
-	Hooks = Utility.CreateStringArray(0)
-	Tags = Utility.CreateStringArray(0)
-	CustomTimers = Utility.CreateFloatArray(0)
-	; Enter thread selection pool
-	GoToState("Unlocked")
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- State Restricted                                --- ;
-; ------------------------------------------------------- ;
-
-; State varied
-Function FireAction()
-EndFunction
-Function EndAction()
-EndFunction
-Function SyncDone()
-EndFunction
-Function RefreshDone()
-EndFunction
-Function PrepareDone()
-EndFunction
-Function ResetDone()
-EndFunction
-Function StripDone()
-EndFunction
-Function OrgasmDone()
-EndFunction
-Function StartupDone()
-EndFunction
-; Animating
-Function TriggerOrgasm()
-EndFunction
-Function GoToStage(int ToStage)
-EndFunction
-Function ChangeActors(Actor[] NewPositions)
-EndFunction
-Function RealignActors()
-EndFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
-;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
-;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
-;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
-;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
-;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-bool Function HasPlayer()
-	return HasPlayer
-EndFunction
-Actor Function GetPlayer()
-	return PlayerRef
-EndFunction
-Actor Function GetVictim()
-	return VictimRef
-EndFunction
-float Function GetTime()
-	return StartedAt
-endfunction
-
-bool Property FastEnd auto hidden
-
-Actor[] property Victims
-	Actor[] Function Get()
-		GetAllVictims()
-	EndFunction
-EndProperty
-
-Actor property VictimRef hidden
-	Actor Function Get()
-		Actor[] vics = GetAllVictims()
-		If(vics.Length)
-			return vics[0]
-		EndIf
-		return none
-	EndFunction
-	Function Set(Actor ActorRef)
-		sslActorAlias vic = ActorAlias(ActorRef)
-		If(!vic)
-			return
-		EndIf
-		vic.SetVictim(true)
-	EndFunction
-EndProperty
-
-; Unnecessary, just use OnBeginState()/OnEndState()
-Function Action(string FireState)
-	UnregisterForUpdate()
-	EndAction()
-	GoToState(FireState)
-	FireAction()
-endfunction
-
-Function RemoveFade()
-	if HasPlayer
-		Config.RemoveFade()
-	endIf
-EndFunction
-
-Function ApplyFade()
-	if HasPlayer
-		Config.ApplyFade()
-	endIf
-EndFunction
-
-bool Function IsPlayerActor(Actor ActorRef)
-	return ActorRef == PlayerRef
-EndFunction
-
-bool Function IsPlayerPosition(int Position)
-	return Position == Positions.Find(PlayerRef)
-EndFunction
-
-bool Function HasActor(Actor ActorRef)
-	return Positions.Find(ActorRef) != -1
-EndFunction
-
-int Property ActorCount
-	int Function Get()
-		return Positions.Length
-	EndFunction
-EndProperty
-
-Race Property CreatureRef
-	Race Function Get()
-		Keyword npc = Keyword.GetKeyword("ActorTypeNPC")
-		int i = 0
-		While(i < Positions.Length)
-			If(!Positions[i].HasKeyword(npc))
-				return Positions[i].GetRace()
-			EndIf
-			i += 1
-		EndWhile
-		return none
-	EndFunction
-EndProperty
-
-float[] Property RealTime
-	float[] Function Get()
-		float[] ret = new float[1]
-		ret[0] = SexLabUtil.GetCurrentGameRealTimeEx()
-		return ret
-	EndFunction
-EndProperty
-
-Function UpdateAdjustKey()
-EndFunction
-
-Function DisableRagdollEnd(Actor ActorRef = none, bool disabling = true)
-	if ActorRef && Positions.Find(ActorRef) != -1
-		ActorAlias(ActorRef).DoRagdoll = !disabling
-	else
-		ActorAlias[0].DoRagdoll = !disabling
-		ActorAlias[1].DoRagdoll = !disabling
-		ActorAlias[2].DoRagdoll = !disabling
-		ActorAlias[3].DoRagdoll = !disabling
-		ActorAlias[4].DoRagdoll = !disabling
-	endIf
-EndFunction
-
-bool Function CheckTags(string[] CheckTags, bool RequireAll = true, bool Suppress = false)
-	int i = CheckTags.Length
-	while i
-		i -= 1
-		if CheckTags[i] != ""
-			bool Check = Tags.Find(CheckTags[i]) != -1
-			if (Suppress && Check) || (!Suppress && RequireAll && !Check)
-				return false ; Stop if we need all and don't have it, or are supressing the found tag
-			elseIf !Suppress && !RequireAll && Check
-				return true ; Stop if we don't need all and have one
-			endIf
-		endIf
-	endWhile
-	return true
-EndFunction
-
-int Function FilterAnimations()
-	LogRedundant("FilterAnimations")
-	return 0
-EndFunction
-
-bool Function ToggleTag(string Tag)
-	return (RemoveTag(Tag) || AddTag(Tag)) && HasTag(Tag)
-EndFunction
-
-bool Function AddTagConditional(string Tag, bool AddTag)
-	if AddTag
-		return AddTag(Tag)
-	else
-		return RemoveTag(Tag)
-	endIf
-EndFunction
-
-Function InitShares()
-EndFunction
-
-Function SendTrackedEvent(Actor ActorRef, string Hook = "")
-	ThreadLib.SendTrackedEvent(ActorRef, Hook, thread_id)
-EndFunction
-
-Function SetupActorEvent(Actor ActorRef, string Callback)
-	ThreadLib.SetupActorEvent(ActorRef, Callback, thread_id)
-EndFunction
-
-; Because PapyrusUtil don't Remove Dupes from the Array
-string[] Function AddString(string[] ArrayValues, string ToAdd, bool RemoveDupes = true)
-	String[] add = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(ToAdd, ","))
-	return sslpp.MergeStringArrayEx(ArrayValues, add, true)
-EndFunction
-
-string Function GetHook()
-	return Hooks[0]
-EndFunction
-
-int Function GetHighestPresentRelationshipRank(Actor ActorRef)
-	if Positions.Length <= 1
-		If(ActorRef == Positions[0])
-			return 0
-		Else
-			return ActorRef.GetRelationshipRank(Positions[0])
-		EndIf
-	endIf
-	int out = -4 ; lowest possible
-	int i = Positions.Length
-	while i > 0 && out < 4
-		i -= 1
-		if Positions[i] != ActorRef
-			int rank = ActorRef.GetRelationshipRank(Positions[i])
-			if rank > out
-				out = rank
-			endIf
-		endIf
-	endWhile
-	return out
-EndFunction
-
-int Function GetLowestPresentRelationshipRank(Actor ActorRef)
-	if Positions.Length <= 1
-		If(ActorRef == Positions[0])
-			return 0
-		Else
-			return ActorRef.GetRelationshipRank(Positions[0])
-		EndIf
-	endIf
-	int out = 4 ; highest possible
-	int i = Positions.Length
-	while i > 0 && out > -4
-		i -= 1
-		if Positions[i] != ActorRef
-			int rank = ActorRef.GetRelationshipRank(Positions[i])
-			if rank < out
-				out = rank
-			endIf
-		endIf
-	endWhile
-	return out
 EndFunction
