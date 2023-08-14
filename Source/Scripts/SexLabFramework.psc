@@ -180,63 +180,22 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* GetActorKey 
-* * Build a data-key for the given Actor. Data keys carry a large amount of data about an actor which can be accessed
-* * through the "sslActorData.psc" script
-* *
-* * @param: akActor, the actor from which to build the key
-* * @return: an integer key to use for functions in sslActorData.psc
-*/;
-int Function GetActorKey(Actor akActor)
-  sslActorData.BuildDataKey(akActor)
-EndFunction
-
-;/* GetGender 
-* * SexLab can mark an actor to be male or female without relying on the Sex specified in the Creation Kit for the actor.
-* * The "SexLab gender" may differ from their vanilla ActorBase.GetSex() if their gender has been overridden, or they are creatures.
-* * This function gives you the sex of the actor considering all SexLab modifications and also enabling sex for creatures.
-* * 
-* * @param: ActorRef, the actor whichs gender to obtain
-* * @return: an int with these possible values ("Human" is used as "Not a Creature"): 
-* *  0 - Human Male (also the default values if the actor is not existing)
-* *  1 - Human Female
-* *  2 - Male Creature (this is the default value for any creature in case Creature Genders are disabled)
-* *  3 - Female Creature (this value is possible only if Creature Genders are enabled)
-*/;
-int function GetGender(Actor ActorRef)
-  return ActorLib.GetGender(ActorRef)
-endFunction
-
-;/* TreatAsMale 
-* * Forces an actor to be considered as Male by SexLab, even if its ActorBase.GetSex() is female. Useful for having SexLab treat female hermaphrodites as if they were male.
-* * 
-* * @param: ActorRef, is the actor to set the SexLab Gender to male.
-*/;
-function TreatAsMale(Actor ActorRef)
-  ActorLib.TreatAsMale(ActorRef)
-endFunction
-
-;/* TreatAsFemale 
-* * Forces an actor to be considered as Female by SexLab, even if its ActorBase.GetSex() is male. Useful for having SexLab treat male character as if they were female.
-* * 
-* * @param: ActorRef, is the actor to set the SexLab Gender to female.
-*/;
-function TreatAsFemale(Actor ActorRef)
-  ActorLib.TreatAsFemale(ActorRef)
-endFunction
-
-;/* TreatAsGender
-* * Force an actor to be considered male or female by SexLab, by altering the SexLab gender.
+;/* Force an actor to be considered male or female by SexLab, by altering the SexLab gender.
 * * 
 * * @param: ActorRef, is the actor to set the SexLab Gender.
 * * @param: AsFemale, if you pass the value True, then the actor will be considered as Female, if you pass the value False, then it will be considered as Male.
 */;
-function TreatAsGender(Actor ActorRef, bool AsFemale)
+Function TreatAsGender(Actor ActorRef, bool AsFemale)
   ActorLib.TreatAsGender(ActorRef, AsFemale)
-endFunction
+EndFunction
+Function TreatAsMale(Actor ActorRef)
+  TreatAsGender(ActorRef, false)
+EndFunction
+Function TreatAsFemale(Actor ActorRef)
+  TreatAsGender(ActorRef, true)
+EndFunction
 
-;/* ClearForcedGender
-* * Clears any forced SexLab Gender on the actor, that was set with the function TreatAsMale(), TreatAsFemale(), TreatAsGender()
+;/* Clears any forced SexLab Gender on the actor, that was set with the function TreatAsMale(), TreatAsFemale(), TreatAsGender()
 * * The gender will be now the vanilla genders (the same as ActorBase.getSex())
 * * 
 * * @param: ActorRef, is the actor for whom to clear forced SexLab Gender.
@@ -372,7 +331,7 @@ endFunction
 * * @return: True if the actor is being animated by SexLab, and False if it is not.
 */;
 bool function IsActorActive(Actor ActorRef)
-  return ActorRef.IsInFaction(Config.AnimatingFaction)
+  return ActorRef.IsInFaction(AnimatingFaction)
 endFunction
 
 ;/* ForbidActor
@@ -588,8 +547,6 @@ Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimat
   return ActorLib.StripActor(ActorRef, VictimRef, DoAnimate, LeadIn)
 endFunction
 
-
-
 ;/* StripSlots
 * * Strips an actor of equipment using a custom selection of biped objects / slot masks.
 * * See for the slot values: http://www.creationkit.com/Biped_Object
@@ -667,48 +624,19 @@ Form function PickStrapon(Actor ActorRef)
   return Config.PickStrapon(ActorRef)
 endFunction
 
-;/* EquipStrapon
-* * Equips a SexLab registered strapon on the actor.
-* * 
-* * @param: Actor ActorRef - The actor to equip a strapon.
-* * @return: Form - The strapon equipped, either randomly selected or pre-owned by ActorRef.
-*/;
-Form function EquipStrapon(Actor ActorRef)
-  return Config.EquipStrapon(ActorRef)
-endFunction
-
-;/* UnequipStrapon
-* * Unequips a strapon from an actor, if they are wearing one.
-* * 
-* * @param: Actor ActorRef - The actor to unequip any worn strapon.
-*/;
-function UnequipStrapon(Actor ActorRef)
-  Config.UnequipStrapon(ActorRef)
-endFunction
-
-;/* 
-* * Loads an armor from mod into the list of valid strapons to use.
-* * 
-* * @param: string esp - the .esp/.esm mod to load a form from. This is not the "Name of a mod", it is the actual name of the .esp/.esm file
-* * @param: int id - the form id to load from the esp . Do not put the mod id part, use only the lower 3 bytes of the id. E.G. If your Form has an ID in the Console equals to 0x270AB12C0, then the id to be used is 0x0AB12C0
-* * @return: Armor - If form was found and is a valid armor, a copy of the loaded Armor form. 
-*/;
+; Add an armor object to the list of available strapons
+; --- Parameters:
+; esp:    The .esp/.esm file containing the object to search for
+; id:     The objects form id
+; --- Return:
+; Armor:  The object that has been added to the list
+; None:   If there is no form with the given esp under the given form id
 Armor function LoadStrapon(string esp, int id)
   return Config.LoadStrapon(esp, id)
-endFunction
-
-
-;/* CheckBardAudience
-* * Removes an actor from the audience of any currently active bard scenes, preventing them from playing the clapping animation.
-* * For more future prevention, add actor to the faction BardAudienceExcludedFaction (id: 0x0010FCB4)
-* * 
-* * @param: Actor ActorRef - The actor you want to remove/check
-* * @param: bool RemoveFromAudience - Set to FALSE to only check if they are present and not remove them from the audience.
-* * @return: bool - TRUE if ActorRef was/is present in a bard audience
-*/;
-bool function CheckBardAudience(Actor ActorRef, bool RemoveFromAudience = true)
-  return Config.CheckBardAudience(ActorRef, RemoveFromAudience)
-endFunction
+EndFunction
+Function LoadStraponEx(Armor akStrapon)
+  Config.LoadStraponEx(akStrapon)
+EndFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -961,253 +889,6 @@ endFunction
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;#  ^^^                                                     END TRACKING FUNCTIONS                                                    ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#                                                        BEGIN ANIMATION FUNCTIONS                                                        #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;/* GetAnimationByName
-* * Get a single animation by name. Ignores if a user has the animation enabled or not.
-* * The animation will NOT include creatures. Use GetCreatureAnimationByName() if you want an animation that is including Creatures.
-* * 
-* * @param: string FindName - The name of an animation as seen in the SexLab MCM.
-* * @return: sslBaseAnimation - The animation whose name matches, if found.
-*/;
-sslBaseAnimation function GetAnimationByName(string FindName)
-  return AnimSlots.GetByName(FindName)
-endFunction
-
-;/* GetAnimationByRegistry
-* * Get a single animation by it's unique registry name (the ID of the animation.) Ignores if a user has the animation enabled or not.
-* * The animation will NOT include creatures. Use GetCreatureAnimationByRegistry() if you want an animation that is including Creatures.
-* * 
-* * @param: string Registry - The unique registry name of the animation. (string property Registry on any animation)
-* * @return: sslBaseAnimation - The animation whose registry matches, if found.
-*/;
-sslBaseAnimation function GetAnimationByRegistry(string Registry)
-  return AnimSlots.GetByRegistrar(Registry)
-endFunction
-
-;/* FindAnimationByName
-* * Find the registration slot number that an animation currently occupies.
-* * 
-* * @param: string FindName - The name of an animation as seen in the SexLab MCM.
-* * @return: int - The registration slot number for the animation.
-*/;
-int function FindAnimationByName(string FindName)
-  return AnimSlots.FindByName(FindName)
-endFunction
-
-;/* GetAnimationCount
-* * Get the number of registered animations.
-* * 
-* * @param: bool IgnoreDisabled [OPTIONAL true by default] - If TRUE, only count animations that are enabled in the SexLab MCM, otherwise count all.
-* * @return: int - The total number of animations.
-*/;
-int function GetAnimationCount(bool IgnoreDisabled = true)
-  return AnimSlots.GetCount(IgnoreDisabled)
-endFunction
-
-;/* MergeAnimationLists
-* * Combine 2 separate lists of animations into a single list, removing any duplicates between the two. (Works with both regular and creature animations.)
-* * Warning if in the first list there are None values they are kept (duplicates are not removed), and if in the second list there is at least one None value, then at least one None value wil be in the resulting list
-* * 
-* * @param: sslBaseAnimation[] List1 - The first array of animations to combine.
-* * @param: sslBaseAnimation[] List2 - The second array of animations to combine.
-* * @return: sslBaseAnimation[] - All the animations from List1 and List2, with any duplicates between them removed.
-*/;
-sslBaseAnimation[] function MergeAnimationLists(sslBaseAnimation[] List1, sslBaseAnimation[] List2)
-  return sslUtility.MergeAnimationLists(List1, List2)
-endFunction
-
-;/* RemoveTagged
-* * Removes any animations from an existing list that contain one of the provided animation tags. (Works with both regular and creature animations.)
-* * 
-* * @param: sslBaseAnimation[] Anims - A list of animations you want to filter certain tags out of.
-* * @param: string Tags - A comma separated list of animation tags to check Anim's element for, if any of the tags given are present, the animation won't be included in the return.
-* * @return: sslBaseAnimation[] - All the animations from Anims that did not have any of the provided tags.
-*/;
-sslBaseAnimation[] function RemoveTagged(sslBaseAnimation[] Anims, string Tags)
-  return sslUtility.RemoveTaggedAnimations(Anims, PapyrusUtil.StringSplit(Tags))
-endFunction
-
-;/* CountTag
-* * Counts the number of animations in the given array that contain one of provided animation tags. (Works with both regular and creature animations.)
-* * 
-* * @param: sslBaseAnimation[] Anims - A list of animations you want to check for tags on.
-* * @param: string Tags - A comma separated list of animation tags.
-* * @return: int - The number of animations from Anims that contain one of the tags provided.
-*/;
-int function CountTag(sslBaseAnimation[] Anims, string Tags)
-  return AnimSlots.CountTag(Anims, Tags)
-endFunction
-
-;/* CountTagUsage
-* * Counts the number of animations in the registry that contain one of provided animation tags.
-* * 
-* * @param: string Tags - A comma separated list of animation tags.
-* * @return: int - The number of animations from Anims that contain one of the tags provided.
-*/;
-int function CountTagUsage(string Tags, bool IgnoreDisabled = true)
-  return AnimSlots.CountTagUsage(Tags, IgnoreDisabled)
-endFunction
-
-int function CountCreatureTagUsage(string Tags, bool IgnoreDisabled = true)
-  return CreatureSlots.CountTagUsage(Tags, IgnoreDisabled)
-endFunction
-
-;/* GetAllAnimationTags
-* * Get a list of all unique tags contained in a set of registered animations.
-* * see also: GetAllCreatureAnimationTags, GetAllBothAnimationTags, GetAllAnimationTagsInArray
-* * 
-* * @param: int ActorCount - The number of actors the animations checked should be intended for. -1 to check all animations regardless of the number of positions.
-* * @param: bool IgnoreDisabled - Whether to ignore tags from animations that have been disabled by the user or not. Default value of TRUE will ignore disabled animations.
-* * @return: string[] - An alphabetically sorted string array of all unique tags found in the matching animations. 
-*/;
-string[] function GetAllAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
-  return AnimSlots.GetAllTags(ActorCount, IgnoreDisabled)
-endFunction
-
-
-;/* GetAllAnimationTagsInArray
-* * Get a list of all unique tags contained in an arbitrary list of provided animations. alias to sslUtility.
-* * see also: GetAllAnimationTags, GetAllCreatureAnimationTags, GetAllBothAnimationTags
-* * 
-* * @param: sslBaseAnimation[] - The array of animation objects you want a list of tags for.
-* * @return: string[] - An alphabetically sorted string array of all unique tags found in the provided animations. 
-*/;
-string[] function GetAllAnimationTagsInArray(sslBaseAnimation[] List)
-  return sslUtility.GetAllAnimationTagsInArray(List)
-endFunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                    END ANIMATION FUNCTIONS                                                    ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#                                                        BEGIN CREATURES FUNCTIONS                                                        #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  About RaceTypes                                                                                                                        #
-;#  SexLab uses some special global identifiers to identify variants of Races.                                                             #
-;#  This identifier is called RaceKey. A RaceKey is used to group all creature Races that are similar and can be used with the same        #
-;#  creature animation.                                                                                                                    #
-;#                                                                                                                                         #
-;#  For Exmaple: the RaceKey "Dogs" contains the races:                                                                                    #
-;#  "DogRace", "DogCompanionRace", "MG07DogRace", "DA03BarbasDogRace", "DLC1HuskyArmoredCompanionRace", "DLC1HuskyArmoredRace",            #
-;#  "DLC1HuskyBareCompanionRace", and "DLC1HuskyBareRace"                                                                                  #
-;#                                                                                                                                         #
-;#  You can always quickly get the RaceKey from an actor by using the functions:                                                           #
-;#    String raceID = MiscUtil.GetActorRaceEditorID(anActor)                                                                               #
-;#    String raceKey = sslCreatureAnimationSlots.GetRaceKeyByID(raceID)                                                                    #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;/* GetCreatureAnimationByName
-** Gets a single creature animation by name. Ignores if a user has the animation enabled or not.
-* *
-* * @param: string FindName - The name of an animation as seen in the SexLab MCM.
-* * @return: sslBaseAnimation - The creature animation whose name matches, if found.
-*/;
-sslBaseAnimation function GetCreatureAnimationByName(string FindName)
-  return CreatureSlots.GetByName(FindName)
-endFunction
-
-;/* GetCreatureAnimationByRegistry
-* * Gets a single creature animation by it's unique registry name. Ignores if a user has the animation enabled or not.
-* *
-* * @param: string Registry - The unique registry name of the animation. (string property Registry on any animation)
-* * @return: sslBaseAnimation - The creature animation whose registry matches, if found.
-*/;
-sslBaseAnimation function GetCreatureAnimationByRegistry(string Registry)
-  return CreatureSlots.GetByRegistrar(Registry)
-endFunction
-
-;/* HasCreatureRaceAnimation
-* * Checks if a given creature Race has any usable animations currently registered for any valid race key's it is registered under.
-* * 
-* * @param: Race CreatureRace - The race of the creature you want to check for valid creature animations to use.
-* * @param: int ActorCount [OPTIONAL] - Any optional parameter to have it check for a specific number of actor positions in the potential animations. -1 (default) to ignore number of positions.
-* * @param: int Gender [OPTIONAL] - Any optional parameter to have it check if a specific creature gender has an animation. -1 (default) to ignore, 2 for Male, 3 for Female.
-* * @return: bool - TRUE if the given CreatureRace has any valid and enabled animations for ActorCount positions.
-*/;
-bool function HasCreatureRaceAnimation(Race CreatureRace, int ActorCount = -1, int Gender = -1)
-  return CreatureSlots.RaceHasAnimation(CreatureRace, ActorCount, Gender)
-endFunction
-
-;/* HasCreatureRaceKeyAnimation
-* * Checks if a specific RaceKey has any usable animations currently registered.
-* * 
-* * @param: string RaceKey - The creature race sexlab identifier used to identify animations meant for this race.
-* * @param: int ActorCount [OPTIONAL] - Any optional parameter to have it check for a specific number of actor positions in the potential animations. -1 (default) to ignore number of positions.
-* * @param: int Gender [OPTIONAL] - Any optional parameter to have it check if a specific creature gender has an animation. -1 (default) to ignore, 2 for Male Creature, 3 for Female Creature.
-* * @return: bool - TRUE if the given CreatureRace has any valid and enabled animations for ActorCount positions.
-*/;
-bool function HasCreatureRaceKeyAnimation(string RaceKey, int ActorCount = -1, int Gender = -1)
-  return CreatureSlots.RaceKeyHasAnimation(RaceKey, ActorCount, Gender)
-endFunction
-
-;/* AllowedCreature
-* * Checks if a given creature Race is able to have animations with SexLab.
-* * 
-* * @param: Race CreatureRace - The race to check if allowed to animate.
-* * @return: bool - TRUE if the creature has a valid enabled animation AND that creature animations are enabled.
-*/;
-bool function AllowedCreature(Race CreatureRace)
-  return CreatureSlots.AllowedCreature(CreatureRace)
-endFunction
-
-;/* 
-* * Checks if two given creature's Races share the same RaceKey, and are likely to have an animation that can play both together.
-* * 
-* * @param: Race CreatureRace - A creature race to check for a matching RaceKey with the other.
-* * @param: Race CreatureRace2 - The other creature race to check for a matching RaceKey with the previous one.
-* * @return: bool - TRUE if they do have a shared RaceKey.
-*/;
-bool function AllowedCreatureCombination(Race CreatureRace, Race CreatureRace2)
-  return CreatureSlots.AllowedCreatureCombination(CreatureRace, CreatureRace2)
-endFunction
-
-;/* GetAllCreatureAnimationTags
-* * Get a list of all unique tags contained in a set of registered creature animations.
-* * see also: GetAllAnimationTags, GetAllBothAnimationTags, GetAllAnimationTagsInArray
-* * 
-* * @param: int ActorCount - The number of actors the animations checked should be intended for. -1 to check all animations regardless of the number of positions.
-* * @param: bool IgnoreDisabled - Whether to ignore tags from animations that have been disabled by the user or not. Default value of TRUE will ignore disabled animations.
-* * @return: string[] - An alphabetically sorted string array of all unique tags found in the matching animations. 
-*/;
-string[] function GetAllCreatureAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
-  return CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled)
-endFunction
-
-;/* GetAllBothAnimationTags
-* * Combines the results of both GetAllAnimationTags() and GetAllCreatureAnimationTags(). 
-* * see also: GetAllAnimationTags, GetAllCreatureAnimationTags, GetAllAnimationTagsInArray
-* * 
-* * @param: int ActorCount - The number of actors the animations checked should be intended for. -1 to check all animations regardless of the number of positions.
-* * @param: bool IgnoreDisabled - Whether to ignore tags from animations that have been disabled by the user or not. Default value of TRUE will ignore disabled animations.
-* * @return: string[] - An alphabetically sorted string array of all unique tags found in the matching animations. 
-*/;
-string[] function GetAllBothAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
-  string[] Output = PapyrusUtil.MergeStringArray(AnimSlots.GetAllTags(ActorCount, IgnoreDisabled), CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled))
-  PapyrusUtil.SortStringArray(Output)
-  return Output
-endFunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                    END CREATURES FUNCTIONS                                                    ^^^  #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -2719,6 +2400,129 @@ endFunction
 ;/* DEPRECATED! */;
 bool function RemoveRegisteredCreatureAnimation(string Registrar)
   return CreatureSlots.UnregisterAnimation(Registrar)
+endFunction
+
+; --- NOTE: Removed since P+ Phase 2
+
+;/* DEPRECATED! | See SexLabRegistry.psc */;
+int function GetGender(Actor ActorRef)
+  return ActorLib.GetGender(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+Form function EquipStrapon(Actor ActorRef)
+  return Config.EquipStrapon(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+function UnequipStrapon(Actor ActorRef)
+  Config.UnequipStrapon(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+bool function CheckBardAudience(Actor ActorRef, bool RemoveFromAudience = true)
+  return Config.CheckBardAudience(ActorRef, RemoveFromAudience)
+endFunction
+
+; --- Legacy Animation Functions
+
+;/* DEPRECATED! */;
+sslBaseAnimation function GetAnimationByName(string FindName)
+  return AnimSlots.GetByName(FindName)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function GetAnimationByRegistry(string Registry)
+  return AnimSlots.GetByRegistrar(Registry)
+endFunction
+
+;/* DEPRECATED! */;
+int function FindAnimationByName(string FindName)
+  return AnimSlots.FindByName(FindName)
+endFunction
+
+;/* DEPRECATED! */;
+int function GetAnimationCount(bool IgnoreDisabled = true)
+  return AnimSlots.GetCount(IgnoreDisabled)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function MergeAnimationLists(sslBaseAnimation[] List1, sslBaseAnimation[] List2)
+  return sslUtility.MergeAnimationLists(List1, List2)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation[] function RemoveTagged(sslBaseAnimation[] Anims, string Tags)
+  return sslUtility.RemoveTaggedAnimations(Anims, PapyrusUtil.StringSplit(Tags))
+endFunction
+
+;/* DEPRECATED! */;
+int function CountTag(sslBaseAnimation[] Anims, string Tags)
+  return AnimSlots.CountTag(Anims, Tags)
+endFunction
+
+;/* DEPRECATED! */;
+int function CountTagUsage(string Tags, bool IgnoreDisabled = true)
+  return AnimSlots.CountTagUsage(Tags, IgnoreDisabled)
+endFunction
+
+;/* DEPRECATED! */;
+int function CountCreatureTagUsage(string Tags, bool IgnoreDisabled = true)
+  return CreatureSlots.CountTagUsage(Tags, IgnoreDisabled)
+endFunction
+
+;/* DEPRECATED! */;
+string[] function GetAllAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
+  return AnimSlots.GetAllTags(ActorCount, IgnoreDisabled)
+endFunction
+
+;/* DEPRECATED! */;
+string[] function GetAllAnimationTagsInArray(sslBaseAnimation[] List)
+  return sslUtility.GetAllAnimationTagsInArray(List)
+endFunction
+
+; --- Legacy Creature Functions
+
+;/* DEPRECATED! */;
+sslBaseAnimation function GetCreatureAnimationByName(string FindName)
+  return CreatureSlots.GetByName(FindName)
+endFunction
+
+;/* DEPRECATED! */;
+sslBaseAnimation function GetCreatureAnimationByRegistry(string Registry)
+  return CreatureSlots.GetByRegistrar(Registry)
+endFunction
+
+;/* DEPRECATED! */;
+bool function HasCreatureRaceAnimation(Race CreatureRace, int ActorCount = -1, int Gender = -1)
+  return CreatureSlots.RaceHasAnimation(CreatureRace, ActorCount, Gender)
+endFunction
+
+;/* DEPRECATED! */;
+bool function HasCreatureRaceKeyAnimation(string RaceKey, int ActorCount = -1, int Gender = -1)
+  return CreatureSlots.RaceKeyHasAnimation(RaceKey, ActorCount, Gender)
+endFunction
+
+;/* DEPRECATED! */;
+bool function AllowedCreature(Race CreatureRace)
+  return CreatureSlots.AllowedCreature(CreatureRace)
+endFunction
+
+;/* DEPRECATED! */;
+bool function AllowedCreatureCombination(Race CreatureRace, Race CreatureRace2)
+  return CreatureSlots.AllowedCreatureCombination(CreatureRace, CreatureRace2)
+endFunction
+
+;/* DEPRECATED! */;
+string[] function GetAllCreatureAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
+  return CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled)
+endFunction
+
+;/* DEPRECATED! */;
+string[] function GetAllBothAnimationTags(int ActorCount = -1, bool IgnoreDisabled = true)
+  string[] Output = PapyrusUtil.MergeStringArray(AnimSlots.GetAllTags(ActorCount, IgnoreDisabled), CreatureSlots.GetAllTags(ActorCount, IgnoreDisabled))
+  PapyrusUtil.SortStringArray(Output)
+  return Output
 endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
