@@ -571,7 +571,7 @@ State Animating
 				Log("PlayMoan:True; UseLipSync:"+UseLipSync+"; OpenMouth:"+OpenMouth)
 			endIf
 		endIf
-		if Config.RefreshExpressions && _Expressions.Length && _LoopExpressionDelay >= _ExpressionDelay
+		if _Expressions.Length && _LoopExpressionDelay >= _ExpressionDelay
 			int newIdx = Utility.RandomInt(0, (_Expressions.Length - 1))
 			If (_Expression != _Expressions[newIdx])
 				_Expression = _Expressions[newIdx]
@@ -615,7 +615,7 @@ State Animating
 		ElseIf (sslBaseExpression.IsMouthOpen(ActorRef))
 			sslBaseExpression.CloseMouth(ActorRef)
 		EndIf
-		If (Config.RefreshExpressions && _Expression && !ActorRef.IsDead() && !ActorRef.IsUnconscious())
+		If (_Expression && !ActorRef.IsDead() && !ActorRef.IsUnconscious())
 			; TODO: remove vsex variable once Expressions can handle futa gender
 			int vsex = _sex
 			If (_sex >= 2)
@@ -703,7 +703,7 @@ State Animating
 			PlayLouder(Config.OrgasmFX, ActorRef, Config.SFXVolume)
 		EndIf
 		; Apply cum to female positions from male position orgasm
-		if Thread.ActorCount > 1 && Config.UseCum && (MalePosition || _sex >= 2) && (Config.AllowFFCum || _sex != 1 && _sex != 4)
+		if Thread.ActorCount > 1 && Config.UseCum && _sex != 1 && _sex != 4
 			if Thread.ActorCount == 2
 				Thread.PositionAlias(1 - Position).ApplyCum()
 			else
@@ -1013,7 +1013,7 @@ endProperty
 bool _DoRagdoll
 bool property DoRagdoll hidden
 	bool function get()
-		return !_DoRagdoll && Config.RagdollEnd
+		return !_DoRagdoll ; && Config.RagdollEnd
 	endFunction
 	function set(bool value)
 		_DoRagdoll = !value
