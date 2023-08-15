@@ -1,4 +1,7 @@
-scriptname SexLabUtil hidden
+ScriptName SexLabUtil Hidden
+{
+	Public Misc Utility and Convenience
+}
 
 ; ------------------------------------------------------- ;
 ; --- SexLab Accessors                                --- ;
@@ -25,37 +28,24 @@ SexLabFramework function GetAPI() global
 	return Game.GetFormFromFile(0xD62, "SexLab.esm") as SexLabFramework
 endFunction
 
-sslSystemConfig function GetConfig() global
-	return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
-endFunction
-
 ; ------------------------------------------------------- ;
 ; --- Animation Starters                              --- ;
 ; ------------------------------------------------------- ;
 
-int function StartSex(actor[] sexActors, sslBaseAnimation[] anims, actor victim = none, ObjectReference centerOn = none, bool allowBed = true, string hook = "") global
-	SexLabFramework SexLab = GetAPI()
-	if !SexLab
-		return -1
-	endIf
-	return SexLab.StartSex(sexActors, anims, victim, centerOn, allowBed, hook)
-endFunction
+SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, \
+																		int aiFurniture = 1, String asHook = "") global
+	return GetAPI().StartScene(akPositions, asTags, akSubmissive, akCenter, aiFurniture, asHook)
+EndFunction
 
-sslThreadModel function NewThread(float timeout = 30.0) global
-	SexLabFramework SexLab = GetAPI()
-	if !SexLab
-		return none
-	endIf
-	return SexLab.NewThread(timeout)
-endFunction
+SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, ObjectReference akCenter = none, \
+																		int aiFurniture = 1, String asHook = "") global
+	return GetAPI().StartSceneEx(akPositions, asAnims, akSubmissive, akCenter, aiFurniture, asHook)
+EndFunction
 
-sslThreadController function QuickStart(actor a1, actor a2 = none, actor a3 = none, actor a4 = none, actor a5 = none, actor victim = none, string hook = "", string animationTags = "") global
-	SexLabFramework SexLab = GetAPI()
-	if !SexLab
-		return none
-	endIf
-	return SexLab.QuickStart(a1, a2, a3, a4, a5, victim, hook, animationTags)
-endFunction
+SexLabThread Function StartSceneQuick(Actor akActor1, Actor akActor2 = none, Actor akActor3 = none, Actor akActor4 = none, Actor akActor5 = none, \
+                                        Actor akSubmissive = none, String asTags = "", String asHook = "") global
+	return GetAPI().StartSceneQuick(akActor1, akActor2, akActor3, akActor4, akActor5, akSubmissive, asTags, asHook)
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Common Utilities                                --- ;
@@ -65,9 +55,9 @@ string function ActorName(Actor ActorRef) global
 	return ActorRef.GetLeveledActorBase().GetName()
 endFunction
 
-int function GetGender(Actor ActorRef) global
-	return GetAPI().GetGender(ActorRef)
-endFunction
+int Function GetSex(Actor akActor) global
+	return SexLabRegistry.GetSex(akActor, false)
+EndFunction
 
 bool function IsActorActive(Actor ActorRef) global
 	return ActorRef.IsInFaction(GetConfig().AnimatingFaction)
@@ -85,53 +75,6 @@ bool function HasRace(Race RaceRef) global
 	return sslCreatureAnimationSlots.HasRaceType(RaceRef)
 endFunction
 
-string function MakeGenderTag(Actor[] Positions) global
-	int[] Genders = GetAPI().GenderCount(Positions)
-	return GetGenderTag(Genders[1], Genders[0], Genders[2] + Genders[3])
-endFunction
-
-string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0) global
-	string Tag
-	while Females > 0
-		Females -= 1
-		Tag += "F"
-	endWhile
-	while Males > 0
-		Males -= 1
-		Tag += "M"
-	endWhile
-	while Creatures > 0
-		Creatures -= 1
-		Tag += "C"
-	endWhile
-	return Tag
-endFunction
-
-string function GetReverseGenderTag(int Females = 0, int Males = 0, int Creatures = 0) global
-	string Tag
-	while Creatures > 0
-		Creatures -= 1
-		Tag += "C"
-	endWhile
-	while Males > 0
-		Males -= 1
-		Tag += "M"
-	endWhile
-	while Females > 0
-		Females -= 1
-		Tag += "F"
-	endWhile
-	return Tag
-endFunction
-
-bool function IsActor(Form FormRef) global
-	if FormRef
-		int Type = FormRef.GetType()
-		return Type == 43 || Type == 44 || Type == 62 ; kNPC = 43 kLeveledCharacter = 44 kCharacter = 62
-	endIf
-	return false
-endFunction
-
 bool function IsImportant(Actor ActorRef, bool Strict = false) global
 	if ActorRef == Game.GetPlayer()
 		return true
@@ -143,6 +86,21 @@ bool function IsImportant(Actor ActorRef, bool Strict = false) global
 	; Strict check
 	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
 	return BaseRef.IsUnique() || BaseRef.IsEssential() || BaseRef.IsInvulnerable() || BaseRef.IsProtected() || ActorRef.IsGuard() || ActorRef.IsPlayerTeammate() || ActorRef.Is3DLoaded()
+endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslSystemConfig function GetConfig() global
+	return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -253,7 +211,92 @@ float function Timer(float Timestamp, string Log) global
 	return i
 endFunction
 
-; Deprecated
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+int function StartSex(actor[] sexActors, sslBaseAnimation[] anims, actor victim = none, ObjectReference centerOn = none, bool allowBed = true, string hook = "") global
+	SexLabFramework SexLab = GetAPI()
+	if !SexLab
+		return -1
+	endIf
+	return SexLab.StartSex(sexActors, anims, victim, centerOn, allowBed, hook)
+endFunction
+
+sslThreadModel function NewThread(float timeout = 30.0) global
+	SexLabFramework SexLab = GetAPI()
+	if !SexLab
+		return none
+	endIf
+	return SexLab.NewThread(timeout)
+endFunction
+
+sslThreadController function QuickStart(actor a1, actor a2 = none, actor a3 = none, actor a4 = none, actor a5 = none, actor victim = none, string hook = "", string animationTags = "") global
+	SexLabFramework SexLab = GetAPI()
+	if !SexLab
+		return none
+	endIf
+	return SexLab.QuickStart(a1, a2, a3, a4, a5, victim, hook, animationTags)
+endFunction
+
+int function GetGender(Actor ActorRef) global
+	return GetAPI().GetGender(ActorRef)
+endFunction
+
+string function MakeGenderTag(Actor[] Positions) global
+	int[] Genders = GetAPI().GenderCount(Positions)
+	return GetGenderTag(Genders[1], Genders[0], Genders[2] + Genders[3])
+endFunction
+
+string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0) global
+	string Tag
+	while Females > 0
+		Females -= 1
+		Tag += "F"
+	endWhile
+	while Males > 0
+		Males -= 1
+		Tag += "M"
+	endWhile
+	while Creatures > 0
+		Creatures -= 1
+		Tag += "C"
+	endWhile
+	return Tag
+endFunction
+
+string function GetReverseGenderTag(int Females = 0, int Males = 0, int Creatures = 0) global
+	string Tag
+	while Creatures > 0
+		Creatures -= 1
+		Tag += "C"
+	endWhile
+	while Males > 0
+		Males -= 1
+		Tag += "M"
+	endWhile
+	while Females > 0
+		Females -= 1
+		Tag += "F"
+	endWhile
+	return Tag
+endFunction
+
+bool function IsActor(Form FormRef) global
+	if FormRef
+		int Type = FormRef.GetType()
+		return Type == 43 || Type == 44 || Type == 62 ; kNPC = 43 kLeveledCharacter = 44 kCharacter = 62
+	endIf
+	return false
+endFunction
+
 function EnableFreeCamera(bool Enabling = true, float sucsm = 5.0) global
 	return MiscUtil.SetFreeCameraState(Enabling, sucsm)
 endFunction
