@@ -16,9 +16,19 @@ ScriptName SexLabThreadHook extends ReferenceAlias Hidden
   5) Youre done \o/. Now every time a SexLab Thread reaches specific key points in its execution, it will call back into the interface functions listed here
 
   **BEST PRACTICES**
-  1) Due to the time sensitive nature of this feature, it is highly recommended to cache some variable that tells you if you really want to monitor some running thread
-      And example on how to accomplish this is given below
+  1) Due to the time sensitive nature of this feature, it is highly recommended to use the locking mechanism written below if you only want to block some specific
+      threads (such as only ones the player is involed in)
+  2) Optimize for speed. There are certainly moments where execution time is not of utmost importance, but be aware of fellow co-modders and the time the framework itself 
+      takes to process. Ideally the player is not aware of your hooks, does not realize additional delays. Hence, the faster your code runs, the better
 }
+
+; If you overwrite OnInit make sure to call Parent.OnInit() again
+Event OnInit()
+  _m = Utility.CreateBoolArray(sslThreadSlots.GetTotalThreadCount(), false)
+  If (bAutoegisterOnInit)
+    Register()
+  EndIf
+EndEvent
 
 ; ------------------------------------------------------- ;
 ; --- Interface                                       --- ;
@@ -50,6 +60,9 @@ EndFunction
   Shorthands to register and unregister the hook
 /;
 
+bool Property bAutoegisterOnInit = true Auto Hidden
+{If this Hook should register itself when it is first initialized. Default: true}
+
 ; Register the given Hook to no receive events
 ; Registration is only recognized for newly started threads. You wont receive events for already running threads
 Function Register()
@@ -67,7 +80,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 ;/
   Example implementation for a simple locking system
-  There is no need to implement this system if you only care about hooking some one specific function
+  There is no need to implement this system if you only care about hooking one specific function
   Ensure that OnInit() can be called here, i.e. if you overwrite OnInit() call "parent.OnInit()" at before exiting the OnInit event
 
   **USAGE**
@@ -86,11 +99,7 @@ EndFunction
     ...
   EndFunction
 /;
-
 bool[] _m
-Event OnInit()
-  _m = Utility.CreateBoolArray(sslThreadSlots.GetTotalThreadCount(), false)
-EndEvent
 
 ; Return if the calling thread is locked or not
 bool Function IsLocked(SexLabThread akThread)

@@ -539,9 +539,9 @@ int Property HOOKID_STAGESTART   = 1 AutoReadOnly
 int Property HOOKID_STAGEEND     = 2 AutoReadOnly
 int Property HOOKID_END         = 3 AutoReadOnly
 
-Function AddHook(SexLabThreadHook akHook)
+bool Function AddHook(SexLabThreadHook akHook)
   If (!akHook || _Hooks.Find(akHook) > -1)
-    return
+    return false
   ElseIf (!_Hooks.Length)
     _Hooks = new SexLabThreadHook[16]
   EndIf
@@ -549,18 +549,20 @@ Function AddHook(SexLabThreadHook akHook)
   If (idx == -1)
     Error("Unable to bind new Thread Hook, limit of " + _Hooks.Length + " hooks reached")
     Debug.MessageBox("Unable to bind new Thread Hook, limit of possible hooks reached\nPlease report this to Scrab")
-    return
+    return false
   EndIf
   _Hooks[idx] = akHook
+  return true
 EndFunction
 
-Function RemoveHook(SexLabThreadHook akHook)
+bool Function RemoveHook(SexLabThreadHook akHook)
   int idx = _Hooks.Find(akHook)
   If (idx == -1)
     Error("Hook " + akHook + " is not registered and cannot be removed")
-    return
+    return false
   EndIf
   _Hooks[idx] = none
+  return true
 EndFunction
 
 bool Function IsHooked(SexLabThreadHook akHook)

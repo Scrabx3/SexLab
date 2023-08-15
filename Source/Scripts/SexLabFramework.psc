@@ -66,11 +66,11 @@ bool property CreatureGenders hidden
   endFunction
 endProperty
 
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#                                                          API RELATED FUNCTIONS                                                          #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
+;#------------------------------------------------------------------------------------------------------------------------------------------#;
+;#                                                                                                                                          #;
+;#                                                            MAIN API FUNCTIONS                                                            #;
+;#                                                                                                                                          #;
+;#------------------------------------------------------------------------------------------------------------------------------------------#;
 
 ; The preferred way to create a SexLab Scene
 ; --- Params:
@@ -120,7 +120,6 @@ EndFunction
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;#                                                            THREAD FUNCTIONS                                                             #
-;#                                             Use these Functions to access a running thread                                              #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -133,6 +132,104 @@ EndFunction
 SexLabThread Function GetThreadByActor(Actor akActor)
   return ThreadSlots.GetThreadByActor(akActor)
 EndFunction
+
+;#------------------------------------------------------------------------------------------------------------------------------------------#;
+;#                                                                                                                                          #;
+;#                                                           START HOOK FUNCTIONS                                                           #;
+;#                                                                                                                                          #;
+;#------------------------------------------------------------------------------------------------------------------------------------------#;
+;#------------------------------------------------------------------------------------------------------------------------------------------#;
+;#                                                                                                                                          #;
+;#  ABOUT HOOKS IN SEXLAB                                                                                                                   #;
+;# Hooks are used to react and interact with running threads in SexLab utilizing events invoked while the thread executes                   #;
+;#                                                                                                                                          #;
+;# SexLab differentiates two types of Hooks: Blocking and non-blocking                                                                      #;
+;# Non-Blocking Hooks are the more common implementation, these are to asynchronously react to the flow of an animation, for example        #;
+;#   to advance your story once the animation is over, or to react to other peoples animations starting                                     #;
+;# Blocking hooks on the other hand are synchronized and will *halt* a threads execution until the Hook returns. As such, they are          #;
+;#   more invasive to the players gameplay experience and should thus be used sparringly                                                    #;
+;#                                                                                                                                          #;
+;#                                                                                                                                          #;   
+;#  HOW TO USE HOOKS                                                                                                                        #;
+;# 1. Non-Blocking Hooks                                                                                                                    #;
+;# Non-Blocking hooks use mod events to do their work. This is how they are async and why they are very easy to maintain                    #;
+;#   There are a variety of different hooks you can use here, and all follow the same schema:                                               #;
+;# - First, you want to register for a mod event, like so:                                                                                  #;
+;#        RegisterForModEvent("Hook<ModEventType>", "<EventName>")                                                                          #;
+;#   Change "ModEventType" to one of the types listed below (e.g. AnimationStart) and the event name to anything you want (e.g. MyEvent)    #;
+;# - Next, elsewhere in your script you want to add a new event function, using the following signature:                                    #;
+;#        Event <EventName>(int aiThreadID, bool abHasPlayer)                                                                               #;
+;#        EndEvent                                                                                                                          #;
+;#   Change <EventName> to the same name that you used above, in our example it would be "Event MyEvent(int aiThreadID, bool abHasPlayer)"  #;
+;#   And thats all! Now every time an animation starts you will receive the event you have registered for                                   #;
+;#                                                                                                                                          #;
+;# 1.1 Local Hooks                                                                                                                          #;
+;# Sometimes you do not want to react to *every* event that is being send, but only to some events for scenes you started yourself          #;
+;#   This is where the "asHook" parameter comes into play that you can set when requested a scene through this API. This parameter is used  #;
+;#   to create specialized thread-local hooks that are only send from thread which know about this hook                                     #;
+;# These Local Hooks function basically the same as the global ones, the ID of Event that is being send undergoes a slight change however:  #;
+;#   We already discussed how the ID for a global hook is `Hook<ModEventType>`, for our local hook we use a similar approach but append     #;
+;#   a special suffix to the ID to signify that we only care about a specific hook: `_<MyLocalHookID>`. For example, if we want to hook     #;
+;#   "AnimationStart" with a Local Hook named "MyLocalHook", our signature will be `HookAnimationStart_MyLocalHook` and to let the started  #;
+;#   thread know about the hook id, we pass "MyLocalHook" into the "asHook" parameter!                                                      #;
+;#                                                                                                                                          #;
+;# 1.2 Types of Events                                                                                                                      #;
+;#  AnimationStart    - Sent when the animation starts                                                                                      #;
+;#  AnimationEnd      - Sent when the animation is fully terminated                                                                         #;
+;#  LeadInStart       - Sent when the animation starts and has a LeadIn                                                                     #;
+;#  LeadInEnd         - Sent when a LeadIn animation ends                                                                                   #;
+;#  StageStart        - Sent for every Animation Stage that starts                                                                          #;
+;#  StageEnd          - Sent for every Animation Stage that is completed                                                                    #;
+;#  OrgasmStart       - Sent when an actor reaches the final stage                                                                          #;
+;#  OrgasmEnd         - Sent when the final stage is completed                                                                              #;
+;#  AnimationChange   - Sent if the Animation that was playing is changed by the HotKey                                                     #;
+;#  PositionChange    - Sent if the Positions of the animation (the involved actors) are changed                                            #;
+;#  ActorsRelocated   - Sent if the actors gets a new alignment                                                                             #;
+;#  ActorChangeStart  - Sent when the function ChangeActors is called                                                                       #;
+;#  ActorChangeEnd    - Sent when the replacement of actors, by the function ChangeActors is completed                                      #;
+;#                                                                                                                                          #;
+;#                                                                                                                                          #;
+;# 2. Blocking Hooks                                                                                                                        #;
+;# Another, more complex type of Hook are Blocking Hooks. These should generally be avoided as they halt the threads execution but there    #;
+;#   are situations were time is of essence and asynchronous hooks simply don't cut it.                                                     #;
+;# To implement a blocking hook, you first want to create a new reference alias and attach a script to it. The script can have any name     #;
+;#   you want, important is that it extends "SexLabThreadHook" instead of "ReferenceAlias" and fill in the properties. This is all you      #;
+;#   need to do to implement a blocking hook. To read on how to actually use these Hooks, see "SexLabThreadHook.psc"                        #;
+;#                                                                                                                                          #;
+;#                                                                                                                                          #;
+;# 3. Misc Events                                                                                                                           #;
+;# There are other events that are sent by SexLab, but they are NOT related to Hooks:                                                       #;
+;#    -   EVENT NAME    - | -                 CAUSE                  - | -                          ARGUMENTS                          -    #;
+;#   SexLabDisabled       | When SexLab is Disabled                    | ()                                                                 #;
+;#   SexLabEnabled        | When SexLab is Enabled                     | ()                                                                 #;
+;#   SexLabOrgasm         | When an actor has an orgasm                | (Actor akClimaxingActor, itn aiEnjoyment, itn aiSceneOrgasmCount)  #;
+;#   SexLabLoadStrapons   | Strapons are allowed to be registered      | ()                                                                 #;
+;#   SexLabStoppedActive  | All threads are forcefully stopped         | ()                                                                 #;
+;#                                                                                                                                          #;
+;#------------------------------------------------------------------------------------------------------------------------------------------#;
+
+; Register a new blocking hook to receive events from running threads
+; Return if the hook has been successfully installed
+bool Function RegisterHook(SexLabThreadHook akHook)
+  return Config.AddHook(akHook)
+EndFunction
+
+; Unregister a hook to no longer receive events
+; Return if the hook was unregistered successfully
+bool Function UnregisterHook(SexLabThreadHook akHook)
+  return Config.RemoveHook(akHook)
+EndFunction
+
+; Check if the given hook is currently registered
+bool Function IsHooked(SexLabThreadHook akHook)
+  return Config.IsHooked(akHook)
+EndFunction
+
+;#-----------------------------------------------------------------------------------------------------------------------------------------#
+;#                                                                                                                                         #
+;#  ^^^                                                       END HOOK FUNCTIONS                                                      ^^^  #
+;#                                                                                                                                         #
+;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -1157,164 +1254,6 @@ endfunction
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;#  ^^^                                                    END EXPRESSION FUNCTIONS                                                   ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#                                                           START HOOK FUNCTIONS                                                          #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;# ABOUT HOOKS IN SEXLAB                                                                                                                   #   
-;#                                                                                                                                         #   
-;# Hooks are one of the most powerful functions that yoiu can use in SexLab.                                                               #   
-;# They are used to get ModEvents when something happens during a SexLab animations.                                                       #  
-;#                                                                                                                                         #   
-;# The utility functions provided by SexLab Framework (this script) are commodity functions used to grab all information you need          #  
-;# from the data that is sent along with the ModEvent.                                                                                     #  
-;#                                                                                                                                         #   
-;# HOW TO USE HOOKS                                                                                                                        #  
-;# Hooks can be fully defined with the TheadModel that you can get using SexLab.NewThread()                                                #  
-;# They can also be quickly set by using the function StartSex().                                                                          #  
-;#                                                                                                                                         #   
-;# The basic idea is that you define a hook for a Thread, then register for the events generated by SexLab, and do whatever you want       #  
-;# when the SexLab mod event is sent.                                                                                                      #  
-;#                                                                                                                                         #   
-;# SETTING AND USING HOOKS, A QUICK EXAMPLE.                                                                                               #  
-;# Imagine that you want to do something when a SexLab animation that you are starting, will end.                                          #  
-;# To do that you can define your hook, set it to the Thread, register for the AnimationEnd event, and execute the code you want.          #  
-;#                                                                                                                                         #   
-;# sslThreadModel Thread = SexLab.NewThread()                               <-- get a SexLab Thread                                        #
-;# Thread.AddActor(firstActor)                                              <-- add the first actor to the Thread                          #
-;# Thread.AddActor(secondActor)                                             <-- add the second actor to the Thread                         #
-;# Thread.SetHook("Example")                                                <-- Define your Hook name                                      #
-;# RegisterForModEvent("HookAnimationEnd_Example", "myAnimEndEventHandler") <-- Register for the event you want REALLY IMPORTANT!          #       
-;# Thread.StartThread()                                                     <-- Start the SexLab animation and forget.                     #
-;#                                                                                                                                         #
-;#        <elsewhere in your script>                                                                                                       #
-;#                                                                                                                                         #
-;# Event myAnimEndEventHandler(int tid, bool HasPlayer)                     <-- This function we registered for will trigger automatically #
-;#    sslThreadController Thread = SexLab.GetController(tid)                <-- Use the tid parameter to get the thread instance. It can   #
-;#    Actor[] Positions = Thread.Positions ;[firstActor, secondActor]           manipulate or access different information from the scene. #
-;# EndEvent                                                                                                                                #
-;#                                                                                                                                         #
-;# POSSIBLE EVENTS THAT CAN BE USED WITH HOOKS                                                                                             #
-;#  AnimationStart - Sent when the animation starts                                                                                        #
-;#  AnimationEnding - Sent when the animation is going to end, but the thread is still doing some final tasks                              #  
-;#  AnimationEnd - Sent when the animation is fully terminated                                                                             # 
-;#  LeadInStart - Sent when the animation starts and has a LeadIn                                                                          #
-;#  LeadInEnd - Sent when a LeadIn animation ends                                                                                          #  
-;#  StageStart - Sent for every Animation Stage that starts                                                                                #
-;#  StageEnd - Sent for every Animation Stage that is completed                                                                            #
-;#  OrgasmStart - Sent when an actor reaches the final stage                                                                               #
-;#  OrgasmEnd - Sent when the final stage is completed                                                                                     #
-;#  AnimationChange - Sent if the Animation that was playing is changed by the HotKey                                                      #
-;#  PositionChange - Sent if the Positions of the animation (the involved actors) are changed                                              #
-;#  ActorsRelocated - Sent if the actors gets a new alignment                                                                              #
-;#  ActorChangeStart - Sent when the function ChangeActors is called                                                                       # 
-;#  ActorChangeEnd - Sent when the replacement of actors, by the function ChangeActors is completed                                        # 
-;#                                                                                                                                         # 
-;#  LOCAL AND GLOBAL HOOKS                                                                                                                 # 
-;#  And event is sent when a specific situation is generated by SexLab (See the previous list.)                                            # 
-;#  For each possible situation, an event is sent to each specific hook with the format:                                                   # 
-;#   Hook<Event Type>_<Hook Name>                                                                                                          # 
-;#  And it is also sent a global hook with the event name:                                                                                 # 
-;#   Hook<Event Type> (E.g. "HookAnimationStart")                                                                                          # 
-;#                                                                                                                                         # 
-;#  The global hook, can be used to globally register for events that are generated by all the animations.                                 # 
-;#                                                                                                                                         # 
-;#  NAMES AND PARAMETERS FOR THE EVENT HANDLER FUNCTION                                                                                    # 
-;#  The function that you will create to receive the events should have this format:                                                       # 
-;#   Event myEventHandler(int tid, bool hasPlayer)                                                                                         # 
-;#  The name you use for the event handler function has to be the same you are registering for RegisterForModEvent                         # 
-;#  The two parameters are the ID of the SexLab Thread Controller and a boolean that is TRUE is the Player is in any of the Positions.     # 
-;#                                                                                                                                         # 
-;#                                                                                                                                         # 
-;#  There are other events that are sent by SexLab, but they are NOT related to Hooks.                                                     # 
-;#   SexLabDisabled - Sent when SexLab is Disabled                                                                                         # 
-;#   SexLabEnabled - Sent when SexLab is Enabled                                                                                           # 
-;#   SexLabOrgasm - Sent when an actor has an orgasm:                                                                                      # 
-;#    The parameters of the event are: the actor, the Full Enjoyment, and the total amount of orgasms for the current scene                # 
-;#   SexLabSlotAnimations_<category> - Sent when a specific category of animations is registered:                                          # 
-;#    Categories: Missionary, DoggyStyle, Cowgirl, Sideways, Standing, Anal, Oral, Boobjob, Foreplay, Lesbian, Footjob, Misc, Solo, Orgy   # 
-;#   SexLabSlotAnimations - Sent when the animations require to be re-loaded and re-registered                                             # 
-;#   SexLabSlotCreatureAnimations_<RaceKey> - Sent after each specific RaceKey is defined, one event for each RaceKey                      # 
-;#   SexLabSlotCreatureAnimations - Sent when the Crature animations require to be re-loaded and re-registered                             # 
-;#   SexLabRegisterCreaturekey - Sent when all the RaceKeys of SexLab are initialized (useful to add extra Races in the RaceKeys)          # 
-;#   SexLabConfigClose - Sent when the MCM of SexLab is closed                                                                             # 
-;#   SexLabReset - This ModEvent is sent when Sexlab executes a Setup or a System Cleanup                                                  # 
-;#   SexLabSlotExpressions - Sent when the SexLab Expression are initialized, and can be used to register additional expressions           # 
-;#   SexLabGameLoaded - Sent every time the player load a game                                                                             # 
-;#   SexLabDebugMode - Sent when SexLab is set to Debug mode                                                                               # 
-;#   SexLabLoadStrapons - This event is sent when the StraponsAre initialized or reloaded, can be used to add your custom strapons         # 
-;#   SexLabStoppedActive - This ModEvent is sent when all the animations are stopped by force                                              # 
-;#   SexLabSlotVoices - This ModEvent is sent when the SexLab Voices are initialized, and can be used to register additional voices        # 
-;#                                                                                                                                         # 
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;/* GetEnjoyment
-* * Given a thread ID and an Actor, gives the enjoyment level for the actor between orgasms
-* * NOTE: overkill? Don't use too much!
-* *
-* * @param: int tid - The thread id
-* * @param: Actor ActorRef - The actors to look for the enjoyment
-* * @return: int - the enjoyment calculated for the specific actor between orgasms when separated orgasms is enabled or the total enjoyment when separated orgasms is disabled
-*/;
-int function GetEnjoyment(int tid, Actor ActorRef)
-  return ThreadSlots.GetController(tid).GetEnjoyment(ActorRef)
-endfunction
-
-;/* IsVictim
-* * Used to understand is a specific actor is the Victim for the animation
-* *
-* * @param: int tid - The thread id
-* * @param: Actor ActorRef - The actors to look to be a victim
-* * @return: TRUE if the actor is a Victim for the animation, FALSE otherwise
-*/;
-bool function IsVictim(int tid, Actor ActorRef)
-  return ThreadSlots.GetController(tid).IsVictim(ActorRef)
-endFunction
-
-;/* IsAggressor
-* * Used to understand is a specific actor is the Aggressor for the animation
-* *
-* * @param: int tid - The thread id
-* * @param: Actor ActorRef - The actors to look to be an aggressor
-* * @return: TRUE if the actor is the Aggressor for the animation, FALSE otherwise
-*/;
-bool function IsAggressor(int tid, Actor ActorRef)
-  return ThreadSlots.GetController(tid).IsAggressor(ActorRef)
-endFunction
-
-;/* IsUsingStrapon
-* * Used to understand is a specific actor is using a strapon
-* *
-* * @param: int tid - The thread id
-* * @param: Actor ActorRef - The actors to look for strapons
-* * @return: TRUE if the actor is using a strapon for the animation, FALSE otherwise
-*/;
-bool function IsUsingStrapon(int tid, Actor ActorRef)
-  return ThreadSlots.GetController(tid).ActorAlias(ActorRef).IsUsingStrapon()
-endFunction
-
-;/* PregnancyRisk
-* * Used to understand if the actor can become pregnant by the sex animation
-* *
-* * @param: int tid - The thread id
-* * @param: Actor ActorRef - The actors to look for pregnancy risk
-* * @param: AllowFemaleCum [OPTIONAL false by default] - If set to TRUE then also the cum produced by a Female actor may impregnate
-* * @param: AllowCreatureCum [OPTIONAL false by default] - If set to TRUE then also the cum produced by a Creature actor may impregnate
-* * @return: TRUE if the actor can become pregnant, FALSE otherwise
-*/;
-bool function PregnancyRisk(int tid, Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
-  return ThreadSlots.GetController(tid).PregnancyRisk(ActorRef, AllowFemaleCum, AllowCreatureCum)
-endfunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                       END HOOK FUNCTIONS                                                      ^^^  #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -2414,6 +2353,31 @@ endFunction
 sslThreadController function GetPlayerController()
   return ThreadSlots.GetActorController(PlayerRef)
 endFunction
+
+;/* DEPRECATED! */;
+int function GetEnjoyment(int tid, Actor ActorRef)
+  return ThreadSlots.GetController(tid).GetEnjoyment(ActorRef)
+endfunction
+
+;/* DEPRECATED! */;
+bool function IsVictim(int tid, Actor ActorRef)
+  return ThreadSlots.GetController(tid).IsVictim(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+bool function IsAggressor(int tid, Actor ActorRef)
+  return ThreadSlots.GetController(tid).IsAggressor(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+bool function IsUsingStrapon(int tid, Actor ActorRef)
+  return ThreadSlots.GetController(tid).ActorAlias(ActorRef).IsUsingStrapon()
+endFunction
+
+;/* DEPRECATED! */;
+bool function PregnancyRisk(int tid, Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
+  return ThreadSlots.GetController(tid).PregnancyRisk(ActorRef, AllowFemaleCum, AllowCreatureCum)
+endfunction
 
 ; --- Legacy Animation Functions
 
