@@ -180,118 +180,66 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* Force an actor to be considered male or female by SexLab, by altering the SexLab gender.
-* * 
-* * @param: ActorRef, is the actor to set the SexLab Gender.
-* * @param: AsFemale, if you pass the value True, then the actor will be considered as Female, if you pass the value False, then it will be considered as Male.
-*/;
-Function TreatAsGender(Actor ActorRef, bool AsFemale)
-  ActorLib.TreatAsGender(ActorRef, AsFemale)
+; Return this actors sex
+; Mapping: Male = 0 | Female = 1 | Futa = 2 | CrtMale = 3 | CrtFemale = 4
+int Function GetSex(Actor akActor)
+  return SexlabRegistry.GetSex(akActor, false)
+EndFunction
+int[] Function GetSexAll(Actor[] akPositions)
+  return ActorLib.GetSexAll(akPositions)
+EndFunction
+
+; Force an actor to be considered male, female or futa by SexLab
+; --- Param:
+; akActor:    The actor which's sex to overwrite/force
+; aiSexTag:   The actors new sex; 0 - Male, 1 - Female, 2 - Futa
+Function TreatAsSex(Actor akActor, int aiSexTag)
+  ActorLib.TreatAsSex(akActor, aiSexTag)
 EndFunction
 Function TreatAsMale(Actor ActorRef)
-  TreatAsGender(ActorRef, false)
+  TreatAsSex(ActorRef, 0)
 EndFunction
 Function TreatAsFemale(Actor ActorRef)
-  TreatAsGender(ActorRef, true)
+  TreatAsSex(ActorRef, 1)
+EndFunction
+Function TreatAsFuta(Actor ActorRef)
+  TreatAsSex(ActorRef, 2)
 EndFunction
 
-;/* Clears any forced SexLab Gender on the actor, that was set with the function TreatAsMale(), TreatAsFemale(), TreatAsGender()
-* * The gender will be now the vanilla genders (the same as ActorBase.getSex())
-* * 
-* * @param: ActorRef, is the actor for whom to clear forced SexLab Gender.
-*/;
-function ClearForcedGender(Actor ActorRef)
-  ActorLib.ClearForcedGender(ActorRef)
-endFunction
+; Clear a forced sex assignment previously established with "TreatAsSex"
+Function ClearForcedSex(Actor akActor)
+  ActorLib.ClearForcedSex(akActor)
+EndFunction
 
-;/* GenderCount
-* * Produces an array of integers with the number of different genders in the 4 items of the array.
-* * 
-* * @param: Positions, is an array of actors to be used for the genders calculation.
-* * @return: int[] - An int array of Length 4 with the amount of actor of each gender;
-* *   [0] is the number of (human) Males
-* *   [1] is the number of (human) Females
-* *   [2] is the number of Male Creatures (or all the creatures if Creature Genders are disabled)
-* *   [3] is the number of Females Creatures (is always zero if Creature Genders are NOT enabled, contains the number of female creatures if Creature Genders ARE enabled)
-*/;
-int[] function GenderCount(Actor[] Positions)
-  return ActorLib.GenderCount(Positions)
-endFunction
-
-;/* TransGenderCount
-* * Produces an array of integers with the number of different genders trans in the 4 items of the array.
-* * 
-* * @param: Positions, is an array of actors to be used for the transgender calculation.
-* * @return: int[] - An int array of Length 4 with the amount of actor of each gender that is Transgender/Futa;
-* *   [0] is the number of Transgender Humanoid actors treated as Males
-* *   [1] is the number of Transgender Humanoid actors treated as Females
-* *   [2] is the number of Transgender Creatures actors treated as Male Creatures (or all the creatures if the "Creature Genders" option is disabled)
-* *   [3] is the number of Transgender Creatures actors treated as Females Creatures (is always zero if the "Creature Genders" option is disabled)
-*/;
-int[] function TransGenderCount(Actor[] Positions)
-  return ActorLib.TransCount(Positions)
-endFunction
-
-;/* MaleCount
-* * Counts the number of Males in the array, considering the SexLab Genders.
-* * 
-* * @param: Positions, is an array of actors to be used for the genders calculation.
-* * @return: an int with the number of males
-*/;
-int function MaleCount(Actor[] Positions)
-  return ActorLib.MaleCount(Positions)
-endFunction
-
-;/* FemaleCount
-* * Counts the number of Females in the array, considering the SexLab Genders.
-* * 
-* * @param: Positions, is an array of actors to be used for the genders calculation.
-* * @return: an int with the number of females
-*/;
-int function FemaleCount(Actor[] Positions)
-  return ActorLib.FemaleCount(Positions)
-endFunction
-
-;/* CreatureCount
-* * Counts the number of creatures in the array
-* * 
-* * @param: Positions, is an array of actors to be used for the genders calculation.
-* * @return: an int with the number of creatures (creature sex is not considered, use GenderCount() if you need to distinguish between male and female creatures.)
-*/;
-int function CreatureCount(Actor[] Positions)
-  return ActorLib.CreatureCount(Positions)
-endFunction
-
-;/* TransMaleCount
-* * Counts the number of Transgender Humanoid actors treated as Males in the array, considering the SexLab Genders.
-* * 
-* * @param: Positions, is an array of actors to be used for the genders calculation.
-* * @return: an int with the number of Transgender actors treated as Males
-*/;
-int function TransMaleCount(Actor[] Positions)
-  return ActorLib.TransCount(Positions)[0]
-endFunction
-
-;/* TransFemaleCount
-* * Counts the number of Transgender Humanoid actors treated as Females in the array, considering the SexLab Genders.
-* * 
-* * @param: Positions, is an array of actors to be used for the genders calculation.
-* * @return: an int with the number of Transgender actors treated as Females
-*/;
-int function TransFemaleCount(Actor[] Positions)
-  return ActorLib.TransCount(Positions)[1]
-endFunction
-
-;/* TransCreatureCount
-* * Counts the number of Transgender creatures actors in the array
-* * 
-* * @param: Positions, is an array of actors to be used for the genders calculation.
-* * @return: an int with the number of transgender creatures (creature sex is not considered, use TransGenderCount() if you need to distinguish between male and female creatures.)
-*/;
-int function TransCreatureCount(Actor[] Positions)
-  int[] TransCount = ActorLib.TransCount(Positions)
-  return TransCount[2] + TransCount[3]
-endFunction
+; Given an array of actors, create an array of length 5 representing the number of individual sexes contained in that array,
+; The returned array lists the number of males/females/... inside the array at their respective index; s.t.
+; Return[0] represents the number of human males
+; Return[1] represents the number of human females
+; Return[2] represents the number of human futas
+; Return[3] represents the number of creature males
+; Return[4] represents the number of creature females
+int[] Function CountSexAll(Actor[] akPositions)
+  return ActorLib.CountSexAll(akPositions)
+EndFunction
+int Function CountMale(Actor[] akPositions)
+	return ActorLib.CountMale(akPositions)
+EndFunction
+int Function CountFemale(Actor[] akPositions)
+	return ActorLib.CountFemale(akPositions)
+EndFunction
+int Function CountFuta(Actor[] akPositions)
+	return ActorLib.CountFuta(akPositions)
+EndFunction
+int Function CountCreatures(Actor[] akPositions)
+	int[] ActorLib.CountCreatures(akPositions)
+	return count[3] + count[4]
+EndFunction
+int Function CountCrtMale(Actor[] akPositions)
+	return ActorLib.CountCrtMale(akPositions)
+EndFunction
+int Function CountCrtFemale(Actor[] akPositions)
+	return ActorLib.CountCrtFemale(akPositions)
+EndFunction
 
 ;/* ValidateActor
 * * Checks if the given actor is a valid target for SexLab animations.
@@ -2409,6 +2357,57 @@ int function GetGender(Actor ActorRef)
   return ActorLib.GetGender(ActorRef)
 endFunction
 
+;/* DEPRECATED! | See TreatAsSex() */;
+Function TreatAsGender(Actor ActorRef, bool AsFemale)
+  ActorLib.TreatAsGender(ActorRef, AsFemale)
+EndFunction
+
+;/* DEPRECATED! | See ClearForcedSex() */;
+function ClearForcedGender(Actor ActorRef)
+  ActorLib.ClearForcedGender(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+int[] function GenderCount(Actor[] Positions)
+  return ActorLib.GenderCount(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+int[] function TransGenderCount(Actor[] Positions)
+  return ActorLib.TransCount(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+int function MaleCount(Actor[] Positions)
+  return ActorLib.MaleCount(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+int function FemaleCount(Actor[] Positions)
+  return ActorLib.FemaleCount(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+int function CreatureCount(Actor[] Positions)
+  return ActorLib.CreatureCount(Positions)
+endFunction
+
+;/* DEPRECATED! */;
+int function TransMaleCount(Actor[] Positions)
+  return ActorLib.TransCount(Positions)[0]
+endFunction
+
+;/* DEPRECATED! */;
+int function TransFemaleCount(Actor[] Positions)
+  return ActorLib.TransCount(Positions)[1]
+endFunction
+
+;/* DEPRECATED! */;
+int function TransCreatureCount(Actor[] Positions)
+  int[] TransCount = ActorLib.TransCount(Positions)
+  return TransCount[2] + TransCount[3]
+endFunction
+
 ;/* DEPRECATED! */;
 Form function EquipStrapon(Actor ActorRef)
   return Config.EquipStrapon(ActorRef)
@@ -2838,7 +2837,6 @@ state Enabled
   endEvent
 endState
 
-; Redundant but some authors think they are funny linking to this property
 Faction Property AnimatingFaction
   Faction Function Get()
     return Config.AnimatingFaction

@@ -1,9 +1,13 @@
-scriptname sslActorLibrary extends sslSystemLibrary
+ScriptName sslActorLibrary extends sslSystemLibrary
+{
+	Threading/Animation related Actor specific utility
+}
 
-; Data
-Faction property AnimatingFaction auto
-Faction property GenderFaction auto
-Faction property ForbiddenFaction auto
+; ------------------------------------------------------- ;
+; --- Actor Effects Functions                         --- ;
+; ------------------------------------------------------- ;
+; TODO: overhaul the entire system here and move it into the dll
+; NOTE: CumID system is no longer in use !IMPORTANT
 
 Spell property Vaginal1Oral1Anal1 auto
 Spell property Vaginal2Oral1Anal1 auto
@@ -38,12 +42,6 @@ Keyword property CumVaginalKeyword auto
 Keyword property CumOralStackedKeyword auto
 Keyword property CumAnalStackedKeyword auto
 Keyword property CumVaginalStackedKeyword auto
-
-Keyword property ActorTypeNPC auto
-
-;/-----------------------------------------------\;
-;|	Actor Handling/Effect Functions              |;
-;\-----------------------------------------------/;
 
 function ApplyCum(Actor ActorRef, int CumID)
 	AddCum(ActorRef, (cumID == 1 || cumID == 4 || cumID == 5 || cumID == 7), (cumID == 2 || cumID == 4 || cumID == 6 || cumID == 7), (cumID == 3 || cumID == 5 || cumID == 6 || cumID == 7))
@@ -182,51 +180,61 @@ int function CountCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, boo
 	return Amount
 endFunction
 
-;/-----------------------------------------------\;
-;|	Equipment Functions                          |;
-;\-----------------------------------------------/;
+; ------------------------------------------------------- ;
+; --- Equipment Functions                             --- ;
+; ------------------------------------------------------- ;
 
-Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimate = true, bool LeadIn = false)
-	If(!ActorRef)
-		return Utility.CreateFormArray(0)
-	EndIf
-	int[] strips = Config.GetStripSettings(GetGender(ActorRef) == 1, LeadIn, VictimRef, ActorRef == VictimRef)
-	return StripActorImpl(ActorRef, strips[0], strips[1], DoAnimate)
-endFunction
+; Flag/Clear an item for special strip behavior
+Function WriteStrip(Form akExcludeForm, bool abNeverStrip) native global
+Function EraseStrip(Form akExcludeForm) native global
+Function EraseStripAll() native global
+; -1 - Never Strip, 0 - No Info, 1 - Always Strip
+int Function CheckStrip(Form akCheckForm) native global
 
 function MakeNoStrip(Form ItemRef)
-	sslpp.WriteStrip(ItemRef, true)
+	WriteStrip(ItemRef, true)
 endFunction
-
 function MakeAlwaysStrip(Form ItemRef)
-	sslpp.WriteStrip(ItemRef, false)
+	WriteStrip(ItemRef, false)
 endFunction
-
 function ClearStripOverride(Form ItemRef)
-	sslpp.EraseStrip(ItemRef)
+	EraseStrip(ItemRef)
 endFunction
-
 function ResetStripOverrides()
-	sslpp.EraseStripAll()
+	EraseStripAll()
 endFunction
 
 bool function IsNoStrip(Form ItemRef)
-	return sslpp.CheckStrip(ItemRef) == -1
+	return CheckStrip(ItemRef) == -1
 endFunction
-
 bool function IsAlwaysStrip(Form ItemRef)
-	return sslpp.CheckStrip(ItemRef) == 1
+	return CheckStrip(ItemRef) == 1
 endFunction
-
 bool function IsStrippable(Form ItemRef)
 	return !IsNoStrip(ItemRef)
 endFunction
 
-function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
-	If(!ActorRef)
-		return
+Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimate = true, bool LeadIn = false)
+	int[] strips = Config.GetStripSettings(SexLabRegistry.GetSex(ActorRef, false) == 1, LeadIn, VictimRef, ActorRef == VictimRef)
+	return StripActorImpl(ActorRef, strips[0], strips[1], DoAnimate)
+endFunction
+Form[] function StripSlots(Actor ActorRef, bool[] Strip, bool DoAnimate = false, bool AllowNudesuit = true)
+	If(!ActorRef || Strip.Length < 33)
+		return Utility.CreateFormArray(0)
 	EndIf
-	If(IsVictim && !Config.RedressVictim)
+	return StripActorImpl(ActorRef, sslUtility.BoolToBit(Strip), Strip[32], DoAnimate)
+EndFunction
+Form Function StripSlot(Actor ActorRef, int SlotMask)
+	Form ItemRef = ActorRef.GetWornForm(SlotMask)
+	If (ItemRef && IsStrippable(ItemRef))
+		ActorRef.UnequipItemEX(ItemRef, 0, false)
+		return ItemRef
+	EndIf
+	return none
+EndFunction
+
+Function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
+	If (IsVictim && !Config.RedressVictim)
 		return
 	EndIf
 	int i = 0
@@ -246,183 +254,91 @@ EndFunction
 ; --- Actor Validation                                --- ;
 ; ------------------------------------------------------- ;
 
+Faction property ForbiddenFaction auto
+
 int Function ValidateActorImpl(Actor akActor) native global
-bool function IsValidActor(Actor ActorRef)
-	return ValidateActor(ActorRef) > 0
-endFunction
 int function ValidateActor(Actor ActorRef)
 	return ValidateActorImpl(ActorRef)
 EndFunction
+bool function IsValidActor(Actor ActorRef)
+	return ValidateActor(ActorRef) > 0
+endFunction
 
 function ForbidActor(Actor ActorRef)
-	if ActorRef
-		ActorRef.AddToFaction(ForbiddenFaction)
-	endIf
+	ActorRef.AddToFaction(ForbiddenFaction)
 endFunction
-
 function AllowActor(Actor ActorRef)
-	if ActorRef
-		ActorRef.RemoveFromFaction(ForbiddenFaction)
-	endIf
+	ActorRef.RemoveFromFaction(ForbiddenFaction)
 endFunction
-
 bool function IsForbidden(Actor ActorRef)
-	return ActorRef && ActorRef.IsInFaction(ForbiddenFaction)
+	return ActorRef.IsInFaction(ForbiddenFaction)
 endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Gender Functions                                --- ;
 ; ------------------------------------------------------- ;
 
-function TreatAsMale(Actor ActorRef)
-	TreatAsGender(ActorRef, false)
-endFunction
+Faction property GenderFaction auto
 
-function TreatAsFemale(Actor ActorRef)
-	TreatAsGender(ActorRef, true)
-endFunction
+int[] Function GetSexAll(Actor[] akPositions)
+	int[] ret = Utility.CreateIntArray(akPositions.Length)
+	int i = 0
+	While (i < akPositions.Length)
+		ret[i] = SexLabRegistry.GetSex(akPositions[i], false)
+		i += 1
+	EndWhile
+	return ret
+EndFunction
 
-function ClearForcedGender(Actor ActorRef)
-	if !ActorRef
-		return
-	endIf
-	ActorRef.RemoveFromFaction(GenderFaction)
-	int eid = ModEvent.Create("SexLabActorGenderChange")
-	if eid
-		ModEvent.PushForm(eid, ActorRef)
-		ModEvent.PushInt(eid, ActorRef.GetLeveledActorBase().GetSex())
-		ModEvent.Send(eid)
-	endIf
-endFunction
+Function TreatAsSex(Actor akActor, int aiSexTag)
+	int baseSex = SexLabRegistry.GetSex(akActor, true)
+	If (aiSexTag == baseSex)
+		akActor.RemoveFromFaction(GenderFaction)
+	Else
+		akActor.SetFactionRank(GenderFaction, aiSexTag)
+	EndIf
+	int handle = ModEvent.Create("SexLabActorGenderChange")
+	If (handle)
+		ModEvent.PushForm(handle, akActor)
+		ModEvent.PushInt(handle, aiSexTag)
+		ModEvent.Send(handle)
+	EndIf
+EndFunction
 
-function TreatAsGender(Actor ActorRef, bool AsFemale)
-	if !ActorRef
-		return
-	endIf
-	ActorRef.RemoveFromFaction(GenderFaction)
-	int sex = ActorRef.GetLeveledActorBase().GetSex()
-	if (sex != 0 && !AsFemale) || (sex != 1 && AsFemale) 
-		ActorRef.SetFactionRank(GenderFaction, AsFemale as int)
-	endIf
-	; Send event for whenever an actor's gender is altered
-	int eid = ModEvent.Create("SexLabActorGenderChange")
-	if eid
-		ModEvent.PushForm(eid, ActorRef)
-		ModEvent.PushInt(eid, AsFemale as int)
-		ModEvent.Send(eid)
-	endIf
-endFunction
+Function ClearForcedSex(Actor akActor)
+	TreatAsSex(akActor, SexLabRegistry.GetSex(akActor, true))
+EndFunction
 
-int function GetTrans(Actor ActorRef)
-	if ActorRef && ActorRef.IsInFaction(Config.GenderFaction)
-		ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-		if !BaseRef || ActorRef.GetFactionRank(GenderFaction) == BaseRef.GetSex()
-			return -1
-		elseIf sslCreatureAnimationSlots.HasRaceType(BaseRef.GetRace())
-			return 2 + ActorRef.GetFactionRank(Config.GenderFaction)
-		else
-			return ActorRef.GetFactionRank(Config.GenderFaction)
-		endIf
-	endIf
-	return -1
-endFunction
+int[] Function CountSexAll(Actor[] akPositions)
+	int[] ret = new int[5]
+	int i = 0
+	While (i < akPositions.Length)
+		int sex = SexLabRegistry.GetSex(akPositions[i], false)
+		ret[sex] = ret[sex] + 1
+		i += 1
+	EndWhile
+	return ret
+EndFunction
 
-int[] function GetTransAll(Actor[] Positions)
-	int i = Positions.Length
-	int[] Trans = Utility.CreateIntArray(i)
-	while i > 0
-		i -= 1
-		Trans[i] = GetTrans(Positions[i])
-	endWhile
-	return Trans
-endFunction
-
-int[] function TransCount(Actor[] Positions)
-	int[] Trans = new int[4]
-	int i = Positions.Length
-	while i > 0
-		i -= 1
-		int g = GetTrans(Positions[i])
-		if g >= 0 && g < 4
-			Trans[g] = Trans[g] + 1
-		endIf
-	endWhile
-	return Trans
-endFunction
-
-int function GetGender(Actor ActorRef)
-	if ActorRef
-		ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-		if sslCreatureAnimationSlots.HasRaceType(BaseRef.GetRace())
-			if !Config.UseCreatureGender
-				return 2 ; Creature - All Male
-			elseIf ActorRef.IsInFaction(GenderFaction)
-				return 2 + ActorRef.GetFactionRank(GenderFaction) ; CreatureGender + Override
-			else
-				return 2 + BaseRef.GetSex() ; CreatureGenders: 2+
-			endIf
-		elseIf ActorRef.IsInFaction(GenderFaction)
-			return ActorRef.GetFactionRank(GenderFaction) ; Override
-		else
-			return BaseRef.GetSex() ; Default
-		endIf
-	endIf
-	return 0 ; Invalid actor - default to male for compatibility
-endFunction
-
-int[] function GetGendersAll(Actor[] Positions)
-	int i = Positions.Length
-	int[] Genders = Utility.CreateIntArray(i)
-	while i > 0
-		i -= 1
-		Genders[i] = GetGender(Positions[i])
-	endWhile
-	return Genders
-endFunction
-
-int[] function GenderCount(Actor[] Positions)
-	int[] Genders = new int[4]
-	int i = Positions.Length
-	while i > 0
-		i -= 1
-		int g = GetGender(Positions[i])
-		Genders[g] = Genders[g] + 1
-	endWhile
-	return Genders
-endFunction
-
-bool function IsCreature(Actor ActorRef)
-	return ActorRef && CreatureSlots.AllowedCreature(ActorRef.GetLeveledActorBase().GetRace())
-endFunction
-
-int function MaleCount(Actor[] Positions)
-	return GenderCount(Positions)[0]
-endFunction
-
-int function FemaleCount(Actor[] Positions)
-	return GenderCount(Positions)[1]
-endFunction
-
-int function CreatureCount(Actor[] Positions)
-	int[] Genders = GenderCount(Positions)
-	return Genders[2] + Genders[3]
-endFunction
-
-int function CreatureMaleCount(Actor[] Positions)
-	return GenderCount(Positions)[2]
-endFunction
-
-int function CreatureFemaleCount(Actor[] Positions)
-	return GenderCount(Positions)[3]
-endFunction
-
-string function MakeGenderTag(Actor[] Positions)
-	return SexLabUtil.MakeGenderTag(Positions)
-endFunction
-
-string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0)
-	return SexLabUtil.GetGenderTag(Females, Males, Creatures)
-endFunction
+int Function CountMale(Actor[] akPositions)
+	return CountSexAll(akPositions)[0]
+EndFunction
+int Function CountFemale(Actor[] akPositions)
+	return CountSexAll(akPositions)[1]
+EndFunction
+int Function CountFuta(Actor[] akPositions)
+	return CountSexAll(akPositions)[2]
+EndFunction
+int Function CountCreatures(Actor[] akPositions)
+	int[] count = CountSexAll(akPositions)
+	return count[3] + count[4]
+EndFunction
+int Function CountCrtMale(Actor[] akPositions)
+	return CountSexAll(akPositions)[3]
+EndFunction
+int Function CountCrtFemale(Actor[] akPositions)
+	return CountSexAll(akPositions)[4]
+EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
@@ -463,49 +379,150 @@ Form[] Function StripActorImpl(Actor akActor, int aiSlots, bool abStripWeapons =
 	return ret
 EndFunction
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
-;																																											;
-;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
-;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
-;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
-;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
-;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
-;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
-;																																											;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+Faction property AnimatingFaction auto
+Keyword property ActorTypeNPC auto
+
+bool function IsCreature(Actor ActorRef)
+	return SexLabRegistry.GetRaceID(ActorRef) > 0
+endFunction
+
+int function GetGender(Actor ActorRef)
+	if ActorRef
+		ActorBase BaseRef = ActorRef.GetLeveledActorBase()
+		if sslCreatureAnimationSlots.HasRaceType(BaseRef.GetRace())
+			if !Config.UseCreatureGender
+				return 2 ; Creature - All Male
+			elseIf ActorRef.IsInFaction(GenderFaction)
+				return 2 + ActorRef.GetFactionRank(GenderFaction) ; CreatureGender + Override
+			else
+				return 2 + BaseRef.GetSex() ; CreatureGenders: 2+
+			endIf
+		elseIf ActorRef.IsInFaction(GenderFaction)
+			return ActorRef.GetFactionRank(GenderFaction) ; Override
+		else
+			return BaseRef.GetSex() ; Default
+		endIf
+	endIf
+	return 0 ; Invalid actor - default to male for compatibility
+endFunction
+
+Function TreatAsGender(Actor ActorRef, bool AsFemale)
+	If (AsFemale)
+		TreatAsSex(ActorRef, 1)
+	Else
+		TreatAsSex(ActorRef, 0)
+	EndIf
+EndFunction
+function ClearForcedGender(Actor ActorRef)	; Replaced to stay consistent with vocabulary
+	ClearForcedSex(ActorRef)
+endFunction
+
+function TreatAsMale(Actor ActorRef)
+	TreatAsGender(ActorRef, false)
+endFunction
+function TreatAsFemale(Actor ActorRef)
+	TreatAsGender(ActorRef, true)
+endFunction
+
+int function GetTrans(Actor ActorRef)
+	int configSex = SexLabRegistry.GetSex(ActorRef, true)
+	If (configSex != 2 && configSex == SexLabRegistry.GetSex(ActorRef, false))
+		; configSex == vanillaSex => No overwrite <=> no "trans"
+		return -1
+	ElseIf (configSex >= 2)
+		; Futa+ has its tag shifted 1 up, since this is a legcay function they need to be shifted down once again
+		return configSex - 1
+	EndIf
+	return configSex
+endFunction
+
+int[] function GetTransAll(Actor[] Positions)
+	int i = Positions.Length
+	int[] Trans = Utility.CreateIntArray(i)
+	while i > 0
+		i -= 1
+		Trans[i] = GetTrans(Positions[i])
+	endWhile
+	return Trans
+endFunction
+
+int[] function TransCount(Actor[] Positions)
+	int[] Trans = new int[4]
+	int i = Positions.Length
+	while i > 0
+		i -= 1
+		int g = GetTrans(Positions[i])
+		if g >= 0 && g < 4
+			Trans[g] = Trans[g] + 1
+		endIf
+	endWhile
+	return Trans
+endFunction
+
+int[] function GetGendersAll(Actor[] Positions)
+	int i = Positions.Length
+	int[] Genders = Utility.CreateIntArray(i)
+	while i > 0
+		i -= 1
+		Genders[i] = GetGender(Positions[i])
+	endWhile
+	return Genders
+endFunction
+
+int[] function GenderCount(Actor[] Positions)
+	int[] Genders = new int[4]
+	int i = Positions.Length
+	while i > 0
+		i -= 1
+		int g = GetGender(Positions[i])
+		Genders[g] = Genders[g] + 1
+	endWhile
+	return Genders
+endFunction
+
+int function MaleCount(Actor[] Positions)
+	return GenderCount(Positions)[0]
+endFunction
+int function FemaleCount(Actor[] Positions)
+	return GenderCount(Positions)[1]
+endFunction
+int function CreatureCount(Actor[] Positions)
+	int[] Genders = GenderCount(Positions)
+	return Genders[2] + Genders[3]
+endFunction
+int function CreatureMaleCount(Actor[] Positions)
+	return GenderCount(Positions)[2]
+endFunction
+int function CreatureFemaleCount(Actor[] Positions)
+	return GenderCount(Positions)[3]
+endFunction
+
+string function MakeGenderTag(Actor[] Positions)
+	return SexLabUtil.MakeGenderTag(Positions)
+endFunction
+
+string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0)
+	return SexLabUtil.GetGenderTag(Females, Males, Creatures)
+endFunction
 
 ; A framework shouldnt be "random" and the keyword convention should be established strongly enough to not rely on StorageUtil anymore
-; Not deleting contents for the unlikely cause it causes issues
 bool function ContinueStrip(Form ItemRef, bool DoStrip = true) global
 	int t = sslpp.CheckStrip(ItemRef)
 	if t == 1
 		return True
 	endIf
 	return DoStrip && t != -1
-endFunction
-
-; Do it yourself?
-Form function StripSlot(Actor ActorRef, int SlotMask)
-	if !ActorRef
-		return none
-	endIf
-	Form ItemRef = ActorRef.GetWornForm(SlotMask)
-	if IsStrippable(ItemRef)
-		ActorRef.UnequipItemEX(ItemRef, 0, false)
-		return ItemRef
-	endIf
-	return none
-endFunction
-
-Form[] function StripSlots(Actor ActorRef, bool[] Strip, bool DoAnimate = false, bool AllowNudesuit = true)
-	If(!ActorRef || Strip.Length < 33)
-		return Utility.CreateFormArray(0)
-	EndIf
-	return StripActorImpl(ActorRef, sslUtility.BoolToBit(Strip), Strip[32], DoAnimate)
-EndFunction
-
-function legacy_AddCum(Actor ActorRef, bool Vaginal = true, bool Oral = true, bool Anal = true)
-	LogRedundant("legacy_AddCum")
 endFunction
 
 bool function CanAnimate(Actor ActorRef)
