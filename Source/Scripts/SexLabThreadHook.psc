@@ -60,7 +60,7 @@ EndFunction
   Shorthands to register and unregister the hook
 /;
 
-bool Property bAutoegisterOnInit = true Auto Hidden
+bool Property bAutoegisterOnInit = true Auto
 {If this Hook should register itself when it is first initialized. Default: true}
 
 ; Register the given Hook to no receive events
