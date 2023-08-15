@@ -494,6 +494,9 @@ sslThreadController _ActiveControl
 sslThreadController Function GetThreadControlled()
   return _ActiveControl
 EndFunction
+bool Function HasThreadControl(SexLabThread akThread)
+  return _ActiveControl == akThread
+EndFunction
 
 Function GetThreadControl(sslThreadController TargetThread)
   If (!TargetThread || _ActiveControl || TargetThread.GetStatus() != TargetThread.STATUS_INSCENE)

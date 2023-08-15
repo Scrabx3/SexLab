@@ -798,6 +798,7 @@ State Animating
 		If (!CenterOn)
 			return
 		ElseIf(CenterOn != CenterRef)
+			ObjectReference oldCenter = CenterRef
 			SetFurnitureIgnored(false)
 			CenterAlias.ForceRefTo(CenterOn)
 			If (!SexLabRegistry.IsCompatibleCenter(_ActiveScene, CenterOn))
@@ -805,8 +806,12 @@ State Animating
 				CenterRef = FindCenter(Scenes, _StartScene, out, _furniStatus)
 				int where = out.Find("")
 				If (where == 0)	; New center has no available scenes closeby, pick new ones
-					If (InvalidCenterMsg.Show() == 1)
+					If (Config.HasThreadControl(Self) && InvalidCenterMsg.Show() == 1)
+						Log("Cannot relocate center, end scene by player choice", "CenterOnObject")
 						EndAnimation()
+					Else
+						Log("Cannot relocate center, cancel relocation", "CenterOnObject")
+						CenterAlias.ForceRefTo(oldCenter)
 					EndIf
 					return
 				Else
@@ -1173,8 +1178,8 @@ Function SetTID(int id)
 		i += 1
 	EndWhile
 	Config = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
-	; DoNothingPackage = 
-	; InvalidCenterMsg = 
+	DoNothingPackage = Game.GetFormFromFile(0xE50E, "SexLab.esm") as Package
+	InvalidCenterMsg = Game.GetFormFromFile(0xAA6A6, "SexLab.esm") as Message
 	Initialize()
 EndFunction
 
