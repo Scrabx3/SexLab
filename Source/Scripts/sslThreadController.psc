@@ -3,9 +3,6 @@ scriptname sslThreadController extends sslThreadModel
 	Controller script to recognize player actions (hotkey inputs etc) to manually interact with scene logic
 }
 
-; TODO: rewire to new logic stuff
-; Consider playing states of parent for implementation
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
@@ -17,22 +14,25 @@ scriptname sslThreadController extends sslThreadModel
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+Message Property RepositionInfoMsg Auto
+{[Ok, Cancel, Don't show again]}
+
 sslActorAlias AdjustAlias		; The actor currently selected for position adjustments
 
 int[] Hotkeys
-int kAdvanceAnimation = 0
-int kChangeAnimation  = 1
-int kChangePositions  = 2
-int kAdjustChange     = 3
-int kAdjustForward    = 4
-int kAdjustSideways   = 5
-int kAdjustUpward     = 6
-int kRealignActors    = 7
-int kRestoreOffsets   = 8
-int kMoveScene        = 9
-int kRotateScene      = 10
-int kEndAnimation     = 11
-int kAdjustSchlong    = 12
+int Property kAdvanceAnimation = 0 AutoReadOnly
+int Property kChangeAnimation  = 1 AutoReadOnly
+int Property kChangePositions  = 2 AutoReadOnly
+int Property kAdjustChange     = 3 AutoReadOnly
+int Property kAdjustForward    = 4 AutoReadOnly
+int Property kAdjustSideways   = 5 AutoReadOnly
+int Property kAdjustUpward     = 6 AutoReadOnly
+int Property kRealignActors    = 7 AutoReadOnly
+int Property kRestoreOffsets   = 8 AutoReadOnly
+int Property kMoveScene        = 9 AutoReadOnly
+int Property kRotateScene      = 10 AutoReadOnly
+int Property kEndAnimation     = 11 AutoReadOnly
+int Property kAdjustSchlong    = 12 AutoReadOnly
 
 Function EnableHotkeys(bool forced = false)
 	If(!HasPlayer && !forced)
@@ -60,9 +60,7 @@ Function EnableHotkeys(bool forced = false)
 EndFunction
 	
 Event OnKeyDown(int KeyCode)
-	MiscUtil.PrintConsole("OnKeyDown > " + KeyCode)
 	If(Utility.IsInMenuMode())
-		Log("Input while locked. Skipping ...")
 		return
 	EndIf
 	int hotkey = Hotkeys.Find(KeyCode)
@@ -96,7 +94,6 @@ Event OnKeyDown(int KeyCode)
 		Else
 			EndAnimation()
 		EndIf
-		return
 	EndIf
 EndEvent
 
@@ -137,69 +134,79 @@ Function ChangeAnimation(bool backwards = false)
 		return
 	EndIf
 	UnregisterForUpdate()
-	Log("Changing Animation")
-	If(!Config.AdjustStagePressed())	; Forward/Backward
-		SetAnimation(sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards))
+	String newScene
+	If (!Config.AdjustStagePressed())	; Forward/Backward
+		newScene = Scenes[sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards)]
 	Else	; Random
 		int current = Animations.Find(Animation)
 		int r = Utility.RandomInt(0, Animations.Length - 1)
 		While(r == current)
 			r = Utility.RandomInt(0, Animations.Length - 1)
 		EndWhile
-		SetAnimation(r)
-	endIf
+		newScene = Scenes[r]
+	EndIf
+	Log("Changing running scene from " + GetActiveScene() + " to " + newScene)
 	SendThreadEvent("AnimationChange")
-	RegisterForSingleUpdate(0.2)
+	ResetScene(newScene)
 EndFunction
 
 Function AdjustForward(bool backwards = false, bool AdjustStage = false)
 	UnregisterforUpdate()
-	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
+	float Amount = 0.5 - (backwards as float)
 	int AdjustPos = GetAdjustPos()
+	bool first_pass = true
 	While(true)
 		PlayHotkeyFX(0, backwards)
 		Animation.AdjustForward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
 		AdjustAlias.RefreshLoc()
-		Utility.Wait(0.1)
+		Utility.Wait(0.03)
 		If(!Input.IsKeyPressed(Hotkeys[kAdjustForward]))
 			RegisterForSingleUpdate(0.2)
 			return
+		ElseIf (first_pass)
+			first_pass = false
+			Utility.Wait(0.4)
 		EndIf
-		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
 Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
 	UnregisterforUpdate()
 	int AdjustPos = GetAdjustPos()
-	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
+	float Amount = 0.5 - (backwards as float)
+	bool first_pass = true
 	While(true)
 		PlayHotkeyFX(0, backwards)
 		Animation.AdjustSideways(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
 		RealignActors()
-		Utility.Wait(0.1)
+		Utility.Wait(0.03)
 		If(!Input.IsKeyPressed(Hotkeys[kAdjustSideways]))
 			RegisterForSingleUpdate(0.2)
 			return
+		ElseIf (first_pass)
+			first_pass = false
+			Utility.Wait(0.4)
 		EndIf
-		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
 Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
 	UnregisterforUpdate()
 	int AdjustPos = GetAdjustPos()
-	float Amount = PapyrusUtil.SignFloat(backwards, 0.50)
+	float Amount = 0.5 - (backwards as float)
+	bool first_pass = true
 	While(true) 
 		PlayHotkeyFX(2, backwards)
 		Animation.AdjustUpward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
 		RealignActors()
-		Utility.Wait(0.1)
+		Utility.Wait(0.03)
 		If(!Input.IsKeyPressed(Hotkeys[kAdjustUpward]))
 			RegisterForSingleUpdate(0.2)
 			return
+		ElseIf (first_pass)
+			first_pass = false
+			Utility.Wait(0.4)
 		EndIf
-		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
@@ -209,8 +216,9 @@ Function RotateScene(bool backwards = false)
 	If(Config.IsAdjustStagePressed())
 		Amount = 180.0
 	EndIf
-	Amount = PapyrusUtil.SignFloat(backwards, Amount)
-	While(true)	; Pseudo do-while loop
+	Amount = (-1 * backwards as float) * Amount
+	bool first_pass = true
+	While(true)
 		PlayHotkeyFX(1, !backwards)
 		CenterLocation[5] = CenterLocation[5] + Amount
 		If(CenterLocation[5] >= 360.0)
@@ -219,17 +227,19 @@ Function RotateScene(bool backwards = false)
 			CenterLocation[5] = CenterLocation[5] + 360.0
 		EndIf
 		CenterOnCoords(CenterLocation[0], CenterLocation[1], CenterLocation[2], 0, 0, CenterLocation[5], true)
-		Utility.Wait(0.1)
+		Utility.Wait(0.03)
 		If(!Input.IsKeyPressed(Hotkeys[kRotateScene]))
 			RegisterForSingleUpdate(0.2)
 			return
+		ElseIf (first_pass)
+			first_pass = false
+			Utility.Wait(0.4)
 		EndIf
-		Utility.Wait(0.4)
 	EndWhile
 EndFunction
 
 Function AdjustSchlong(bool backwards = false)
-	int Amount  = PapyrusUtil.SignInt(backwards, 1)
+	int Amount  = ((0.5 - (backwards as float)) * 2) as int
 	int AdjustPos = GetAdjustPos()
 	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
 	If(Math.Abs(Schlong) <= 9)
@@ -263,26 +273,28 @@ EndFunction
 
 Function MoveScene()
 	UnregisterForUpdate()
-	; Processing Furnitures
-	If(BedStatus[1])
-		SetFurnitureIgnored(false)
+	If (StorageUtil.GetIntValue(none, "SEXLAB_REPOSITIONMSG_INFO", 0))
+		; "You have 30 secs to position yourself to a new center location.\nHold down the 'Move Scene' hotkey to relocate the center instantly to your current position"
+		int choice = RepositionInfoMsg.Show()
+		If (choice == 1)
+			return
+		ElseIf (choice == 2)
+			StorageUtil.SetIntValue(none, "SEXLAB_REPOSITIONMSG_INFO", 1)
+		EndIf
 	EndIf
 	; Make sure the player cannot activate anything, change worldspaces or start combat on their own
 	Game.DisablePlayerControls(false, true, false, false, true)
 	sslActorAlias PlayerSlot = ActorAlias(PlayerRef)
 	int n = 0
 	While(n < Positions.Length)
-		Debug.Trace("Resetting Actor: " + n)
 		If(ActorAlias[n] == PlayerSlot)
-			ActorAlias[n].UnplaceActor()
+			ActorAlias[n].TryUnlock()
 		Else
 			ActorAlias[n].SendDefaultAnimEvent(true)
 		EndIf
 		n += 1
 	EndWhile
 	Utility.Wait(1)
-	; TODO: Make some message objects to display here
-	Debug.Messagebox("You have 30 secs to position yourself to a new center location.\nHold down the 'Move Scene' hotkey to relocate the center instantly to your current position")
 	int i = 0
 	While(i < 60 && !Input.IsKeyPressed(Hotkeys[kMoveScene]))
 		Utility.Wait(0.5)
@@ -300,38 +312,34 @@ Function MoveScene()
 		Utility.Wait(0.5)
 	EndWhile
 	If(PlayerSlot)
-		PlayerSlot.PlaceActor(_Center)
-	EndIf
-	If(BedStatus[1] >= 2)					; Bed or DoubleBled
-		CenterOnBedEx(false, 300.0, true)
-	Else
-		CenterOnObject(PlayerRef, true)
+		PlayerSlot.LockActor()
 	EndIf
 	Game.EnablePlayerControls()		; placing doesnt interact with player controls
-	GoToStage(1)									; Will re-register the update loop
+	CenterOnObject(PlayerRef)			; Will re-register the update loop
 EndFunction
 
 Function ChangePositions(bool backwards = false)
 	If(Positions.Length < 2)
 		return
 	EndIf
-	int[] keys = Animation.DataKeys()
+	String activeScene = GetActiveScene()
 	int pos = GetAdjustPos()
 	int i = pos + 1
 	While(i < Positions.Length + pos)
 		If(i >= Positions.Length)
 			i -= Positions.Length
 		EndIf
-		If(sslActorData.Match(keys[pos], keys[i]) && sslActorData.Match(keys[i], keys[pos]))
-			Actor tmp = Positions[pos]
-			sslActorAlias tmp2 = ActorAlias[pos]
+		If(SexLabRegistry.IsSimilarPosition(activeScene, pos, i))
+			Actor tmpAct = Positions[pos]
 			Positions[pos] = Positions[i]
-			Positions[i] = tmp
+			Positions[i] = tmpAct
+
+			sslActorAlias tmpAli = ActorAlias[pos]
 			ActorAlias[pos] = ActorAlias[i]
-			ActorAlias[i] = tmp2
-			RealignActors()
-			GoToStage(1)
+			ActorAlias[i] = tmpAli
+
 			SendThreadEvent("PositionChange")
+			ResetStage()
 			return
 		EndIf
 		i += 1
