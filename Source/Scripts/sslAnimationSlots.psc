@@ -17,7 +17,7 @@ scriptname sslAnimationSlots extends Quest
 
 int Function GetAllocatedSize() native
 
-int property Slotted
+int property Slotted Hidden
   int Function Get()
     return GetAllocatedSize()
   EndFunction
@@ -25,28 +25,28 @@ int property Slotted
   EndFunction
 EndProperty
 
-Actor Property PlayerRef
+Actor Property PlayerRef Hidden
   Actor Function Get()
     return Game.GetPlayer()
   EndFunction
   Function Set(Actor aSet)
   EndFunction
 EndProperty
-sslSystemConfig property Config
+sslSystemConfig property Config Hidden
   sslSystemConfig Function Get()
     return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
   EndFunction
   Function Set(sslSystemConfig aSet)
   EndFunction
 EndProperty
-sslActorLibrary property ActorLib
+sslActorLibrary property ActorLib Hidden
   sslActorLibrary Function Get()
     return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary
   EndFunction
   Function Set(sslActorLibrary aSet)
   EndFunction
 EndProperty
-sslThreadLibrary property ThreadLib
+sslThreadLibrary property ThreadLib Hidden
   sslThreadLibrary Function Get()
     return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslThreadLibrary
   EndFunction
@@ -505,7 +505,7 @@ endFunction
 ; --- System Use Only                                 --- ;
 ; ------------------------------------------------------- ;
 
-string property JLoaders
+string property JLoaders Hidden
   String Function Get()
     String ret = "../SexLab/Animations/"
     if self == Config.CreatureSlots
@@ -520,7 +520,7 @@ EndProperty
 function Setup()
 endFunction
 
-string property CacheID
+string property CacheID Hidden
   String Function Get()
     if self != Config.CreatureSlots
       return "SexLab.AnimationTags"
@@ -573,4 +573,3 @@ endFunction
 bool[] function FindTagged(sslBaseAnimation[] Anims, string Tags)
   return sslUtility.FindTaggedAnimations(Anims, PapyrusUtil.StringSplit(Tags))
 endFunction
-

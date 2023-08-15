@@ -1177,9 +1177,9 @@ Function SetTID(int id)
 		ActorAlias[i].Setup()
 		i += 1
 	EndWhile
-	Config = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
-	DoNothingPackage = Game.GetFormFromFile(0xE50E, "SexLab.esm") as Package
-	InvalidCenterMsg = Game.GetFormFromFile(0xAA6A6, "SexLab.esm") as Message
+	; Config = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
+	; DoNothingPackage = Game.GetFormFromFile(0xE50E, "SexLab.esm") as Package
+	; InvalidCenterMsg = Game.GetFormFromFile(0xAA6A6, "SexLab.esm") as Message
 	Initialize()
 EndFunction
 
@@ -1249,28 +1249,28 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-sslThreadLibrary Property ThreadLib
+sslThreadLibrary Property ThreadLib Hidden
 	sslThreadLibrary Function Get()
 		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslThreadLibrary
 	EndFunction
 	Function Set(sslThreadLibrary aSet)
 	EndFunction
 EndProperty
-sslAnimationSlots Property AnimSlots
+sslAnimationSlots Property AnimSlots Hidden
 	sslAnimationSlots Function Get()
 		return Game.GetFormFromFile(0x639DF, "SexLab.esm") as sslAnimationSlots
 	EndFunction
 	Function Set(sslAnimationSlots aSet)
 	EndFunction
 EndProperty
-sslCreatureAnimationSlots Property CreatureSlots
+sslCreatureAnimationSlots Property CreatureSlots Hidden
 	sslCreatureAnimationSlots Function Get()
 		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationSlots
 	EndFunction
 	Function Set(sslCreatureAnimationSlots aSet)
 	EndFunction
 EndProperty
-sslActorLibrary property ActorLib
+sslActorLibrary property ActorLib Hidden
   sslActorLibrary Function Get()
     return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary
   EndFunction
@@ -1278,18 +1278,18 @@ sslActorLibrary property ActorLib
   EndFunction
 EndProperty
 
-int Property ActorCount
+int Property ActorCount Hidden
 	int Function Get()
 		return Positions.Length
 	EndFunction
 EndProperty
-Actor[] property Victims
+Actor[] property Victims Hidden
 	Actor[] Function Get()
 		GetAllVictims()
 	EndFunction
 EndProperty
 
-int[] Property Genders
+int[] Property Genders Hidden
 	int[] Function Get()
 		int[] g = ActorLib.GetGendersAll(Positions)
 		int[] ret = new int[4]
@@ -1334,7 +1334,7 @@ int Property FemaleCreatures hidden
 	EndFunction
 EndProperty
 
-int Property Stage
+int Property Stage Hidden
 	int Function Get()
 		return _StageHistory.Length
 	EndFunction
@@ -1343,19 +1343,19 @@ int Property Stage
 	EndFunction
 EndProperty
 
-string[] Property AnimEvents
+string[] Property AnimEvents Hidden
 	String[] Function Get()
 		return SexLabRegistry.GetAnimationEventA(_ActiveScene, _ActiveStage)
 	EndFunction
 EndProperty
 
-string Property AdjustKey
+string Property AdjustKey Hidden
 	String Function Get()
 		return "Global"
 	EndFunction
 EndProperty
 
-bool[] Property IsType	; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty, [6] HadVaginal, [7] HadAnal, [8] HadOral
+bool[] Property IsType Hidden	; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3] IsOral, [4] IsLoving, [5] IsDirty, [6] HadVaginal, [7] HadAnal, [8] HadOral
 	bool[] Function Get()
 		bool[] ret = new bool [9]
 		ret[0] = IsAggressive
@@ -1412,7 +1412,7 @@ bool Property IsDirty hidden
 	EndFunction
 EndProperty
 
-int[] Property BedStatus
+int[] Property BedStatus Hidden
 	int[] Function Get()
 		int[] ret = new int[2]
 		ret[0] = _furniStatus - 1
@@ -1421,7 +1421,7 @@ int[] Property BedStatus
 	Function Set(int[] aSet)
 	EndFunction
 EndProperty
-ObjectReference Property BedRef
+ObjectReference Property BedRef Hidden
 	ObjectReference Function Get()
 		If (sslThreadLibrary.IsBed(CenterRef))
 			return CenterRef
@@ -1480,7 +1480,7 @@ Actor property VictimRef hidden
 	EndFunction
 EndProperty
 
-float[] Property CenterLocation
+float[] Property CenterLocation Hidden
 	float[] Function Get()
 		float[] ret = new float[6]
 		ret[0] = CenterRef.GetPositionX()
@@ -1495,7 +1495,7 @@ float[] Property CenterLocation
 	EndFunction
 EndProperty
 
-sslBaseAnimation Property Animation
+sslBaseAnimation Property Animation Hidden
 	sslBaseAnimation Function Get()
 		return sslBaseAnimation.GetOrSetBaseAnimation(_ActiveScene, none, true) as sslBaseAnimation
 	EndFunction
@@ -1503,7 +1503,7 @@ sslBaseAnimation Property Animation
 		SetAnimationImpl(aSet)
 	EndFunction
 EndProperty
-sslBaseAnimation Property StartingAnimation
+sslBaseAnimation Property StartingAnimation Hidden
 	sslBaseAnimation Function Get()
 		return sslBaseAnimation.GetOrSetBaseAnimation(_StartScene, none, true) as sslBaseAnimation
 	EndFunction
@@ -1563,7 +1563,7 @@ String[] Function AddString(string[] ArrayValues, string ToAdd, bool RemoveDupes
 	return ArrayValues
 EndFunction
 
-Sound Property SoundFX
+Sound Property SoundFX Hidden
 	Sound Function Get()
 		return none
 	EndFunction
@@ -1687,7 +1687,7 @@ Function QuickEvent(string Callback)
 	; ModEvent.Send(ModEvent.Create(Key(Callback)))
 endfunction
 
-Race Property CreatureRef
+Race Property CreatureRef Hidden
 	Race Function Get()
 		Keyword npc = Keyword.GetKeyword("ActorTypeNPC")
 		int i = 0
@@ -1703,7 +1703,7 @@ Race Property CreatureRef
 	EndFunction
 EndProperty
 
-float[] Property RealTime
+float[] Property RealTime Hidden
 	float[] Function Get()
 		float[] ret = new float[1]
 		ret[0] = SexLabUtil.GetCurrentGameRealTimeEx()

@@ -211,7 +211,7 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-sslSystemConfig Property Config
+sslSystemConfig Property Config Hidden
   sslSystemConfig Function Get()
     return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
   EndFunction
@@ -219,7 +219,7 @@ sslSystemConfig Property Config
   EndFunction
 EndProperty
 
-SexLabFramework Property SexLab
+SexLabFramework Property SexLab Hidden
   SexLabFramework Function Get()
     return Game.GetFormFromFile(0xD62, "SexLab.esm") as SexLabFramework
   EndFunction
