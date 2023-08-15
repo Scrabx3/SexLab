@@ -31,8 +31,6 @@ event OnPlayerLoadGame()
 	if CurrentVersion > 0 && Config.CheckSystem()
 		Config.Reload()
 		ThreadSlots.StopAll()
-		; Perform pending updates
-		UpdateSystem(CurrentVersion, SexLabUtil.GetVersion())
 		; Cleanup tasks
 		Factory.Cleanup()
 		CleanTrackedFactions()
@@ -107,9 +105,9 @@ bool function SetupSystem()
 	Factory.Setup()
 	VoiceSlots.Setup()
 	ExpressionSlots.Setup()
-	AnimSlots.Setup()
+	; AnimSlots.Setup()
 	CreatureSlots.Setup()
-	ThreadSlots.Setup()
+	; ThreadSlots.Setup()
 
 	; Finish setup
 	GoToState("Ready")
@@ -119,70 +117,6 @@ bool function SetupSystem()
 	CleanActorStorage()
 	return true
 endFunction
-
-event UpdateSystem(int OldVersion, int NewVersion)
-	if OldVersion <= 0 || NewVersion <= 0
-		Debug.TraceAndBox("SEXLAB ERROR: Unknown call to system update: "+OldVersion+"->"+NewVersion)
-	elseif NewVersion < OldVersion
-		Debug.TraceAndBox("SEXLAB ERROR: Unsupported version rollback detected ("+OldVersion+"->"+NewVersion+") Proceed at your own risk!")
-	elseif OldVersion < NewVersion
-		LogAll("SexLab v"+SexLabUtil.GetStringVer()+" - Updating...")
-		SexLab.GoToState("Disabled")
-		GoToState("Updating")
-		Version = NewVersion
-		Config.ExportSettings()
-		; Perform update functions
-		if OldVersion >= 16209 && OldVersion < 16402
-			; Some system setup for < 1.64 SE dev BETA 2
-			ExpressionSlots.GoToState("") ; Fix Loock state issue 
-			ExpressionSlots.Setup()
-		elseIf OldVersion >= 16200 && OldVersion < 16209
-			; Some system setup for < 1.63 SE dev beta 9
-			ExpressionSlots.GoToState("") ; Fix Loock state issue 
-			bool AllowCreatures = Config.AllowCreatures
-			Config.Setup()
-			Config.AllowCreatures = AllowCreatures
-			AnimSlots.Setup()
-			CreatureSlots.Setup()
-		elseIf OldVersion >= 16000 && OldVersion < 16200 ; 1.62
-			if OldVersion == 16000
-				PreloadDone = true
-			endIf
-			ExpressionSlots.GoToState("") ; Fix Loock state issue 
-			; SexLab.Setup()
-			Config.Setup()
-			AnimSlots.Setup()
-			CreatureSlots.Setup()
-			ActorLib.Setup()    ; New cum spells
-			ThreadSlots.Setup() ; New alias event arrays
-			; Install creature voices, if needed.
-			if Config.AllowCreatures
-				(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceDefaults).LoadCreatureVoices()
-			endIf
-		elseIf OldVersion < 16000
-			; Full system setup for < 1.60
-			; SexLab.Setup()
-			Config.Setup()
-			ThreadLib.Setup()
-			ActorLib.Setup()
-			Stats.Setup()
-			Factory.Setup()
-			VoiceSlots.Setup()
-			ExpressionSlots.Setup()
-			AnimSlots.Setup()
-			CreatureSlots.Setup()
-			ThreadSlots.Setup()
-		endIf
-		Config.ImportSettings()
-		; End update functions
-		GoToState("Ready")
-		SexLab.GoToState("Enabled")
-		LogAll("SexLab Update v"+SexLabUtil.GetStringVer()+" - Ready!")
-		SendVersionEvent("SexLabUpdated")
-		; Clean storage lists
-		CleanActorStorage()
-	endIf
-endEvent
 
 event InstallSystem()
 	ForcedOnce = true
@@ -405,4 +339,18 @@ event OnUpdate()
 			InstallSystem()
 		endIf
 	endIf
+endEvent
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+event UpdateSystem(int OldVersion, int NewVersion)
 endEvent
