@@ -169,6 +169,7 @@ EndProperty
 
 sslSystemConfig Property Config Auto
 Package Property DoNothingPackage Auto	; used in the alias scripts
+Message Property InvalidCenterMsg Auto	; Invalid new cewnter -> [0: Keep Old Center, 1: End Scene]
 
 ; Constants
 int Property POSITION_COUNT_MAX = 5 AutoReadOnly
@@ -422,7 +423,7 @@ State Making
 		UnregisterForUpdate()
 		SendThreadEvent("AnimationStarting")
 		; ThreadHooks = Config.GetThreadHooks()	; TODO: Rewire this
-		RunHook(HOOKID_STARTING)
+		RunHook(Config.HOOKID_STARTING)
 		If(_StartScene && Scenes.Find(_StartScene) == -1)
 			AddScene(_StartScene)
 		EndIf
@@ -488,7 +489,8 @@ State Making_M
 				AutoAdvance = true
 			Else
 				AutoAdvance = Config.AutoAdvance
-				; EnableHotkeys()	TODO: reimplement dis
+				; Inheritance is kinda backwards
+				(Self as sslThreadController).EnableHotkeys()
 			EndIf
 		ElseIf (Config.ShowInMap && PlayerRef.GetDistance(CenterRef) > 750)
 			SetObjectiveDisplayed(0, True)
@@ -555,8 +557,7 @@ Function SetFurnitureStatus(int aiStatus)
 EndFunction
 
 ; Given an array of Scenes, select some valid Scene within the array, using the currently selected center as comparable
-; If no scene is allowed with the current center, will set a new center
-; Return the Scene to be played
+; If all scenes are incompatible with the selected center, will return a new center. asOut contains all available animations
 ObjectReference Function FindCenter(String[] asSceneIDs, String asScenePrefered, String[] asOut, int aiFurniStatus) native
 float[] Function GetBaseCoordinates(String asScene) native
 
@@ -647,7 +648,7 @@ State Animating
 			SendThreadEvent("LeadInStart")
 		EndIf
 		SendThreadEvent("StageStart")
-		RunHook(HOOKID_STAGESTART)
+		RunHook(Config.HOOKID_STAGESTART)
 	EndEvent
 
 	bool Function ResetScene(String asNewScene)
@@ -673,14 +674,14 @@ State Animating
 		_StageHistory[0] = _ActiveStage
 		ReStartTimer()
 		SendThreadEvent("StageStart")
-		RunHook(HOOKID_STAGESTART)
+		RunHook(Config.HOOKID_STAGESTART)
 		return true
 	EndFunction
 
 	Function PlayNext(int aiNextBranch)
 		UnregisterForUpdate()
 		SendThreadEvent("StageEnd")
-		RunHook(HOOKID_STAGEEND)
+		RunHook(Config.HOOKID_STAGEEND)
 		String newStage = SexLabRegistry.BranchTo(_ActiveScene, _ActiveStage, aiNextBranch)
 		If (!newStage)
 			Log("Invalid branch or previous stage is sink, ending scene")
@@ -712,7 +713,10 @@ State Animating
 		_StageHistory = PapyrusUtil.PushString(_StageHistory, _ActiveStage)
 		ReStartTimer()
 		SendThreadEvent("StageStart")
-		RunHook(HOOKID_STAGESTART)
+		RunHook(Config.HOOKID_STAGESTART)
+	EndFunction
+	Function ResetStage()
+		GoToStage(_StageHistory.Length)
 	EndFunction
 
 	; NOTE: This here counts from 1 instead of 0
@@ -732,7 +736,7 @@ State Animating
 			PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
 			ReStartTimer()
 			SendThreadEvent("StageStart")
-			RunHook(HOOKID_STAGESTART)
+			RunHook(Config.HOOKID_STAGESTART)
 		EndIf
 	EndFunction
 
@@ -795,8 +799,23 @@ State Animating
 			return
 		ElseIf(CenterOn != CenterRef)
 			SetFurnitureIgnored(false)
-			; TODO: Validate animation furniture stuffz or else reselect
 			CenterAlias.ForceRefTo(CenterOn)
+			If (!SexLabRegistry.IsCompatibleCenter(_ActiveScene, CenterOn))
+				String[] out = new String[16]
+				CenterRef = FindCenter(Scenes, _StartScene, out, _furniStatus)
+				int where = out.Find("")
+				If (where == 0)	; New center has no available scenes closeby, pick new ones
+					If (InvalidCenterMsg.Show() == 1)
+						EndAnimation()
+					EndIf
+					return
+				Else
+					If (where == -1)
+						where = out.Length - 1
+					EndIf
+					_ActiveScene = out[Utility.RandomInt(0, where)]
+				EndIf
+			EndIf
 			SetFurnitureIgnored(true)
 		EndIf
 		If(resync)
@@ -912,6 +931,9 @@ bool Function ResetScene(String asNewScene)
 	Log("Cannot reset outside the playing state", "ResetScene()")
 	return false
 EndFunction
+Function ResetStage()
+	Log("Cannot reset outside the playing state", "ResetStage()")
+EndFunction
 Function EndLeadIn()
 	Log("Cannot end leadin outside the playing state", "EndLeadIn()")
 EndFunction
@@ -959,7 +981,7 @@ Function PlayStageAnimations()
 	RealignActors()
 EndFunction
 
-; Set location for all positions, incl offset, and play their respected animation. Positions are assumed to be sorted by scene
+; Set location for all positions on CenterAlias, incl offset, and play their respected animation. Positions are assumed to be sorted by scene
 String Function PlaceAndPlay(Actor[] akPositions, float[] afCoordinates, String asSceneID, String asStageID) native
 
 ; ------------------------------------------------------- ;
@@ -988,7 +1010,7 @@ State Ending
 		EndWhile
 		SendThreadEvent("AnimationEnding")
 		SendThreadEvent("AnimationEnd")
-		RunHook(HOOKID_END)
+		RunHook(Config.HOOKID_END)
 	EndEvent
 
 	Event OnUpdateGameTime()
@@ -1111,26 +1133,8 @@ EndFunction
 	Interface to send blocking and non blocking hooks
 /;
 
-int Property HOOKID_STARTING 		= 0 AutoReadOnly
-int Property HOOKID_STAGESTART 	= 1 AutoReadOnly
-int Property HOOKID_STAGEEND 		= 2 AutoReadOnly
-int Property HOOKID_END 				= 3 AutoReadOnly
-SexLabThreadHook[] ThreadHooks
-
 Function RunHook(int aiHookID)
-	int i = 0
-	While (i < ThreadHooks.Length)
-		If (HOOKID_STAGESTART)
-			ThreadHooks[i].OnStageStart(self)
-		ElseIf (HOOKID_STAGEEND)
-			ThreadHooks[i].OnStageEnd(self)
-		ElseIf (HOOKID_STARTING)
-			ThreadHooks[i].OnAnimationStarting(self)
-		ElseIf (HOOKID_END)
-			ThreadHooks[i].OnAnimationEnd(self)
-		EndIf
-		i += 1
-	EndWhile
+	RunHook(aiHookID)
 EndFunction
 
 Function SendThreadEvent(string HookEvent)
@@ -1168,6 +1172,9 @@ Function SetTID(int id)
 		ActorAlias[i].Setup()
 		i += 1
 	EndWhile
+	Config = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
+	; DoNothingPackage = 
+	; InvalidCenterMsg = 
 	Initialize()
 EndFunction
 

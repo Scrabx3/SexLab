@@ -49,9 +49,10 @@ bool Function ValidateSceneA(String asSceneID, Actor[] akPositions, String asTag
 String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor akSubmissive) native global
 String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] akSubmissive) native global
 
-; Gets the closests valid center object that the stated scene can use to play
+; Gets the closests valid center object that the stated scene can use to play, if akCenter is none, will use the player instead
 ; Will return none for scenes that dont require some furniture center
-ObjectReference Function GetSceneCenter(String asSceneID) native global
+ObjectReference Function GetSceneCenter(String asSceneID, ObjectReference akCenter) native global
+bool Function IsCompatibleCenter(String asSceneID, ObjectReference akCenter) native global
 
 ; Sort akPosition based on the provided scene. The array will be modified directly, the order of the sorted array is unspecified
 ; The extended version will take an array and return the index of the n'th scene which the actors are sorted by
@@ -91,7 +92,7 @@ String Function GetSceneName(String asID) native global
 
 ; Check if some given tag is part of a given scene
 bool Function IsSceneTag(String asID, String asTag) native global
-bool Function IsSceneTag(String asID, String[] asTags) native global
+bool Function IsSceneTagA(String asID, String[] asTags) native global
 ; Check if some given tag is part of a given stage
 bool Function IsStageTag(String asID, String asStage, String asTag) native global
 bool Function IsStageTagA(String asID, String asStage, String[] asTags) native global
@@ -162,6 +163,9 @@ EndFunction
 bool Function GetIsFemaleCreaturePositon(String asID, int n) global
   return Math.LogicalAnd(GetPositionSex(asID, n), 0x16)
 EndFunction
+
+; Are position n and m similar in the scenes context? That is, can an actor filling position n also fill position m and vice versa?
+bool Function IsSimilarPosition(String asID, int n, int m) native global
 
 ; Get the racekey ID of this scenes n'th position
 ; The racekey ID for humans is 0, and some positive value for creature
