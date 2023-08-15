@@ -85,6 +85,16 @@ endProperty
 ; SexLabThread:   An API instance to interact with the started scene. See sslThreadController.psc for more info
 ; None:           If an error occured
 SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+  String[] scenes = SexLabRegistry.LookupScenes(akPositions, asTags, akSubmissive, aiFurniture, akCenter)
+  If (!scenes.Length)
+    Log("StartScene() - Failed to find valid animations")
+    return none
+  EndIf
+  return StartSceneEx(akPositions, scenes, akSubmissive, akCenter, aiFurniture, asHook)
+EndFunction
+
+; Start a scene with pre-defined animations
+SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
   sslThreadModel thread = NewThread()
   If (!thread)
     Log("StartScene() - Failed to claim an available thread")
@@ -93,12 +103,7 @@ SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSub
     Log("StartScene() - Failed to add some actors to thread")
     return none
   EndIf
-  String[] scenes = SexLabRegistry.LookupScenes(akPositions, asTags, akSubmissive, aiFurniture, akCenter)
-  If (!scenes.Length)
-    Log("StartScene() - Failed to find valid animations")
-    return none
-  EndIf
-  thread.SetScenes(scenes)
+  thread.SetScenes(asAnims)
   thread.CenterOnObject(akCenter)
   thread.SetFurnitureStatus(aiFurniture)
   thread.SetHook(asHook)
@@ -115,56 +120,19 @@ EndFunction
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;#                                                            THREAD FUNCTIONS                                                             #
-;#                                             Use these Functions to access a running thread                                                 #
+;#                                             Use these Functions to access a running thread                                              #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* GetController
-* * Gets the thread associated with the given thread id number. Mostly used for getting the thread associated with a hook event.
-* * 
-* * @param: int tid - The thread id number of the thread you wish to retrieve. Should be a number between 0-14
-* * @return: sslThreadController - The thread that the given tid belongs to.
-*/;
-sslThreadController function GetController(int tid)
-  return ThreadSlots.GetController(tid)
-endFunction
+; Get the thread API associated with the given thread id
+SexLabThread Function GetThread(int aiThreadID)
+  return ThreadSlots.GetThread(aiThreadID)
+EndFunction
 
-;/* FindActorController
-* * Finds any thread controller an actor is currently associated with and returns it's thread id number.
-* *
-* * @param: Actor ActorRef - The actor to search for.
-* * @return: int - The id of the ThreadController where the actor is currently in. -1 if the actor couldn't be found in any of the ThreadControllers.
-*/;
-int function FindActorController(Actor ActorRef)
-  return ThreadSlots.FindActorController(ActorRef)
-endFunction
-
-;/* FindActorController
-* * Finds any thread controller the player is currently associated with and returns it's thread id number
-* * @return: int - The id of the ThreadController where the player is currently in. -1 if the player couldn't be found in any of the ThreadControllers.
-*/;
-int function FindPlayerController()
-  return ThreadSlots.FindActorController(PlayerRef)
-endFunction
-
-;/* 
-* * Finds any thread controller an actor is currently associated with and returns it.
-* * 
-* * @param: Actor ActorRef - The actor to search for.
-* * @return: sslThreadController - The ThreadController the actor is currently part of. NONE if actor couldn't be found.
-*/;
-sslThreadController function GetActorController(Actor ActorRef)
-  return ThreadSlots.GetActorController(ActorRef)
-endFunction
-
-;/* GetPlayerController
-* * Finds any thread controller the player is currently associated with and returns it.
-* * 
-* * @return: sslThreadController - The ThreadController the player is currently part of. NONE if player couldn't be found.
-*/;
-sslThreadController function GetPlayerController()
-  return ThreadSlots.GetActorController(PlayerRef)
-endFunction
+; Get the thread API representing the thread that most recently animated this actor
+SexLabThread Function GetThreadByActor(Actor akActor)
+  return ThreadSlots.GetThreadByActor(akActor)
+EndFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -213,11 +181,11 @@ EndFunction
 
 ; Given an array of actors, create an array of length 5 representing the number of individual sexes contained in that array,
 ; The returned array lists the number of males/females/... inside the array at their respective index; s.t.
-; Return[0] represents the number of human males
-; Return[1] represents the number of human females
-; Return[2] represents the number of human futas
-; Return[3] represents the number of creature males
-; Return[4] represents the number of creature females
+;   [0] represents the number of human males
+;   [1] represents the number of human females
+;   [2] represents the number of human futas
+;   [3] represents the number of creature males
+;   [4] represents the number of creature females
 int[] Function CountSexAll(Actor[] akPositions)
   return ActorLib.CountSexAll(akPositions)
 EndFunction
@@ -231,8 +199,7 @@ int Function CountFuta(Actor[] akPositions)
 	return ActorLib.CountFuta(akPositions)
 EndFunction
 int Function CountCreatures(Actor[] akPositions)
-	int[] ActorLib.CountCreatures(akPositions)
-	return count[3] + count[4]
+	return ActorLib.CountCreatures(akPositions)
 EndFunction
 int Function CountCrtMale(Actor[] akPositions)
 	return ActorLib.CountCrtMale(akPositions)
@@ -2186,8 +2153,6 @@ int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim 
   ElseIf (!thread.AddActors(Positions, Victim))
     Log("StartSex() - Failed to add some actors to thread")
     return -1
-  ElseIf(!Anims.Length)
-    Log("StartSex() - No valid animations")
   EndIf
   thread.SetAnimations(Anims)
   thread.CenterOnObject(CenterOn)
@@ -2421,6 +2386,33 @@ endFunction
 ;/* DEPRECATED! */;
 bool function CheckBardAudience(Actor ActorRef, bool RemoveFromAudience = true)
   return Config.CheckBardAudience(ActorRef, RemoveFromAudience)
+endFunction
+
+; --- Old Threading API
+
+;/* DEPRECATED! */;
+sslThreadController function GetController(int tid)
+  return ThreadSlots.GetController(tid)
+endFunction
+
+;/* DEPRECATED! */;
+int function FindActorController(Actor ActorRef)
+  return ThreadSlots.FindActorController(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+int function FindPlayerController()
+  return ThreadSlots.FindActorController(PlayerRef)
+endFunction
+
+;/* DEPRECATED! */;
+sslThreadController function GetActorController(Actor ActorRef)
+  return ThreadSlots.GetActorController(ActorRef)
+endFunction
+
+;/* DEPRECATED! */;
+sslThreadController function GetPlayerController()
+  return ThreadSlots.GetActorController(PlayerRef)
 endFunction
 
 ; --- Legacy Animation Functions

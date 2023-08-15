@@ -1,6 +1,6 @@
 ScriptName sslThreadSlots extends Quest
 {
-  Maintain and access SexLab threads
+  Script for maintaining animation threads and immediately related functionality
 }
 
 int Function GetTotalThreadCount() global
@@ -39,9 +39,9 @@ sslThreadModel Function PickModel(float TimeOut = 5.0)
   return none
 EndFunction
 
-sslThreadController Function GetController(int tid)
-  return Threads[tid]
-endfunction
+SexLabThread Function GetThread(int aiThreadID)
+  return Threads[aiThreadID]
+EndFunction
 
 int Function FindActorController(Actor ActorRef)
   float f = 0
@@ -51,10 +51,9 @@ int Function FindActorController(Actor ActorRef)
     If (Threads[i].FindSlot(ActorRef) != -1)
       ; An actor may be recognized in multiple threads if it is thrown into multiple scenes back to back
       ; To ensure this returns the most recent scene, check for active State or start time 
-      String s = Threads[i].GetState()
-      If (s == "Animating" || s == "Making")
-        return i
-      ElseIf (Threads[i].StartedAt > f)
+      String status = Threads[i].GetStatus()
+      If ((status == Threads[i].STATUS_INSCENE || status == Threads[i].STATUS_SETUP) && \
+            (ret == -1 || Threads[i].StartedAt > f))
         f = Threads[i].StartedAt
         ret = i
       EndIf
@@ -64,12 +63,12 @@ int Function FindActorController(Actor ActorRef)
   return ret
 EndFunction
 
-sslThreadController Function GetActorController(Actor ActorRef)
-  int i = FindActorController(ActorRef)
+SexLabThread Function GetThreadByActor(Actor akActor)
+  int i = FindActorController(akActor)
   If (i == -1)
     return none
   EndIf
-  return GetController(i)
+  return GetThread(i)
 EndFunction
 
 int Function ActiveThreads()
@@ -101,7 +100,7 @@ Function StopThread(sslThreadController Slot)
 EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Setup                                            --- ;
+; --- Setup                                           --- ;
 ; ------------------------------------------------------- ;
 
 Event OnInit()
@@ -180,6 +179,27 @@ State Locked
   EndFunction
 EndState
 
+; ------------------------------------------------------- ;
+; --- Logging                                         --- ;
+; ------------------------------------------------------- ;
+
+function Log(String asMsg)
+	Debug.Trace("SEXLAB - " + asMsg)
+	if Config.DebugMode
+		SexLabUtil.PrintConsole(asMsg)
+		Debug.TraceUser("SexLabDebug", asMsg)
+	endIf
+endFunction
+
+Function Error(String asMsg)
+	asMsg = "ERROR - " + asMsg
+	Debug.TraceStack("SEXLAB - " + asMsg)
+	SexLabUtil.PrintConsole(asMsg)
+	if Config.DebugMode
+		Debug.TraceUser("SexLabDebug", asMsg)
+	endIf
+EndFunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
@@ -206,3 +226,14 @@ SexLabFramework Property SexLab
   Function Set(SexLabFramework aSet)
   EndFunction
 EndProperty
+
+sslThreadController Function GetController(int tid)
+  return Threads[tid]
+endfunction
+sslThreadController Function GetActorController(Actor ActorRef)
+  int i = FindActorController(ActorRef)
+  If (i == -1)
+    return none
+  EndIf
+  return GetController(i)
+EndFunction
