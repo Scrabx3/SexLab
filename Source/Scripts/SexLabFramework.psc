@@ -135,7 +135,7 @@ EndFunction
 
 ;#------------------------------------------------------------------------------------------------------------------------------------------#;
 ;#                                                                                                                                          #;
-;#                                                           START HOOK FUNCTIONS                                                           #;
+;#                                                              HOOK FUNCTIONS                                                              #;
 ;#                                                                                                                                          #;
 ;#------------------------------------------------------------------------------------------------------------------------------------------#;
 ;#------------------------------------------------------------------------------------------------------------------------------------------#;
@@ -174,19 +174,19 @@ EndFunction
 ;#   thread know about the hook id, we pass "MyLocalHook" into the "asHook" parameter!                                                      #;
 ;#                                                                                                                                          #;
 ;# 1.2 Types of Events                                                                                                                      #;
-;#  AnimationStart    - Sent when the animation starts                                                                                      #;
-;#  AnimationEnd      - Sent when the animation is fully terminated                                                                         #;
-;#  LeadInStart       - Sent when the animation starts and has a LeadIn                                                                     #;
-;#  LeadInEnd         - Sent when a LeadIn animation ends                                                                                   #;
-;#  StageStart        - Sent for every Animation Stage that starts                                                                          #;
-;#  StageEnd          - Sent for every Animation Stage that is completed                                                                    #;
-;#  OrgasmStart       - Sent when an actor reaches the final stage                                                                          #;
-;#  OrgasmEnd         - Sent when the final stage is completed                                                                              #;
-;#  AnimationChange   - Sent if the Animation that was playing is changed by the HotKey                                                     #;
-;#  PositionChange    - Sent if the Positions of the animation (the involved actors) are changed                                            #;
-;#  ActorsRelocated   - Sent if the actors gets a new alignment                                                                             #;
-;#  ActorChangeStart  - Sent when the function ChangeActors is called                                                                       #;
-;#  ActorChangeEnd    - Sent when the replacement of actors, by the function ChangeActors is completed                                      #;
+;#  AnimationStart    - Send when the animation starts                                                                                      #;
+;#  AnimationEnd      - Send when the animation is fully terminated                                                                         #;
+;#  LeadInStart       - Send when the animation starts and has a LeadIn                                                                     #;
+;#  LeadInEnd         - Send when a LeadIn animation ends                                                                                   #;
+;#  StageStart        - Send for every Animation Stage that starts                                                                          #;
+;#  StageEnd          - Send for every Animation Stage that is completed                                                                    #;
+;#  OrgasmStart       - Send when an actor reaches the final stage                                                                          #;
+;#  OrgasmEnd         - Send when the final stage is completed                                                                              #;
+;#  AnimationChange   - Send if the Animation that was playing is changed by the HotKey                                                     #;
+;#  PositionChange    - Send if the Positions of the animation (the involved actors) are changed                                            #;
+;#  ActorsRelocated   - Send if the actors gets a new alignment                                                                             #;
+;#  ActorChangeStart  - Send when the function ChangeActors is called                                                                       #;
+;#  ActorChangeEnd    - Send when the replacement of actors, by the function ChangeActors is completed                                      #;
 ;#                                                                                                                                          #;
 ;#                                                                                                                                          #;
 ;# 2. Blocking Hooks                                                                                                                        #;
@@ -224,19 +224,6 @@ EndFunction
 bool Function IsHooked(SexLabThreadHook akHook)
   return Config.IsHooked(akHook)
 EndFunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                       END HOOK FUNCTIONS                                                      ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                     END THREAD FUNCTIONS                                                      ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -310,8 +297,8 @@ EndFunction
 * * 
 * * @param: ActorRef, the actor to check if it is valid for SexLab Animations.
 * * @return: an int that is 1 if the actor is valid or a negative value if it is not valid
-* *   -1   = The Actor does not exists (it is None)
-*  *    -2  = The Actor is from a disabled race
+* *    -1 = The Actor does not exists (it is None)
+* *    -2 = The Actor is from a disabled race
 * *   -10 = The Actor is already part of a SexLab animation
 * *   -11 = The Actor is forbidden form SexLab animations
 * *   -12 = The Actor does not have the 3D loaded
@@ -496,13 +483,6 @@ endFunction
 ; A new array with the sorted positions, or an empty array if the animation is incompatible with the passed in actors
 Actor[] function SortActorsByScene(String asSceneID, Actor[] akPositions, Actor[] akSubmissives)
   return ThreadLib.SortActorsByAnimationImpl(asSceneID, akPositions, akSubmissives)
-endFunction
-
-; Sort a list of actors based on the passed animation. The order of the resulting array is unspecified
-; --- Return:
-; A new array with the sorted positions, or an empty array if the animation is incompatible with the passed in actors
-Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)
-  return ThreadLib.SortActorsByAnimation(Positions, Animation)
 endFunction
 
 ;/* AddCum
@@ -2380,6 +2360,11 @@ bool function PregnancyRisk(int tid, Actor ActorRef, bool AllowFemaleCum = false
 endfunction
 
 ; --- Legacy Animation Functions
+
+;/* DEPRECATED! | See SortActorsByScene() */;
+Actor[] function SortActorsByAnimation(Actor[] Positions, sslBaseAnimation Animation = none)
+  return ThreadLib.SortActorsByAnimation(Positions, Animation)
+endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation function GetAnimationByName(string FindName)
