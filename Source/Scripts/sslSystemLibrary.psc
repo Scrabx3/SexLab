@@ -1,4 +1,23 @@
 scriptname sslSystemLibrary extends Quest hidden
+{
+	Base Script for library type script
+	With SLp+ 2.0 majority of SLs library functionanility is global, making most of this script unused
+}
+
+; TODO: Lay out which parts here exactly are unused
+; While I assume majority of no longer being necessary, until all scripts inheriting this one have been
+; refractured I can only guess how much of this script is truly unused
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; Settings access
 sslSystemConfig property Config auto
@@ -18,35 +37,29 @@ sslExpressionSlots property ExpressionSlots auto
 ; Data
 Actor property PlayerRef auto
 
+; ------------------------------------------------------- ;
+; --- Setup                                           --- ;
+; ------------------------------------------------------- ;
+;/
+	Functions to re/initialize this script
+/;
+
 function LoadLibs(bool Forced = false)
-	; Sync function Libraries - SexLabQuestFramework
-	if Forced || !Config || !ThreadLib || !ThreadSlots || !ActorLib || !Stats
-		Form SexLabQuestFramework  = Game.GetFormFromFile(0xD62, "SexLab.esm")
-		if SexLabQuestFramework
-			Config      = SexLabQuestFramework as sslSystemConfig
-			ThreadLib   = SexLabQuestFramework as sslThreadLibrary
-			ThreadSlots = SexLabQuestFramework as sslThreadSlots
-			ActorLib    = SexLabQuestFramework as sslActorLibrary
-			Stats       = SexLabQuestFramework as sslActorStats
-		endIf
-	endIf
-	; Sync animation registry - SexLabQuestAnimations
-	if Forced || !AnimSlots
-		Form SexLabQuestAnimations = Game.GetFormFromFile(0x639DF, "SexLab.esm")
-		if SexLabQuestAnimations
-			AnimSlots = SexLabQuestAnimations as sslAnimationSlots
-		endIf
-	endIf
-	; Sync secondary object registry - SexLabQuestRegistry
-	if Forced || !CreatureSlots || !VoiceSlots || !ExpressionSlots
-		Form SexLabQuestRegistry   = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-		if SexLabQuestRegistry
-			CreatureSlots   = SexLabQuestRegistry as sslCreatureAnimationSlots
-			ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
-			VoiceSlots      = SexLabQuestRegistry as sslVoiceSlots
-		endIf
-	endIf
-	; Sync data
+	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
+	Config = SexLabQuestFramework as sslSystemConfig
+	ThreadLib = SexLabQuestFramework as sslThreadLibrary
+	ThreadSlots = SexLabQuestFramework as sslThreadSlots
+	ActorLib = SexLabQuestFramework as sslActorLibrary
+	Stats = SexLabQuestFramework as sslActorStats
+
+	Form SexLabQuestAnimations = Game.GetFormFromFile(0x639DF, "SexLab.esm")
+	AnimSlots = SexLabQuestAnimations as sslAnimationSlots
+
+	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
+	CreatureSlots = SexLabQuestRegistry as sslCreatureAnimationSlots
+	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
+	VoiceSlots = SexLabQuestRegistry as sslVoiceSlots
+
 	PlayerRef = Game.GetPlayer()
 endFunction
 
@@ -54,19 +67,56 @@ function Setup()
 	LoadLibs(true)
 endFunction
 
-Function Log(string msg, string Type = "NOTICE")
-	msg = Type+": "+msg
-	If(Config.DebugMode)
+; ------------------------------------------------------- ;
+; --- Logging                                         --- ;
+; ------------------------------------------------------- ;
+;/
+	Generic logging utility
+/;
+
+function Log(string msg, string Type = "NOTICE")
+	msg = Type+" - "+msg
+	if InDebugMode
 		SexLabUtil.PrintConsole(msg)
 		Debug.TraceUser("SexLabDebug", msg)
-	EndIf
-	If(Type == "FATAL")
-		Debug.TraceStack("[SEXLAB] - "+msg)
-	Else
-		Debug.Trace("[SEXLAB] - "+msg)
-	EndIf
+	endIf
+	if Type == "FATAL"
+		Debug.TraceStack("SEXLAB - "+msg)
+	else
+		Debug.Trace("SEXLAB - "+msg)
+	endIf
+endFunction
+
+Function Error(String asMsg)
+	asMsg = "ERROR - " + asMsg
+	Debug.TraceStack("SEXLAB - " + asMsg)
+	SexLabUtil.PrintConsole(asMsg)
+	if Config.DebugMode
+		Debug.TraceUser("SexLabDebug", asMsg)
+	endIf
 EndFunction
 
-Function LogRedundant(String asFunction)
-	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
-EndFunction
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+bool property InDebugMode hidden
+	bool Function Get()
+		return Config.DebugMode
+	EndFunction
+EndProperty
+event SetDebugMode(bool ToMode)
+	; InDebugMode = ToMode
+endEvent
+
+event OnInit()
+	; LoadLibs(false)
+	; Debug.Trace("SEXLAB -- Init "+self)
+endEvent
