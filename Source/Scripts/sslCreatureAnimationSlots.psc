@@ -179,6 +179,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Setup()
+  parent.Setup()
 endfunction
 function RegisterSlots()
 endFunction
