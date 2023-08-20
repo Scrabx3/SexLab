@@ -325,7 +325,7 @@ State Ready
 			_BaseDelay = Config.MaleVoiceDelay
 		EndIf
 		_VoiceDelay = _BaseDelay
-		_ExpressionDelay = Config.ExpressionDelay * _BaseDelay
+		_ExpressionDelay = _BaseDelay * 2
 		String LogInfo = ""
 		; Voice
 		if !_Voice && !_IsForcedSilent
