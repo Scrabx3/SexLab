@@ -68,78 +68,9 @@ bool property DebugMode hidden
   endFunction
 endProperty
 
-
-Faction property AnimatingFaction auto
-Faction property GenderFaction auto
-Faction property ForbiddenFaction auto
-Weapon property DummyWeapon auto
-Armor property NudeSuit auto
-Armor property CalypsStrapon auto
-
-Spell property SelectedSpell auto
-
-Spell property CumVaginalOralAnalSpell auto
-Spell property CumOralAnalSpell auto
-Spell property CumVaginalOralSpell auto
-Spell property CumVaginalAnalSpell auto
-Spell property CumVaginalSpell auto
-Spell property CumOralSpell auto
-Spell property CumAnalSpell auto
-
-Spell property Vaginal1Oral1Anal1 auto
-Spell property Vaginal2Oral1Anal1 auto
-Spell property Vaginal2Oral2Anal1 auto
-Spell property Vaginal2Oral1Anal2 auto
-Spell property Vaginal1Oral2Anal1 auto
-Spell property Vaginal1Oral2Anal2 auto
-Spell property Vaginal1Oral1Anal2 auto
-Spell property Vaginal2Oral2Anal2 auto
-Spell property Oral1Anal1 auto
-Spell property Oral2Anal1 auto
-Spell property Oral1Anal2 auto
-Spell property Oral2Anal2 auto
-Spell property Vaginal1Oral1 auto
-Spell property Vaginal2Oral1 auto
-Spell property Vaginal1Oral2 auto
-Spell property Vaginal2Oral2 auto
-Spell property Vaginal1Anal1 auto
-Spell property Vaginal2Anal1 auto
-Spell property Vaginal1Anal2 auto
-Spell property Vaginal2Anal2 auto
-Spell property Vaginal1 auto
-Spell property Vaginal2 auto
-Spell property Oral1 auto
-Spell property Oral2 auto
-Spell property Anal1 auto
-Spell property Anal2 auto
-
-Keyword property CumOralKeyword auto
-Keyword property CumAnalKeyword auto
-Keyword property CumVaginalKeyword auto
-Keyword property CumOralStackedKeyword auto
-Keyword property CumAnalStackedKeyword auto
-Keyword property CumVaginalStackedKeyword auto
-
-Keyword property ActorTypeNPC auto
-Keyword property SexLabActive auto
-Keyword property FurnitureBedRoll auto
-
-Furniture property BaseMarker auto
-Package property DoNothing auto
-
-Sound property OrgasmFX auto
-Sound property SquishingFX auto
-Sound property SuckingFX auto
-Sound property SexMixedFX auto
-
 Sound[] property HotkeyUp auto
 Sound[] property HotkeyDown auto
 
-Static property LocationMarker auto
-FormList property BedsList auto
-FormList property BedRollsList auto
-FormList property DoubleBedsList auto
-Message property UseBed auto
 Message property CleanSystemFinish auto
 Message property CheckSKSE auto
 Message property CheckFNIS auto
@@ -149,101 +80,579 @@ Message property CheckPapyrusUtil auto
 Message property CheckSkyUI auto
 Message property TakeThreadControl auto
 
-Topic property LipSync auto
-VoiceType property SexLabVoiceM auto
-VoiceType property SexLabVoiceF auto
-FormList property SexLabVoices auto
 SoundCategory property AudioSFX auto
 SoundCategory property AudioVoice auto
-
-Idle property IdleReset auto
 
 ; ------------------------------------------------------- ;
 ; --- Config Properties                               --- ;
 ; ------------------------------------------------------- ;
 
+int Function GetAnimationCount() native global
+
 bool Function GetSettingBool(String asSetting) native global
 int Function GetSettingInt(String asSetting) native global
-int[] Function GetSettingIntA(String asSetting) native global
+float Function GetSettingFlt(String asSetting) native global
+int Function GetSettingIntA(String asSetting, int n) native global
+float Function GetSettingFltA(String asSetting, int n) native global
 
 Function SetSettingBool(String asSetting, bool abValue) native global
 Function SetSettingInt(String asSetting, int aiValue) native global
-Function SetSettingIntA(String asSetting, int[] aiValue) native global
+Function SetSettingFlt(String asSetting, float aiValue) native global
+Function SetSettingIntA(String asSetting, int aiValue, int n) native global
+Function SetSettingFltA(String asSetting, float aiValue, int n) native global
+
+int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
+int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
+int Property CLIMAXTYPE_EXTERN = 2 AutoReadOnly
+
+; iStripForms: 0b[Weapon][Gender][Leadin || Submissive][Aggressive]
 
 ; Booleans
-bool property AllowCreatures auto hidden
-bool property UseStrapons auto hidden
-bool property RedressVictim auto hidden
-bool property UseLipSync auto hidden
-bool property UseExpressions auto hidden
-bool property UseCum auto hidden
-bool property DisablePlayer auto hidden
-bool property AutoTFC auto hidden
-bool property AutoAdvance auto hidden
-bool property OrgasmEffects auto hidden
-bool property UseCreatureGender auto hidden
-bool property LimitedStrip auto hidden
-bool property RestrictSameSex auto hidden
-bool property AdjustTargetStage auto hidden
-bool property ShowInMap auto hidden
-bool property DisableTeleport auto hidden
-bool property DisableScale auto hidden
-bool property UndressAnimation auto hidden
+bool property AllowCreatures hidden
+  bool Function Get()
+    return GetSettingBool("bAllowCreatures")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bAllowCreatures", aSet)
+  EndFunction
+EndProperty
+bool property UseCreatureGender hidden
+  bool Function Get()
+    return GetSettingBool("bUseCreatureGender")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bUseCreatureGender", aSet)
+  EndFunction
+EndProperty
+
+bool property UseStrapons hidden
+  bool Function Get()
+    return GetSettingBool("bUseStrapons")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bUseStrapons", aSet)
+  EndFunction
+EndProperty
+bool property RedressVictim hidden
+  bool Function Get()
+    return GetSettingBool("bRedressVictim")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bRedressVictim", aSet)
+  EndFunction
+EndProperty
+bool property UseLipSync hidden
+  bool Function Get()
+    return GetSettingBool("bUseLipSync")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bUseLipSync", aSet)
+  EndFunction
+EndProperty
+bool property UseExpressions hidden
+  bool Function Get()
+    return GetSettingBool("bUseExpressions")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bUseExpressions", aSet)
+  EndFunction
+EndProperty
+bool property UseCum hidden
+  bool Function Get()
+    return GetSettingBool("bUseCum")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bUseCum", aSet)
+  EndFunction
+EndProperty
+bool property DisablePlayer hidden
+  bool Function Get()
+    return GetSettingBool("bDisablePlayer")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bDisablePlayer", aSet)
+  EndFunction
+EndProperty
+bool property AutoTFC hidden
+  bool Function Get()
+    return GetSettingBool("bAutoTFC")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bAutoTFC", aSet)
+  EndFunction
+EndProperty
+bool property AutoAdvance hidden
+  bool Function Get()
+    return GetSettingBool("bAutoAdvance")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bAutoAdvance", aSet)
+  EndFunction
+EndProperty
+bool property OrgasmEffects hidden
+  bool Function Get()
+    return GetSettingBool("bOrgasmEffects")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bOrgasmEffects", aSet)
+  EndFunction
+EndProperty
+bool property LimitedStrip hidden
+  bool Function Get()
+    return GetSettingBool("bLimitedStrip")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bLimitedStrip", aSet)
+  EndFunction
+EndProperty
+bool property RestrictSameSex hidden
+  bool Function Get()
+    return GetSettingBool("bRestrictSameSex")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bRestrictSameSex", aSet)
+  EndFunction
+EndProperty
+bool property ShowInMap hidden
+  bool Function Get()
+    return GetSettingBool("bShowInMap")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bShowInMap", aSet)
+  EndFunction
+EndProperty
+bool property DisableTeleport hidden
+  bool Function Get()
+    return GetSettingBool("bDisableTeleport")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bDisableTeleport", aSet)
+  EndFunction
+EndProperty
+bool property DisableScale hidden
+  bool Function Get()
+    return GetSettingBool("bDisableScale")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bDisableScale", aSet)
+  EndFunction
+EndProperty
+bool property UndressAnimation hidden
+  bool Function Get()
+    return GetSettingBool("bUndressAnimation")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bUndressAnimation", aSet)
+  EndFunction
+EndProperty
 
 ; Integers
-int property AskBed auto hidden
-int property NPCBed auto hidden
-int property OpenMouthSize auto hidden
-int property UseFade auto hidden
-int property Backwards auto hidden
-int property AdjustStage auto hidden
-int property AdvanceAnimation auto hidden
-int property ChangeAnimation auto hidden
-int property ChangePositions auto hidden
-int property AdjustChange auto hidden
-int property AdjustForward auto hidden
-int property AdjustSideways auto hidden
-int property AdjustUpward auto hidden
-int property RealignActors auto hidden
-int property MoveScene auto hidden
-int property RestoreOffsets auto hidden
-int property RotateScene auto hidden
-int property EndAnimation auto hidden
-int property ToggleFreeCamera auto hidden
-int property TargetActor auto hidden
-int property AdjustSchlong auto hidden
+int property AskBed hidden
+  int Function Get()
+    return GetSettingInt("iAskBed")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAskBed", aiSet)
+  EndFunction
+EndProperty
+int property NPCBed hidden
+  int Function Get()
+    return GetSettingInt("iNPCBed")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iNPCBed", aiSet)
+  EndFunction
+EndProperty
+int property OpenMouthSize hidden
+  int Function Get()
+    return GetSettingInt("iOpenMouthSize")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iOpenMouthSize", aiSet)
+  EndFunction
+EndProperty
+int property UseFade hidden
+  int Function Get()
+    return GetSettingInt("iUseFade")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iUseFade", aiSet)
+  EndFunction
+EndProperty
+int property Backwards hidden
+  int Function Get()
+    return GetSettingInt("iBackwards")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iBackwards", aiSet)
+  EndFunction
+EndProperty
+
+; Expressions
+
+int property LipsPhoneme hidden
+  int Function Get()
+    return GetSettingInt("iLipsPhoneme")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iLipsPhoneme", aiSet)
+  EndFunction
+EndProperty
+bool property LipsFixedValue hidden
+  bool Function Get()
+    return GetSettingBool("bLipsFixedValue")
+  EndFunction
+  Function Set(bool aiSet)
+    SetSettingBool("bLipsFixedValue", aiSet)
+  EndFunction
+EndProperty
+int property LipsMinValue hidden
+  int Function Get()
+    return GetSettingInt("iLipsSoundTime")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iLipsSoundTime", aiSet)
+  EndFunction
+EndProperty
+int property LipsMaxValue hidden
+  int Function Get()
+    return GetSettingInt("iLipsMaxValue")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iLipsMaxValue", aiSet)
+  EndFunction
+EndProperty
+int property LipsSoundTime hidden
+  int Function Get()
+    return GetSettingInt("iLipsSoundTime")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iLipsSoundTime", aiSet)
+  EndFunction
+EndProperty
+float property LipsMoveTime hidden
+  float Function Get()
+    return GetSettingFlt("fLipsMoveTime")
+  EndFunction
+  Function Set(float aiSet)
+    SetSettingFlt("fLipsMoveTime", aiSet)
+  EndFunction
+EndProperty
+
+; Scene Control Keys
+bool property AdjustTargetStage  Hidden
+  bool Function Get()
+    return GetSettingBool("bAdjustTargetStage")
+  EndFunction
+  Function Set(bool abSet)
+    SetSettingBool("bAdjustTargetStage", abSet)
+  EndFunction
+EndProperty
+int property AdjustStage hidden
+  int Function Get()
+    return GetSettingInt("iAdjustStage")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAdjustStage", aiSet)
+  EndFunction
+EndProperty
+int property AdvanceAnimation hidden
+  int Function Get()
+    return GetSettingInt("iAdvanceAnimation")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAdvanceAnimation", aiSet)
+  EndFunction
+EndProperty
+int property ChangeAnimation hidden
+  int Function Get()
+    return GetSettingInt("iChangeAnimation")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iChangeAnimation", aiSet)
+  EndFunction
+EndProperty
+int property ChangePositions hidden
+  int Function Get()
+    return GetSettingInt("iChangePositions")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iChangePositions", aiSet)
+  EndFunction
+EndProperty
+int property AdjustChange hidden
+  int Function Get()
+    return GetSettingInt("iAdjustChange")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAdjustChange", aiSet)
+  EndFunction
+EndProperty
+int property AdjustForward hidden
+  int Function Get()
+    return GetSettingInt("iAdjustForward")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAdjustForward", aiSet)
+  EndFunction
+EndProperty
+int property AdjustSideways hidden
+  int Function Get()
+    return GetSettingInt("iAdjustSideways")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAdjustSideways", aiSet)
+  EndFunction
+EndProperty
+int property AdjustUpward hidden
+  int Function Get()
+    return GetSettingInt("iAdjustUpward")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAdjustUpward", aiSet)
+  EndFunction
+EndProperty
+int property RealignActors hidden
+  int Function Get()
+    return GetSettingInt("iRealignActors")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iRealignActors", aiSet)
+  EndFunction
+EndProperty
+int property MoveScene hidden
+  int Function Get()
+    return GetSettingInt("iMoveScene")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iMoveScene", aiSet)
+  EndFunction
+EndProperty
+int property RestoreOffsets hidden
+  int Function Get()
+    return GetSettingInt("iRestoreOffsets")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iRestoreOffsets", aiSet)
+  EndFunction
+EndProperty
+int property RotateScene hidden
+  int Function Get()
+    return GetSettingInt("iRotateScene")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iRotateScene", aiSet)
+  EndFunction
+EndProperty
+int property EndAnimation hidden
+  int Function Get()
+    return GetSettingInt("iEndAnimation")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iEndAnimation", aiSet)
+  EndFunction
+EndProperty
+int property AdjustSchlong hidden
+  int Function Get()
+    return GetSettingInt("iAdjustSchlong")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iAdjustSchlong", aiSet)
+  EndFunction
+EndProperty
+
+; Misc Keys
+int property ToggleFreeCamera hidden
+  int Function Get()
+    return GetSettingInt("iToggleFreeCamera")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iToggleFreeCamera", aiSet)
+  EndFunction
+EndProperty
+int property TargetActor hidden
+  int Function Get()
+    return GetSettingInt("iTargetActor")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iTargetActor", aiSet)
+  EndFunction
+EndProperty
 
 ; Floats
-float property CumTimer auto hidden
-float property ShakeStrength auto hidden
-float property AutoSUCSM auto hidden
-float property MaleVoiceDelay auto hidden
-float property FemaleVoiceDelay auto hidden
-float property ExpressionDelay auto hidden
-float property VoiceVolume auto hidden
-float property SFXDelay auto hidden
-float property SFXVolume auto hidden
-
-; Int Arrays
-int[] Property iStripForms Auto Hidden  ;  0b[Weapon][Gender][Leadin || Submissive][Aggressive]
+float property CumTimer hidden
+  float Function Get()
+    return GetSettingFlt("fCumTimer")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fCumTimer", afSet)
+  EndFunction
+EndProperty
+float property ShakeStrength hidden
+  float Function Get()
+    return GetSettingFlt("fShakeStrength")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fShakeStrength", afSet)
+  EndFunction
+EndProperty
+float property AutoSUCSM hidden
+  float Function Get()
+    return GetSettingFlt("fAutoSUCSM")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fAutoSUCSM", afSet)
+  EndFunction
+EndProperty
+float property MaleVoiceDelay hidden
+  float Function Get()
+    return GetSettingFlt("fMaleVoiceDelay")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fMaleVoiceDelay", afSet)
+  EndFunction
+EndProperty
+float property FemaleVoiceDelay hidden
+  float Function Get()
+    return GetSettingFlt("fFemaleVoiceDelay")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fFemaleVoiceDelay", afSet)
+  EndFunction
+EndProperty
+float property ExpressionDelay hidden
+  float Function Get()
+    return GetSettingFlt("fExpressionDelay")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fExpressionDelay", afSet)
+  EndFunction
+EndProperty
+float property VoiceVolume hidden
+  float Function Get()
+    return GetSettingFlt("fVoiceVolume")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fVoiceVolume", afSet)
+  EndFunction
+EndProperty
+float property SFXDelay hidden
+  float Function Get()
+    return GetSettingFlt("fSFXDelay")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fSFXDelay", afSet)
+  EndFunction
+EndProperty
+float property SFXVolume hidden
+  float Function Get()
+    return GetSettingFlt("fSFXVolume")
+  EndFunction
+  Function Set(float afSet)
+    SetSettingFlt("fSFXVolume", afSet)
+  EndFunction
+EndProperty
 
 ; Float Array
-float[] Property fTimers Auto Hidden    ; 5x3 Matrix / [Stage] x [Type]
-float[] property OpenMouthMale auto hidden
-float[] property OpenMouthFemale auto hidden
-float[] property BedOffset auto hidden
+; fTimers is a 5x3 Matrix / [Stage] x [Type]
+float[] property StageTimer
+  float[] Function Get()
+    return _GetfTimers(0)
+  EndFunction
+  Function Set(float[] aSet)
+    _SetfTimers(0, aSet)
+  EndFunction
+EndProperty
+float[] property StageTimerLeadIn
+  float[] Function Get()
+    return _GetfTimers(5)
+  EndFunction
+  Function Set(float[] aSet)
+    _SetfTimers(5, aSet)
+  EndFunction
+EndProperty
+float[] property StageTimerAggr
+  float[] Function Get()
+    return _GetfTimers(10)
+  EndFunction
+  Function Set(float[] aSet)
+    _SetfTimers(10, aSet)
+  EndFunction
+EndProperty
+float[] Function _GetfTimers(int aiIdx0)
+    float[] ret = new float[5]
+    ret[aiIdx0 + 0] = GetSettingFltA("fTimers", aiIdx0 + 0)
+    ret[aiIdx0 + 1] = GetSettingFltA("fTimers", aiIdx0 + 1)
+    ret[aiIdx0 + 2] = GetSettingFltA("fTimers", aiIdx0 + 2)
+    ret[aiIdx0 + 3] = GetSettingFltA("fTimers", aiIdx0 + 3)
+    ret[aiIdx0 + 4] = GetSettingFltA("fTimers", aiIdx0 + 4)
+    return ret
+EndFunction
+Function _SetfTimers(int aiIdx0, float[] afSet)
+    SetSettingFltA("fTimers", afSet[0], aiIdx0 + 0)
+    SetSettingFltA("fTimers", afSet[1], aiIdx0 + 1)
+    SetSettingFltA("fTimers", afSet[2], aiIdx0 + 2)
+    SetSettingFltA("fTimers", afSet[3], aiIdx0 + 3)
+    SetSettingFltA("fTimers", afSet[4], aiIdx0 + 4)
+EndFunction
+
+
+float[] property OpenMouthMale hidden
+  float[] Function Get()
+    float[] ret = new float[17]
+    int i = 0
+    While (i < ret.Length)
+      ret[i] = GetSettingFltA("fOpenMouthMale", i)
+      i += 1
+    EndWhile
+    return ret
+  EndFunction
+  Function Set(float[] aSet)
+    If (aSet.Length != 17)
+      return
+    EndIf
+    int i = 0
+    While (i < aSet.Length)
+      SetSettingFltA("fOpenMouthMale", aSet[i], i)
+      i += 1
+    EndWhile
+  EndFunction
+EndProperty
+float[] property OpenMouthFemale hidden
+  float[] Function Get()
+    float[] ret = new float[17]
+    int i = 0
+    While (i < ret.Length)
+      ret[i] = GetSettingFltA("fOpenMouthFemale", i)
+      i += 1
+    EndWhile
+    return ret
+  EndFunction
+  Function Set(float[] aSet)
+    If (aSet.Length != 17)
+      return
+    EndIf
+    int i = 0
+    While (i < aSet.Length)
+      SetSettingFltA("fOpenMouthFemale", aSet[i], i)
+      i += 1
+    EndWhile
+  EndFunction
+EndProperty
 
 ; Compatibility checks
-bool property HasSchlongs auto hidden
-bool property HasMFGFix auto hidden
-
-; Data
-int property LipsPhoneme auto hidden
-bool property LipsFixedValue auto hidden
-int property LipsMinValue auto hidden
-int property LipsMaxValue auto hidden
-int property LipsSoundTime auto hidden
-float property LipsMoveTime auto hidden
+bool property HasNiOverride
+  bool Function Get()
+    return SKSE.GetPluginVersion("SKEE64") >= 7 || NiOverride.GetScriptVersion() >= 7
+  EndFUnction
+  Function Set(bool aSet)
+  EndFunction
+EndProperty
+bool property HasMFGFix hidden
+  bool Function Get()
+    return SKSE.GetPluginVersion("mfgfix") > -1
+  EndFunction
+EndProperty
 
 ; ------------------------------------------------------- ;
 ; --- Config Accessors                                --- ;
@@ -274,43 +683,32 @@ int[] Function GetStripSettings(bool IsFemale, bool IsLeadIn = false, bool IsAgg
     idx = ((IsFemale as int) + Math.LeftShift(IsLeadIn as int, 1)) * 2
   EndIf
   int[] ret = new int[2]
-  ret[0] = iStripForms[idx]
-  ret[1] = iStripForms[idx + 1]
+  ret[0] = GetSettingIntA("iStripForms", idx)
+  ret[1] = GetSettingIntA("iStripForms", idx + 1)
   return ret
 EndFunction
 
 float[] function GetOpenMouthPhonemes(bool isFemale)
-  float[] Phonemes = new float[16]
-  int i = 16
-  while i > 0
-    i -= 1
-    if isFemale
-      Phonemes[i] = OpenMouthFemale[i]
-    else
-      Phonemes[i] = OpenMouthMale[i]
-    endIf
-  endWhile
-  return Phonemes
+  If (isFemale)
+    return Utility.ResizeFloatArray(OpenMouthFemale, 16)
+  Else
+    return Utility.ResizeFloatArray(OpenMouthMale, 16)
+  EndIf
 endFunction
 
 bool function SetOpenMouthPhonemes(bool isFemale, float[] Phonemes)
   if Phonemes.Length < 16
     return false
   endIf
-  if OpenMouthFemale.Length < 16
-    OpenMouthFemale = new float[17]
-  endIf
-  if OpenMouthMale.Length < 16
-    OpenMouthMale = new float[17]
-  endIf
+  String setting = "fOpenMouthMale"
+  If (isFemale)
+    setting = "fOpenMouthFemale"
+  EndIf
   int i = 16
   while i > 0
     i -= 1
-    if isFemale
-      OpenMouthFemale[i] = PapyrusUtil.ClampFloat(Phonemes[i], 0.0, 1.0)
-    else
-      OpenMouthMale[i] = PapyrusUtil.ClampFloat(Phonemes[i], 0.0, 1.0)
-    endIf
+    float value = PapyrusUtil.ClampFloat(Phonemes[i], 0.0, 1.0)
+    SetSettingFltA(setting, value, i)
   endWhile
   return true
 endFunction
@@ -319,61 +717,34 @@ bool function SetOpenMouthPhoneme(bool isFemale, int id, float value)
   if id < 0 || id > 15 
     return false
   endIf
-  if isFemale
-    if OpenMouthFemale.Length < 16
-      OpenMouthFemale = new float[17]
-    endIf
-    OpenMouthFemale[id] = PapyrusUtil.ClampFloat(value, 0.0, 1.0)
-  else
-    if OpenMouthMale.Length < 16
-      OpenMouthMale = new float[17]
-    endIf
-    OpenMouthMale[id] = PapyrusUtil.ClampFloat(value, 0.0, 1.0)
-  endIf
+  String setting = "fOpenMouthMale"
+  If (isFemale)
+    setting = "fOpenMouthFemale"
+  EndIf
+  float clamped = PapyrusUtil.ClampFloat(value, 0.0, 1.0)
+  SetSettingFltA(setting, clamped, id)
   return true
 endFunction
 
 int function GetOpenMouthExpression(bool isFemale)
-  if isFemale
-    if OpenMouthFemale.Length >= 17 && OpenMouthFemale[16] >= 0.0 && OpenMouthFemale[16] <= 16.0
-      return OpenMouthFemale[16] as int
-    endIf
-  else
-    if OpenMouthMale.Length >= 17 && OpenMouthMale[16] >= 0.0 && OpenMouthMale[16] <= 16.0
-      return OpenMouthMale[16] as int
-    endIf
-  endIf
+  String setting = "fOpenMouthMale"
+  If (isFemale)
+    setting = "fOpenMouthFemale"
+  EndIf
+  int ret = GetSettingFltA(setting, 16) as int
+  If (ret <= 16 && ret >= 0)
+    return ret
+  EndIf
   return 16
 endFunction
 
 bool function SetOpenMouthExpression(bool isFemale, int value)
-  if isFemale
-    if OpenMouthFemale.Length < 17
-      OpenMouthFemale = new float[17]
-    endIf
-    OpenMouthFemale[16] = PapyrusUtil.ClampInt(value, 0, 16) as Float
-    return true
-  else
-    if OpenMouthMale.Length < 17
-      OpenMouthMale = new float[17]
-    endIf
-    OpenMouthMale[16] = PapyrusUtil.ClampInt(value, 0, 16) as Float
-    return true
-  endIf
-  return false
-endFunction
-
-bool function AddCustomBed(Form BaseBed, int BedType = 0)
-  if !BaseBed
-    return false
-  elseIf !BedsList.HasForm(BaseBed)
-    BedsList.AddForm(BaseBed)
-  endIf
-  if BedType == 1 && !BedRollsList.HasForm(BaseBed)
-    BedRollsList.AddForm(BaseBed)
-  elseIf BedType == 2 && !DoubleBedsList.HasForm(BaseBed)
-    DoubleBedsList.AddForm(BaseBed)
-  endIf
+  String setting = "fOpenMouthMale"
+  If (isFemale)
+    setting = "fOpenMouthFemale"
+  EndIf
+  int clamped = PapyrusUtil.ClampInt(value, 0, 16)
+  SetSettingFltA(setting, clamped, 16)
   return true
 endFunction
 
@@ -414,8 +785,9 @@ endFunction
 ; --- Hotkeys & TargetRef                             --- ;
 ; ------------------------------------------------------- ;
 
-Actor _CrosshairRef
+Spell Property SelectedSpell Auto
 Actor Property TargetRef Auto Hidden
+Actor _CrosshairRef
 
 Event OnCrosshairRefChange(ObjectReference ActorRef)
   _CrosshairRef = ActorRef as Actor
@@ -648,6 +1020,7 @@ endFunction
 ; --- Strapon Functions                               --- ;
 ; ------------------------------------------------------- ;
 
+Armor Property CalypsStrapon Auto
 Form[] Property Strapons Auto Hidden
 
 Form Function GetStrapon()
@@ -738,11 +1111,20 @@ bool function CheckSystemPart(string CheckSystem)
   elseIf CheckSystem == "SkyUI"
     return Quest.GetQuest("SKI_ConfigManagerInstance") != none
 
+  elseIf CheckSystem == "SexLabP+"
+    return SKSE.GetPluginVersion("SexLab") > -1
+
   elseIf CheckSystem == "SexLabUtil"
     return SexLabUtil.GetPluginVersion() >= 16300
 
   elseIf CheckSystem == "PapyrusUtil"
     return PapyrusUtil.GetVersion() >= 39
+
+  elseIf CheckSystem == "NiOverride"
+		return HasNiOverride
+    
+  elseIf CheckSystem == "MfgFix"
+		return HasMFGFix
 
   elseIf CheckSystem == "FNIS"
     return FNIS.VersionCompare(7, 0, 0) >= 0
@@ -752,12 +1134,6 @@ bool function CheckSystemPart(string CheckSystem)
 
   elseIf CheckSystem == "FNISCreaturePack"
     return FNIS.VersionCompare(7, 0, 0, true) >= 0
-
-  elseIf CheckSystem == "FNISSexLabFramework" && PlayerRef.Is3DLoaded() && Game.GetCameraState() > 3
-    return PlayerRef.GetAnimationVariableInt("SexLabFramework") >= 16000
-
-  elseIf CheckSystem == "FNISSexLabCreature" && PlayerRef.Is3DLoaded() && Game.GetCameraState() > 3
-    return PlayerRef.GetAnimationVariableInt("SexLabCreature") >= 16000
 
   endIf
   return false
@@ -812,14 +1188,6 @@ function Reload()
   RegisterForKey(TargetActor)
   RegisterForKey(EndAnimation)
 
-  ; Mod compatability checks
-  ; - SOS/SAM Schlongs (currently unused)
-  HasSchlongs = Game.GetModByName("Schlongs of Skyrim - Core.esm") != 255 || Game.GetModByName("SAM - Shape Atlas for Men.esp") != 255
-
-  ; - MFG Fix check
-	; TODO: May need to check another way, some players might get upset that their mfg is reset on load // CHECK FOR DLL INSTEAD
-  HasMFGFix = MfgConsoleFunc.ResetPhonemeModifier(PlayerRef)
-
 	; TODO: Fade settings will need an overhaul, and likely have these removed in the process
   if !FadeToBlackHoldImod || FadeToBlackHoldImod == none
     FadeToBlackHoldImod = Game.GetFormFromFile(0xF756E, "Skyrim.esm") as ImageSpaceModifier ;0xF756D **0xF756E 0x10100C** 0xF756F 0xFDC57 0xFDC58 0x 0x 0x
@@ -845,11 +1213,6 @@ function Reload()
   if WRTempleHealingAltar01 && !BedsList.HasForm(WRTempleHealingAltar01)
     BedsList.AddForm(WRTempleHealingAltar01)
     SetCustomBedOffset(WRTempleHealingAltar01, 0.0, 0.0, 39.0, 90.0)
-  endIf
-
-  ; Remove gender override if player's gender matches normally
-  if PlayerRef.GetFactionRank(GenderFaction) == PlayerRef.GetLeveledActorBase().GetSex()
-    PlayerRef.RemoveFromFaction(GenderFaction)
   endIf
 
   ; Remove any NPC thread control player has
@@ -1160,30 +1523,96 @@ function ApplyFade(bool forceTest = false)
   endIf
 endFunction
 
-event OnInit()
-  parent.OnInit()
-  SetDefaults()
-endEvent
-
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
-;                ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
-;                ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
-;                ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
-;                ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
-;                ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
-;                ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+Faction property AnimatingFaction auto
+Faction property GenderFaction auto
+Faction property ForbiddenFaction auto
+Weapon property DummyWeapon auto
+Armor property NudeSuit auto
+Keyword property ActorTypeNPC auto
+Keyword property SexLabActive auto
+Keyword property FurnitureBedRoll auto
+Furniture property BaseMarker auto
+Package property DoNothing auto
+Sound property OrgasmFX auto
+Sound property SquishingFX auto
+Sound property SuckingFX auto
+Sound property SexMixedFX auto
+FormList property BedsList auto
+FormList property BedRollsList auto
+FormList property DoubleBedsList auto
+Static property LocationMarker auto
+Message property UseBed auto
+
+Spell property CumVaginalOralAnalSpell auto
+Spell property CumOralAnalSpell auto
+Spell property CumVaginalOralSpell auto
+Spell property CumVaginalAnalSpell auto
+Spell property CumVaginalSpell auto
+Spell property CumOralSpell auto
+Spell property CumAnalSpell auto
+Spell property Vaginal1Oral1Anal1 auto
+Spell property Vaginal2Oral1Anal1 auto
+Spell property Vaginal2Oral2Anal1 auto
+Spell property Vaginal2Oral1Anal2 auto
+Spell property Vaginal1Oral2Anal1 auto
+Spell property Vaginal1Oral2Anal2 auto
+Spell property Vaginal1Oral1Anal2 auto
+Spell property Vaginal2Oral2Anal2 auto
+Spell property Oral1Anal1 auto
+Spell property Oral2Anal1 auto
+Spell property Oral1Anal2 auto
+Spell property Oral2Anal2 auto
+Spell property Vaginal1Oral1 auto
+Spell property Vaginal2Oral1 auto
+Spell property Vaginal1Oral2 auto
+Spell property Vaginal2Oral2 auto
+Spell property Vaginal1Anal1 auto
+Spell property Vaginal2Anal1 auto
+Spell property Vaginal1Anal2 auto
+Spell property Vaginal2Anal2 auto
+Spell property Vaginal1 auto
+Spell property Vaginal2 auto
+Spell property Oral1 auto
+Spell property Oral2 auto
+Spell property Anal1 auto
+Spell property Anal2 auto
+Keyword property CumOralKeyword auto
+Keyword property CumAnalKeyword auto
+Keyword property CumVaginalKeyword auto
+Keyword property CumOralStackedKeyword auto
+Keyword property CumAnalStackedKeyword auto
+Keyword property CumVaginalStackedKeyword auto
 GlobalVariable property DebugVar1 auto
 GlobalVariable property DebugVar2 auto
 GlobalVariable property DebugVar3 auto
 GlobalVariable property DebugVar4 auto
 GlobalVariable property DebugVar5 auto
+Topic property LipSync auto
+VoiceType property SexLabVoiceM auto
+VoiceType property SexLabVoiceF auto
+FormList property SexLabVoices auto
+Idle property IdleReset auto
 
 Actor[] property TargetRefs auto hidden
+
+bool property HasSchlongs Hidden
+  bool Function Get()
+    return Game.GetModByName("Schlongs of Skyrim - Core.esm") != 255 || Game.GetModByName("SAM - Shape Atlas for Men.esp") != 255
+  EndFunction
+  Function Set(bool aSet)
+  EndFunction
+EndProperty
 
 bool property HasFrostfall
   bool Function Get()
@@ -1201,6 +1630,16 @@ FormList property FrostExceptions
     return none
   EndFunction
   Function Set(FormList aSet)
+  EndFunction
+EndProperty
+
+float[] property BedOffset hidden
+  float[] Function Get()
+    float[] ret = new float[4]
+    ret[2] = 37.0
+    return ret
+  EndFunction
+  Function Set(float[] aSet)
   EndFunction
 EndProperty
 
@@ -1232,11 +1671,41 @@ bool property ScaleActors = false auto hidden
 int property AnimProfile = 1 auto hidden
 
 ; TODO: This has special behavior to return "OrgasmBehavior == EXTERN"
-bool property SeparateOrgasms = false auto hidden
+bool property SeparateOrgasms Hidden
+  bool Function Get()
+    return GetSettingInt("iClimaxType") == CLIMAXTYPE_EXTERN
+  EndFunction
+  Function Set(bool aSet)
+    If (aSet)
+      SetSettingInt("iClimaxType", CLIMAXTYPE_EXTERN)
+    Else
+      SetSettingInt("iClimaxType", CLIMAXTYPE_SCENE)
+    EndIf
+  EndFunction
+EndProperty
 
 ; ------------------------------------------------------- ;
 ; --- Functions                                       --- ;
 ; ------------------------------------------------------- ;
+
+event OnInit()
+  parent.OnInit()
+  ; SetDefaults()
+endEvent
+
+bool function AddCustomBed(Form BaseBed, int BedType = 0)
+  if !BaseBed
+    return false
+  elseIf !BedsList.HasForm(BaseBed)
+    BedsList.AddForm(BaseBed)
+  endIf
+  if BedType == 1 && !BedRollsList.HasForm(BaseBed)
+    BedRollsList.AddForm(BaseBed)
+  elseIf BedType == 2 && !DoubleBedsList.HasForm(BaseBed)
+    DoubleBedsList.AddForm(BaseBed)
+  endIf
+  return true
+endFunction
 
 Form function EquipStrapon(Actor ActorRef)
   form Strapon = PickStrapon(ActorRef)
@@ -1261,13 +1730,6 @@ bool function UsesNudeSuit(bool IsFemale)
   return false
 endFunction
 
-bool property HasNiOverride
-  bool Function Get()
-    return SKSE.GetPluginVersion("SKEE64") >= 7 || NiOverride.GetScriptVersion() >= 7
-  EndFUnction
-  Function Set(bool aSet)
-  EndFunction
-EndProperty
 bool property HasHDTHeels
   bool Function Get()
     return Game.GetModByName("hdtHighHeel.esm") != 255
@@ -1326,54 +1788,14 @@ bool Function HasCreatureInstall()
 EndFunction
 
 function ReloadData()
-  ; ActorTypeNPC =            Game.GetForm(0x13794)
-  ; AnimatingFaction =        Game.GetFormFromFile(0xE50F, "SexLab.esm")
-  ; AudioSFX =                Game.GetFormFromFile(0x61428, "SexLab.esm")
-  ; AudioVoice =              Game.GetFormFromFile(0x61429, "SexLab.esm")
-  ; BaseMarker =              Game.GetFormFromFile(0x45A93 "SexLab.esm")
-  ; BedRollsList =            Game.GetFormFromFile(0x6198C, "SexLab.esm")
-  ; BedsList =                Game.GetFormFromFile(0x181B1, "SexLab.esm")
-  ; CalypsStrapon =           Game.GetFormFromFile(0x1A22A, "SexLab.esm")
-  ; CheckFNIS =               Game.GetFormFromFile(0x70C38, "SexLab.esm")
-  ; CheckPapyrusUtil =        Game.GetFormFromFile(0x70C3B, "SexLab.esm")
-  ; CheckSKSE =               Game.GetFormFromFile(0x70C39, "SexLab.esm")
-  ; CheckSkyrim =             Game.GetFormFromFile(0x70C3A, "SexLab.esm")
-  ; CheckSkyUI =              Game.GetFormFromFile(0x70C3C, "SexLab.esm")
-  ; CleanSystemFinish =       Game.GetFormFromFile(0x6CB9E, "SexLab.esm")
-  ; CumAnalKeyword =          Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumAnalSpell =            Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumOralAnalSpell =        Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumOralKeyword =          Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumOralSpell =            Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumVaginalAnalSpell =     Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumVaginalKeyword =       Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumVaginalOralAnalSpell = Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumVaginalOralSpell =     Game.GetFormFromFile(0x, "SexLab.esm")
-  ; CumVaginalSpell =         Game.GetFormFromFile(0x, "SexLab.esm")
-  ; DoNothing =               Game.GetFormFromFile(0x, "SexLab.esm")
-  ; DummyWeapon =             Game.GetFormFromFile(0x, "SexLab.esm")
-  ; ForbiddenFaction =        Game.GetFormFromFile(0x, "SexLab.esm")
-  ; GenderFaction =           Game.GetFormFromFile(0x, "SexLab.esm")
-  ; LipSync =                 Game.GetFormFromFile(0x, "SexLab.esm")
-  ; LocationMarker =          Game.GetFormFromFile(0x, "SexLab.esm")
-  ; NudeSuit =                Game.GetFormFromFile(0x, "SexLab.esm")
-  ; OrgasmFX =                Game.GetFormFromFile(0x, "SexLab.esm")
-  ; SexLabVoiceF =            Game.GetFormFromFile(0x, "SexLab.esm")
-  ; SexLabVoiceM =            Game.GetFormFromFile(0x, "SexLab.esm")
-  ; SexMixedFX =              Game.GetFormFromFile(0x, "SexLab.esm")
-  ; SquishingFX =             Game.GetFormFromFile(0x, "SexLab.esm")
-  ; SuckingFX =               Game.GetFormFromFile(0x, "SexLab.esm")
-  ; UseBed =                  Game.GetFormFromFile(0x, "SexLab.esm")
-  ; VoicesPlayer =            Game.GetFormFromFile(0x, "SexLab.esm")
 endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Pre P2.0 Config Accessors                       --- ;
 ; ------------------------------------------------------- ;
-
 bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
-  int idx = (IsFemale as int + Math.LeftShift((IsLeadIn || !IsVictim) as int, 1) + Math.LeftShift(IsAggressive as int, 2)) * 2
-  return sslUtility.BitsToBool(iStripForms[idx], iStripForms[idx + 1])
+  int[] ret = GetStripSettings(IsFemale, IsLeadIn, IsAggressive, IsVictim)
+  return sslUtility.BitsToBool(ret[0], ret[1])
 endFunction
 
 bool[] property StripMale
@@ -1404,40 +1826,6 @@ EndProperty
 bool[] property StripAggressor
   bool[] Function Get()
     return GetStrip(false, false, true, false)
-  EndFunction
-EndProperty
-
-float[] property StageTimer
-  float[] Function Get()
-    float[] ret = new float[5]
-    ret[0] = fTimers[0]
-    ret[1] = fTimers[1]
-    ret[2] = fTimers[2]
-    ret[3] = fTimers[3]
-    ret[4] = fTimers[4]
-    return ret
-  EndFunction
-EndProperty
-float[] property StageTimerLeadIn
-  float[] Function Get()
-    float[] ret = new float[5]
-    ret[0] = fTimers[5]
-    ret[1] = fTimers[6]
-    ret[2] = fTimers[7]
-    ret[3] = fTimers[8]
-    ret[4] = fTimers[9]
-    return ret
-  EndFunction
-EndProperty
-float[] property StageTimerAggr
-  float[] Function Get()
-    float[] ret = new float[5]
-    ret[0] = fTimers[10]
-    ret[1] = fTimers[11]
-    ret[2] = fTimers[12]
-    ret[3] = fTimers[13]
-    ret[4] = fTimers[14]
-    return ret
   EndFunction
 EndProperty
 
