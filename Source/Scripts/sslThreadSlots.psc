@@ -103,14 +103,6 @@ EndFunction
 ; --- Setup                                           --- ;
 ; ------------------------------------------------------- ;
 
-Event OnInit()
-  If (!IsRunning())
-    return
-  EndIf
-  Debug.MessageBox("Setting up sslThreadSlots.psc")
-  Setup()
-EndEvent
-
 Function Setup()
   GoToState("Locked")
   If (!TestSlots())
@@ -176,6 +168,12 @@ State Locked
       Utility.WaitMenuMode(0.1)
     EndWhile
     PickModel()
+  EndFunction
+EndState
+
+Auto State ToBeInitialized
+  sslThreadModel Function PickModel(float TimeOut = 5.0)
+    return none
   EndFunction
 EndState
 

@@ -2748,10 +2748,6 @@ function Setup()
   Log(self + " - Loaded SexLabFramework")
 endFunction
 
-event OnInit()
-	; Setup()
-endEvent
-
 sslThreadModel function NewThread(float TimeOut = 5.0)
   return ThreadSlots.PickModel(TimeOut)
 endFunction
@@ -2816,3 +2812,8 @@ sslObjectFactory property Factory Hidden
     return Game.GetFormFromFile(0x78818, "SexLab.esm") as sslObjectFactory
   EndFunction
 EndProperty
+
+event OnInit()
+  ; p+ 2.0: Setup is exclusively handled by sslSystemAlias
+	; Setup()
+endEvent
