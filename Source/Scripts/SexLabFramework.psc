@@ -2728,11 +2728,29 @@ sslActorStats property Stats Auto
 
 ; Object registries
 sslThreadSlots property ThreadSlots Auto
-sslAnimationSlots property AnimSlots Auto
-sslCreatureAnimationSlots property CreatureSlots Auto
 sslVoiceSlots property VoiceSlots Auto
 sslExpressionSlots property ExpressionSlots Auto
-sslObjectFactory property Factory Auto
+
+function Setup()
+	; Reset function Libraries - SexLabQuestFramework
+	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
+	Config = SexLabQuestFramework as sslSystemConfig
+	ThreadLib = SexLabQuestFramework as sslThreadLibrary
+	ThreadSlots = SexLabQuestFramework as sslThreadSlots
+	ActorLib = SexLabQuestFramework as sslActorLibrary
+	Stats = SexLabQuestFramework as sslActorStats
+	; Reset secondary object registry - SexLabQuestRegistry
+	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
+	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
+	VoiceSlots = SexLabQuestRegistry as sslVoiceSlots
+
+	PlayerRef = Game.GetPlayer()
+  Log(self + " - Loaded SexLabFramework")
+endFunction
+
+event OnInit()
+	; Setup()
+endEvent
 
 sslThreadModel function NewThread(float TimeOut = 5.0)
   return ThreadSlots.PickModel(TimeOut)
@@ -2781,5 +2799,20 @@ endState
 Faction Property AnimatingFaction
   Faction Function Get()
     return Config.AnimatingFaction
+  EndFunction
+EndProperty
+sslAnimationSlots property AnimSlots Hidden
+  sslAnimationSlots Function Get()
+    return Game.GetFormFromFile(0x639DF, "SexLab.esm") as sslAnimationSlots
+  EndFunction
+EndProperty
+sslCreatureAnimationSlots property CreatureSlots Hidden
+  sslCreatureAnimationSlots Function Get()
+    return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationSlots
+  EndFunction
+EndProperty
+sslObjectFactory property Factory Hidden
+  sslObjectFactory Function Get()
+    return Game.GetFormFromFile(0x78818, "SexLab.esm") as sslObjectFactory
   EndFunction
 EndProperty
