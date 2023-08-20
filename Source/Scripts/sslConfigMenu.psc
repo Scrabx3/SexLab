@@ -1,5 +1,18 @@
 scriptname sslConfigMenu extends SKI_ConfigBase
-{Skyrim SexLab Mod Configuration Menu}
+{
+	Skyrim SexLab Mod Configuration Menu
+}
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 import PapyrusUtil
 import SexLabUtil
@@ -75,6 +88,16 @@ Event OnConfigInit()
 	FadeOpt[3] = "$SSL_SolidBlack"
 	FadeOpt[4] = "$SSL_SolidWhite"
 
+	_ClimaxTypes = new String[3]
+	_ClimaxTypes[0] = "$SSL_Climax_0"	; Default
+	_ClimaxTypes[1] = "$SSL_Climax_1"	; Legacy
+	_ClimaxTypes[2] = "$SSL_Climax_2"	; Extern
+
+	_Sexes = new String[3]
+	_Sexes[0] = "$SSL_Male"
+	_Sexes[1] = "$SSL_Female"
+	_Sexes[2] = "$SSL_Futa"
+
 	; Expression Editor
 	Phases = new string[5]
 	Phases[0] = "Phase 1"
@@ -146,42 +169,6 @@ Event OnConfigInit()
 	TSModes[0] = "$SSL_NormalTimersStripping"
 	TSModes[1] = "$SSL_ForeplayTimersStripping"
 	TSModes[2] = "$SSL_AggressiveTimersStripping"
-
-	; Biped items
-	Biped = new string[33]
-	Biped[0]  = "$SSL_Head"
-	Biped[1]  = "$SSL_Hair"
-	Biped[2]  = "$SSL_Torso"
-	Biped[3]  = "$SSL_Hands"
-	Biped[4]  = "$SSL_Forearms"
-	Biped[5]  = "$SSL_Amulet"
-	Biped[6]  = "$SSL_Ring"
-	Biped[7]  = "$SSL_Feet"
-	Biped[8]  = "$SSL_Calves"
-	Biped[9]  = "$SSL_Shield"
-	Biped[10] = "$SSL_Tail"
-	Biped[11] = "$SSL_LongHair"
-	Biped[12] = "$SSL_Circlet"
-	Biped[13] = "$SSL_Ears"
-	Biped[14] = "$SSL_FaceMouth"
-	Biped[15] = "$SSL_Neck"
-	Biped[16] = "$SSL_Chest"
-	Biped[17] = "$SSL_Back"
-	Biped[18] = "$SSL_MiscSlot48"
-	Biped[19] = "$SSL_PelvisOutergarnments"
-	Biped[20] = "$SSL_DecapitatedHead" ; decapitated head [NordRace]
-	Biped[21] = "$SSL_Decapitate" ; decapitate [NordRace]
-	Biped[22] = "$SSL_PelvisUndergarnments"
-	Biped[23] = "$SSL_LegsRightLeg"
-	Biped[24] = "$SSL_LegsLeftLeg"
-	Biped[25] = "$SSL_FaceJewelry"
-	Biped[26] = "$SSL_ChestUndergarnments"
-	Biped[27] = "$SSL_Shoulders"
-	Biped[28] = "$SSL_ArmsLeftArmUndergarnments"
-	Biped[29] = "$SSL_ArmsRightArmOutergarnments"
-	Biped[30] = "$SSL_MiscSlot60"
-	Biped[31] = "$SSL_MiscSlot61"
-	Biped[32] = "$SSL_Weapons"
 EndEvent
 
 ; ------------------------------------------------------- ;
@@ -243,12 +230,7 @@ endEvent
 
 event OnConfigOpen()
 	LoadSettings()
-	If(!Config.AllowCreatures)	; COMEBACK: hacky workaround as my first approach to automate config load didnt work out so well
-		Config.bInstallDefaultsCrt = false
-	EndIf
-	SetToggleOptionValueST(Config.bInstallDefaults, true, "installAnim")
-	SetToggleOptionValueST(Config.AllowCreatures, true, "installCrt")
-	SetToggleOptionValueST(Config.bInstallDefaultsCrt, false, "installCrtAnim")
+	SetToggleOptionValueST(Config.AllowCreatures, false, "AllowCreatures")
 
 	If(SystemAlias.IsInstalled)
 		Pages = new string[10]
@@ -278,7 +260,6 @@ event OnConfigOpen()
 		EndIf
 		StatRef = TargetRef
 	Else
-		TargetRef = none
 		TargetName = "$SSL_NoTarget"
 		TargetFlag = OPTION_FLAG_DISABLED
 		StatRef = PlayerRef
@@ -347,13 +328,18 @@ string[] function MapOptions()
 	return StringSplit(GetState(), "_")
 endFunction
 
-event OnHighlightST()
-	string[] Options = MapOptions()
+Event OnHighlightST()
+	String[] Options = PapyrusUtil.StringSplit(GetState(), "_")
+	If (Options[0] == "ClimaxType")					; Animation Settings
+		SetInfoText("$SSL_ClimaxInfo")
+	ElseIf (Options[0] == "SexSelect")
+		SetInfoText("$SSL_InfoPlayerGender")
+
 	; Animation Toggle
-	if Options[0] == "Animation"
+	Elseif Options[0] == "Animation"
 		sslBaseAnimation Slot = AnimToggles[(Options[1] as int)]
 		if Config.MirrorPress(Config.AdjustStage)
-			SetInfoText("$SSL_AnimationEditor") ;ToDo
+			SetInfoText("$SSL_AnimationEditor") ; TODO: ?
 		else
 			SetInfoText(Slot.Name+" Tags:\n"+StringJoin(Slot.GetTags(), ", "))
 		endIf
@@ -416,10 +402,6 @@ event OnHighlightST()
 
 	elseIf Options[0] == "LipsSoundTime"
 		SetInfoText("$SSL_InfoLipsSoundTime")
-
-	; Clean CACHE
-	elseIf Options[0] == "CleanCACHE"
-		SetInfoText("$SSL_InfoCleanCACHE")
 
 	; Error & Warning
 	elseIf Options[0] == "InstallError"
@@ -505,7 +487,7 @@ event OnSliderOpenST()
 	; Timers & Stripping - Timers
 	ElseIf(Options[0] == "Timers")
 		int i = Options[1] as int
-		SetSliderDialogStartValue(Config.fTimers[ts * 5 + i])
+		SetSliderDialogStartValue(sslSystemConfig.GetSettingFltA("fTimers", ts * 5 + i))
 		SetSliderDialogRange(3, 180)
 		SetSliderDialogInterval(1)
 		SetSliderDialogDefaultValue(GetDefaultTime(ts * 5 + i))
@@ -577,36 +559,72 @@ event OnSliderAcceptST(float value)
 	; Timers & Stripping - Timers
 	ElseIf(Options[0] == "Timers")
 		int i = Options[1] as int
-		Config.fTimers[ts * 5 + i] = value
+		sslSystemConfig.SetSettingFltA("fTimers", value, ts * 5 + i)
 		SetSliderOptionValueST(value, "$SSL_Seconds")
 	EndIf
 EndEvent
 
-event OnMenuOpenST()
-	string[] Options = MapOptions()
+Event OnMenuOpenST()
+	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
+	If (s[0] == "ClimaxType")				; Animation Settings
+		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iClimaxType"))
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_ClimaxTypes)
+	ElseIf (s[0] == "SexSelect")
+		int sex
+		If (s[0] == "0")
+			sex = SexLabRegistry.GetSex(PlayerRef, true)
+		Else
+			sex = SexLabRegistry.GetSex(Config.TargetRef, true)
+		EndIf
+		String[] options
+		If (sex <= 2)	; Human
+			options = _Sexes
+		Else					; Creature
+			options = new String[2]
+			options[0] = "$SSL_Male"
+			options[1] = "$SSL_Female"
+		EndIf
+		SetMenuDialogStartIndex(sex % 3)
+		SetMenuDialogDefaultIndex(sex % 3)
+		SetMenuDialogOptions(options)
 
-	; Expression OpenMouth & LipSync Editor
-	if Options[0] == "LipsPhoneme"
+	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
 		string[] LipsPhonemes = new String[1]
 		LipsPhonemes[0] = "$SSL_Automatic"
 		LipsPhonemes = MergeStringArray(LipsPhonemes, Phonemes)
-		SetMenuDialogStartIndex(Config.LipsPhoneme + 1)
+		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iLipsPhoneme") + 1)
 		SetMenuDialogDefaultIndex(2) ; BigAah
 		SetMenuDialogOptions(LipsPhonemes)
-	endIf
-endEvent
+	EndIf
+EndEvent
 
-event OnMenuAcceptST(int i)
-	string[] Options = MapOptions()
+Event OnMenuAcceptST(int aiIndex)
+	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
+	If (s[0] == "ClimaxType")				; Animation Settings
+		If (aiIndex < 0)
+			return
+		EndIf
+		sslSystemConfig.SetSettingInt("iClimaxType", aiIndex)
+		SetMenuOptionValueST(_ClimaxTypes[aiIndex])
+	ElseIf (s[0] == "SexSelect")
+		If (s[0] == "0")
+			ActorLib.TreatAsSex(PlayerRef, aiIndex)
+		Else
+			ActorLib.TreatAsSex(Config.TargetRef, aiIndex)
+		EndIf
+		SetMenuOptionValueST(_Sexes[aiIndex])
 
-	; Expression OpenMouth & LipSync Editor
-	if Options[0] == "LipsPhoneme"
-		if i >= 0
-			Config.LipsPhoneme = i - 1
-			SetMenuOptionValueST(SexLabUtil.StringIfElse(Config.LipsPhoneme >= 0, Phonemes[ClampInt(Config.LipsPhoneme, 0, 15)], "$SSL_Automatic"))
-		endIf
-	endIf
-endEvent
+	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
+		If (aiIndex == 0)
+			sslSystemConfig.SetSettingInt("iClimaxType", -1)
+			SetMenuOptionValueST("$SSL_Automatic")
+		ElseIf (aiIndex > 0)
+			sslSystemConfig.SetSettingInt("iClimaxType", aiIndex - 1)
+			SetMenuOptionValueST(Phonemes[aiIndex - 1])
+		EndIf
+	EndIf
+EndEvent
 
 Event OnInputOpenST()
 	string[] Options = MapOptions()
@@ -801,19 +819,8 @@ EndEvent
 
 event OnSelectST()
 	string[] Options = MapOptions()
-	If(Options[0] == "installAnim")
-		Config.bInstallDefaults = !Config.bInstallDefaults
-		SetToggleOptionValueST(Config.bInstallDefaults)
-	ElseIf(Options[0] == "installCrt")
-		Config.AllowCreatures = !Config.AllowCreatures
-		SetToggleOptionValueST(Config.AllowCreatures)
-		SetOptionFlagsST(DoDisable(!Config.AllowCreatures), false, "installCrtAnim")
-	ElseIf(Options[0] == "installCrtAnim")
-		Config.bInstallDefaultsCrt = !Config.bInstallDefaultsCrt
-		SetToggleOptionValueST(Config.bInstallDefaultsCrt)
-
 	; Sound Settings - Voice Toggle
-	elseif Options[0] == "Voice"
+	if Options[0] == "Voice"
 		sslBaseVoice Slot = VoiceSlots.GetBySlot(Options[1] as int)
 		Slot.Enabled = !Slot.Enabled
 		SetToggleOptionValueST(Slot.Enabled)
@@ -821,14 +828,16 @@ event OnSelectST()
 	; Timers & Stripping - Stripping
 	ElseIf(Options[0] == "StrippingW")
 		int i = Options[1] as int
-		Config.iStripForms[i] = 1 - Config.iStripForms[i]
-		SetToggleOptionValueST(Config.iStripForms[i])
+		int value = 1 - sslSystemConfig.GetSettingIntA("iStripForms", i)
+		sslSystemConfig.SetSettingIntA("iStripForms", value, i)
+		SetToggleOptionValueST(value)
 	ElseIf(Options[0] == "Stripping")
 		int i = Options[1] as int
 		int n = Options[2] as int
 		int bit = Math.LeftShift(1, n)
-    Config.iStripForms[i] = Math.LogicalXor(Config.iStripForms[i], bit)
-    SetToggleOptionValueST(Math.LogicalAnd(Config.iStripForms[i], bit))
+		int value = Math.LogicalXor(sslSystemConfig.GetSettingIntA("iStripForms", i), bit)
+		sslSystemConfig.SetSettingIntA("iStripForms", value, i)
+    SetToggleOptionValueST(Math.LogicalAnd(value, bit))
 		
 	; Strip Editor
 	ElseIf(Options[0] == "StripEditorPlayer" || Options[0] == "StripEditorTarget")
@@ -942,22 +951,6 @@ event OnSelectST()
 		Config.Strapons = Output
 		ForcePageReset()
 
-	; Clean CACHE
-	elseIf Options[0] == "CleanCACHE"
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("Working")
-
-		; Clear animation CACHE
-		CreatureSlots.ClearAnimCache()
-		AnimSlots.ClearAnimCache()
-
-		; Clear animation tag CACHE
-		CreatureSlots.ClearTagCache()
-		AnimSlots.ClearTagCache()
-
-		SetTextOptionValueST("$Done")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
-
 	; Install System
 	elseIf Options[0] == "InstallSystem"
 		SetOptionFlagsST(OPTION_FLAG_DISABLED)
@@ -997,10 +990,7 @@ function InstallMenu()
 	; Install/Update button
 	string AliasState = SystemAlias.GetState()
 	bool flag = AliasState == "Updating" || AliasState == "Installing"
-	AddToggleOptionST("installAnim", "$SLL_InstallAnimations", Config.bInstallDefaults, DoDisable(flag))
-	AddEmptyOption()
-	AddToggleOptionST("installCrt", "$SLL_InstallEnableCreatures", Config.AllowCreatures, DoDisable(flag))
-	AddToggleOptionST("installCrtAnim", "$SLL_InstallAnimationsCreatures", Config.bInstallDefaultsCrt, DoDisable(!Config.AllowCreatures || flag))
+	AddToggleOptionST("AllowCreatures", "$SLL_InstallEnableCreatures", Config.AllowCreatures, DoDisable(flag))
 	AddEmptyOption()
 	AddTextOptionST("InstallSystem", "$SSL_InstallUpdateSexLab{"+GetStringVer()+"}", "$SSL_ClickHere", DoDisable(flag))
 	if AliasState == "Updating"
@@ -1011,16 +1001,22 @@ function InstallMenu()
 endFunction
 
 function SystemCheckOptions()
-	AddTextOption("Skyrim Script Extender", StringIfElse(Config.CheckSystemPart("SKSE"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
-	AddTextOption("SexLabUtil.dll SKSE Plugin", StringIfElse(Config.CheckSystemPart("SexLabUtil"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
-	AddTextOption("PapyrusUtil.dll SKSE Plugin", StringIfElse(Config.CheckSystemPart("PapyrusUtil"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
-	AddTextOption("FNIS - Fores New Idles in Skyrim (7.0+)", StringIfElse(Config.CheckSystemPart("FNIS"), "<font color='#00FF00'>ok</font>", "<font color='#FF0000'>X</font>"), OPTION_FLAG_DISABLED)
-	AddTextOption("FNIS For Users Behaviors Generated", StringIfElse(Config.CheckSystemPart("FNISGenerated"), "<font color='#00FF00'>ok</font>", "<font color='#0000FF'>?</font>"), OPTION_FLAG_DISABLED)
-	AddTextOption("FNIS SexLab Framework Idles", StringIfElse(Config.CheckSystemPart("FNISSexLabFramework"), "<font color='#00FF00'>ok</font>", "<font color='#0000FF'>?</font>"), OPTION_FLAG_DISABLED)
-	AddTextOption("FNIS Creature Pack (7.0+)", StringIfElse(Config.CheckSystemPart("FNISCreaturePack"), "<font color='#00FF00'>ok</font>", "<font color='#0000FF'>?</font>"), OPTION_FLAG_DISABLED)
-	AddTextOption("FNIS SexLab Creature Idles", StringIfElse(Config.CheckSystemPart("FNISSexLabCreature"), "<font color='#00FF00'>ok</font>", "<font color='#0000FF'>?</font>"), OPTION_FLAG_DISABLED)
+	String[] okOrFail = new String[3]
+	okOrFail[0] = "<font color='#FF0000'>X</font>"
+	okOrFail[1] = "<font color='#00FF00'>ok</font>"
+	okOrFail[2] = "<font color='#0000FF'>?</font>"
+
+	AddTextOption("Skyrim Script Extender", okOrFail[Config.CheckSystemPart("SKSE") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("SexLab.dll", okOrFail[Config.CheckSystemPart("SexLabP+") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("SexLabUtil.dll", okOrFail[Config.CheckSystemPart("SexLabUtil") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("PapyrusUtil.dll", okOrFail[Config.CheckSystemPart("PapyrusUtil") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("NiOverride", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("Mfg Fix", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("FNIS - Fores New Idles in Skyrim (7.0+)", okOrFail[Config.CheckSystemPart("FNIS") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("FNIS For Users Behaviors Generated", okOrFail[(Config.CheckSystemPart("FNISGenerated") as int) * 2], OPTION_FLAG_DISABLED)
+	AddTextOption("FNIS Creature Pack (7.0+)", okOrFail[(Config.CheckSystemPart("FNISCreaturePack") as int) * 2], OPTION_FLAG_DISABLED)
 	; Show soft error warning if relevant
-	if !Config.CheckSystemPart("NiOverride") || !Config.CheckSystemPart("FNISGenerated") || !Config.CheckSystemPart("FNISSexLabFramework") || !Config.CheckSystemPart("FNISCreaturePack") || !Config.CheckSystemPart("FNISSexLabCreature")
+	if !Config.CheckSystemPart("FNISGenerated") || !Config.CheckSystemPart("FNISCreaturePack")
 		AddTextOptionST("FNISWarning", "INFO: On '?' Warning", "README")
 		SetInfoText("Important FNIS Check:\nIf you're getting a '?' on any checks try scrolling in and out of 3rd person mode then checking again while still in 3rd. These '?' are just soft warnings and can usually be ignored safely.\nIf scrolling in and out doesn't work and characters stand frozen in place during animation than these are the most likely causes. Fix your FNIS install.")
 	endIf
@@ -1033,6 +1029,8 @@ endFunction
 string[] Chances
 string[] BedOpt
 string[] FadeOpt
+String[] _ClimaxTypes
+String[] _Sexes
 
 function AnimationSettings()
 	SetCursorFillMode(TOP_TO_BOTTOM)
@@ -1041,51 +1039,50 @@ function AnimationSettings()
 	AddToggleOptionST("DisableVictim","$SSL_DisableVictimControls", Config.DisablePlayer)
 	AddToggleOptionST("AutomaticTFC","$SSL_AutomaticTFC", Config.AutoTFC)
 	AddSliderOptionST("AutomaticSUCSM","$SSL_AutomaticSUCSM", Config.AutoSUCSM, "{0}")
-	AddTextOptionST("PlayerGender","$SSL_PlayerGender", SexLabUtil.StringIfElse(ActorLib.GetGender(PlayerRef) % 2 == 0, "$SSL_Male", "$SSL_Female"))
-	if TargetRef
-		AddTextOptionST("TargetGender","$SSL_{"+TargetName+"}sGender", SexLabUtil.StringIfElse(ActorLib.GetGender(TargetRef) % 2 == 0, "$SSL_Male", "$SSL_Female"))
-	endIf
-
+	AddMenuOptionST("SexSelect_0", "$SSL_PlayerGender", _Sexes[SexLabRegistry.GetSex(PlayerRef, false) % 3])
+	If (Config.TargetRef)
+		String name = TargetRef.GetLeveledActorBase().GetName()
+		AddMenuOptionST("SexSelect_1", "$SSL_{" + name + "}sGender", _Sexes[SexLabRegistry.GetSex(Config.TargetRef, false) % 3])
+	Else
+		AddTextOption("$SSL_NoTarget", "$SSL_Male", OPTION_FLAG_DISABLED)
+	EndIf
 	AddHeaderOption("$SSL_ExtraEffects")
-	AddMenuOptionST("UseFade","$SSL_UseFade", FadeOpt[ClampInt(Config.UseFade, 0, 4)])
-	AddToggleOptionST("UseExpressions","$SSL_UseExpressions", Config.UseExpressions)
-	AddToggleOptionST("RefreshExpressions","$SSL_RefreshExpressions", Config.RefreshExpressions)
-	AddSliderOptionST("ExpressionDelay","$SSL_ExpressionDelay", Config.ExpressionDelay, "{1}x")
-	AddToggleOptionST("UseLipSync", "$SSL_UseLipSync", Config.UseLipSync)
-	AddToggleOptionST("SeparateOrgasms","$SSL_SeparateOrgasms", Config.SeparateOrgasms)
+	AddMenuOptionST("ClimaxType", "$SSL_ClimaxType", _ClimaxTypes[sslSystemConfig.GetSettingInt("iClimaxType")])
 	AddToggleOptionST("OrgasmEffects","$SSL_OrgasmEffects", Config.OrgasmEffects)
 	AddSliderOptionST("ShakeStrength","$SSL_ShakeStrength", (Config.ShakeStrength * 100), "{0}%")
 	AddToggleOptionST("UseCum","$SSL_ApplyCumEffects", Config.UseCum)
-	AddToggleOptionST("AllowFemaleFemaleCum","$SSL_AllowFemaleFemaleCum", Config.AllowFFCum, SexLabUtil.IntIfElse((!Config.UseCum), OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
 	AddSliderOptionST("CumEffectTimer","$SSL_CumEffectTimer", Config.CumTimer, "$SSL_Seconds")
-	AddToggleOptionST("LimitedStrip","$SSL_LimitedStrip", Config.LimitedStrip)
-	AddToggleOptionST("ShowInMap","$SSL_ShowInMap", Config.ShowInMap)
-	AddTextOptionST("NPCBed","$SSL_NPCsUseBeds", Chances[ClampInt(Config.NPCBed, 0, 2)])
-	AddTextOptionST("AskBed","$SSL_AskBed", BedOpt[ClampInt(Config.AskBed, 0, 2)])
+	AddToggleOptionST("UseExpressions","$SSL_UseExpressions", Config.UseExpressions)
+	; AddToggleOptionST("RefreshExpressions","$SSL_RefreshExpressions", Config.RefreshExpressions)
+	; AddSliderOptionST("ExpressionDelay","$SSL_ExpressionDelay", Config.ExpressionDelay, "{1}x")
+	AddToggleOptionST("UseLipSync", "$SSL_UseLipSync", Config.UseLipSync)
+	; AddToggleOptionST("SeparateOrgasms","$SSL_SeparateOrgasms", Config.SeparateOrgasms)
+	; AddToggleOptionST("AllowFemaleFemaleCum","$SSL_AllowFemaleFemaleCum", Config.AllowFFCum, SexLabUtil.IntIfElse((!Config.UseCum), OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
 
 	SetCursorPosition(1)
-	AddMenuOptionST("AnimationProfile", "$SSL_AnimationProfile", "Profile #"+Config.AnimProfile)
+	; AddMenuOptionST("AnimationProfile", "$SSL_AnimationProfile", "Profile #"+Config.AnimProfile)
+	AddHeaderOption("$SSL_Creatures")
 	AddToggleOptionST("AllowCreatures","$SSL_AllowCreatures", Config.AllowCreatures)
 	AddToggleOptionST("UseCreatureGender","$SSL_UseCreatureGender", Config.UseCreatureGender)
 	AddHeaderOption("$SSL_AnimationHandling")
-	AddToggleOptionST("RaceAdjustments","$SSL_RaceAdjustments", Config.RaceAdjustments)
-	AddToggleOptionST("DisableTeleport","$SSL_DisableTeleport", Config.DisableTeleport)
-	AddToggleOptionST("SeedNPCStats","$SSL_SeedNPCStats", Config.SeedNPCStats)
-	AddToggleOptionST("ScaleActors","$SSL_EvenActorsHeight", Config.ScaleActors, SexLabUtil.IntIfElse(Config.DisableScale, OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
+	; AddToggleOptionST("RaceAdjustments","$SSL_RaceAdjustments", Config.RaceAdjustments)
+	AddMenuOptionST("UseFade","$SSL_UseFade", FadeOpt[ClampInt(Config.UseFade, 0, 4)])
 	AddToggleOptionST("DisableScale","$SSL_DisableScale", Config.DisableScale)
-	AddToggleOptionST("ForeplayStage","$SSL_PreSexForeplay", Config.ForeplayStage)
-	AddSliderOptionST("LeadInCoolDown","$SSL_LeadInCoolDown", Config.LeadInCoolDown, "$SSL_Seconds", SexLabUtil.IntIfElse(Config.ForeplayStage, OPTION_FLAG_NONE, OPTION_FLAG_DISABLED))
-	AddToggleOptionST("RestrictAggressive","$SSL_RestrictAggressive", Config.RestrictAggressive)
+	; AddToggleOptionST("SeedNPCStats","$SSL_SeedNPCStats", Config.SeedNPCStats)
+	; AddToggleOptionST("ScaleActors","$SSL_EvenActorsHeight", Config.ScaleActors, SexLabUtil.IntIfElse(Config.DisableScale, OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
+	; AddToggleOptionST("ForeplayStage","$SSL_PreSexForeplay", Config.ForeplayStage)
+	; AddSliderOptionST("LeadInCoolDown","$SSL_LeadInCoolDown", Config.LeadInCoolDown, "$SSL_Seconds", SexLabUtil.IntIfElse(Config.ForeplayStage, OPTION_FLAG_NONE, OPTION_FLAG_DISABLED))
 	AddToggleOptionST("RestrictSameSex","$SSL_RestrictSameSex", Config.RestrictSameSex)
+	AddToggleOptionST("StraponsFemale","$SSL_FemalesUseStrapons", Config.UseStrapons)
 	AddToggleOptionST("UndressAnimation","$SSL_UndressAnimation", Config.UndressAnimation)
 	AddToggleOptionST("RedressVictim","$SSL_VictimsRedress", Config.RedressVictim)
-	AddToggleOptionST("StraponsFemale","$SSL_FemalesUseStrapons", Config.UseStrapons)
-	AddToggleOptionST("FutaBehavior","$SSL_FutaBehavior", Config.iFutaBehavior)
-	AddToggleOptionST("RemoveHeelEffect","$SSL_RemoveHeelEffect", Config.RemoveHeelEffect)
-	AddToggleOptionST("BedRemoveStanding","$SSL_BedRemoveStanding", Config.BedRemoveStanding)
-	; AddToggleOptionST("RagdollEnd","$SSL_RagdollEnding", Config.RagdollEnd)
-	; AddToggleOptionST("NudeSuitMales","$SSL_UseNudeSuitMales", Config.UseMaleNudeSuit)
-	; AddToggleOptionST("NudeSuitFemales","$SSL_UseNudeSuitFemales", Config.UseFemaleNudeSuit)
+	AddToggleOptionST("LimitedStrip","$SSL_LimitedStrip", Config.LimitedStrip)
+	AddToggleOptionST("DisableTeleport","$SSL_DisableTeleport", Config.DisableTeleport)
+	AddToggleOptionST("ShowInMap","$SSL_ShowInMap", Config.ShowInMap)
+	AddTextOptionST("NPCBed","$SSL_NPCsUseBeds", Chances[ClampInt(Config.NPCBed, 0, 2)])
+	AddTextOptionST("AskBed","$SSL_AskBed", BedOpt[ClampInt(Config.AskBed, 0, 2)])
+	; AddToggleOptionST("RemoveHeelEffect","$SSL_RemoveHeelEffect", Config.RemoveHeelEffect)
+	; AddToggleOptionST("BedRemoveStanding","$SSL_BedRemoveStanding", Config.BedRemoveStanding)
 endFunction
 
 state AnimationProfile
@@ -1569,7 +1566,8 @@ function SoundSettings()
 
 	; Voices & SFX
 	AddMenuOptionST("PlayerVoice","$SSL_PCVoice", VoiceSlots.GetSavedName(PlayerRef))
-	AddToggleOptionST("NPCSaveVoice","$SSL_NPCSaveVoice", Config.NPCSaveVoice)
+	AddEmptyOption()
+	; AddToggleOptionST("NPCSaveVoice","$SSL_NPCSaveVoice", Config.NPCSaveVoice)
 	AddMenuOptionST("TargetVoice","$SSL_Target{"+TargetName+"}Voice", VoiceSlots.GetSavedName(TargetRef), TargetFlag)
 	AddSliderOptionST("VoiceVolume","$SSL_VoiceVolume", (Config.VoiceVolume * 100), "{0}%")
 	AddSliderOptionST("SFXVolume","$SSL_SFXVolume", (Config.SFXVolume * 100), "{0}%")
@@ -2448,8 +2446,8 @@ function ExpressionEditor()
 
 		int i = 0
 		while i <= 15
-			AddSliderOptionST("OpenMouth_1_"+i, Phonemes[i], Config.OpenMouthFemale[i] * 100, "{0}")
-			AddSliderOptionST("OpenMouth_0_"+i, Phonemes[i], Config.OpenMouthMale[i] * 100, "{0}")
+			AddSliderOptionST("OpenMouth_1_"+i, Phonemes[i], sslSystemConfig.GetSettingFltA("fOpenMouthFemale", i) * 100, "{0}")
+			AddSliderOptionST("OpenMouth_0_"+i, Phonemes[i], sslSystemConfig.GetSettingFltA("fOpenMouthMale", i) * 100, "{0}")
 			i += 1
 		endWhile
 
@@ -3034,29 +3032,21 @@ endState
 ; --- Timers & Stripping                              --- ;
 ; ------------------------------------------------------- ;
 
-string[] Biped
 string[] TSModes
 int ts	; 0 - Default / 1 - Lead In / 2 - Aggressive
 
 Function TimersStripping()
 	SetCursorFillMode(LEFT_TO_RIGHT)
-	; SetTitleText(TSModes[ts])
 	AddMenuOptionST("TSModeSelect", "$SSL_View", TSModes[ts])
 	AddEmptyOption()
 	; Timers
-	If(ts == 0)
-		AddHeaderOption("$SSL_ConsensualStageTimers")
-	ElseIf(ts == 1)
-		AddHeaderOption("$SSL_ForeplayIntroAnimationTimers")
-	Else
-		AddHeaderOption("$SSL_AggressiveAnimationTimers")
-	EndIf
+	AddHeaderOption("$SSL_TimerType_" + ts)
 	AddHeaderOption("")
-	AddSliderOptionST("Timers_0", "$SSL_Stage1Length", Config.fTimers[ts * 5 + 0], "$SSL_Seconds")
-	AddSliderOptionST("Timers_3", "$SSL_Stage4Length", Config.fTimers[ts * 5 + 3], "$SSL_Seconds")
-	AddSliderOptionST("Timers_1", "$SSL_Stage2Length", Config.fTimers[ts * 5 + 1], "$SSL_Seconds")
-	AddSliderOptionST("Timers_4", "$SSL_StageEndingLength", Config.fTimers[ts * 5 + 4], "$SSL_Seconds")
-	AddSliderOptionST("Timers_2", "$SSL_Stage3Length", Config.fTimers[ts * 5 + 2], "$SSL_Seconds")
+	AddSliderOptionST("Timers_0", "$SSL_Stage1Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 0)), "$SSL_Seconds")
+	AddSliderOptionST("Timers_3", "$SSL_Stage4Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 3)), "$SSL_Seconds")
+	AddSliderOptionST("Timers_1", "$SSL_Stage2Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 1)), "$SSL_Seconds")
+	AddSliderOptionST("Timers_4", "$SSL_StageEndingLength", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 4)), "$SSL_Seconds")
+	AddSliderOptionST("Timers_2", "$SSL_Stage3Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 2)), "$SSL_Seconds")
 	AddEmptyOption()
 	; Stripping
 	If(ts == 2)
@@ -3068,19 +3058,19 @@ Function TimersStripping()
 	EndIf
 	int r1 = ts * 4										; 0 / 4 / 8
 	int r2 = (ts * ts) + (3 * ts) + 2	; 2 / 6 / 12
-	AddToggleOptionST("StrippingW_" + r1, Biped[32], Config.iStripForms[r1 + 1])
-	AddToggleOptionST("StrippingW_" + r2, Biped[32], Config.iStripForms[r2 + 3])
+	AddToggleOptionST("StrippingW_" + r1, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
+	AddToggleOptionST("StrippingW_" + r2, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 3))
 	int i = 0
-	While(i < 32)
+	While (i < 32)
 		int bit = Math.LeftShift(1, i)
-		AddToggleOptionST("Stripping_" + r1 + "_" + i, Biped[i], Math.LogicalAnd(Config.iStripForms[r1], bit))
-		AddToggleOptionST("Stripping_" + r2 + "_" + i, Biped[i], Math.LogicalAnd(Config.iStripForms[r2], bit))
-		If(i == 13)
+		AddToggleOptionST("Stripping_" + r1 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r1), bit))
+		AddToggleOptionST("Stripping_" + r2 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r2), bit))
+		If (i == 13)
 			AddHeaderOption("$SSL_ExtraSlots")
 			AddHeaderOption("$SSL_ExtraSlots")
 		EndIf
 		i += 1
-	endWhile
+	EndWhile
 endFunction
 
 float Function GetDefaultTime(int idx)
@@ -3219,65 +3209,39 @@ endState
 
 function RebuildClean()
 	SetCursorFillMode(TOP_TO_BOTTOM)
-
 	AddHeaderOption("SexLab v"+GetStringVer()+" by Ashal@LoversLab.com")
 	if SexLab.Enabled
 		AddTextOptionST("ToggleSystem","$SSL_EnabledSystem", "$SSL_DoDisable")
 	else
 		AddTextOptionST("ToggleSystem","$SSL_DisabledSystem", "$SSL_DoEnable")
 	endIf
-	AddTextOptionST("CleanSystem","$SSL_CleanSystem", "$SSL_ClickHere")
-
-	; AddHeaderOption("$SSL_UpgradeUninstallReinstall")
-
+	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
 	AddHeaderOption("$SSL_Maintenance")
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")
-	; AddTextOptionST("CleanCACHE","$SSL_CleanCACHE", "$SSL_ClickHere")
 	AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")
 	AddTextOptionST("ResetAnimationRegistry","$SSL_ResetAnimationRegistry", "$SSL_ClickHere")
 	AddTextOptionST("ResetVoiceRegistry","$SSL_ResetVoiceRegistry", "$SSL_ClickHere")
 	AddTextOptionST("ResetExpressionRegistry","$SSL_ResetExpressionRegistry", "$SSL_ClickHere")
 	AddTextOptionST("ResetStripOverrides","$SSL_ResetStripOverrides", "$SSL_ClickHere")
 	AddTextOptionST("ClearNPCSexSkills","$SSL_ClearNPCSexSkills", "$SSL_ClickHere")
-
+	AddTextOptionST("CleanSystem","$SSL_CleanSystem", "$SSL_ClickHere")
 	AddHeaderOption("$SSL_AvailableStrapons")
 	AddTextOptionST("RebuildStraponList","$SSL_RebuildStraponList", "$SSL_ClickHere")
 	int i = Config.Strapons.Length
 	while i
 		i -= 1
-		if Config.Strapons[i]
-			string Name = Config.Strapons[i].GetName()
-			if Name == "strapon"
-				Name = "Aeon/Horker"
-			endIf
-			AddTextOptionST("Strapon_"+i, Name, "$SSL_Remove")
+		string Name = Config.Strapons[i].GetName()
+		if Name == "strapon"
+			Name = "Aeon/Horker"
 		endIf
+		AddTextOptionST("Strapon_" + i, Name, "$SSL_Remove")
 	endWhile
 
 	SetCursorPosition(1)
-	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
-	; AddTextOptionST("ExportSettings","$SSL_ExportSettings", "$SSL_ClickHere")
-	; AddTextOptionST("ImportSettings","$SSL_ImportSettings", "$SSL_ClickHere")
-	AddToggleOptionST("installAnim", "$SLL_InstallAnimations", Config.bInstallDefaults)
-	AddToggleOptionST("installCrtAnim", "$SLL_InstallAnimationsCreatures", Config.bInstallDefaultsCrt, DoDisable(!Config.AllowCreatures))
 	AddHeaderOption("Registry Info")
-
-	if AnimSlots.GetDisabledCount() > 0 || CreatureSlots.GetDisabledCount() > 0
-		AddTextOptionST("NeverRegisterDisabled","$SSL_NeverRegisterDisabled", "$SSL_ClickHere")
-	else
-		AddTextOptionST("NeverRegisterDisabled","$SSL_NeverRegisterDisabled", "--", OPTION_FLAG_DISABLED)
-	endIf
-	if AnimSlots.GetSuppressedCount() > 0
-		AddTextOptionST("ResetNeverRegisters","$SSL_ResetNeverRegisters", "$SSL_ClickHere")
-	else
-		AddTextOptionST("ResetNeverRegisters","$SSL_ResetNeverRegisters", "--", OPTION_FLAG_DISABLED)
-	endIf
-
-	AddTextOption("Animations (Character)", AnimSlots.Slotted+" / "+AnimSlots.GetNumAliases(), OPTION_FLAG_DISABLED)
-	AddTextOption("Animations (Creature)", CreatureSlots.Slotted+" / "+CreatureSlots.GetNumAliases(), OPTION_FLAG_DISABLED)
+	AddTextOption("Animations", sslSystemConfig.GetAnimationCount(), OPTION_FLAG_DISABLED)
 	AddTextOption("Voices", VoiceSlots.Slotted+" / 375", OPTION_FLAG_DISABLED)
 	AddTextOption("Expressions", ExpressionSlots.Slotted+" / 375", OPTION_FLAG_DISABLED)
-
 	AddHeaderOption("System Requirements")
 	SystemCheckOptions()	
 endFunction
@@ -3342,29 +3306,6 @@ state AutomaticSUCSM
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoAutomaticSUCSM")
-	endEvent
-endState
-state PlayerGender
-	event OnSelectST()
-		ActorLib.TreatAsGender(PlayerRef, ActorLib.GetGender(PlayerRef) % 2 == 0)
-		SetTextOptionValueST(SexLabUtil.StringIfElse(ActorLib.GetGender(PlayerRef) % 2 == 0, "$SSL_Male", "$SSL_Female"))
-	endEvent
-	event OnDefaultST()
-		ActorLib.ClearForcedGender(PlayerRef)
-		SetTextOptionValueST(SexLabUtil.StringIfElse(ActorLib.GetGender(PlayerRef) % 2 == 0, "$SSL_Male", "$SSL_Female"))
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoPlayerGender")
-	endEvent
-endState
-state TargetGender
-	event OnSelectST()
-		ActorLib.TreatAsGender(TargetRef, ActorLib.GetGender(TargetRef) % 2 == 0)
-		SetTextOptionValueST(SexLabUtil.StringIfElse(ActorLib.GetGender(TargetRef) % 2 == 0, "$SSL_Male", "$SSL_Female"))
-	endEvent
-	event OnDefaultST()
-		ActorLib.ClearForcedGender(TargetRef)
-		SetTextOptionValueST(SexLabUtil.StringIfElse(ActorLib.GetGender(TargetRef) % 2 == 0, "$SSL_Male", "$SSL_Female"))
 	endEvent
 endState
 state UseFade
@@ -3588,14 +3529,6 @@ state AllowCreatures
 	event OnSelectST()
 		Config.AllowCreatures = !Config.AllowCreatures
 		SetToggleOptionValueST(Config.AllowCreatures)
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		; Register creature animations if needed
-		if !Config.AllowCreatures && CreatureSlots.Slotted > 0
-			CreatureSlots.Setup()
-		elseIf Config.AllowCreatures && CreatureSlots.Slotted < 1
-			CreatureSlots.RegisterSlots()
-		endIf
-		SetOptionFlagsST(OPTION_FLAG_NONE)
 	endEvent
 	event OnDefaultST()
 		Config.AllowCreatures = false
@@ -3732,19 +3665,6 @@ state DisableScale
 		SetInfoText("$SSL_InfoDisableScale")
 	endEvent
 endState
-state RestrictAggressive
-	event OnSelectST()
-		Config.RestrictAggressive = !Config.RestrictAggressive
-		SetToggleOptionValueST(Config.RestrictAggressive)
-	endEvent
-	event OnDefaultST()
-		Config.RestrictAggressive = true
-		SetToggleOptionValueST(Config.RestrictAggressive)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoRestrictAggressive")
-	endEvent
-endState
 state RestrictSameSex
 	event OnSelectST()
 		Config.RestrictSameSex = !Config.RestrictSameSex
@@ -3772,19 +3692,7 @@ state UndressAnimation
 		SetInfoText("$SSL_InfoUndressAnimation")
 	endEvent
 endState
-state RagdollEnd
-	event OnSelectST()
-		Config.RagdollEnd = !Config.RagdollEnd
-		SetToggleOptionValueST(Config.RagdollEnd)
-	endEvent
-	event OnDefaultST()
-		Config.RagdollEnd = false
-		SetToggleOptionValueST(Config.RagdollEnd)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoRagdollEnd")
-	endEvent
-endState
+
 state StraponsFemale
 	event OnSelectST()
 		Config.UseStrapons = !Config.UseStrapons
@@ -3799,46 +3707,6 @@ state StraponsFemale
 	endEvent
 endState
 
-state FutaBehavior
-	event OnSelectST()
-		Config.iFutaBehavior = 1 - Config.iFutaBehavior
-		SetToggleOptionValueST(Config.iFutaBehavior)
-	endEvent
-	event OnDefaultST()
-		Config.iFutaBehavior = 0
-		SetToggleOptionValueST(Config.UseStrapons)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoFutaBehavior")
-	endEvent
-endState
-
-; state NudeSuitMales
-; 	event OnSelectST()
-; 		Config.UseMaleNudeSuit = !Config.UseMaleNudeSuit
-; 		SetToggleOptionValueST(Config.UseMaleNudeSuit)
-; 	endEvent
-; 	event OnDefaultST()
-; 		Config.UseMaleNudeSuit = false
-; 		SetToggleOptionValueST(Config.UseMaleNudeSuit)
-; 	endEvent
-; 	event OnHighlightST()
-; 		SetInfoText("$SSL_InfoMaleNudeSuit")
-; 	endEvent
-; endState
-; state NudeSuitFemales
-; 	event OnSelectST()
-; 		Config.UseFemaleNudeSuit = !Config.UseFemaleNudeSuit
-; 		SetToggleOptionValueST(Config.UseFemaleNudeSuit)
-; 	endEvent
-; 	event OnDefaultST()
-; 		Config.UseFemaleNudeSuit = false
-; 		SetToggleOptionValueST(Config.UseFemaleNudeSuit)
-; 	endEvent
-; 	event OnHighlightST()
-; 		SetInfoText("$SSL_InfoFemaleNudeSuit")
-; 	endEvent
-; endState
 
 string[] VoiceNames
 state PlayerVoice
@@ -4082,7 +3950,7 @@ state ResetAnimationRegistry
 		SetOptionFlagsST(OPTION_FLAG_DISABLED)
 		SetTextOptionValueST("$SSL_Resetting")		
 		ThreadSlots.StopAll()
-		AnimSlots.Setup()
+		; AnimSlots.Setup()
 		CreatureSlots.Setup()
 		ShowMessage("$SSL_RunRebuildAnimations", false)
 		Debug.Notification("$SSL_RunRebuildAnimations")
@@ -4160,13 +4028,13 @@ state CleanSystem
 	event OnSelectST()
 		if ShowMessage("$SSL_WarnCleanSystem")
 			ThreadSlots.StopAll()
-			ShowMessage("$SSL_RunCleanSystem", false)
-			Utility.Wait(0.1)
+			; ShowMessage("$SSL_RunCleanSystem", false)
+			; Utility.Wait(0.1)
 
 			; Setup & clean system
-			ResetAllQuests()
+			; ResetAllQuests()
 			SystemAlias.SetupSystem()
-			LoadDefaultSettings()
+			; LoadDefaultSettings()
 
 			ModEvent.Send(ModEvent.Create("SexLabReset"))
 			Config.CleanSystemFinish.Show()
@@ -4184,28 +4052,6 @@ state RebuildStraponList
 		ForcePageReset()
 	endEvent
 endState
-state ExportSettings
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnExportSettings")
-			Config.ExportSettings()
-			ShowMessage("$SSL_RunExportSettings", false)
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoExportSettings")
-	endEvent
-endState
-state ImportSettings
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnImportSettings")
-			Config.ImportSettings()
-			ShowMessage("$SSL_RunImportSettings", false)
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoImportSettings")
-	endEvent
-endState
 
 state NeverRegisterDisabled
 	event OnSelectST()
@@ -4218,7 +4064,7 @@ state NeverRegisterDisabled
 			CreatureSlots.SuppressDisabled()
 
 			ThreadSlots.StopAll()
-			AnimSlots.Setup()
+			; AnimSlots.Setup()
 			CreatureSlots.Setup()
 			ShowMessage("$SSL_RunRebuildAnimations", false)
 			Debug.Notification("$SSL_RunRebuildAnimations")
@@ -4238,7 +4084,7 @@ state ResetNeverRegisters
 		AnimSlots.ClearSuppressed()
 
 		ThreadSlots.StopAll()
-		AnimSlots.Setup()
+		; AnimSlots.Setup()
 		CreatureSlots.Setup()
 		ShowMessage("$SSL_RunRebuildAnimations", false)
 		Debug.Notification("$SSL_RunRebuildAnimations")
@@ -4312,56 +4158,145 @@ int function DoDisable(bool check)
 	return OPTION_FLAG_NONE
 endFunction
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
-;																																											;
-;									██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗									;
-;									██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝									;
-;									██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 									;
-;									██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  									;
-;									███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   									;
-;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
-;																																											;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
-
-float[] StageTimer
-float[] StageTimerLeadIn
-float[] StageTimerAggr
-
-function DEPRECATED()
-	string log = "SexLab DEPRECATED -- sslConfigMenu.psc -- A depreciated property/function has been invoked. The mod that called this function should be updated as soon as possible. If you are not the author of this mod, notify them of this error."
-	Debug.MessageBox(log)
-	Debug.TraceStack(log, 1)
-endFunction
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 int function AddItemToggles(Form[] Items, int ID, int Max)
-	DEPRECATED()
 endFunction
 
 Form[] function GetItems(Actor ActorRef, bool FullInventory = false)
-	DEPRECATED()
+	if FullInventory
+		return GetFullInventory(ActorRef)
+	else
+		return GetEquippedItems(ActorRef)
+	endIf
 endFunction
-
 Form[] function GetEquippedItems(Actor ActorRef)
-	DEPRECATED()
-endFunction
+	Form[] Output = new Form[34]
+	; Weapons
+	Form ItemRef
+	ItemRef = ActorRef.GetEquippedWeapon(false) ; Right Hand
+	if ItemRef && IsToggleable(ItemRef)
+		Output[33] = ItemRef
+	endIf
+	ItemRef = ActorRef.GetEquippedWeapon(true) ; Left Hand
+	if ItemRef && ItemRef != Output[33] && IsToggleable(ItemRef)
+		Output[32] = ItemRef
+	endIf
 
+	; Armor
+	int i
+	int Slot = 0x01
+	while i < 32
+		Form WornRef = ActorRef.GetWornForm(Slot)
+		if WornRef
+			if WornRef as ObjectReference
+				WornRef = (WornRef as ObjectReference).GetBaseObject()
+			endIf
+			if Output.Find(WornRef) == -1 && IsToggleable(WornRef)
+				Output[i] = WornRef
+			endIf
+		endIf
+		Slot *= 2
+		i    += 1
+	endWhile
+	return PapyrusUtil.ClearNone(Output)
+endFunction
 Form[] function GetFullInventory(Actor ActorRef)
-	DEPRECATED()
+	int[] Valid = new int[3]
+	Valid[0] = 26 ; kArmor
+	Valid[1] = 41 ; kWeapon 
+	Valid[2] = 53 ; kLeveledItem
+	;/ Valid[3] = 124 ; kOutfit
+	Valid[4] = 102 ; kARMA
+	Valid[5] = 120 ; kEquipSlot /;
+
+	Form[] Output = GetEquippedItems(ActorRef)
+	Form[] Items  = ActorRef.GetContainerForms()
+	int n = Output.Length
+	int i = Items.Length
+	Output = Utility.ResizeFormArray(Output, 126)
+	while i && n < 126
+		i -= 1
+		Form ItemRef = Items[i]
+		if ItemRef && Valid.Find(ItemRef.GetType()) != -1
+			if ItemRef as ObjectReference
+				ItemRef = (ItemRef as ObjectReference).GetBaseObject()
+			endIf
+			if Output.Find(ItemRef) == -1 && IsToggleable(ItemRef)
+				Output[n] = ItemRef
+				n += 1
+			endIf
+		endIf
+	endWhile
+	return PapyrusUtil.ClearNone(Output)
 endFunction
 
 bool function IsToggleable(Form ItemRef)
-	DEPRECATED()
+	return !SexLabUtil.HasKeywordSub(ItemRef, "NoStrip") && !SexLabUtil.HasKeywordSub(ItemRef, "AlwaysStrip")
 endFunction
 
 bool[] function GetStripping(int type)
-	DEPRECATED()
+	if ts == 1
+		if type == 1
+			return Config.StripLeadInFemale
+		else
+			return Config.StripLeadInMale
+		endIf
+	elseIf ts == 2
+		if type == 1
+			return Config.StripVictim
+		else
+			return Config.StripAggressor
+		endIf
+	else
+		if type == 1
+			return Config.StripFemale
+		else
+			return Config.StripMale
+		endIf
+	endIf
 endFunction
 
 float[] function GetTimers()
-	DEPRECATED()
+	if ts == 1
+		return Config.StageTimerLeadIn
+	elseIf ts == 2
+		return Config.StageTimerAggr
+	else
+		return Config.StageTimer
+	endIf
 endFunction
 
 ; Default Timer Values
 float[] function GetTimersDef()
-	DEPRECATED()
+	float[] ret = new float[5]
+	if ts == 1
+		ret[0] = 10.0
+		ret[1] = 10.0
+		ret[2] = 10.0
+		ret[3] = 8.0
+		ret[4] = 8.0
+	elseIf ts == 2
+		ret[0] = 20.0
+		ret[1] = 15.0
+		ret[2] = 10.0
+		ret[3] = 10.0
+		ret[4] = 4.0
+	else
+		ret[0] = 30.0
+		ret[1] = 20.0
+		ret[2] = 15.0
+		ret[3] = 15.0
+		ret[4] = 9.0
+	endIf
+	return ret
 endFunction
