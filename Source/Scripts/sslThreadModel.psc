@@ -422,7 +422,6 @@ State Making
   sslThreadController Function StartThreadUnchecked()
 		UnregisterForUpdate()
 		SendThreadEvent("AnimationStarting")
-		; ThreadHooks = Config.GetThreadHooks()	; TODO: Rewire this
 		RunHook(Config.HOOKID_STARTING)
 		If(_StartScene && Scenes.Find(_StartScene) == -1)
 			AddScene(_StartScene)
@@ -608,6 +607,7 @@ EndFunction
 	By this time, most Scene information is read only
 /;
 
+bool _SceneEndClimax	; If a (legacy) climax has been triggered
 float _StageTimer			; Additional past default time, to delay the completion of a stage
 float[] _CustomTimers	; Custom set of timers to use for this animation
 float[] Property Timers hidden
@@ -690,17 +690,14 @@ State Animating
 			Else
 				EndAnimation()
 			EndIf
-			If(!LeadIn && !DisableOrgasms)
-				; COMEBACK: Check the Orgasm behavior in use
-				SendThreadEvent("OrgasmEnd")
-			EndIF
 			return
 		ElseIf(!Leadin && !DisableOrgasms && SexLabRegistry.GetNodeType(_ActiveScene, newStage) == 2)
-			; End of animation orgasm
-
-			; COMEBACK: Check the Orgasm behavior in use
-			SendThreadEvent("OrgasmStart")
-			TriggerOrgasm()
+			If (sslSystemConfig.GetSettingInt("iClimaxType") == Config.CLIMAXTYPE_LEGACY)
+				; End of animation orgasm
+				SendThreadEvent("OrgasmStart")
+				_SceneEndClimax = true
+				TriggerOrgasm()
+			EndIf
 		EndIf
 		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
 		int i = 0
@@ -913,6 +910,11 @@ State Animating
 		EndAnimation()
 	EndFunction
 	Function EndAnimation(bool Quickly = false)
+		If(_SceneEndClimax)
+			; Legacy Climax triggers wen the final stage begins, thus the next stage switch will
+			; end the animation, invoking this function and ending the climax stage
+			SendThreadEvent("OrgasmEnd")
+		EndIF
 		GoToState(STATE_END)
 	EndFunction
 
