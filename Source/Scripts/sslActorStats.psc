@@ -913,57 +913,6 @@ function ClearCustomStats(Form FormRef)
 	endWhile
 endFunction
 
-function UpgradeLegacyStats(Form FormRef, bool IsImportant)
-	if !FormRef
-		return
-	elseIf !IsImportant
-		ClearLegacyStats(FormRef)
-		ClearCustomStats(FormRef)
-		Log(SexLabUtil.StringIfElse(SexLabUtil.IsActor(FormRef), (FormRef as Actor).GetLeveledActorBase().GetName(), "None"), "Skills Removed")
-	elseIf !IsSkilled(FormRef as Actor)
-		Actor ActorRef = FormRef as Actor
-		int i = FloatListCount(ActorRef, "SexLabSkills")
-		while i
-			i -= 1
-			_SetSkill(ActorRef, i, FloatListGet(ActorRef, "SexLabSkills", i))
-		endWhile
-		ClearLegacyStats(ActorRef)
-		sslSystemConfig.StoreActor(ActorRef)
-		Log("UpgradeLegacyStats: ", ActorRef.GetLeveledActorBase().GetName()+" - "+GetSkills(ActorRef))
-	endIf
-endFunction
-
-function ClearLegacyStats(Form FormRef)
-	; 1.59b & 1.59c
-	FloatListClear(FormRef, "SexLabSkills")
-	FormListRemove(none, "SexLab.SkilledActors", FormRef, true)
-	; < 1.59b
-	int i = SkillNames.Length
-	while i > 0
-		i -= 1
-		UnsetIntValue(FormRef, "sslActorStats."+SkillNames[i])
-		UnsetFloatValue(FormRef, "sslActorStats."+SkillNames[i])
-	endwhile
-	UnsetFloatValue(FormRef, "sslActorStats.Purity")
-endFunction
-
-;/ function CleanDeadStats()
-	int i = FormListCount(none, "SexLab.SkilledActors")
-	while i
-		i -= 1
-		if FormListGet(none, "SexLab.SkilledActors", i) != none
-			Actor ActorRef = FormListGet(none, "SexLab.SkilledActors", i) as Actor
-			if ActorRef && ActorRef != PlayerRef && ActorRef.IsDead()
-				ResetStats(ActorRef)
-				FormListRemove(none, "SexLab.SkilledActors", ActorRef)
-				; Log("Skills Removed", ActorRef.GetLeveledActorBase().GetName())
-			endIf
-		else
-			FormListRemoveAt(none, "SexLab.SkilledActors", i)
-		endIf
-	endWhile
-endFunction /;
-
 int function GetGender(Actor ActorRef)
 	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
 	if SexLabUtil.HasRace(BaseRef.GetRace())
@@ -1248,4 +1197,49 @@ state Testing
 	endFunction
 endState
 function Tester()
+endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+function UpgradeLegacyStats(Form FormRef, bool IsImportant)
+	if !FormRef
+		return
+	elseIf !IsImportant
+		ClearLegacyStats(FormRef)
+		ClearCustomStats(FormRef)
+		Log(SexLabUtil.StringIfElse(SexLabUtil.IsActor(FormRef), (FormRef as Actor).GetLeveledActorBase().GetName(), "None"), "Skills Removed")
+	elseIf !IsSkilled(FormRef as Actor)
+		Actor ActorRef = FormRef as Actor
+		int i = FloatListCount(ActorRef, "SexLabSkills")
+		while i
+			i -= 1
+			_SetSkill(ActorRef, i, FloatListGet(ActorRef, "SexLabSkills", i))
+		endWhile
+		ClearLegacyStats(ActorRef)
+		sslSystemConfig.StoreActor(ActorRef)
+		Log("UpgradeLegacyStats: ", ActorRef.GetLeveledActorBase().GetName()+" - "+GetSkills(ActorRef))
+	endIf
+endFunction
+
+function ClearLegacyStats(Form FormRef)
+	; 1.59b & 1.59c
+	FloatListClear(FormRef, "SexLabSkills")
+	FormListRemove(none, "SexLab.SkilledActors", FormRef, true)
+	; < 1.59b
+	int i = SkillNames.Length
+	while i > 0
+		i -= 1
+		UnsetIntValue(FormRef, "sslActorStats."+SkillNames[i])
+		UnsetFloatValue(FormRef, "sslActorStats."+SkillNames[i])
+	endwhile
+	UnsetFloatValue(FormRef, "sslActorStats.Purity")
 endFunction
