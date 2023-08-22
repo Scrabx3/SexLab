@@ -2762,7 +2762,7 @@ Function Log(string Log, string Type = "NOTICE")
   EndIf
 EndFunction
 
-state Disabled
+auto state Disabled
   sslThreadModel function NewThread(float TimeOut = 5.0)
     Log("NewThread() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
     return none

@@ -61,8 +61,17 @@ Event OnGameReload()
 EndEvent
 
 Event OnConfigInit()
-	Pages = new string[1]
-	Pages[0] = "Install"
+	Pages = new string[10]
+	Pages[0] = "$SSL_SexDiary"
+	Pages[1] = "$SSL_AnimationSettings"
+	Pages[2] = "$SSL_SoundSettings"
+	Pages[3] = "$SSL_PlayerHotkeys"
+	Pages[4] = "$SSL_TimersStripping"
+	Pages[5] = "$SSL_ToggleAnimations"
+	Pages[6] = "$SSL_AnimationEditor"
+	Pages[7] = "$SSL_ExpressionEditor"
+	Pages[8] = "$SSL_StripEditor"
+	Pages[9] = "$SSL_RebuildClean"
 
 	; Animation Settings
 	Chances = new string[3]
@@ -199,8 +208,7 @@ Event OnPageReset(string page)
 			RebuildClean()
 		endIf
 	else
-		if PlayerRef.IsInFaction(Config.AnimatingFaction) && (Config.GetThreadControlled() != none || ThreadSlots.FindActorController(PlayerRef) != -1)
-			UnloadCustomContent()
+		if (Config.GetThreadControlled() || ThreadSlots.FindActorController(PlayerRef) != -1)
 			AnimationEditor()
 			PreventOverwrite = true
 		else
@@ -223,23 +231,12 @@ endEvent
 ; ------------------------------------------------------- ;
 
 event OnConfigOpen()
-	If(SystemAlias.IsInstalled)
-		Pages = new string[10]
-		If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
-			Pages[0] = "$SSL_SexJournal"
-		Else
-			Pages[0] = "$SSL_SexDiary"
-		EndIf
-		Pages[1] = "$SSL_AnimationSettings"
-		Pages[2] = "$SSL_SoundSettings"
-		Pages[3] = "$SSL_PlayerHotkeys"
-		Pages[4] = "$SSL_TimersStripping"
-		Pages[5] = "$SSL_ToggleAnimations"
-		Pages[6] = "$SSL_AnimationEditor"
-		Pages[7] = "$SSL_ExpressionEditor"
-		Pages[8] = "$SSL_StripEditor"
-		Pages[9] = "$SSL_RebuildClean"		
+	If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
+		Pages[0] = "$SSL_SexJournal"
+	Else
+		Pages[0] = "$SSL_SexDiary"
 	EndIf
+
 	; Player & Target info
 	PlayerName = PlayerRef.GetLeveledActorBase().GetName()
 	TargetRef = Config.TargetRef
@@ -1029,7 +1026,7 @@ function AnimationSettings()
 	AddSliderOptionST("AutomaticSUCSM","$SSL_AutomaticSUCSM", Config.AutoSUCSM, "{0}")
 	AddMenuOptionST("SexSelect_0", "$SSL_PlayerGender", _Sexes[SexLabRegistry.GetSex(PlayerRef, false) % 3])
 	If (Config.TargetRef)
-		String name = TargetRef.GetLeveledActorBase().GetName()
+		String name = Config.TargetRef.GetLeveledActorBase().GetName()
 		AddMenuOptionST("SexSelect_1", "$SSL_{" + name + "}sGender", _Sexes[SexLabRegistry.GetSex(Config.TargetRef, false) % 3])
 	Else
 		AddTextOption("$SSL_NoTarget", "$SSL_Male", OPTION_FLAG_DISABLED)

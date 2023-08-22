@@ -489,7 +489,7 @@ State Making_M
 			Else
 				AutoAdvance = Config.AutoAdvance
 				; Inheritance is kinda backwards
-				(Self as sslThreadController).EnableHotkeys()
+				Config.GetThreadControl(self as sslThreadController)
 			EndIf
 		ElseIf (Config.ShowInMap && PlayerRef.GetDistance(CenterRef) > 750)
 			SetObjectiveDisplayed(0, True)
@@ -1003,8 +1003,7 @@ String Function PlaceAndPlay(Actor[] akPositions, float[] afCoordinates, String 
 State Ending
 	Event OnBeginState()
 		RegisterForSingleUpdateGameTime(0.1)	; 18s with TimeScale = 20
-		DisableHotkeys()
-		; Config.DisableThreadControl(self as sslThreadController)	; TODO: this should be moved to sslThreadController
+		Config.DisableThreadControl(self as sslThreadController)
 		If(IsObjectiveDisplayed(0))
 			SetObjectiveDisplayed(0, False)
 		EndIf
@@ -1092,11 +1091,6 @@ Function PrepareDone()
 	Log("Invalid state", "PrepareDone()")
 EndFunction
 
-; The following functions are implemented by sslThreadController.psc
-Function DisableHotkeys()
-	Log("Invalid function call", "DisableHotkeys()")
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Actor Alias                                     --- ;
 ; ------------------------------------------------------- ;
@@ -1179,16 +1173,12 @@ Function SetTID(int id)
 		ActorAlias[i].Setup()
 		i += 1
 	EndWhile
-	; Config = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
-	; DoNothingPackage = Game.GetFormFromFile(0xE50E, "SexLab.esm") as Package
-	; InvalidCenterMsg = Game.GetFormFromFile(0xAA6A6, "SexLab.esm") as Message
 	Initialize()
 EndFunction
 
 ; Reset this thread to base status
 Function Initialize()
 	UnregisterForUpdate()
-	DisableHotkeys()
 	Config.DisableThreadControl(self as sslThreadController)
 	int i = 0
 	While(i < ActorAlias.Length)
@@ -1804,7 +1794,7 @@ Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, fl
 	CenterOnObject(new_center, resync)
 EndFunction
 
-; COMEBACK: This is used in the MoveScene function (child script). Idk if theres any point or nah
+; NOTE: This is used in the MoveScene function (child script). Idk if theres any point or nah
 int Function AreUsingFurniture(Actor[] ActorList)	
 	int i = 0
 	While(i < ActorList.Length)

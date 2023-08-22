@@ -31,8 +31,16 @@ sslThreadSlots property ThreadSlots auto
 sslVoiceSlots property VoiceSlots auto
 sslExpressionSlots property ExpressionSlots auto
 
-String Property STATUS_READY = "Ready" AutoReadOnly
-String Property STATUS_IDLE = "" AutoReadOnly
+int Property STATUS_IDLE = 0 AutoReadOnly
+int Property STATUS_INSTALLING = 1 AutoReadOnly
+int Property STATUS_READY = 2 AutoReadOnly
+int _InstallStatus
+
+bool property IsInstalled hidden
+	bool function get()
+		return _InstallStatus == STATUS_READY
+	endFunction
+endProperty
 
 ; Version the mod has been initialized with
 int Version
@@ -40,11 +48,6 @@ int Version
 ; COMEBACK: May eventually want to make these properties redundant as well
 ; Currently being held back by the Stats system/actor cleanup being papyurs based
 bool ForcedOnce = false
-bool property IsInstalled hidden
-	bool function get()
-		return GetState() == STATUS_READY
-	endFunction
-endProperty
 bool property PreloadDone auto hidden
 
 ; ------------------------------------------------------- ;
@@ -83,7 +86,7 @@ endEvent
 
 ; Check if we should force install system, because user hasn't done it manually yet for some reason. Or it failed somehow.
 event OnUpdate()
-	if !IsInstalled && !ForcedOnce && GetState() == STATUS_IDLE
+	if !IsInstalled && !ForcedOnce && _InstallStatus == STATUS_IDLE
 		Quest UnboundQ = Quest.GetQuest("MQ101")
 		if !UnboundQ.GetStageDone(250) && UnboundQ.GetStage() > 0
 			; Wait until the end of the opening quest(cart scene) to prevent issues related with the First Person Camera
@@ -101,10 +104,10 @@ endEvent
 ; ------------------------------------------------------- ;
 
 bool function SetupSystem()
-	Version = SexLabUtil.GetVersion()
+	_InstallStatus = STATUS_INSTALLING
 	LoadLibs()
 	SexLab.GoToState("Disabled")
-	GoToState("Installing")
+	Version = SexLabUtil.GetVersion()
 
 	; Framework
 	SexLab.Setup()
@@ -121,8 +124,8 @@ bool function SetupSystem()
 	ThreadSlots.Setup()
 
 	; Finish setup
-	GoToState(STATUS_READY)
 	SexLab.GoToState("Enabled")
+	_InstallStatus = STATUS_READY
 	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Ready!")
 	; Clean storage lists	(Async)
 	CleanActorStorage()
@@ -204,7 +207,7 @@ state PreloadStorage
 		RegisterForSingleUpdate(0.1)
 	endEvent
 	event OnUpdate()
-		GoToState(STATUS_READY)
+		GoToState("")
 		if PreloadDone
 			return
 		endIf
