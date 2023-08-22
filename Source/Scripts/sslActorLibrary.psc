@@ -280,7 +280,7 @@ endFunction
 
 Faction property GenderFaction auto
 
-int[] Function GetSexAll(Actor[] akPositions)
+int[] Function GetSexAll(Actor[] akPositions) global
 	int[] ret = Utility.CreateIntArray(akPositions.Length)
 	int i = 0
 	While (i < akPositions.Length)

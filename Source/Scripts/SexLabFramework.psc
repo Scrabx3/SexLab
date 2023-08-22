@@ -238,7 +238,7 @@ int Function GetSex(Actor akActor)
   return SexlabRegistry.GetSex(akActor, false)
 EndFunction
 int[] Function GetSexAll(Actor[] akPositions)
-  return ActorLib.GetSexAll(akPositions)
+  return sslActorLibrary.GetSexAll(akPositions)
 EndFunction
 
 ; Force an actor to be considered male, female or futa by SexLab

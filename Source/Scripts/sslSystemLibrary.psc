@@ -4,10 +4,6 @@ scriptname sslSystemLibrary extends Quest hidden
 	With SLp+ 2.0 majority of SLs library functionanility is global, making most of this script unused
 }
 
-; TODO: Lay out which parts here exactly are unused
-; While I assume majority of no longer being necessary, until all scripts inheriting this one have been
-; refractured I can only guess how much of this script is truly unused
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
@@ -23,14 +19,11 @@ scriptname sslSystemLibrary extends Quest hidden
 sslSystemConfig property Config auto
 
 ; Function libraries
-sslActorLibrary property ActorLib auto
-sslThreadLibrary property ThreadLib auto
+; COMEBACK: This will likely be legacy once the Stats system has been overhauled
 sslActorStats property Stats auto
 
 ; Object registeries
 sslThreadSlots property ThreadSlots auto
-sslAnimationSlots property AnimSlots auto
-sslCreatureAnimationSlots property CreatureSlots auto
 sslVoiceSlots property VoiceSlots auto
 sslExpressionSlots property ExpressionSlots auto
 
@@ -47,16 +40,10 @@ Actor property PlayerRef auto
 function LoadLibs(bool Forced = false)
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	Config = SexLabQuestFramework as sslSystemConfig
-	ThreadLib = SexLabQuestFramework as sslThreadLibrary
 	ThreadSlots = SexLabQuestFramework as sslThreadSlots
-	ActorLib = SexLabQuestFramework as sslActorLibrary
 	Stats = SexLabQuestFramework as sslActorStats
 
-	Form SexLabQuestAnimations = Game.GetFormFromFile(0x639DF, "SexLab.esm")
-	AnimSlots = SexLabQuestAnimations as sslAnimationSlots
-
 	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-	CreatureSlots = SexLabQuestRegistry as sslCreatureAnimationSlots
 	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
 	VoiceSlots = SexLabQuestRegistry as sslVoiceSlots
 
@@ -106,6 +93,27 @@ EndFunction
 ;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslActorLibrary Property ActorLib hidden
+	sslActorLibrary Function Get()
+			return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary
+	EndFunction
+EndProperty
+sslThreadLibrary property ThreadLib hidden
+	sslThreadLibrary Function Get()
+		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslThreadLibrary
+	EndFunction
+EndProperty
+sslAnimationSlots property AnimSlots hidden
+	sslAnimationSlots Function Get()
+		return Game.GetFormFromFile(0x639DF, "SexLab.esm") as sslAnimationSlots
+	EndFunction
+EndProperty
+sslCreatureAnimationSlots property CreatureSlots hidden
+	sslCreatureAnimationSlots Function Get()
+		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationSlots
+	EndFunction
+EndProperty
 
 bool property InDebugMode auto hidden
 event SetDebugMode(bool ToMode)

@@ -92,25 +92,30 @@ EndFunction
 /;
 
 Actor[] Function SortActors(Actor[] Positions, bool FemaleFirst = true)
-  int[] genders = ActorLib.GetGendersAll(Positions)
+  int[] sexes = sslActorLibrary.GetSexAll(Positions)
   int i = 1
   While(i < Positions.Length)
     Actor it = Positions[i]
-    int _it = genders[i]
+    int _it = sexes[i]
     int n = i - 1
-    While(n >= 0 && !IsLesserGender(genders[n], _it, FemaleFirst))
+    While(n >= 0 && !IsLesserGender(sexes[n], _it, FemaleFirst))
       Positions[n + 1] = Positions[n]
-      genders[n + 1] = genders[n]
+      sexes[n + 1] = sexes[n]
       n -= 1
     EndWhile
     Positions[n + 1] = it
-    genders[n + 1] = _it
+    sexes[n + 1] = _it
     i += 1
   EndWhile
   return Positions
 EndFunction
 bool Function IsLesserGender(int i, int n, bool abFemaleFirst)
-  return n != i && (i == (abFemaleFirst as int) || i == 3 && n == 2 || i < n)
+  If (n == i)
+    return false
+  ElseIf (n == 0 && !abFemaleFirst)
+    return true
+  EndIf
+  return i < n
 EndFunction
 
 Actor[] Function SortActorsByAnimationImpl(String asSceneID, Actor[] akPositions, Actor[] akVictims) native
