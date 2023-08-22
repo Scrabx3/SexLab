@@ -909,9 +909,9 @@ Endfunction
 ; ------------------------------------------------------- ;
 
 SexLabThreadHook[] _Hooks
-int Property HOOKID_STARTING     = 0 AutoReadOnly
-int Property HOOKID_STAGESTART   = 1 AutoReadOnly
-int Property HOOKID_STAGEEND     = 2 AutoReadOnly
+int Property HOOKID_STARTING    = 0 AutoReadOnly
+int Property HOOKID_STAGESTART  = 1 AutoReadOnly
+int Property HOOKID_STAGEEND    = 2 AutoReadOnly
 int Property HOOKID_END         = 3 AutoReadOnly
 
 bool Function AddHook(SexLabThreadHook akHook)
@@ -1177,33 +1177,6 @@ function Reload()
   RegisterForKey(TargetActor)
   RegisterForKey(EndAnimation)
 
-	; TODO: Fade settings will need an overhaul, and likely have these removed in the process
-  if !FadeToBlackHoldImod || FadeToBlackHoldImod == none
-    FadeToBlackHoldImod = Game.GetFormFromFile(0xF756E, "Skyrim.esm") as ImageSpaceModifier ;0xF756D **0xF756E 0x10100C** 0xF756F 0xFDC57 0xFDC58 0x 0x 0x
-  endIf
-  if !FadeToBlurHoldImod || FadeToBlurHoldImod == none
-    FadeToBlurHoldImod = Game.GetFormFromFile(0x44F3B, "Skyrim.esm") as ImageSpaceModifier ;0x201D3 0x44F3B **0xFD809 0x1037E2 0x1037E3 0x1037E4 0x1037E5 0x1037E6** 0x
-  endIf
-  if !ForceBlackVFX || ForceBlackVFX == none
-    ForceBlackVFX = Game.GetFormFromFile(0x8FC39, "SexLab.esm") as VisualEffect ;0x44F3A 
-  endIf
-  if !ForceBlurVFX || ForceBlurVFX == none
-    ForceBlurVFX = Game.GetFormFromFile(0x8FC3A, "SexLab.esm") as VisualEffect ;0x101967
-  endIf
-
-	; COMEBACK: This is a cot (yes), which wont be recognized by the default funcs
-	; Requires special identification
-  Form CivilWarCot01L = Game.GetFormFromFile(0xE2826, "Skyrim.esm")
-  if CivilWarCot01L && !BedsList.HasForm(CivilWarCot01L)
-    BedsList.AddForm(CivilWarCot01L)
-  endIf
-	; COMEBACK: THis here also isnt recognized by default funcs but behaves as a common bed
-  Form WRTempleHealingAltar01 = Game.GetFormFromFile(0xD4848, "Skyrim.esm")
-  if WRTempleHealingAltar01 && !BedsList.HasForm(WRTempleHealingAltar01)
-    BedsList.AddForm(WRTempleHealingAltar01)
-    SetCustomBedOffset(WRTempleHealingAltar01, 0.0, 0.0, 39.0, 90.0)
-  endIf
-
   ; Remove any NPC thread control player has
   DisableThreadControl(_ActiveControl)
 endFunction
@@ -1424,88 +1397,38 @@ function ImportVoices()
   VoiceSlots.ForgetVoice(PlayerRef)
   VoiceSlots.SaveVoice(PlayerRef, VoiceSlots.GetByName(JsonUtil.GetStringValue(File, "PlayerVoice", "$SSL_Random")))
 endFunction
+; ------------------------------------------------------- ;
+; --- Config Properties                               --- ;
+; ------------------------------------------------------- ;
+
+; Both shaders are [RampUp: 0.35s, Hold: 0.65s, RampDown: 0.4s]
+ImageSpaceModifier Property FadeToBlackAndBackImod Auto
+ImageSpaceModifier Property BlurAndBackImod Auto
+
+function ApplyFade(bool forceTest = false)
+  int imod = GetSettingInt("iUseFade")
+  If (imod == 0)      ; No fade
+    return
+  ElseIf (imod == 1)  ; Fade Black
+    FadeToBlackAndBackImod.Apply()
+  ElseIf (imod == 2)  ; Blur
+    BlurAndBackImod.Apply()
+  EndIf
+  Utility.Wait(0.37)
+endFunction
+
+function RemoveFade(bool forceTest = false)
+  FadeToBlackAndBackImod.Remove()
+  BlurAndBackImod.Remove()
+endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Misc                                            --- ;
 ; ------------------------------------------------------- ;
 
-; int[] property ActorTypes auto hidden
 function StoreActor(Form FormRef) global
   if FormRef
     StorageUtil.FormListAdd(none, "SexLab.ActorStorage", FormRef, false)
-  endIf
-endFunction
-
-ImageSpaceModifier FadeEffect
-VisualEffect ForceVFX
-VisualEffect ForceBlackVFX
-VisualEffect ForceBlurVFX
-ImageSpaceModifier FadeToBlackHoldImod
-ImageSpaceModifier FadeToBlurHoldImod
-function RemoveFade(bool forceTest = false)
-  if !forceTest && UseFade < 1
-    return
-  endIf
-  if FadeEffect && FadeEffect != none
-    bool Black = UseFade % 2 != 0
-    If UseFade < 3
-      if forceTest
-        Utility.WaitMenuMode(5.0)
-        if ForceVFX
-          ForceVFX.Stop(PlayerRef)
-        endIf
-        FadeEffect.Remove()
-      else
-        if ForceVFX
-          ForceVFX.Stop(PlayerRef)
-        endIf
-        ImageSpaceModifier.RemoveCrossFade()
-      endIf
-    else
-      Game.FadeOutGame(false, Black, 0.5, 1.5)
-    endIf
-    FadeEffect = none
-  endIf
-endFunction
-
-function ApplyFade(bool forceTest = false)
-  if !forceTest && UseFade < 1
-    return
-  endIf
-  if FadeEffect && FadeEffect != none
-    FadeEffect.Remove()
-  endIf
-  FadeEffect = none
-  bool Black
-  if UseFade % 2 != 0
-    if FadeToBlackHoldImod && FadeToBlackHoldImod != none
-      FadeEffect = FadeToBlackHoldImod
-      Black = True
-    endIf
-  else
-    if FadeToBlurHoldImod && FadeToBlurHoldImod != none
-      FadeEffect = FadeToBlurHoldImod
-      Black = False
-    endIf
-  endIf
-  if FadeEffect && FadeEffect != none
-    If UseFade < 3
-      if forceTest
-        FadeEffect.Apply()
-      else
-        FadeEffect.ApplyCrossFade()
-      endIf
-      if Black && ForceBlackVFX
-        ForceVFX = ForceBlackVFX
-      elseIf !Black && ForceBlurVFX
-        ForceVFX = ForceBlurVFX
-      endIf
-      if ForceVFX
-        ForceVFX.Play(PlayerRef)
-      endIf
-    else
-      Game.FadeOutGame(true, Black, 0.5, 3.0)
-    endIf
   endIf
 endFunction
 
@@ -1656,7 +1579,6 @@ bool property RaceAdjustments = false auto hidden    ; this and v is used for Ac
 bool property ScaleActors = false auto hidden
 int property AnimProfile = 1 auto hidden
 
-; TODO: This has special behavior to return "OrgasmBehavior == EXTERN"
 bool property SeparateOrgasms Hidden
   bool Function Get()
     return GetSettingInt("iClimaxType") == CLIMAXTYPE_EXTERN
@@ -1776,6 +1698,7 @@ endFunction
 ; ------------------------------------------------------- ;
 ; --- Pre P2.0 Config Accessors                       --- ;
 ; ------------------------------------------------------- ;
+
 bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
   int[] ret = GetStripSettings(IsFemale, IsLeadIn, IsAggressive, IsVictim)
   return sslUtility.BitsToBool(ret[0], ret[1])

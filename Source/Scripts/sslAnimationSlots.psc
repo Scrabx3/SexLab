@@ -15,11 +15,13 @@ scriptname sslAnimationSlots extends Quest
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-int Function GetAllocatedSize() native
+; OnlyCrt: 0 - Only non creature, 1 - Only creatures, else: either
+String[] Function CreateProxyArray(int aiReturnSize, int aiOnlyCreatures) native global
 
+String[] _proxyid
 int property Slotted Hidden
   int Function Get()
-    return GetAllocatedSize()
+    return _proxyid.Length
   EndFunction
   Function Set(int aSet)
   EndFunction
@@ -58,9 +60,9 @@ EndProperty
 ; --- Animation Filtering                             --- ;
 ; ------------------------------------------------------- ;
 
-ReferenceAlias[] Function GetByTagsImpl(int aiActorCount, String[] asTags) native
-ReferenceAlias[] Function GetByTypeImpl(int aiActorCount, int aiMales, int aiFemales, String[] asTags) native
-ReferenceAlias[] Function PickByActorsImpl(Actor[] akActors, String[] asTags) native
+String[] Function GetByTagsImpl(int aiActorCount, String[] asTags) native
+String[] Function GetByTypeImpl(int aiActorCount, int aiMales, int aiFemales, String[] asTags) native
+String[] Function PickByActorsImpl(Actor[] akActors, String[] asTags) native
 
 String[] Function MergeSplitTags(String asTags, String asTagsSuppress, bool abRequireAll)
   String[] ret1 = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTags, ","))
@@ -89,11 +91,14 @@ String[] Function MergeSplitTags(String asTags, String asTagsSuppress, bool abRe
   EndIf
 EndFunction
 
-sslBaseAnimation[] Function AsBaseAnimation(ReferenceAlias[] akReferences)
-  sslBaseAnimation[] ret = sslUtility.AnimationArray(akReferences.Length)
+sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
+  sslBaseAnimation[] ret = sslUtility.AnimationArray(asSceneIDs.Length)
   int i = 0
   While (i < ret.Length)
-    ret[i] = akReferences[i] as sslBaseAnimation
+    int where = _proxyid.Find(asSceneIDs[i])
+    If (where > -1)
+      ret[i] = GetNthAlias(i) as sslBaseAnimation
+    EndIf
     i += 1
   EndWhile
   return ret
@@ -259,7 +264,7 @@ sslBaseAnimation[] function GetList(bool[] Valid)
       endWhile
     endIf
     ; Get list
-    int allocated = GetAllocatedSize()
+    int allocated = Slotted
     Output = sslUtility.AnimationArray(i)
     while n != -1 && i > 0
       i -= 1
@@ -309,10 +314,10 @@ endFunction
 
 int function GetCount(bool IgnoreDisabled = true)
   if !IgnoreDisabled
-    return GetAllocatedSize()
+    return Slotted
   endIf
   int Count
-  int i = GetAllocatedSize()
+  int i = Slotted
   while i
     i -= 1
     Count += ((GetBySlot(i) && GetBySlot(i).Enabled) as int)
@@ -328,9 +333,9 @@ int function FindFirstTagged(string Tags, bool IgnoreDisabled = true, bool Rever
   int count
   int i = 0
   if !Reverse 
-    i = GetAllocatedSize()
+    i = Slotted
   endIf
-  while (i && !Reverse) || (Reverse && i < GetAllocatedSize())
+  while (i && !Reverse) || (Reverse && i < Slotted)
     if !Reverse 
       i -= 1
     endIf
@@ -353,7 +358,7 @@ int function CountTagUsage(string Tags, bool IgnoreDisabled = true)
     return 0
   endIf
   int count
-  int i = GetAllocatedSize()
+  int i = Slotted
   while i
     i -= 1
     sslBaseAnimation tmp = GetBySlot(i)
@@ -367,7 +372,7 @@ endfunction
 string[] function GetAllTags(int ActorCount = -1, bool IgnoreDisabled = true)
   IgnoreDisabled = !IgnoreDisabled
   string[] Output
-  int i = GetAllocatedSize()
+  int i = Slotted
   while i
     i -= 1
     sslBaseAnimation tmp = GetBySlot(i)
@@ -420,7 +425,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 int function PageCount(int perpage = 125)
-  return ((GetAllocatedSize() as float / perpage as float) as int) + 1
+  return ((Slotted as float / perpage as float) as int) + 1
 endFunction
 
 int function FindPage(string Registrar, int perpage = 125)
@@ -443,8 +448,8 @@ sslBaseAnimation[] function GetSlots(int page = 1, int perpage = 125)
   int n
   sslBaseAnimation[] PageSlots
   if page == PageCount(perpage)
-    n = GetAllocatedSize()
-    PageSlots = sslUtility.AnimationArray((GetAllocatedSize() - ((page - 1) * perpage)))
+    n = Slotted
+    PageSlots = sslUtility.AnimationArray((Slotted - ((page - 1) * perpage)))
   else
     n = page * perpage
     PageSlots = sslUtility.AnimationArray(perpage)
@@ -517,7 +522,26 @@ string property JLoaders Hidden
   EndFunction
 EndProperty
 
+Event OnInit()
+  ; This is NOT connected to the rest of the framework
+  ; Will be explicitely called when resetting the animation registry
+  Setup()
+EndEvent
+
+int Function GetCrtSpecifier()
+  return 0
+EndFunction
 function Setup()
+  Alias[] aliases = GetAliases()
+  _proxyid = CreateProxyArray(aliases.Length, GetCrtSpecifier())
+  int i = 0
+  While (i < _proxyid.Length)
+    sslBaseAnimation anim = aliases[i] as sslBaseAnimation
+    If (anim)
+      anim.PROXY_ID = i
+    EndIf
+    i += 1
+  EndWhile
 endFunction
 
 string property CacheID Hidden

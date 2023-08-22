@@ -84,12 +84,10 @@ Event OnConfigInit()
 	BedOpt[1] = "$SSL_Always"
 	BedOpt[2] = "$SSL_NotVictim"
 
-	FadeOpt = new string[5]
-	FadeOpt[0] = "$SSL_Never"
-	FadeOpt[1] = "$SSL_UseBlack"
-	FadeOpt[2] = "$SSL_UseBlur"
-	FadeOpt[3] = "$SSL_SolidBlack"
-	FadeOpt[4] = "$SSL_SolidWhite"
+	_FadeOpt = new string[3]
+	_FadeOpt[0] = "$SSL_Never"
+	_FadeOpt[1] = "$SSL_UseBlack"
+	_FadeOpt[2] = "$SSL_UseBlur"
 
 	_ClimaxTypes = new String[3]
 	_ClimaxTypes[0] = "$SSL_Climax_0"	; Default
@@ -321,6 +319,8 @@ Event OnHighlightST()
 		SetInfoText("$SSL_ClimaxInfo")
 	ElseIf (Options[0] == "SexSelect")
 		SetInfoText("$SSL_InfoPlayerGender")
+	ElseIf (Options[0] == "UseFade")
+		SetInfoText("$SSL_UseFadeInfo")
 
 	; Animation Toggle
 	Elseif Options[0] == "Animation"
@@ -553,7 +553,7 @@ EndEvent
 
 Event OnMenuOpenST()
 	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
-	If (s[0] == "ClimaxType")				; Animation Settings
+	If (s[0] == "ClimaxType")				; General Animation Settings
 		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iClimaxType"))
 		SetMenuDialogDefaultIndex(0)
 		SetMenuDialogOptions(_ClimaxTypes)
@@ -575,6 +575,10 @@ Event OnMenuOpenST()
 		SetMenuDialogStartIndex(sex % 3)
 		SetMenuDialogDefaultIndex(sex % 3)
 		SetMenuDialogOptions(options)
+	ElseIf (s[0] == "UseFade")
+		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iUseFade"))
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_FadeOpt)
 
 	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
 		string[] LipsPhonemes = new String[1]
@@ -601,6 +605,13 @@ Event OnMenuAcceptST(int aiIndex)
 			ActorLib.TreatAsSex(Config.TargetRef, aiIndex)
 		EndIf
 		SetMenuOptionValueST(_Sexes[aiIndex])
+	ElseIf (s[0] == "UseFade")
+		If (aiIndex < 0)
+			return
+		EndIf
+		sslSystemConfig.SetSettingInt("iUseFade", aiIndex)
+		SetMenuOptionValueST(_FadeOpt[aiIndex])
+
 
 	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
 		If (aiIndex == 0)
@@ -1013,7 +1024,7 @@ endFunction
 
 string[] Chances
 string[] BedOpt
-string[] FadeOpt
+string[] _FadeOpt
 String[] _ClimaxTypes
 String[] _Sexes
 
@@ -1051,7 +1062,7 @@ function AnimationSettings()
 	AddToggleOptionST("UseCreatureGender","$SSL_UseCreatureGender", Config.UseCreatureGender)
 	AddHeaderOption("$SSL_AnimationHandling")
 	; AddToggleOptionST("RaceAdjustments","$SSL_RaceAdjustments", Config.RaceAdjustments)
-	AddMenuOptionST("UseFade","$SSL_UseFade", FadeOpt[ClampInt(Config.UseFade, 0, 4)])
+	AddMenuOptionST("UseFade","$SSL_UseFade", _FadeOpt[sslSystemConfig.GetSettingInt("iUseFade")])
 	AddToggleOptionST("DisableScale","$SSL_DisableScale", Config.DisableScale)
 	; AddToggleOptionST("SeedNPCStats","$SSL_SeedNPCStats", Config.SeedNPCStats)
 	; AddToggleOptionST("ScaleActors","$SSL_EvenActorsHeight", Config.ScaleActors, SexLabUtil.IntIfElse(Config.DisableScale, OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
@@ -3293,34 +3304,6 @@ state AutomaticSUCSM
 		SetInfoText("$SSL_InfoAutomaticSUCSM")
 	endEvent
 endState
-state UseFade
-	event OnMenuOpenST()
-		SetMenuDialogStartIndex(Config.UseFade)
-		SetMenuDialogDefaultIndex(2)
-		SetMenuDialogOptions(FadeOpt)
-	endEvent
-	event OnMenuAcceptST(int i)
-		if i < 0
-			i = Config.UseFade
-		endIf
-		Config.UseFade = i
-		SetMenuOptionValueST(FadeOpt[Config.UseFade])
-		if Config.UseFade > 0
-			if ShowMessage("$SSL_UseFadeTest", true, "$Yes", "$No")
-				Utility.Wait(0.1)
-				Config.ApplyFade(true)
-				Config.RemoveFade(true)
-			endIf
-		endIf
-	endEvent
-	event OnDefaultST()
-		Config.UseFade = 2
-		SetMenuOptionValueST(FadeOpt[Config.UseFade])
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_UseFadeInfo")
-	endEvent
-endState
 state UseExpressions
 	event OnSelectST()
 		Config.UseExpressions = !Config.UseExpressions
@@ -3935,7 +3918,7 @@ state ResetAnimationRegistry
 		SetOptionFlagsST(OPTION_FLAG_DISABLED)
 		SetTextOptionValueST("$SSL_Resetting")		
 		ThreadSlots.StopAll()
-		; AnimSlots.Setup()
+		AnimSlots.Setup()
 		CreatureSlots.Setup()
 		ShowMessage("$SSL_RunRebuildAnimations", false)
 		Debug.Notification("$SSL_RunRebuildAnimations")
@@ -4013,11 +3996,6 @@ state CleanSystem
 	event OnSelectST()
 		if ShowMessage("$SSL_WarnCleanSystem")
 			ThreadSlots.StopAll()
-			; ShowMessage("$SSL_RunCleanSystem", false)
-			; Utility.Wait(0.1)
-
-			; Setup & clean system
-			; ResetAllQuests()
 			SystemAlias.SetupSystem()
 
 			ModEvent.Send(ModEvent.Create("SexLabReset"))
@@ -4036,53 +4014,6 @@ state RebuildStraponList
 		ForcePageReset()
 	endEvent
 endState
-
-state NeverRegisterDisabled
-	event OnSelectST()
-		if ShowMessage("$SSL_MessageNeverRegisterDisabled{"+AnimSlots.GetDisabledCount()+"}")
-
-			SetOptionFlagsST(OPTION_FLAG_DISABLED)
-			SetTextOptionValueST("$SSL_Resetting")		
-
-			AnimSlots.SuppressDisabled()
-			CreatureSlots.SuppressDisabled()
-
-			ThreadSlots.StopAll()
-			; AnimSlots.Setup()
-			CreatureSlots.Setup()
-			ShowMessage("$SSL_RunRebuildAnimations", false)
-			Debug.Notification("$SSL_RunRebuildAnimations")
-			SetTextOptionValueST("$SSL_ClickHere")
-			SetOptionFlagsST(OPTION_FLAG_NONE)
-		
-			ForcePageReset()
-		endIf
-	endEvent
-endState
-
-state ResetNeverRegisters
-	event OnSelectST()
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("$SSL_Resetting")		
-
-		AnimSlots.ClearSuppressed()
-
-		ThreadSlots.StopAll()
-		; AnimSlots.Setup()
-		CreatureSlots.Setup()
-		ShowMessage("$SSL_RunRebuildAnimations", false)
-		Debug.Notification("$SSL_RunRebuildAnimations")
-		SetTextOptionValueST("$SSL_ClickHere")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
-
-		ForcePageReset()
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoResetNeverRegisters{"+AnimSlots.GetSuppressedCount()+"}_{"+PapyrusUtil.StringJoin(AnimSlots.GetSuppressedList(), ", ")+"}")
-	endEvent
-endState
-
-
 
 
 ; ------------------------------------------------------- ;

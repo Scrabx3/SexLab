@@ -37,9 +37,9 @@ Race[] function GetAllRaces(string RaceKey) global native
 ; --- Lookup creature aniamtions                      --- ;
 ; ------------------------------------------------------- ;
 
-ReferenceAlias[] Function GetByRaceKeyTagsImpl(int aiActorCount, String asRaceKey, String[] asTags) native
-ReferenceAlias[] Function GetByCreatureActorsTagsImpl(int aiActorCount, Actor[] akCreatures, String[] asTags) native
-ReferenceAlias[] Function GetByRaceGendersTagsImpl(int aiActorCount, String asRaceKey, int aiMaleCrt, int aiFemaleCrt, String[] asTags) native
+String[] Function GetByRaceKeyTagsImpl(int aiActorCount, String asRaceKey, String[] asTags) native
+String[] Function GetByCreatureActorsTagsImpl(int aiActorCount, Actor[] akCreatures, String[] asTags) native
+String[] Function GetByRaceGendersTagsImpl(int aiActorCount, String asRaceKey, int aiMaleCrt, int aiFemaleCrt, String[] asTags) native
 
 sslBaseAnimation[] function GetByRace(int ActorCount, Race RaceRef)
   return GetByRaceTags(ActorCount, RaceRef, "")
@@ -178,6 +178,9 @@ endFunction
 ; --- System Use Only                                 --- ;
 ; ------------------------------------------------------- ;
 
+int Function GetCrtSpecifier()
+  return 1
+EndFunction
 function Setup()
   parent.Setup()
 endfunction
