@@ -1,11 +1,6 @@
 scriptname sslCreatureAnimationDefaults extends sslAnimationFactory
 
-sslSystemConfig Property config Auto
-
 function LoadCreatureAnimations()
-	If(!config.bInstallDefaultsCrt)
-		return
-	EndIf
 	PrepareFactoryCreatures()
 	if Game.GetCameraState() == 0
 		if Utility.IsInMenuMode()
