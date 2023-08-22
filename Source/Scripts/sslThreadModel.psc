@@ -458,9 +458,11 @@ State Making_M
 	Event OnBeginState()
 		; Send event to all local aliases and have them prepare asynch. Also finidh remaining (private) setup tasks here
 		_prepareAsyncCount = 0
-		; TODO: Change to HasPlayer && Config.FadeoutMode ---------v
-		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid, "", HasPlayer as float)
-		; TODO: Additional fade out settings
+		bool useFading = HasPlayer && sslSystemConfig.GetSettingInt("iUseFade") > 0
+		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid, "", useFading as float)
+		If (useFading)
+			Config.ApplyFade()
+		EndIf
 
 		_BaseCoordinates = GetBaseCoordinates(_ActiveScene)
 		_InUseCoordinates = new float[4]	; Copy to trace back changes made by the user during scene
@@ -479,11 +481,10 @@ State Making_M
 
 	; Invoked n times by Aliases and once by StartThreadUnchecked, then continue to next state
 	Function PrepareDone()
-		If(_prepareAsyncCount <= Positions.Length)
+		If (_prepareAsyncCount <= Positions.Length)
 			_prepareAsyncCount += 1
 			return
 		ElseIf (HasPlayer)
-			Config.ApplyFade()
 			If(IsVictim(PlayerRef) && Config.DisablePlayer)
 				AutoAdvance = true
 			Else
@@ -495,10 +496,6 @@ State Making_M
 			SetObjectiveDisplayed(0, True)
 		EndIf
 		GoToState(STATE_PLAYING)
-		; TODO: RemoveFade should become unnecessary
-		If (HasPlayer)
-			Config.RemoveFade()
-		EndIf
 	EndFunction
 	
 	Function EndAnimation(bool Quickly = false)
@@ -862,7 +859,7 @@ State Animating
 			If(w == -1)
 				sslActorAlias slot = PickAlias(akNewPositions[n])
 				If(slot.SetActor(akNewPositions[n]))	; Add actor and move to playing state
-					slot.OnDoPrepare("", "", 0.0, none)	; TODO: Validate args here to not do pathing stuffz
+					slot.OnDoPrepare("", "", 0.0, none)
 				EndIf
 			EndIf
 			n += 1
@@ -1186,7 +1183,28 @@ Function Initialize()
 		i += 1
 	EndWhile
 	CenterAlias.TryToClear()
-	; TODO: reset public variables here
+	Positions = PapyrusUtil.ActorArray(0)
+	Submissives = PapyrusUtil.ActorArray(0)
+	_ActiveScene = ""
+	_StartScene = ""
+	_CustomScenes = Utility.CreateStringArray(0)
+	_PrimaryScenes = Utility.CreateStringArray(0)
+	_LeadInScenes = Utility.CreateStringArray(0)
+	_BaseCoordinates = Utility.CreateFloatArray(0)
+	_InUseCoordinates = Utility.CreateFloatArray(0)
+	_ActiveStage = ""
+	_StageHistory = Utility.CreateStringArray(0)
+	_furniStatus = FURNI_ALLOW
+	StartedAt = 0.0
+	DisableOrgasms = false
+	AutoAdvance = false
+	LeadIn = false
+	_ThreadTags = Utility.CreateStringArray(0)
+	_Hooks = Utility.CreateStringArray(0)
+	; NOTE: Below are unreviewed (legacy) variables
+	SkillBonus = Utility.CreateFloatArray(0)
+	SkillXP = Utility.CreateFloatArray(0)
+	SkillTime = 0.0
 	; Enter thread selection pool
 	GoToState("Unlocked")
 EndFunction
