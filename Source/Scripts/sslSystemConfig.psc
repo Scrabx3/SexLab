@@ -1104,37 +1104,26 @@ EndFunction
 bool function CheckSystemPart(string CheckSystem)
   if CheckSystem == "Skyrim"
     return (StringUtil.SubString(Debug.GetVersionNumber(), 0, 3) as float) >= 1.5
-
   elseIf CheckSystem == "SKSE"
     return SKSE.GetScriptVersionRelease() >= 64
-
   elseIf CheckSystem == "SkyUI"
     return Quest.GetQuest("SKI_ConfigManagerInstance") != none
-
   elseIf CheckSystem == "SexLabP+"
     return SKSE.GetPluginVersion("SexLab") > -1
-
   elseIf CheckSystem == "SexLabUtil"
     return SexLabUtil.GetPluginVersion() >= 16300
-
   elseIf CheckSystem == "PapyrusUtil"
     return PapyrusUtil.GetVersion() >= 39
-
   elseIf CheckSystem == "NiOverride"
 		return HasNiOverride
-    
   elseIf CheckSystem == "MfgFix"
 		return HasMFGFix
-
   elseIf CheckSystem == "FNIS"
     return FNIS.VersionCompare(7, 0, 0) >= 0
-
   elseIf CheckSystem == "FNISGenerated"
     return FNIS.IsGenerated()
-
   elseIf CheckSystem == "FNISCreaturePack"
     return FNIS.VersionCompare(7, 0, 0, true) >= 0
-
   endIf
   return false
 endFunction
@@ -1166,7 +1155,7 @@ function Reload()
     Debug.TraceUser("SexLabDebug", "Config Reloading...")
   endIf
 
-  LoadLibs(false)
+  parent.Setup()
   SexLab = SexLabUtil.GetAPI()
 
   ; SetVehicle Scaling Fix
@@ -1180,7 +1169,7 @@ function Reload()
   ; Remove any targeted actors
   RegisterForCrosshairRef()
   _CrosshairRef = none
-  TargetRef    = none
+  TargetRef = none
 
   ; TFC Toggle key
   UnregisterForAllKeys()
@@ -1217,9 +1206,6 @@ function Reload()
 
   ; Remove any NPC thread control player has
   DisableThreadControl(_ActiveControl)
-
-  ; Load json animation profile
-  ImportProfile(PapyrusUtil.ClampInt(AnimProfile, 1, 5))
 endFunction
 
 function Setup()
@@ -1690,7 +1676,6 @@ EndProperty
 
 event OnInit()
   parent.OnInit()
-  ; SetDefaults()
 endEvent
 
 bool function AddCustomBed(Form BaseBed, int BedType = 0)
@@ -1772,11 +1757,9 @@ int function RegisterThreadHook(sslThreadHook Hook)
   AddHook(Hook)
 endFunction
 sslThreadHook[] function GetThreadHooks()
-  LogRedundant("GetRheadHooks")
   return new sslThreadHook[1]
 endFunction
 int function GetThreadHookCount()
-  LogRedundant("GetThreadHookCount")
   return 0
 endFunction
 

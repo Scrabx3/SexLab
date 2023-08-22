@@ -45,10 +45,6 @@ string PlayerName
 ; --- Configuration Events                            --- ;
 ; ------------------------------------------------------- ;
 
-Function LoadDefaultSettings() native
-Function LoadSettings() native
-Function SaveSettings() native
-
 int Function GetVersion()
 	return SexLabUtil.GetVersion()
 EndFunction
@@ -67,8 +63,6 @@ EndEvent
 Event OnConfigInit()
 	Pages = new string[1]
 	Pages[0] = "Install"
-
-	LoadDefaultSettings()
 
 	; Animation Settings
 	Chances = new string[3]
@@ -229,9 +223,6 @@ endEvent
 ; ------------------------------------------------------- ;
 
 event OnConfigOpen()
-	LoadSettings()
-	SetToggleOptionValueST(Config.AllowCreatures, false, "AllowCreatures")
-
 	If(SystemAlias.IsInstalled)
 		Pages = new string[10]
 		If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
@@ -284,7 +275,6 @@ event OnConfigOpen()
 EndEvent
 
 Event OnConfigClose()
-	SaveSettings()
 	ModEvent.Send(ModEvent.Create("SexLabConfigClose"))
 	; Realign actors if an adjustment in editor was just made
 	If(AutoRealign)
@@ -956,6 +946,7 @@ event OnSelectST()
 		SetOptionFlagsST(OPTION_FLAG_DISABLED)
 		SetTextOptionValueST("Working...")
 		SystemAlias.InstallSystem()
+		ForcePageReset()
 	endIf
 endEvent
 
@@ -988,14 +979,11 @@ function InstallMenu()
 	SetCursorPosition(1)
 	AddHeaderOption("$SSL_Installation")
 	; Install/Update button
-	string AliasState = SystemAlias.GetState()
-	bool flag = AliasState == "Updating" || AliasState == "Installing"
-	AddToggleOptionST("AllowCreatures", "$SLL_InstallEnableCreatures", Config.AllowCreatures, DoDisable(flag))
+	bool inInstall = SystemAlias.GetState() == "Installing"
+	AddToggleOptionST("AllowCreatures", "$SLL_InstallEnableCreatures", Config.AllowCreatures, DoDisable(inInstall))
 	AddEmptyOption()
-	AddTextOptionST("InstallSystem", "$SSL_InstallUpdateSexLab{"+GetStringVer()+"}", "$SSL_ClickHere", DoDisable(flag))
-	if AliasState == "Updating"
-		AddTextOption("$SSL_CurrentlyUpdating", "!")
-	elseIf AliasState == "Installing"
+	AddTextOptionST("InstallSystem", "$SSL_InstallUpdateSexLab{"+GetStringVer()+"}", "$SSL_ClickHere", DoDisable(inInstall))
+	If inInstall
 		AddTextOption("$SSL_CurrentlyInstalling", "!")
 	endIf
 endFunction
@@ -4034,7 +4022,6 @@ state CleanSystem
 			; Setup & clean system
 			; ResetAllQuests()
 			SystemAlias.SetupSystem()
-			; LoadDefaultSettings()
 
 			ModEvent.Send(ModEvent.Create("SexLabReset"))
 			Config.CleanSystemFinish.Show()

@@ -64,7 +64,7 @@ function LoadLibs(bool Forced = false)
 endFunction
 
 function Setup()
-	LoadLibs(true)
+	LoadLibs()
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -107,13 +107,9 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-bool property InDebugMode hidden
-	bool Function Get()
-		return Config.DebugMode
-	EndFunction
-EndProperty
+bool property InDebugMode auto hidden
 event SetDebugMode(bool ToMode)
-	; InDebugMode = ToMode
+	InDebugMode = ToMode
 endEvent
 
 event OnInit()
