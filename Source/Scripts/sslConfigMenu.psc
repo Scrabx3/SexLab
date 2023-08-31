@@ -3122,14 +3122,12 @@ Form[] ItemsTarget
 bool FullInventoryPlayer
 bool FullInventoryTarget
 
-Form[] Function GetStrippables(Actor akTarget, bool abWornOnly) native
-
 ; Strip Page to customize if items should never or always be stripped
 Function StripEditor()
 	SetCursorFillMode(LEFT_TO_RIGHT)
 	AddHeaderOption("$SSL_Equipment{" + PlayerName + "}")
 	AddToggleOptionST("FullInventoryPlayer", "$SSL_FullInventory", FullInventoryPlayer)
-	ItemsPlayer = GetStrippables(PlayerRef, !FullInventoryPlayer)
+	ItemsPlayer = sslSystemConfig.GetStrippableItems(PlayerRef, !FullInventoryPlayer)
 	int i = 0
 	While(i < ItemsPlayer.Length && i < 127 - 2)	; At most 128 entries per page
 		AddTextOptionST("StripEditorPlayer_" + i, GetItemName(ItemsPlayer[i]), GetStripState(ItemsPlayer[i]))
@@ -3140,7 +3138,7 @@ Function StripEditor()
 	EndIf
 	AddHeaderOption("$SSL_Equipment{" + TargetRef.GetLeveledActorBase().GetName() + "}")
 	AddToggleOptionST("FullInventoryTarget", "$SSL_FullInventory", FullInventoryTarget)
-	ItemsTarget = GetStrippables(TargetRef, !FullInventoryTarget)
+	ItemsTarget = sslSystemConfig.GetStrippableItems(TargetRef, !FullInventoryTarget)
 	int n = 0
 	While(n < ItemsTarget.Length && (i + n) < (127 - 4))
 		AddTextOptionST("StripEditorTarget_" + i, GetItemName(ItemsTarget[i]), GetStripState(ItemsTarget[i]))

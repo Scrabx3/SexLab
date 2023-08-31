@@ -88,6 +88,7 @@ SoundCategory property AudioVoice auto
 ; ------------------------------------------------------- ;
 
 int Function GetAnimationCount() native global
+Form[] Function GetStrippableItems(Actor akActor, bool abWornOnly) native global
 
 bool Function GetSettingBool(String asSetting) native global
 int Function GetSettingInt(String asSetting) native global

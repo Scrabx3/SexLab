@@ -436,7 +436,7 @@ State Paused
 				EndIf
 				Utility.Wait(1.0)
 			EndIf
-			_equipment = StripByData(_stripData, _stripCstm)
+			_equipment = StripByData(_stripData, GetStripSettings(), _stripCstm)
 			ResolveStrapon()
 		EndIf
 		; Only called once on the first enter to Animating State
@@ -511,7 +511,7 @@ EndFunction
 
 ; Take this actor out of combat and clear all actor states, return true if the actor was the player
 Function LockActorImpl() native
-Form[] Function StripByData(int aiStripData, int[] aiOverwrites) native
+Form[] Function StripByData(int aiStripData, int[] aiDefaults, int[] aiOverwrites) native
 
 ; ------------------------------------------------------- ;
 ; --- Alias PLAYING                                   --- ;
@@ -538,7 +538,7 @@ State Animating
 	Function UpdateNext(int aiStripData)
 		If (_stripData != aiStripData)
 			_stripData = aiStripData
-			_equipment = StripByDataEx(_stripData, _stripCstm, _equipment)
+			_equipment = StripByDataEx(_stripData, GetStripSettings(), _stripCstm, _equipment)
 		EndIf
 		_VoiceDelay -= Utility.RandomFloat(0.1, 0.3)
 		if _VoiceDelay < 0.8
@@ -757,7 +757,7 @@ State Animating
 	
 	Function ResetPosition(int aiStripData, int aiPositionGenders)
 		_stripData = aiStripData
-		_equipment = StripByDataEx(_stripData, _stripCstm, _equipment)
+		_equipment = StripByDataEx(_stripData, GetStripSettings(), _stripCstm, _equipment)
 		_useStrapon = _sex == 1 && Math.LogicalAnd(aiPositionGenders, 0x2) == 0
 		ResolveStrapon()
 	EndFunction
@@ -809,7 +809,7 @@ EndFunction
 
 ; Undo "LockActor()" persistent changes
 Function UnlockActorImpl() native
-Form[] Function StripByDataEx(int aiStripData, int[] aiOverwrites, Form[] akMergeWith) native
+Form[] Function StripByDataEx(int aiStripData, int[] aiDefaults, int[] aiOverwrites, Form[] akMergeWith) native
 
 ; ------------------------------------------------------- ;
 ; --- State Independent                               --- ;
@@ -859,6 +859,10 @@ Function ResolveStraponImpl()
 	ElseIf(equipped && !_useStrapon)
 		ActorRef.UnequipItem(_Strapon, true, true)
 	EndIf
+EndFunction
+
+int[] Function GetStripSettings()
+	return _Config.GetStripSettings(_sex == 1 || _sex == 2, _Thread.UseLimitedStrip(), !_Thread.IsConsent(), IsVictim())
 EndFunction
 
 Function Redress()
@@ -1079,7 +1083,7 @@ function OverrideStrip(bool[] SetStrip)
 endFunction
 
 Function Strip()
-	_equipment = StripByDataEx(0x80, _stripCstm, _equipment)
+	_equipment = StripByDataEx(0x80, GetStripSettings(), _stripCstm, _equipment)
 EndFunction
 Function UnStrip()
 	Redress()
