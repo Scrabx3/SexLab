@@ -1505,9 +1505,17 @@ float[] Property CenterLocation Hidden
 	EndFunction
 EndProperty
 
+sslBaseAnimation Function GetSetAnimationLegacyCast(String asScene)
+	int[] sexes = SexLabRegistry.GetPositionSexA(asScene)
+	If (sexes.Find(3) > -1 || sexes.Find(4) > -1)
+		return CreatureSlots.GetSetAnimation(asScene)
+	Else
+		return AnimSlots.GetSetAnimation(asScene)
+	EndIf
+EndFunction
 sslBaseAnimation Property Animation Hidden
 	sslBaseAnimation Function Get()
-		return sslBaseAnimation.GetOrSetBaseAnimation(_ActiveScene, none, true) as sslBaseAnimation
+		return GetSetAnimationLegacyCast(_ActiveScene)
 	EndFunction
 	Function Set(sslBaseAnimation aSet)
 		SetAnimationImpl(aSet)
@@ -1515,7 +1523,7 @@ sslBaseAnimation Property Animation Hidden
 EndProperty
 sslBaseAnimation Property StartingAnimation Hidden
 	sslBaseAnimation Function Get()
-		return sslBaseAnimation.GetOrSetBaseAnimation(_StartScene, none, true) as sslBaseAnimation
+		return GetSetAnimationLegacyCast(_StartScene)
 	EndFunction
 	Function Set(sslBaseAnimation aSet)
 		SetStartingAnimation(aSet)
@@ -1523,7 +1531,7 @@ sslBaseAnimation Property StartingAnimation Hidden
 EndProperty
 sslBaseAnimation[] Property Animations hidden
 	sslBaseAnimation[] Function get()
-		return sslBaseAnimation.AsBaseAnimations(Scenes)
+		return GetAnimationsLegacyCast(Scenes)
 	EndFunction
 EndProperty
 
@@ -1598,14 +1606,21 @@ EndFunction
 Function StartupDone()
 EndFunction
 
+sslBaseAnimation[] Function GetAnimationsLegacyCast(String[] asScenes)
+	sslBaseAnimation[] ret = AnimSlots.AsBaseAnimation(asScenes)
+	If (!ret.Length)
+		ret = CreatureSlots.AsBaseAnimation(asScenes)
+	EndIf
+	return ret
+EndFunction
 sslBaseAnimation[] Function GetForcedAnimations()
-	return sslBaseAnimation.AsBaseAnimations(_CustomScenes)
+	return GetAnimationsLegacyCast(_CustomScenes)
 EndFunction
 sslBaseAnimation[] Function GetAnimations()
-	return sslBaseAnimation.AsBaseAnimations(_PrimaryScenes)
+	return GetAnimationsLegacyCast(_PrimaryScenes)
 EndFunction
 sslBaseAnimation[] Function GetLeadAnimations()
-	return sslBaseAnimation.AsBaseAnimations(_LeadInScenes)
+	return GetAnimationsLegacyCast(_LeadInScenes)
 EndFunction
 
 int Function GetHighestPresentRelationshipRank(Actor ActorRef)

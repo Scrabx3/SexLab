@@ -3,9 +3,6 @@ scriptname sslBaseAnimation extends sslBaseObject
 	Script for storing and reading Animation data
 	Once an animation is registered, it is assumed read only
 
-	DO NOT link to a script instance directly, use the main API instead
-
-	NOTE:
 	This script has been made redundant and is merely used as a proxy to call to the
 	actual registry inside the native code base. Its usage is discouraged and should be avoided
 	See SexlabRegistry.psc for concrete animation access
@@ -23,21 +20,6 @@ String[] Function AsSceneIDs(sslBaseAnimation[] akAnimations) global
 		i += 1
 	EndWhile
 	return PapyrusUtil.ClearEmpty(ret)
-EndFunction
-
-; Given an array of scene ids, return all (available) sslBaseAnimation objects which represent this id
-; Note that not all Scene IDs may have a representative sslBaseAnimation proxy
-; It is highly recommended to work on the String IDs directly using the SexLabRegistry script
-ReferenceAlias[] Function AsBaseAnimationsImpl(String[] asSceneIDs) global native
-sslBaseAnimation[] Function AsBaseAnimations(String[] asSceneIDs) global
-	ReferenceAlias[] refs = AsBaseAnimationsImpl(asSceneIDs)
-  sslBaseAnimation[] ret = sslUtility.AnimationArray(refs.Length)
-  int i = 0
-  While (i < ret.Length)
-    ret[i] = refs[i] as sslBaseAnimation
-    i += 1
-  EndWhile
-  return ret
 EndFunction
 
 String Function GetSceneID()
@@ -79,11 +61,6 @@ String Function GetStageBounded(int aiDepth)
 		return maxpath[maxpath.Length - 1]
 	EndIf
 	return maxpath[aiDepth]
-EndFunction
-
-ReferenceAlias Function GetOrSetBaseAnimationImpl(String asSceneID, Quest akOwner, bool abForce) native global
-ReferenceAlias Function GetOrSetBaseAnimation(String asSceneID, Quest akOwner, bool abForce) global
-	return GetOrSetBaseAnimationImpl(AsSceneID, akOwner, abForce) as sslBaseAnimation
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;

@@ -91,6 +91,19 @@ String[] Function MergeSplitTags(String asTags, String asTagsSuppress, bool abRe
   EndIf
 EndFunction
 
+sslBaseAnimation Function GetSetAnimation(String asScene)
+  int where = _proxyid.Find(asScene)
+  If (where > -1)
+    return GetNthAlias(where) as sslBaseAnimation
+  EndIf
+  ; Randomize to minimize chance of replacing the same index over and over again (without caching)
+  int i = Utility.RandomInt(0, _proxyid.Length - 1)
+  _proxyid[i] = asScene
+  sslBaseAnimation ret = GetNthAlias(i) as sslBaseAnimation
+  ret.PROXY_ID = asScene
+  return ret
+EndFunction
+
 sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
   sslBaseAnimation[] ret = sslUtility.AnimationArray(asSceneIDs.Length)
   int i = 0
