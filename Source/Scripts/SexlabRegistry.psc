@@ -39,7 +39,7 @@ int Function GetSex(Actor akActor, bool abIgnoreOverwrite) native global
 ; Lookup Scenes for the stated actors, bounded by the given tags
 ; aiFurniturePreference is one of: 0 - Disallow Furnitures | 1 - Allow Furnitures | 2 - Prefer Furnitures (use iff one can be found)
 ; if akCenter is set, aiFurniturePreference will be ignored and only animations which are compatible with the given center will be chosen. Example: passing a table
-; will only look for table animations, a non furniture center has no influence on the animations which may be picked
+; will only look for table animations, a center that isnt recognized as a furniture object has no influence on the animations which may be picked
 String[] Function LookupScenes(Actor[] akPositions, String asTags, Actor akSubmissive, int aiFurniturePreference, ObjectReference akCenter) native global
 String[] Function LookupScenesA(Actor[] akPositions, String asTags, Actor[] akSubmissives, int aiFurniturePreference, ObjectReference akCenter) native global
 
@@ -49,13 +49,8 @@ bool Function ValidateSceneA(String asSceneID, Actor[] akPositions, String asTag
 String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor akSubmissive) native global
 String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] akSubmissive) native global
 
-; Gets the closests valid center object that the stated scene can use to play, if akCenter is none, will use the player instead
-; Will return none for scenes that dont require some furniture center
-ObjectReference Function GetSceneCenter(String asSceneID, ObjectReference akCenter) native global
-bool Function IsCompatibleCenter(String asSceneID, ObjectReference akCenter) native global
-
 ; Sort akPosition based on the provided scene. The array will be modified directly, the order of the sorted array is unspecified
-; The extended version will take an array and return the index of the n'th scene which the actors are sorted by
+; The extended version will take an array and return the index of the n'th scene which the actors are sorted by (usually the first valid scene found)
 ; If fallbacks are enabled, will attempt to reinterpret the given actors to find an allowed ordering if the first pass was not successful
 ; Return false/-1 if the positions couldnt be sorted; E.g. because the scene is incompatible for the stated actors
 bool Function SortByScene(Actor[] akPositions, String asScene, bool abAllowFallback) native global

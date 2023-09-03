@@ -555,6 +555,7 @@ EndFunction
 ; Given an array of Scenes, select some valid Scene within the array, using the currently selected center as comparable
 ; If all scenes are incompatible with the selected center, will return a new center. asOut contains all available animations
 ObjectReference Function FindCenter(String[] asSceneIDs, String asScenePrefered, String[] asOut, int aiFurniStatus) native
+bool Function GetIsCompatiblecenter(String asSceneID, ObjectReference akCenter) native
 float[] Function GetBaseCoordinates(String asScene) native
 
 ; --- Legacy
@@ -795,7 +796,7 @@ State Animating
 			ObjectReference oldCenter = CenterRef
 			SetFurnitureIgnored(false)
 			CenterAlias.ForceRefTo(CenterOn)
-			If (!SexLabRegistry.IsCompatibleCenter(_ActiveScene, CenterOn))
+			If (!GetIsCompatiblecenter(_ActiveScene, CenterOn))
 				String[] out = new String[16]
 				CenterRef = FindCenter(Scenes, _StartScene, out, _furniStatus)
 				int where = out.Find("")
