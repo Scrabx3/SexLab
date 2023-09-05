@@ -63,8 +63,6 @@ int Function SortBySceneEx(Actor[] akPositions, String[] asScenes, bool abAllowF
   Scenes in SexLab are implemented as directed graphs
   Each graph has exactly 1 start node/source and any amount of end nodes/sinks
   To refer to the start node, use an empty stage ID (""). The graph may contain cycles
-  These functions will only throw errors if the scene ID is invalid. Accessing branches/depths out of range or
-  passing an invalid stage ID is well defined and will return the return types associated default value (0/"")
 
   I highly recommend to make yourself familiar with some DFS and BFS algorithm before attempting to
   recursively analyze a scene on your own:
@@ -114,7 +112,7 @@ String Function GetStartAnimation(String asID) native global
 String Function BranchTo(String asID, String asStage, int n) native global
 ; Get the number of outgoing edges from a given stage
 int Function GetNumBranches(String asID, String asStage) native global
-; return: 0 - Root | 1 - Common Node | 2 - Sink
+; return: None/Invalid - -1 | 0 - Root | 1 - Common Node | 2 - Sink
 int Function GetNodeType(String asID, String asStage) native global
 
 ; Get the shortest/longest path from the given stage to a sink
@@ -125,7 +123,12 @@ String[] Function GetPathMax(String asID, String asStage) native global
 ; --- Data
 
 ; Return the number of actors animated in this scene, including or excluding optional positions
-int Function GetActorCount(String asID, bool bIncludeOptionals) native global
+int Function GetActorCount(String asID) native global
+int Function GetOptionalActorCount(String asID) native global
+
+; Are position n and m similar in the scenes context? That is, can an actor filling position n also fill position m and vice versa?
+bool Function IsSimilarPosition(String asID, int n, int m) native global
+bool Function CanFillPosition(String asID, int n, Actor akActor) native global
 
 ; Obtain all stages having a fixed length flag set
 String[] Function GetFixedLengthStages(String asID) native global
@@ -135,9 +138,9 @@ float Function GetFixedLength(String asID, String asStage) native global
 ; Obtain all stages having a climax flag set
 String[] Function GetClimaxStages(String asID) native global
 
-; Get compatible sexes of this scenes n'th position
+; Get compatible sexes of this scenes n'th position. This ignores the "use creature sex" setting
 ; Return a bitflag with following interpretation:
-; Male = 0x1 | Female = 0x2 | Futa = 0x4 | CrtMale = 0x8 | CrtFemale = 0x16
+; Male = 0x1 | Female = 0x2 | Futa = 0x4 | CrtMale = 0x8 | CrtFemale = 0x10
 int Function GetPositionSex(String asID, int n) native global
 int[] Function GetPositionSexA(String asID) native global
 bool Function GetIsMalePosition(String asID, int n) global
@@ -158,17 +161,13 @@ EndFunction
 bool Function GetIsFemaleCreaturePositon(String asID, int n) global
   return Math.LogicalAnd(GetPositionSex(asID, n), 0x16)
 EndFunction
-
-; Are position n and m similar in the scenes context? That is, can an actor filling position n also fill position m and vice versa?
-bool Function IsSimilarPosition(String asID, int n, int m) native global
-
 ; Get the racekey ID of this scenes n'th position
 ; The racekey ID for humans is 0, and some positive value for creature
 int Function GetRaceIDPosition(String asID, int n) native global
-int[] Function GetRaceIDPositionA(String asID, int n) native global
+int[] Function GetRaceIDPositionA(String asID) native global
 ; Get a human readable intepretation of some RaceKey
 String Function GetRaceKeyPosition(String asID, int n) native global
-String[] Function GetRaceKeyPositionA(String asID, int n) native global
+String[] Function GetRaceKeyPositionA(String asID) native global
 
 ; Offset data for the specified position in the given stage, Raw ignores user settings
 ; returned as [X, Y, Z, Rotation]
