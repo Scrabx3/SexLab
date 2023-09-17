@@ -93,3 +93,34 @@ EndFunction
 ; Get all submissives for the current animation
 Actor[] Function GetSubmissives()
 EndFunction
+
+; Set custom strip settings for this actor
+; aiSlots represents a slot mask of all slots that should be unequipped (if possible)
+Function SetCustomStrip(Actor akActor, int aiSlots, bool abWeapon, bool abApplyNow)
+EndFunction
+
+; If the actor will play a short animation on scene start when undressing. Only used before entering playing state
+bool Function IsUndressAnimationAllowed(Actor akActor)
+EndFunction
+Function SetIsUndressAnimationAllowed(Actor akActor, bool abAllowed)
+EndFunction
+
+; if the actor will re-equip their gear after the animation (and they are not a submissive)
+bool Function IsRedressAllowed(Actor akActor)
+EndFunction
+Function SetIsRedressAllowed(Actor akActor, bool abAllowed)
+EndFunction
+
+; if the actor will re-equip their gear after the animation (and they are not a submissive)
+bool Function IsRedressAllowed(Actor akActor)
+EndFunction
+Function SetIsRedressAllowed(Actor akActor, bool abAllowed)
+EndFunction
+
+int Property PATHING_DISABLE = -1 AutoReadOnly	; Always be teleported
+int Property PATHING_ENABLE = 0 AutoReadOnly		; Let the user config decide (default)
+int Property PATHING_FORCE = 1 AutoReadOnly			; Always try to walk unless the distance is too great
+
+; Set the pathing flag of the position, determing if this actor can walk to the center or should be teleported to it
+Function SetPathingFlag(Actor akActor, int aiPathingFlag)
+EndFunction

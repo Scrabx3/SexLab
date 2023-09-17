@@ -3,8 +3,8 @@ meta.ini
 *.rar
 *.zip
 *.7z
-*sla*psc
-*sla*pex
+# *sla*psc
+# *sla*pex
 *.esp
 *.sublime-project
 *.sublime-workspace
@@ -15,7 +15,8 @@ SKSE/Plugins/SexLabUtil.iobj
 SKSE/Plugins/SexLabUtil.ipdb
 SKSE/Plugins/SexLabUtil.lib
 SKSE/Plugins/SexLabUtil.pdb
-sexlab.code-workspace
+.release
+.vscode
 *.slr
 *.dll
 *.pdb

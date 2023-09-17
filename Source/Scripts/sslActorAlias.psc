@@ -59,14 +59,18 @@ endFunction
 ; --- Stripping									                      --- ;
 ; ------------------------------------------------------- ;
 
-Function SetStripping(int aiSlots, bool abStripWeapons)
+Function SetStripping(int aiSlots, bool abStripWeapons, bool abApplyNow)
 	_stripCstm = new int[2]
 	_stripCstm[0] = aiSlots
 	_stripCstm[1] = abStripWeapons as int
+	If (abApplyNow && GetState() == STATE_PLAYING)
+		int[] set
+		_equipment = StripByDataEx(0x80, set, _stripCstm, _equipment)
+	EndIf
 EndFunction
 
 Function DisableStripAnimation(bool abDisable)
-	DoUndress = !abDisable
+	_DoUndress = !abDisable
 EndFunction
 
 Function SetAllowRedress(bool abAllowRedress)

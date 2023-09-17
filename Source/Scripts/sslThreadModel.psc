@@ -49,6 +49,46 @@ Actor[] Function GetPositions()
 	return PapyrusUtil.RemoveActor(Positions, none)
 EndFunction
 
+Function SetCustomStrip(Actor akActor, int aiSlots, bool abWeapon, bool abApplyNow)
+	sslActorAlias it = ActorAlias(akActor)
+	If (!it)
+		return
+	EndIf
+	it.SetStripping(aiSlots, abWeapon, abApplyNow)
+EndFunction
+
+bool Function IsUndressAnimationAllowed(Actor akActor)
+	sslActorAlias it = ActorAlias(akActor)
+	return it && it.DoUndress
+EndFunction
+Function SetIsUndressAnimationAllowed(Actor akActor, bool abAllowed)
+	sslActorAlias it = ActorAlias(akActor)
+	If (!it)
+		return
+	EndIf
+	it.DisableStripAnimation(!abAllowed)
+EndFunction
+
+bool Function IsRedressAllowed(Actor akActor)
+	sslActorAlias it = ActorAlias(akActor)
+	return it && it.DoRedress
+EndFunction
+Function SetIsRedressAllowed(Actor akActor, bool abAllowed)
+	sslActorAlias it = ActorAlias(akActor)
+	If (!it)
+		return
+	EndIf
+	it.SetAllowRedress(abAllowed)
+EndFunction
+
+Function SetPathingFlag(Actor akActor, int aiPathingFlag)
+	sslActorAlias it = ActorAlias(akActor)
+	If (!it)
+		return
+	EndIf
+	it.SetPathing(aiPathingFlag)
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Submission                                      --- ;
 ; ------------------------------------------------------- ;
@@ -1106,6 +1146,15 @@ Function SetFurnitureIgnored(bool disabling = true)
 	CenterRef.SetNoFavorAllowed(disabling)
 EndFunction
 
+bool Function UseLimitedStrip()
+	If (LeadIn)
+		return true
+	EndIf
+	bool excplicit = HasTag("Penetration") || HasTag("DoublePenetration") || HasTag("TripplePenetration") || HasTag("Fingering") || HasTag("Fisting")
+	excplicit = excplicit || HasTag("Tribadism") || HasTag("Grinding") || HasTag("Boobjob") || HasTag("Buttjob")
+	return Config.LimitedStrip && !excplicit
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Function Declarations                           --- ;
 ; ------------------------------------------------------- ;
@@ -1915,30 +1964,7 @@ EndFunction
 Function ResolveTimers()
 EndFunction
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; ------------------------------------------------------- ;
-; --- Actor Setup                                     --- ;
-; ------------------------------------------------------- ;
-
-bool Function UseLimitedStrip()
-	bool limitedstrip = HasTag("LimitedStrip")
-	bool LeadInNoBody = !(Config.StripLeadInMale[2] || Config.StripLeadInFemale[2])
-	return LeadIn && (!LeadInNoBody || limitedstrip) || \
-	Config.LimitedStrip && (limitedstrip || (!LeadInNoBody && AnimSlots.CountTag(Animations, "Kissing,Foreplay,LeadIn,LimitedStrip") == Animations.Length))
-EndFunction
-
-; Actor Overrides
 Function SetStrip(Actor ActorRef, bool[] StripSlots)
 	if StripSlots && StripSlots.Length == 33
 		ActorAlias(ActorRef).OverrideStrip(StripSlots)
@@ -1946,7 +1972,6 @@ Function SetStrip(Actor ActorRef, bool[] StripSlots)
 		Log("Malformed StripSlots bool[] passed, must be 33 length bool array, "+StripSlots.Length+" given", "ERROR")
 	endIf
 EndFunction
-
 Function SetNoStripping(Actor ActorRef)
 	if ActorRef
 		bool[] StripSlots = new bool[33]
@@ -1969,7 +1994,6 @@ Function DisableUndressAnimation(Actor ActorRef = none, bool disabling = true)
 		ActorAlias[4].DoUndress = !disabling
 	endIf
 EndFunction
-
 Function DisableRedress(Actor ActorRef = none, bool disabling = true)
 	if ActorRef && Positions.Find(ActorRef) != -1
 		ActorAlias(ActorRef).DoRedress = !disabling
@@ -1981,7 +2005,6 @@ Function DisableRedress(Actor ActorRef = none, bool disabling = true)
 		ActorAlias[4].DoRedress = !disabling
 	endIf
 EndFunction
-
 Function DisablePathToCenter(Actor ActorRef = none, bool disabling = true)
 	if ActorRef && Positions.Find(ActorRef) != -1
 		ActorAlias(ActorRef).DisablePathToCenter(disabling)
@@ -1993,7 +2016,6 @@ Function DisablePathToCenter(Actor ActorRef = none, bool disabling = true)
 		ActorAlias[4].DisablePathToCenter(disabling)
 	endIf
 EndFunction
-
 Function ForcePathToCenter(Actor ActorRef = none, bool forced = true)
 	if ActorRef && Positions.Find(ActorRef) != -1
 		ActorAlias(ActorRef).ForcePathToCenter(forced)
@@ -2005,6 +2027,18 @@ Function ForcePathToCenter(Actor ActorRef = none, bool forced = true)
 		ActorAlias[4].ForcePathToCenter(forced)
 	endIf
 EndFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; Orgasms
 Function DisableAllOrgasms(bool OrgasmsDisabled = true)
