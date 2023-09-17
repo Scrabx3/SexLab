@@ -111,12 +111,6 @@ EndFunction
 Function SetIsRedressAllowed(Actor akActor, bool abAllowed)
 EndFunction
 
-; if the actor will re-equip their gear after the animation (and they are not a submissive)
-bool Function IsRedressAllowed(Actor akActor)
-EndFunction
-Function SetIsRedressAllowed(Actor akActor, bool abAllowed)
-EndFunction
-
 int Property PATHING_DISABLE = -1 AutoReadOnly	; Always be teleported
 int Property PATHING_ENABLE = 0 AutoReadOnly		; Let the user config decide (default)
 int Property PATHING_FORCE = 1 AutoReadOnly			; Always try to walk unless the distance is too great

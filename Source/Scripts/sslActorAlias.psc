@@ -278,7 +278,6 @@ Auto State Empty
 		_sex = SexLabRegistry.GetSex(ProspectRef, true)
 		_AnimVarIsNPC = ProspectRef.GetAnimationVariableInt("IsNPC")
 		_AnimVarFootIKDisable = ProspectRef.GetAnimationVariableInt("FootIKDisable")
-		Log(ProspectRef + " is sex: " + _sex + " npc: " + _AniMVarIsNPC + " ikdisable: " + _AnimVarFootIKDisable)
 
 		TrackedEvent(TRACK_ADDED)
 		GoToState(STATE_SETUP)
@@ -897,7 +896,7 @@ Function ResolveStraponImpl()
 EndFunction
 
 int[] Function GetStripSettings()
-	return _Config.GetStripSettings(_sex == 1 || _sex == 2, _Thread.UseLimitedStrip(), !_Thread.IsConsent(), IsVictim())
+	return _Config.GetStripSettings((_sex == 1 || _sex == 2), _Thread.UseLimitedStrip(), !_Thread.IsConsent(), IsVictim())
 EndFunction
 
 Function Redress()
@@ -956,7 +955,7 @@ Function Initialize()
 	_Expression     = none
 	_Expressions    = sslUtility.ExpressionArray(0)
 	; Flags
-	_AllowRedress		= false
+	_AllowRedress		= true
 	_canOrgasm     	= true
 	ForceOpenMouth 	= false
 	; Integers
