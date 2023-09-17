@@ -50,6 +50,10 @@ String Function _GetName()
 	return SexLabRegistry.GetSceneName(PROXY_ID)
 EndFunction
 
+String Function _GetRegistryID()
+	return PROXY_ID
+EndFunction
+
 int Function GetMaxDepth()
 	return SexLabRegistry.GetPathMax(PROXY_ID, "").Length
 EndFunction

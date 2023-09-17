@@ -119,10 +119,10 @@ bool property AllowCreatures hidden
 EndProperty
 bool property UseCreatureGender hidden
   bool Function Get()
-    return GetSettingBool("bUseCreatureGender")
+    return GetSettingBool("bCreatureGender")
   EndFunction
   Function Set(bool aSet)
-    SetSettingBool("bUseCreatureGender", aSet)
+    SetSettingBool("bCreatureGender", aSet)
   EndFunction
 EndProperty
 

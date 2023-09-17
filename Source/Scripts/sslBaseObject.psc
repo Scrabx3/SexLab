@@ -1,7 +1,5 @@
 scriptname sslBaseObject extends ReferenceAlias hidden
 
-int Property SlotID Auto Hidden
-
 String _name
 string Property Name
 	String Function Get()
@@ -11,7 +9,6 @@ string Property Name
 		_SetName(aSet)
 	EndFunction
 EndProperty
-	; Overriden by child classes to support backwards compatibility
 String Function _GetName()
 	return _name
 EndFunction
@@ -22,7 +19,7 @@ EndFunction
 bool _enabled
 bool Property Enabled
 	bool Function Get()
-		return _GetName()
+		return _GetEnabled()
 	EndFunction
 	Function Set(bool aSet)
 		_SetEnabled(aSet)
@@ -35,12 +32,26 @@ Function _SetEnabled(bool aSet)
 	_enabled
 EndFunction
 
-string Property Registry Auto Hidden
+String _registryID
+string Property Registry
+	String Function Get()
+		return _GetRegistryID()
+	EndFunction
+	Function Set(String asSet)
+		_SetRegistryID(asSet)
+	EndFunction
+EndProperty
 bool Property Registered hidden
 	bool Function get()
 		return Registry != ""
 	EndFunction
 EndProperty
+String Function _GetRegistryID()
+	return _registryID
+EndFunction
+Function _SetRegistryID(String asSet)
+	_registryID = asSet
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
@@ -142,6 +153,8 @@ endFunction
 ;									╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   									;
 ;																																											;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
+
+int Property SlotID Auto Hidden
 
 string[] function GetRawTags()
 	return GetTags()

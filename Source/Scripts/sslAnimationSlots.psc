@@ -16,7 +16,7 @@ scriptname sslAnimationSlots extends Quest
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; OnlyCrt: 0 - Only non creature, 1 - Only creatures, else: either
-String[] Function CreateProxyArray(int aiReturnSize, int aiOnlyCreatures) native global
+String[] Function CreateProxyArray(int aiReturnSize, int aiOnlyCreatures) native
 
 String[] _proxyid
 int property Slotted Hidden
@@ -551,7 +551,7 @@ function Setup()
   While (i < _proxyid.Length)
     sslBaseAnimation anim = aliases[i] as sslBaseAnimation
     If (anim)
-      anim.PROXY_ID = i
+      anim.PROXY_ID = _proxyid[i]
     EndIf
     i += 1
   EndWhile
