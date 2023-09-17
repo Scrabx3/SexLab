@@ -872,7 +872,7 @@ bool Function HasThreadControl(SexLabThread akThread)
 EndFunction
 
 Function GetThreadControl(sslThreadController TargetThread)
-  If (!TargetThread || _ActiveControl || TargetThread.GetStatus() != TargetThread.STATUS_INSCENE)
+  If (!TargetThread || _ActiveControl || TargetThread.GetStatus() == TargetThread.STATUS_INSCENE)
     Log("Cannot get Control of " + TargetThread + ", another thread is already being controlled or given thread is not animating/none")
     return
   EndIf

@@ -845,13 +845,13 @@ event OnSelectST()
 		Else
 			item = ItemsTarget[Options[1] as int]
 		EndIf
-		int i = sslpp.CheckStrip(item)
+		int i = sslActorLibrary.CheckStrip(item)
 		If(i == -1)			; Never 			-> Always
-			sslpp.WriteStrip(item, false)
+			sslActorLibrary.WriteStrip(item, false)
 		ElseIf(i == 0)	; Unspecified	-> Never
-			sslpp.WriteStrip(item, true)
+			sslActorLibrary.WriteStrip(item, true)
 		ElseIf(i == 1)	; Always			-> Unspecified
-			sslpp.EraseStrip(item)
+			sslActorLibrary.EraseStrip(item)
 		EndIf
 		SetTextOptionValueST(GetStripState(item))
 		
@@ -3147,7 +3147,7 @@ Function StripEditor()
 EndFunction
 
 String Function GetStripState(Form ItemRef)
-	int strip = sslpp.CheckStrip(ItemRef)
+	int strip = sslActorLibrary.CheckStrip(ItemRef)
 	If(strip == 1)
 		return "$SSL_AlwaysRemove"
 	ElseIf(strip == -1)

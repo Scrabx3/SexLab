@@ -29,6 +29,7 @@ sslThreadModel Function PickModel(float TimeOut = 5.0)
   int i = 0
   While (i < Threads.Length)
     If (!Threads[i].IsLocked)
+      Threads[i].Make()
       GoToState("Ready")
       return Threads[i]
     EndIf

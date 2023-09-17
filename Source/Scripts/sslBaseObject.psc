@@ -51,13 +51,6 @@ string[] function GetTags()
 	return PapyrusUtil.ClearEmpty(Tags)
 endFunction
 
-; Check if this BaseObject matches the given tag boundaries
-; Supports prefixes: [~A, ~B] = A or B | [-A] = not A
-; Ex: [A, ~B, ~C, -D] == true <=> Object has A, does not have D and has at least C or B
-bool Function MatchTags(String[] asTags)
-	return sslpp.MatchTags(Tags, asTags)
-EndFunction
-
 bool Function HasTag(string Tag)
 	return Tags.Find(Tag) != -1
 EndFunction
@@ -180,7 +173,14 @@ bool function HasOneTag(string[] TagList)
 endFunction
 
 bool function HasAllTag(string[] TagList)
-	return sslpp.MatchTags(Tags, TagList)
+	int i = TagList.Length
+	while i
+		i -= 1
+		if TagList[i] != "" && Tags.Find(TagList[i]) == -1
+			return false
+		endIf
+	endWhile
+	return true
 endFunction
 
 bool function AddTagConditional(string Tag, bool AddTag)

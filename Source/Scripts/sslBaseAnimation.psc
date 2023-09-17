@@ -487,7 +487,7 @@ int function GetCum(int Position)
 endFunction
 
 int function ActorCount()
-	return SexLabRegistry.GetActorCount(PROXY_ID, false)
+	return SexLabRegistry.GetActorCount(PROXY_ID)
 endFunction
 
 int function StageCount()
@@ -594,7 +594,7 @@ endFunction
 
 ; Is the given position this racekey
 bool function IsPositionRace(int Position, string RaceKey)
-	return SexLabRegistry.GetRaceKeyPositionA(PROXY_ID, Position).Find(RaceKey) > -1
+	return SexLabRegistry.GetRaceKeyPosition(PROXY_ID, Position) == RaceKey
 endFunction
 
 ; Does the given position have any of the given racekeys

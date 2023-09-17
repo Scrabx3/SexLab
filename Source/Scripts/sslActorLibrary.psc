@@ -351,6 +351,9 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+bool Function HasVehicle(Actor akActor) native global
+Form[] Function UnequipSlots(Actor akActor, int aiSlots) native global
+
 Form[] Function StripActorImpl(Actor akActor, int aiSlots, bool abStripWeapons = true, bool abAnimate = false)
 	abAnimate = abAnimate && akActor.GetWornForm(0x4)	; Body armor slot
 	If(abAnimate)
@@ -358,7 +361,7 @@ Form[] Function StripActorImpl(Actor akActor, int aiSlots, bool abStripWeapons =
 		Debug.SendAnimationEvent(akActor, "Arrok_Undress_G" + Gender)
 		Utility.Wait(0.6)
 	EndIf
-	Form[] ret = sslpp.StripActor(akActor, aiSlots)
+	Form[] ret = UnequipSlots(akActor, aiSlots)
 	If(abStripWeapons)
 		Form RightHand = akActor.GetEquippedObject(1)
 		If(RightHand && IsStrippable(RightHand))
@@ -518,7 +521,7 @@ endFunction
 
 ; A framework shouldnt be "random" and the keyword convention should be established strongly enough to not rely on StorageUtil anymore
 bool function ContinueStrip(Form ItemRef, bool DoStrip = true) global
-	int t = sslpp.CheckStrip(ItemRef)
+	int t = CheckStrip(ItemRef)
 	if t == 1
 		return True
 	endIf

@@ -40,7 +40,7 @@ bool function IsOrgasmAllowed()
 endFunction
 
 bool function PregnancyRisk()
-	If(_sex != 1)	; COMEBACK: futa pregnancy?
+	If(_sex != 1)
 		return false
 	EndIf
 	String activeScene = _Thread.GetActiveScene()
@@ -151,6 +151,7 @@ sslActorStats Stats
 
 Faction _AnimatingFaction
 Actor _PlayerRef
+Form _xMarker
 
 ; Constants
 String Property STATE_IDLE 		= "Empty" AutoReadOnly
@@ -176,6 +177,12 @@ EndProperty
 
 int _sex
 bool _victim
+
+int _AnimVarIsNPC
+int _AnimVarFootIKDisable
+
+; Center
+ObjectReference _myMarker
 
 ; Orgasms
 int _orgasmCount
@@ -265,6 +272,9 @@ Auto State Empty
 		ForceRefTo(ProspectRef)
 		_ActorRef = ProspectRef
 		_sex = SexLabRegistry.GetSex(ProspectRef, true)
+		_AnimVarIsNPC = ProspectRef.GetAnimationVariableInt("IsNPC")
+		_AnimVarFootIKDisable = ProspectRef.GetAnimationVariableInt("FootIKDisable")
+		Log(ProspectRef + " is sex: " + _sex + " npc: " + _AniMVarIsNPC + " ikdisable: " + _AnimVarFootIKDisable)
 
 		TrackedEvent(TRACK_ADDED)
 		GoToState(STATE_SETUP)
@@ -274,6 +284,10 @@ Auto State Empty
 	String Function GetActorName()
 		return "EMPTY"
 	EndFunction
+
+	Event OnEndState()
+		RegisterForModEvent("SSL_CLEAR_Thread" + _Thread.tid, "OnRequestClear")
+	EndEvent
 EndState
 
 bool Function SetActor(Actor ProspectRef)
@@ -310,6 +324,7 @@ State Ready
 
 	Event OnDoPrepare(string asEventName, string asStringArg, float abUseFade, form akPathTo)
 		If(ActorRef == _PlayerRef)
+			ActorRef.SheatheWeapon()
 			Game.SetPlayerAIDriven()
 		Else
 			_Config.CheckBardAudience(ActorRef, true)
@@ -426,7 +441,7 @@ State Paused
 	Event OnStartPlaying(string asEventName, string asStringArg, float afNumArg, form akSender)
 		UnregisterForModEvent("SSL_READY_Thread" + _Thread.tid)
 		LockActor()
-		If (_sex >= 2)
+		If (_sex <= 2)
 			If (DoUndress)
 				DoUndress = false
 				If (_sex == 0)
@@ -434,7 +449,7 @@ State Paused
 				Else
 					Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G1")
 				EndIf
-				Utility.Wait(1.0)
+				Utility.Wait(0.6)
 			EndIf
 			_equipment = StripByData(_stripData, GetStripSettings(), _stripCstm)
 			ResolveStrapon()
@@ -442,6 +457,7 @@ State Paused
 		; Only called once on the first enter to Animating State
 		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		_LastOrgasm = _StartedAt
+		_Thread.AnimationStart()
 		TrackedEvent(TRACK_START)
 	EndEvent
 
@@ -457,6 +473,18 @@ State Paused
 	EndFunction
 	Function LockActor()
 		LockActorImpl()
+		If (!sslActorLibrary.HasVehicle(_ActorRef))
+			If (!_myMarker)
+				_myMarker = _ActorRef.PlaceAtMe(_xMarker)
+			EndIf
+			_ActorRef.SetVehicle(_myMarker)
+		EndIf
+		_ActorRef.SheatheWeapon()
+		If (ActorRef.IsSneaking())
+			ActorRef.StartSneaking()
+		EndIf
+		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
+		_ActorRef.SetAnimationVariableInt("FootIKDisable", 1)
 		If (ActorRef == _PlayerRef)
 			If(_Config.AutoTFC)
 				MiscUtil.SetFreeCameraState(true)
@@ -464,7 +492,7 @@ State Paused
 			EndIf
 		Else
 			ActorUtil.AddPackageOverride(ActorRef, _Thread.DoNothingPackage, 100, 1)
-			ActorRef.EvaluatePackage()
+			_ActorRef.EvaluatePackage()
 		EndIf
 		GoToState(STATE_PLAYING)
 	EndFunction
@@ -745,6 +773,9 @@ State Animating
 		UnlockActor()
 	EndFunction
 	Function UnlockActor()
+		_ActorRef.SetVehicle(none)
+		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
+		_ActorRef.SetAnimationVariableInt("FootIKDisable", _AnimVarFootIKDisable)
 		If (ActorRef == _PlayerRef)
 			MiscUtil.SetFreeCameraState(false)
 		Else
@@ -901,8 +932,9 @@ Function Setup()
 	Stats = SexLabQuestFramework as sslActorStats
 
 	_Thread = GetOwningQuest() as sslThreadModel
-	_PlayerRef = Game.GetPlayer()
 	_AnimatingFaction = _Config.AnimatingFaction
+	_PlayerRef = Game.GetPlayer()
+	_xMarker = Game.GetFormFromFile(0x045A93, "SexLab.esm") ; 0x3B)
 
 	Initialize()
 EndFunction
@@ -933,8 +965,16 @@ Function Initialize()
 	; Floats
 	_LastOrgasm     = 0.0
 
-	TryToClear()	; Is responsible to reset state to empty
+	TryToClear()
+	UnregisterForAllModEvents()
 EndFunction
+
+Event OnRequestClear(string asEventName, string asStringArg, float afDoStatistics, form akSender)
+	If (afDoStatistics)
+		DoStatistics()
+	EndIf
+	Clear()
+EndEvent
 
 ; ------------------------------------------------------- ;
 ; --- Escape Events                                   --- ;

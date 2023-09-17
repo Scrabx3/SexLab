@@ -380,7 +380,11 @@ State Making
 	EndFunction
 
 	Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
-		CenterAlias.ForceRefTo(CenterOn)
+		If (CenterOn)
+			CenterAlias.ForceRefTo(CenterOn)
+		Else
+			CenterAlias.Clear()
+		EndIf
 	EndFunction
 
   sslThreadController Function StartThread()
@@ -416,33 +420,26 @@ State Making
 			EndIf
 		EndIf
 		; Start Animation
-		return StartThreadUnchecked()
-	EndFunction
-
-  sslThreadController Function StartThreadUnchecked()
-		UnregisterForUpdate()
 		SendThreadEvent("AnimationStarting")
 		RunHook(Config.HOOKID_STARTING)
 		If(_StartScene && Scenes.Find(_StartScene) == -1)
 			AddScene(_StartScene)
 		EndIf
-		String[] out = new String[16]
-		CenterRef = FindCenter(Scenes, _StartScene, out, _furniStatus)
-		int where = out.Find("")
-		If (where == -1)
-			where = out.Length - 1
-		EndIf
-		_ActiveScene = out[Utility.RandomInt(0, where)]
-		If (!_ActiveScene)
-			Fatal("Failed to start Thread -- No valid animation applicable to current environment")
+		String[] out = new String[1]
+		ObjectReference new_center = FindCenter(Scenes, _StartScene, out, _furniStatus)
+		If (!new_center)
+			Fatal("Failed to start Thread -- Unable to locate a center compatible with given scenes")
 			return none
-		ElseIf (!SexLabRegistry.SortByScene(Positions, _ActiveScene, true))
-			Fatal("Failed to start Thread -- Actors arent compatible with the requested animation")
+		EndIf
+		CenterRef = new_center
+		_ActiveScene = out[0]
+		If (!SexLabRegistry.SortByScene(Positions, _ActiveScene, true))
+			Fatal("Failed to start Thread -- Actors arent compatible with the requested scene")
 			return none
 		EndIf
 		GoToState(STATE_SETUP_M)
     return self as sslThreadController
-  EndFunction
+	EndFunction
 	
 	Function EndAnimation(bool Quickly = false)
 		Initialize()
@@ -479,10 +476,11 @@ State Making_M
 		PrepareDone()
 	EndEvent
 
-	; Invoked n times by Aliases and once by StartThreadUnchecked, then continue to next state
+	; Invoked n times by Aliases and once by StartThread, then continue to next state
 	Function PrepareDone()
-		If (_prepareAsyncCount <= Positions.Length)
+		If (_prepareAsyncCount < Positions.Length)
 			_prepareAsyncCount += 1
+			Log("Prepare done called " + _prepareAsyncCount + "/" + (Positions.Length + 1) + " times")
 			return
 		ElseIf (HasPlayer)
 			If(IsVictim(PlayerRef) && Config.DisablePlayer)
@@ -495,6 +493,7 @@ State Making_M
 		ElseIf (Config.ShowInMap && PlayerRef.GetDistance(CenterRef) > 750)
 			SetObjectiveDisplayed(0, True)
 		EndIf
+		Log("Prepare completed, entering playing state")
 		GoToState(STATE_PLAYING)
 	EndFunction
 	
@@ -510,10 +509,6 @@ EndState
 
 sslThreadController Function StartThread()
 	Log("Cannot start thread outside of setup phase", "StartThread()")
-	return none
-EndFunction
-sslThreadController Function StartThreadUnchecked()
-	Log("Cannot start thread outside of setup phase", "StartThreadUnchecked()")
 	return none
 EndFunction
 int Function AddActor(Actor ActorRef, bool IsVictim = false, sslBaseVoice Voice = none, bool ForceSilent = false)
@@ -552,8 +547,9 @@ Function SetFurnitureStatus(int aiStatus)
 	Log("Furniture status can only be set during setup", "SetFurnitureStatus()")
 EndFunction
 
-; Given an array of Scenes, select some valid Scene within the array, using the currently selected center as comparable
-; If all scenes are incompatible with the selected center, will return a new center. asOut contains all available animations
+; If CenterRef is set, will look for a valid scene compatible with it, otherweise fails
+; if not set, will search for a compatible center in nearby cells, return the selected center
+; In both cases, if search does not fail, out will have the new scene in position 0
 ObjectReference Function FindCenter(String[] asSceneIDs, String asScenePrefered, String[] asOut, int aiFurniStatus) native
 bool Function GetIsCompatiblecenter(String asSceneID, ObjectReference akCenter) native
 float[] Function GetBaseCoordinates(String asScene) native
@@ -605,6 +601,8 @@ EndFunction
 	By this time, most Scene information is read only
 /;
 
+int _animationSyncCount
+
 bool _SceneEndClimax	; If a (legacy) climax has been triggered
 float _StageTimer			; Additional past default time, to delay the completion of a stage
 float[] _CustomTimers	; Custom set of timers to use for this animation
@@ -628,7 +626,6 @@ EndProperty
 State Animating
 	Event OnBeginState()
 		SetFurnitureIgnored(true)
-		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
 		int[] sex_ = SexLabRegistry.GetPositionSexA(_ActiveScene)
 		int i = 0
@@ -636,7 +633,18 @@ State Animating
 			ActorAlias[i].ReadyActor(strips_[i], sex_[i])
 			i += 1
 		EndWhile
+		_animationSyncCount = 0;
 		SendModEvent("SSL_READY_Thread" + tid)
+		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
+		AnimationStart()
+	EndEvent
+	Function AnimationStart()
+		If (_animationSyncCount < Positions.Length)
+			_animationSyncCount += 1
+			Log("AnimationStart called " + _animationSyncCount + "/" + (Positions.Length + 1) + " times")
+			return
+		EndIf
+		Log("AnimationStart fully setup, begin animating")
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
 		_StageHistory = new String[1]
 		_StageHistory[0] = _ActiveStage
@@ -647,7 +655,7 @@ State Animating
 		EndIf
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
-	EndEvent
+	EndFunction
 
 	bool Function ResetScene(String asNewScene)
 		If (!SexLabRegistry.SortByScene(Positions, asNewScene, true))
@@ -797,10 +805,9 @@ State Animating
 			SetFurnitureIgnored(false)
 			CenterAlias.ForceRefTo(CenterOn)
 			If (!GetIsCompatiblecenter(_ActiveScene, CenterOn))
-				String[] out = new String[16]
-				CenterRef = FindCenter(Scenes, _StartScene, out, _furniStatus)
-				int where = out.Find("")
-				If (where == 0)	; New center has no available scenes closeby, pick new ones
+				String[] out = new String[1]
+				ObjectReference newCenter = FindCenter(Scenes, _ActiveScene, out, _furniStatus)
+				If (!newCenter)	; New center has no available scenes closeby, pick new ones
 					If (Config.HasThreadControl(Self) && InvalidCenterMsg.Show() == 1)
 						Log("Cannot relocate center, end scene by player choice", "CenterOnObject")
 						EndAnimation()
@@ -810,18 +817,17 @@ State Animating
 					EndIf
 					return
 				Else
-					If (where == -1)
-						where = out.Length - 1
+					CenterAlias.ForceRefTo(newCenter)
+					If (_ActiveScene != out[0])
+						_ActiveScene = out[0]
+						SexLabRegistry.SortByScene(Positions, _ActiveScene, true)
 					EndIf
-					_ActiveScene = out[Utility.RandomInt(0, where)]
 				EndIf
 			EndIf
 			SetFurnitureIgnored(true)
 		EndIf
-		If(resync)
-			RealignActors()
-			SendThreadEvent("ActorsRelocated")
-		EndIf
+		RealignActors()
+		SendThreadEvent("ActorsRelocated")
 	EndFunction
 
 	Function RealignActors()
@@ -1000,21 +1006,19 @@ String Function PlaceAndPlay(Actor[] akPositions, float[] afCoordinates, String 
 
 State Ending
 	Event OnBeginState()
-		RegisterForSingleUpdateGameTime(0.1)	; 18s with TimeScale = 20
 		Config.DisableThreadControl(self as sslThreadController)
 		If(IsObjectiveDisplayed(0))
 			SetObjectiveDisplayed(0, False)
 		EndIf
 		RecordSkills()
-		int i = 0
-		While(i < Positions.Length)
-			ActorAlias[i].DoStatistics()
-			ActorAlias[i].Clear()
-			i += 1
-		EndWhile
+		SendModEvent("SSL_CLEAR_Thread" + tid, "", 1.0)
 		SendThreadEvent("AnimationEnding")
 		SendThreadEvent("AnimationEnd")
 		RunHook(Config.HOOKID_END)
+		; Cant use default OnUpdate() event as the previous state could leak a registration into this one here
+		; any attempt to prevent this leak without artificially slowing down the code have failed
+		; 0.1 gametime = 6ig minutes = 360 ig seconds = 360 / 20 rt seconds = 18 rt seconds with default timescale
+		RegisterForSingleUpdateGameTime(0.1)
 	EndEvent
 
 	Event OnUpdateGameTime()
@@ -1088,6 +1092,9 @@ EndFunction
 Function PrepareDone()
 	Log("Invalid state", "PrepareDone()")
 EndFunction
+Function AnimationStart()
+	Log("Invalid state", "AnimationStart()")
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Actor Alias                                     --- ;
@@ -1112,17 +1119,17 @@ sslActorAlias Function PositionAlias(int Position)
 EndFunction
 
 Function SortAliasesToPositions()
-	sslActorAlias[] newAliases = new sslActorAlias[5]
 	int i = 0
 	While (i < ActorAlias.Length)
-		Actor it = ActorAlias[i].GetActorReference()
-		If (it)
-			int where = Positions.Find(it)
-			newAliases[where] = ActorAlias[i]
+		Actor position = ActorAlias[i].GetReference() as Actor
+		If (position)
+			int inActorArray = Positions.Find(position)
+			sslActorAlias tmp = ActorAlias[inActorArray]
+			ActorAlias[inActorArray] = ActorAlias[i]
+			ActorAlias[i] = tmp
 		EndIf
 		i += 1
 	EndWhile
-	ActorAlias = newAliases
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -1133,17 +1140,17 @@ EndFunction
 /;
 
 Function RunHook(int aiHookID)
-	RunHook(aiHookID)
+	Config.RunHook(aiHookID, self)
 EndFunction
 
 Function SendThreadEvent(string HookEvent)
 	Log(HookEvent, "Event Hook")
 	SetupThreadEvent(HookEvent)
-	int i = _Hooks.Length
-	while i
-		i -= 1
+	int i = 0
+	While (i < _Hooks.Length)
 		SetupThreadEvent(HookEvent + "_" + _Hooks[i])
-	endWhile
+		i += 1
+	EndWhile
 EndFunction
 Function SetupThreadEvent(string HookEvent)
 	int eid = ModEvent.Create("Hook"+HookEvent)
@@ -1669,7 +1676,10 @@ int Function GetLowestPresentRelationshipRank(Actor ActorRef)
 EndFunction
 
 string Function GetHook()
-	return _Hooks[0]
+	If (_Hooks.Length)
+		return _Hooks[0]
+	EndIf
+	return ""
 EndFunction
 
 Function Action(string FireState)
