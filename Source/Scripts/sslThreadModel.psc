@@ -27,6 +27,10 @@ String[] Function GetPlayingScenes()
 	return Scenes
 EndFunction
 
+Function StopAnimation()
+	EndAnimation()
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Position Access                                 --- ;
 ; ------------------------------------------------------- ;
@@ -41,22 +45,40 @@ bool Function HasActor(Actor ActorRef)
 	return Positions.Find(ActorRef) != -1
 EndFunction
 
+Actor[] Function GetPositions()
+	return PapyrusUtil.RemoveActor(Positions, none)
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Submission                                      --- ;
 ; ------------------------------------------------------- ;
 ;/
-	Functions to view and manipulate the submissive flag for individual actors
+	Functions for consent interpretation and to view and manipulate the submissive flag for individual actors
 /;
 
-bool Property IsAggressive hidden
-	bool Function get()
-		return GetAllVictims().Length || _ThreadTags.Find("Forced") > -1
-	endfunction
-	Function set(bool value)
-	EndFunction
-EndProperty
+bool Function IsConsent()
+	If (!HasContext("Aggressive"))
+		return false
+	EndIf
+	int i = 0
+	While(i < Positions.Length)
+		If(ActorAlias[i].IsVictim())
+			return true
+		EndIf
+		i += 1
+	EndWhile
+	return false
+EndFunction
 
-Actor[] Function GetAllVictims()
+Function SetConsent(bool abIsConsent)
+	If (abIsConsent)
+		RemoveContext("Aggressive")
+	Else
+		AddContext("Aggressive")
+	EndIf
+EndFunction
+
+Actor[] Function GetSubmissives()
 	Actor[] ret = new Actor[5]
 	int i = 0
 	While(i < Positions.Length)
@@ -68,11 +90,17 @@ Actor[] Function GetAllVictims()
 	return PapyrusUtil.RemoveActor(ret, none)
 EndFunction
 
-Function SetVictim(Actor ActorRef, bool Victimize = true)
-	sslActorAlias vic = ActorAlias(ActorRef)
-	If(vic)
-		vic.SetVictim(Victimize)
+Function SetIsSubmissive(Actor akActor, bool abIsSubmissive)
+	sslActorAlias it = ActorAlias(akActor)
+	If (!it)
+		return
 	EndIf
+	it.SetVictim(abIsSubmissive)
+EndFunction
+
+bool Function GetSubmissive(Actor akActor)
+	sslActorAlias it = ActorAlias(akActor)
+	return it && it.IsVictim()
 EndFunction
 
 bool Function IsVictim(Actor ActorRef)
@@ -98,22 +126,31 @@ EndFunction
 bool Function HasTag(String Tag)
 	return _ThreadTags.Find(Tag) != -1
 EndFunction
-
-bool Function CheckTags(String[] CheckTags, bool RequireAll = true, bool Suppress = false)
-	int i = 0
-	While (i < CheckTags.Length)
-		If (HasTag(CheckTags[i]))
-			If (!RequireAll || Suppress)
-				return !Suppress
-			EndIf
-		EndIf
-		i += 1
-	EndWhile
-	return !Suppress
-EndFunction
-
 String[] Function GetTags()
 	return PapyrusUtil.ClearEmpty(_ThreadTags)
+EndFunction
+
+bool Function HasContext(String asTag)
+	return _ContextTags.Find(asTag)
+EndFunction
+
+Function AddContext(String asContext)
+	If (_ContextTags.Find(asContext) > -1)
+		return
+	EndIf
+	_ContextTags = PapyrusUtil.PushString(_ContextTags, asContext)
+EndFunction
+Function RemoveContext(String asContext)
+	_ContextTags = PapyrusUtil.RemoveString(_ContextTags, asContext)
+EndFunction
+
+String[] Function AddContextExImpl(String[] asOldContext, String asContext) native
+Function AddContextEx(String asContext)
+	_ContextTags = AddContextExImpl(_ContextTags, asContext)
+EndFunction
+
+bool Function IsLeadIn()
+	return LeadIn
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -183,12 +220,6 @@ String Property STATE_END 		= "Ending" AutoReadOnly
 ; ------------------------------------------------------- ;
 ; --- Thread Status                                   --- ;
 ; ------------------------------------------------------- ;
-
-int Property STATUS_UNDEF 	= 0 AutoReadOnly
-int Property STATUS_IDLE	 	= 1 AutoReadOnly
-int Property STATUS_SETUP 	= 2 AutoReadOnly
-int Property STATUS_INSCENE = 3 AutoReadOnly
-int Property STATUS_ENDING	= 4 AutoReadOnly
 
 bool Property IsLocked hidden
 	bool Function get()
@@ -260,6 +291,7 @@ bool Property AutoAdvance auto hidden
 bool Property LeadIn auto hidden
 
 String[] _ThreadTags
+String[] _ContextTags
 String[] _Hooks
 
 ; ------------------------------------------------------- ;
@@ -1208,6 +1240,7 @@ Function Initialize()
 	AutoAdvance = false
 	LeadIn = false
 	_ThreadTags = Utility.CreateStringArray(0)
+	_ContextTags = Utility.CreateStringArray(0)
 	_Hooks = Utility.CreateStringArray(0)
 	; NOTE: Below are unreviewed (legacy) variables
 	SkillBonus = Utility.CreateFloatArray(0)
@@ -1394,6 +1427,14 @@ bool[] Property IsType Hidden	; [0] IsAggressive, [1] IsVaginal, [2] IsAnal, [3]
 	Function Set(bool[] aSet)
 	EndFunction
 EndProperty
+bool Property IsAggressive hidden
+	bool Function get()
+		return !IsConsent()
+	endfunction
+	Function set(bool value)
+		SetConsent(value)
+	EndFunction
+EndProperty
 bool Property IsVaginal hidden
 	bool Function get()
 		return SexlabRegistry.IsSceneTag(_ActiveScene, "Vaginal")
@@ -1497,6 +1538,12 @@ Actor property VictimRef hidden
 		vic.SetVictim(true)
 	EndFunction
 EndProperty
+Actor[] Function GetAllVictims()
+	return GetSubmissives()
+EndFunction
+Function SetVictim(Actor ActorRef, bool Victimize = true)
+	SetIsSubmissive(ActorRef, Victimize)
+EndFunction
 
 float[] Property CenterLocation Hidden
 	float[] Function Get()
@@ -1571,6 +1618,18 @@ endFunction
 bool function AddTagConditional(string Tag, bool AddTag)
 	return false
 endFunction
+bool Function CheckTags(String[] CheckTags, bool RequireAll = true, bool Suppress = false)
+	int i = 0
+	While (i < CheckTags.Length)
+		If (HasTag(CheckTags[i]))
+			If (!RequireAll || Suppress)
+				return !Suppress
+			EndIf
+		EndIf
+		i += 1
+	EndWhile
+	return !Suppress
+EndFunction
 String[] Function AddString(string[] ArrayValues, string ToAdd, bool RemoveDupes = true)
 	if ToAdd != ""
 		string[] Output = ArrayValues

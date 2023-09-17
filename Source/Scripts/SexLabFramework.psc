@@ -90,24 +90,12 @@ SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSub
     Log("StartScene() - Failed to find valid animations")
     return none
   EndIf
-  return StartSceneEx(akPositions, scenes, akSubmissive, akCenter, aiFurniture, asHook)
+  return StartSceneImpl(akPositions, scenes, asTags, akSubmissive, akCenter, aiFurniture, asHook)
 EndFunction
 
 ; Start a scene with pre-defined animations
-SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
-  sslThreadModel thread = NewThread()
-  If (!thread)
-    Log("StartScene() - Failed to claim an available thread")
-    return none
-  ElseIf (!thread.AddActors(akPositions, akSubmissive))
-    Log("StartScene() - Failed to add some actors to thread")
-    return none
-  EndIf
-  thread.SetScenes(asAnims)
-  thread.CenterOnObject(akCenter)
-  thread.SetFurnitureStatus(aiFurniture)
-  thread.SetHook(asHook)
-  return thread.StartThread()
+SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asScenes, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+  StartSceneImpl(akPositions, asScenes, "", akSubmissive, akCenter, aiFurniture, asHook)
 EndFunction
 
 ; Wrapper function for StartScene which takes Actors one-by-one instead of an array
@@ -195,16 +183,6 @@ EndFunction
 ;# To implement a blocking hook, you first want to create a new reference alias and attach a script to it. The script can have any name     #;
 ;#   you want, important is that it extends "SexLabThreadHook" instead of "ReferenceAlias" and fill in the properties. This is all you      #;
 ;#   need to do to implement a blocking hook. To read on how to actually use these Hooks, see "SexLabThreadHook.psc"                        #;
-;#                                                                                                                                          #;
-;#                                                                                                                                          #;
-;# 3. Misc Events                                                                                                                           #;
-;# There are other events that are sent by SexLab, but they are NOT related to Hooks:                                                       #;
-;#    -   EVENT NAME    - | -                 CAUSE                  - | -                          ARGUMENTS                          -    #;
-;#   SexLabDisabled       | When SexLab is Disabled                    | ()                                                                 #;
-;#   SexLabEnabled        | When SexLab is Enabled                     | ()                                                                 #;
-;#   SexLabOrgasm         | When an actor has an orgasm                | (Actor akClimaxingActor, itn aiEnjoyment, itn aiSceneOrgasmCount)  #;
-;#   SexLabLoadStrapons   | Strapons are allowed to be registered      | ()                                                                 #;
-;#   SexLabStoppedActive  | All threads are forcefully stopped         | ()                                                                 #;
 ;#                                                                                                                                          #;
 ;#------------------------------------------------------------------------------------------------------------------------------------------#;
 
@@ -2077,6 +2055,7 @@ int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim 
   thread.CenterOnObject(CenterOn)
   thread.DisableBedUse(!AllowBed)
   thread.SetHook(Hook)
+  thread.SetConsent(Victim == none)
   If (thread.StartThread())
     return thread.GetThreadID()
   EndIf
@@ -2752,6 +2731,23 @@ sslThreadModel function NewThread(float TimeOut = 5.0)
   return ThreadSlots.PickModel(TimeOut)
 endFunction
 
+SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, String asContext, Actor akSubmissive, ObjectReference akCenter, int aiFurniture, String asHook)
+  sslThreadModel thread = NewThread()
+  If (!thread)
+    Log("StartSceneImpl() - Failed to claim an available thread")
+    return none
+  ElseIf (!thread.AddActors(akPositions, akSubmissive))
+    Log("StartSceneImpl() - Failed to add some actors to thread")
+    return none
+  EndIf
+  thread.SetScenes(asScenes)
+  thread.CenterOnObject(akCenter)
+  thread.SetFurnitureStatus(aiFurniture)
+  thread.AddContextEx(asContext)
+  thread.SetHook(asHook)
+  return thread.StartThread()
+EndFunction
+
 Function Log(string Log, string Type = "NOTICE")
   Log = "[SEXLAB] - " + Type + " - " + Log
   SexLabUtil.PrintConsole(Log)
@@ -2764,19 +2760,30 @@ EndFunction
 
 auto state Disabled
   sslThreadModel function NewThread(float TimeOut = 5.0)
-    Log("NewThread() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    LogDisabled("NewThread")
     return none
   endFunction
   SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
-    Log("StartScene() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    LogDisabled("StartScene")
+    return none
+  EndFunction
+  SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+    LogDisabled("StartSceneEx")
+  EndFunction
+  SexLabThread Function StartSceneQuick(Actor akActor1, Actor akActor2 = none, Actor akActor3 = none, Actor akActor4 = none, Actor akActor5 = none, \
+                                          Actor akSubmissive = none, String asTags = "", String asHook = "")
+    LogDisabled("StartSceneQuick")
+  EndFunction
+  SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, String asContext, Actor akSubmissive, ObjectReference akCenter, int aiFurniture, String asHook)
+    LogDisabled("StartSceneImpl")
     return none
   EndFunction
   sslThreadController function QuickStart(Actor Actor1, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none, Actor Victim = none, string Hook = "", string AnimationTags = "")
-    Log("QuickStart() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    LogDisabled("QuickStart")
     return none
   endFunction
   int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
-    Log("StartSex() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+    LogDisabled("StartSex")
     return -1
   endFunction
   event OnBeginState()
@@ -2784,6 +2791,10 @@ auto state Disabled
     ModEvent.Send(ModEvent.Create("SexLabDisabled"))
   endEvent
 endState
+
+Function LogDisabled(String asFunc)
+  Log(asFunc + "() - Failed to make new thread model; system is currently disabled or not installed", "FATAL")
+EndFunction
 
 state Enabled
   event OnBeginState()
