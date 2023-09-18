@@ -332,6 +332,7 @@ State Ready
 		EndIf
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
 		_AnimVarFootIKDisable = _ActorRef.GetAnimationVariableBool("FootIKDisable")
+		; TODO: Code below to pathing isnt optimizedy yet !IMPORTANT
 		Stats.SeedActor(ActorRef)
 		; Delays
 		If(_sex > 2)
