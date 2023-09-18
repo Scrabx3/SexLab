@@ -1188,11 +1188,6 @@ function Setup()
 endFunction
 
 function SetDefaults()
-	; TODO: See if this is implemented in .dll
-  ; BedOffset = new float[4]
-  ; BedOffset[0] = 0.0
-  ; BedOffset[2] = 37.0
-
   ; Reload config
   Reload()
 

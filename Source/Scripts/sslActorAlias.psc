@@ -183,7 +183,7 @@ int _sex
 bool _victim
 
 int _AnimVarIsNPC
-int _AnimVarFootIKDisable
+bool _AnimVarFootIKDisable
 
 ; Center
 ObjectReference _myMarker
@@ -276,8 +276,6 @@ Auto State Empty
 		ForceRefTo(ProspectRef)
 		_ActorRef = ProspectRef
 		_sex = SexLabRegistry.GetSex(ProspectRef, true)
-		_AnimVarIsNPC = ProspectRef.GetAnimationVariableInt("IsNPC")
-		_AnimVarFootIKDisable = ProspectRef.GetAnimationVariableInt("FootIKDisable")
 
 		TrackedEvent(TRACK_ADDED)
 		GoToState(STATE_SETUP)
@@ -326,12 +324,14 @@ State Ready
 	EndFunction
 
 	Event OnDoPrepare(string asEventName, string asStringArg, float abUseFade, form akPathTo)
-		If(ActorRef == _PlayerRef)
-			ActorRef.SheatheWeapon()
+		If(_ActorRef == _PlayerRef)
+			_ActorRef.SheatheWeapon()
 			Game.SetPlayerAIDriven()
 		Else
 			_Config.CheckBardAudience(ActorRef, true)
 		EndIf
+		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
+		_AnimVarFootIKDisable = _ActorRef.GetAnimationVariableBool("FootIKDisable")
 		Stats.SeedActor(ActorRef)
 		; Delays
 		If(_sex > 2)
@@ -487,7 +487,7 @@ State Paused
 			ActorRef.StartSneaking()
 		EndIf
 		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
-		_ActorRef.SetAnimationVariableInt("FootIKDisable", 1)
+		_ActorRef.SetAnimationVariableBool("FootIKDisable", true)
 		If (ActorRef == _PlayerRef)
 			If(_Config.AutoTFC)
 				MiscUtil.SetFreeCameraState(true)
@@ -778,7 +778,7 @@ State Animating
 	Function UnlockActor()
 		_ActorRef.SetVehicle(none)
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
-		_ActorRef.SetAnimationVariableInt("FootIKDisable", _AnimVarFootIKDisable)
+		_ActorRef.SetAnimationVariableBool("FootIKDisable", _AnimVarFootIKDisable)
 		If (ActorRef == _PlayerRef)
 			MiscUtil.SetFreeCameraState(false)
 		Else

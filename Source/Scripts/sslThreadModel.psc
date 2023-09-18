@@ -164,18 +164,18 @@ EndFunction
 /;
 
 bool Function HasTag(String Tag)
-	return _ThreadTags.Find(Tag) != -1
+	return _ThreadTags.Length && _ThreadTags.Find(Tag) > -1
 EndFunction
 String[] Function GetTags()
 	return PapyrusUtil.ClearEmpty(_ThreadTags)
 EndFunction
 
 bool Function HasContext(String asTag)
-	return _ContextTags.Find(asTag)
+	return _ContextTags.Length && _ContextTags.Find(asTag)
 EndFunction
 
 Function AddContext(String asContext)
-	If (_ContextTags.Find(asContext) > -1)
+	If (_ContextTags.Length && _ContextTags.Find(asContext) > -1)
 		return
 	EndIf
 	_ContextTags = PapyrusUtil.PushString(_ContextTags, asContext)
@@ -730,9 +730,12 @@ State Animating
 	EndFunction
 
 	bool Function ResetScene(String asNewScene)
-		If (!SexLabRegistry.SortByScene(Positions, asNewScene, true))
-			Log("Cannot reset scene. New Scene is not compatible with given positions")
-			return false
+		If (asNewScene != _ActiveScene)
+			If (!SexLabRegistry.SortByScene(Positions, asNewScene, true))
+				Log("Cannot reset scene. New Scene is not compatible with given positions")
+				return false
+			EndIf
+			RecalcCenterCoordinates()
 		EndIf
 		RecordSkills()
 		SetBonuses()
@@ -872,32 +875,32 @@ State Animating
 	Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
 		If (!CenterOn)
 			return
-		ElseIf(CenterOn != CenterRef)
-			ObjectReference oldCenter = CenterRef
-			SetFurnitureIgnored(false)
-			CenterAlias.ForceRefTo(CenterOn)
-			If (!GetIsCompatiblecenter(_ActiveScene, CenterOn))
-				String[] out = new String[1]
-				ObjectReference newCenter = FindCenter(Scenes, _ActiveScene, out, _furniStatus)
-				If (!newCenter)	; New center has no available scenes closeby, pick new ones
-					If (Config.HasThreadControl(Self) && InvalidCenterMsg.Show() == 1)
-						Log("Cannot relocate center, end scene by player choice", "CenterOnObject")
-						EndAnimation()
-					Else
-						Log("Cannot relocate center, cancel relocation", "CenterOnObject")
-						CenterAlias.ForceRefTo(oldCenter)
-					EndIf
+		EndIf
+		ObjectReference oldCenter = CenterRef
+		SetFurnitureIgnored(false)
+		CenterAlias.ForceRefTo(CenterOn)
+		If (!GetIsCompatiblecenter(_ActiveScene, CenterOn))
+			String[] out = new String[1]
+			ObjectReference newCenter = FindCenter(Scenes, _ActiveScene, out, _furniStatus)
+			If (!newCenter)	; New center has no available scenes closeby, pick new ones
+				If (Config.HasThreadControl(Self) && InvalidCenterMsg.Show() == 1)
+					Log("Cannot relocate center, end scene by player choice", "CenterOnObject")
+					EndAnimation()
 					return
 				Else
-					CenterAlias.ForceRefTo(newCenter)
-					If (_ActiveScene != out[0])
-						_ActiveScene = out[0]
-						SexLabRegistry.SortByScene(Positions, _ActiveScene, true)
-					EndIf
+					Log("Cannot relocate center, cancel relocation", "CenterOnObject")
+					CenterAlias.ForceRefTo(oldCenter)
+				EndIf
+			Else
+				CenterAlias.ForceRefTo(newCenter)
+				If (_ActiveScene != out[0])
+					_ActiveScene = out[0]
+					SexLabRegistry.SortByScene(Positions, _ActiveScene, true)
 				EndIf
 			EndIf
-			SetFurnitureIgnored(true)
 		EndIf
+		RecalcCenterCoordinates()
+		SetFurnitureIgnored(true)
 		RealignActors()
 		SendThreadEvent("ActorsRelocated")
 	EndFunction
@@ -1087,6 +1090,7 @@ State Ending
 		SendThreadEvent("AnimationEnding")
 		SendThreadEvent("AnimationEnd")
 		RunHook(Config.HOOKID_END)
+		; UpdateOffset(_ActiveScene, _BaseCoordinates, _InUseCoordinates)
 		; Cant use default OnUpdate() event as the previous state could leak a registration into this one here
 		; any attempt to prevent this leak without artificially slowing down the code have failed
 		; 0.1 gametime = 6ig minutes = 360 ig seconds = 360 / 20 rt seconds = 18 rt seconds with default timescale
@@ -1105,6 +1109,9 @@ State Ending
 		return STATUS_ENDING
 	EndFunction
 EndState
+
+; TODO: Implement
+Function UpdateOffset(String asScene, float[] afBaseCoordinates, float[] afInUseCoordinates) native
 
 ; ------------------------------------------------------- ;
 ; --- State Independent                               --- ;
@@ -1135,6 +1142,19 @@ sslActorAlias Function PickAlias(Actor ActorRef)
 		i += 1
 	endWhile
 	return none
+EndFunction
+
+Function RecalcCenterCoordinates()
+	float[] offset = new float[4]
+	offset[0] = _InUseCoordinates[0] - _BaseCoordinates[0]
+	offset[1] = _InUseCoordinates[1] - _BaseCoordinates[1]
+	offset[2] = _InUseCoordinates[2] - _BaseCoordinates[2]
+	offset[3] = _InUseCoordinates[3] - _BaseCoordinates[3]
+	_BaseCoordinates = GetBaseCoordinates(_ActiveScene)
+	_InUseCoordinates[0] = _BaseCoordinates[0] + offset[0]
+	_InUseCoordinates[1] = _BaseCoordinates[1] + offset[1]
+	_InUseCoordinates[2] = _BaseCoordinates[2] + offset[2]
+	_InUseCoordinates[3] = _BaseCoordinates[3] + offset[3]
 EndFunction
 
 Function SetFurnitureIgnored(bool disabling = true)
