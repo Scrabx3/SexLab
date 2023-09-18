@@ -18,6 +18,7 @@ Message Property RepositionInfoMsg Auto
 {[Ok, Cancel, Don't show again]}
 
 sslActorAlias AdjustAlias		; The actor currently selected for position adjustments
+bool _SkipHotkeyEvents
 
 int[] Hotkeys
 int Property kAdvanceAnimation = 0 AutoReadOnly
@@ -60,9 +61,10 @@ Function EnableHotkeys(bool forced = false)
 EndFunction
 	
 Event OnKeyDown(int KeyCode)
-	If(Utility.IsInMenuMode())
+	If(Utility.IsInMenuMode() || _SkipHotkeyEvents)
 		return
 	EndIf
+	_SkipHotkeyEvents = true
 	int hotkey = Hotkeys.Find(KeyCode)
 	If(hotkey == kAdvanceAnimation)
 		AdvanceStage(Config.BackwardsPressed())
@@ -95,6 +97,7 @@ Event OnKeyDown(int KeyCode)
 			EndAnimation()
 		EndIf
 	EndIf
+	_SkipHotkeyEvents = false
 EndEvent
 
 Function DisableHotkeys()
@@ -273,7 +276,7 @@ EndFunction
 
 Function MoveScene()
 	UnregisterForUpdate()
-	If (StorageUtil.GetIntValue(none, "SEXLAB_REPOSITIONMSG_INFO", 0))
+	If (StorageUtil.GetIntValue(none, "SEXLAB_REPOSITIONMSG_INFO", 0) == 0)
 		; "You have 30 secs to position yourself to a new center location.\nHold down the 'Move Scene' hotkey to relocate the center instantly to your current position"
 		int choice = RepositionInfoMsg.Show()
 		If (choice == 1)
