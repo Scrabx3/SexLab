@@ -880,6 +880,7 @@ Function GetThreadControl(sslThreadController TargetThread)
   _ActiveControl = TargetThread
   ; Lock players movement iff they arent owned by the thread
   If (!_ActiveControl.HasPlayer)
+    _ActiveControl.AutoAdvance = false
     PlayerRef.StopCombat()
     if PlayerRef.IsWeaponDrawn()
       PlayerRef.SheatheWeapon()
@@ -887,7 +888,6 @@ Function GetThreadControl(sslThreadController TargetThread)
     Game.SetPlayerAIDriven()
   EndIf
   ; Give player control
-  _ActiveControl.AutoAdvance = false
   _ActiveControl.EnableHotkeys(true)
 EndFunction
 

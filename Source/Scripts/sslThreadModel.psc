@@ -304,6 +304,15 @@ float[] _InUseCoordinates
 String _ActiveStage
 String[] _StageHistory
 
+int Property Stage Hidden
+	int Function Get()
+		return _StageHistory.Length
+	EndFunction
+	Function Set(int aSet)
+		return GoToStage(aSet)
+	EndFunction
+EndProperty
+
 int Property FURNI_DISALLOW = 0 AutoReadOnly
 int Property FURNI_ALLOW 		= 1 AutoReadOnly
 int Property FURNI_PREFER 	= 2 AutoReadOnly
@@ -787,7 +796,7 @@ State Animating
 			ActorAlias[i].UpdateNext(strips_[i])
 			i += 1
 		EndWhile
-		PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
+		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, newStage)
 		_StageHistory = PapyrusUtil.PushString(_StageHistory, _ActiveStage)
 		ReStartTimer()
 		SendThreadEvent("StageStart")
@@ -823,7 +832,8 @@ State Animating
 			return
 		EndIf
 		_StageTimer = 0
-		RegisterForSingleUpdate(GetTimer())
+		float time = GetTimer()
+		RegisterForSingleUpdate(time)
 	EndFunction
 
 	Function UpdateTimer(float AddSeconds = 0.0)
@@ -860,7 +870,9 @@ State Animating
 	Endfunction
 	
 	Event OnUpdate()
-		If (_StageTimer > 0)
+		If (!AutoAdvance)
+			return
+		ElseIf (_StageTimer > 0)
 			RegisterForSingleUpdate(_StageTimer)
 			_StageTimer = 0
 			return
@@ -1451,15 +1463,6 @@ EndProperty
 int Property FemaleCreatures hidden
 	int Function get()
 		return Genders[3]
-	EndFunction
-EndProperty
-
-int Property Stage Hidden
-	int Function Get()
-		return _StageHistory.Length
-	EndFunction
-	Function Set(int aSet)
-		return GoToStage(aSet)
 	EndFunction
 EndProperty
 
