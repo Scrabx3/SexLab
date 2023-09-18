@@ -173,6 +173,9 @@ String[] Function GetRaceKeyPositionA(String asID) native global
 ; returned as [X, Y, Z, Rotation]
 float[] Function GetOffset(String asID, String asStage, int n) native global
 float[] Function GetOffsetRaw(String asID, String asStage, int n) native global
+Function UpdateOffset(String asID, String asStage, int n, float afValue, int aiOffsetID) native global
+Function UpdateOffsetA(String asID, String asStage, int n, float[] afNewOffset) native global
+Function ResetOffset(String asID, String asStage, int n) native global
 
 ; Get relevant strip info for the specified stage and position
 ; Strip Data is represented by a 8 bit flag:

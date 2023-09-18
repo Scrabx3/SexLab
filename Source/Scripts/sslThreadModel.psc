@@ -1081,6 +1081,7 @@ EndFunction
 
 ; Set location for all positions on CenterAlias, incl offset, and play their respected animation. Positions are assumed to be sorted by scene
 String Function PlaceAndPlay(Actor[] akPositions, float[] afCoordinates, String asSceneID, String asStageID) native
+Function RePlace(Actor akActor, float[] afBaseCoordinates, String asSceneID, String asStageID, int n) native
 
 ; ------------------------------------------------------- ;
 ; --- Thread END                                      --- ;
