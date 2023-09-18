@@ -1,6 +1,9 @@
 scriptname sslCreatureAnimationDefaults extends sslAnimationFactory
 
 function LoadCreatureAnimations()
+	Debug.Messagebox("It is no longer possible to register animations through the Papyrus API. Use the SceneBuilder Tool to generate .slr files instead")
+	return
+
 	PrepareFactoryCreatures()
 	if Game.GetCameraState() == 0
 		if Utility.IsInMenuMode()

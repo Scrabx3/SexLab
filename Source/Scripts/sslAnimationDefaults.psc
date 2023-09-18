@@ -5,8 +5,8 @@ scriptname sslAnimationDefaults extends sslAnimationFactory
 }
 
 function LoadAnimations()
-	; Debug.Messagebox("It is no longer possible to register animations through the Papyrus API. Use the SceneBuilder Tool to generate .slr files instead")
-	; return
+	Debug.Messagebox("It is no longer possible to register animations through the Papyrus API. Use the SceneBuilder Tool to generate .slr files instead")
+	return
 
 	PrepareFactory()
 	if Game.GetCameraState() == 0
