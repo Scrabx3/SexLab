@@ -176,6 +176,7 @@ float[] Function GetOffsetRaw(String asID, String asStage, int n) native global
 Function UpdateOffset(String asID, String asStage, int n, float afValue, int aiOffsetID) native global
 Function UpdateOffsetA(String asID, String asStage, int n, float[] afNewOffset) native global
 Function ResetOffset(String asID, String asStage, int n) native global
+Function ResetOffsetA(String asID, String asStage) native global
 
 ; Get relevant strip info for the specified stage and position
 ; Strip Data is represented by a 8 bit flag:

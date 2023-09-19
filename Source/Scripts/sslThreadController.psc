@@ -78,8 +78,8 @@ Event OnKeyDown(int KeyCode)
 		AdjustSideways(Config.BackwardsPressed(), Config.AdjustStagePressed())
 	ElseIf(hotkey == kRotateScene)
 		RotateScene(Config.BackwardsPressed())
-	ElseIf(hotkey == kAdjustSchlong)
-		AdjustSchlong(Config.BackwardsPressed())
+	; ElseIf(hotkey == kAdjustSchlong)
+	; 	AdjustSchlong(Config.BackwardsPressed())
 	ElseIf(hotkey == kAdjustChange)			; Change Adjusting Position
 		AdjustChange(Config.BackwardsPressed())
 	ElseIf(hotkey == kRealignActors)
@@ -153,83 +153,61 @@ Function ChangeAnimation(bool backwards = false)
 	ResetScene(newScene)
 EndFunction
 
+Function AdjustCoordinate(bool abBackwards, bool abStageOnly, float afValue, int aiKeyIdx, int aiOffsetType)
+	; [X, Y, Z, Rotation]
+	UnregisterForUpdate()
+	Log("Shifting position by " + afValue)
+	String scene_ = GetActiveScene()
+	String stage_ = GetActiveStage()
+	int AdjustPos = GetAdjustPos()
+	bool first_pass = true
+	While(true)
+		PlayHotkeyFX(0, abBackwards)
+		SexLabRegistry.UpdateOffset(scene_, stage_, AdjustPos, afValue, aiOffsetType)
+		UpdatePlacement(AdjustPos, AdjustAlias)
+		Utility.Wait(0.1)
+		If(!Input.IsKeyPressed(Hotkeys[aiKeyIdx]))
+			UpdateTimer(5)
+			OnUpdate()
+			return
+		ElseIf (first_pass)
+			first_pass = false
+			Utility.Wait(0.4)
+		EndIf
+	EndWhile
+EndFunction
 Function AdjustForward(bool backwards = false, bool AdjustStage = false)
-	UnregisterforUpdate()
-	float Amount = 0.5 - (backwards as float)
-	int AdjustPos = GetAdjustPos()
-	bool first_pass = true
-	While(true)
-		PlayHotkeyFX(0, backwards)
-		Animation.AdjustForward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-		AdjustAlias.RefreshLoc()
-		Utility.Wait(0.03)
-		If(!Input.IsKeyPressed(Hotkeys[kAdjustForward]))
-			RegisterForSingleUpdate(0.2)
-			return
-		ElseIf (first_pass)
-			first_pass = false
-			Utility.Wait(0.4)
-		EndIf
-	EndWhile
+	float value = 0.5 - (backwards as float)
+	AdjustCoordinate(backwards, AdjustStage, value, kAdjustForward, 0)
 EndFunction
-
 Function AdjustSideways(bool backwards = false, bool AdjustStage = false)
-	UnregisterforUpdate()
-	int AdjustPos = GetAdjustPos()
-	float Amount = 0.5 - (backwards as float)
-	bool first_pass = true
-	While(true)
-		PlayHotkeyFX(0, backwards)
-		Animation.AdjustSideways(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-		RealignActors()
-		Utility.Wait(0.03)
-		If(!Input.IsKeyPressed(Hotkeys[kAdjustSideways]))
-			RegisterForSingleUpdate(0.2)
-			return
-		ElseIf (first_pass)
-			first_pass = false
-			Utility.Wait(0.4)
-		EndIf
-	EndWhile
+	float value = 0.5 - (backwards as float)
+	AdjustCoordinate(backwards, AdjustStage, value, kAdjustSideways, 1)
 EndFunction
-
 Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
-	UnregisterforUpdate()
-	int AdjustPos = GetAdjustPos()
-	float Amount = 0.5 - (backwards as float)
-	bool first_pass = true
-	While(true) 
-		PlayHotkeyFX(2, backwards)
-		Animation.AdjustUpward(AdjustKey, AdjustPos, Stage, Amount, Config.AdjustStagePressed())
-		RealignActors()
-		Utility.Wait(0.03)
-		If(!Input.IsKeyPressed(Hotkeys[kAdjustUpward]))
-			RegisterForSingleUpdate(0.2)
-			return
-		ElseIf (first_pass)
-			first_pass = false
-			Utility.Wait(0.4)
-		EndIf
-	EndWhile
+	float value = 0.5 - (backwards as float)
+	AdjustCoordinate(backwards, AdjustStage, value, kAdjustUpward, 2)
 EndFunction
 
 Function RotateScene(bool backwards = false)
-	UnregisterForUpdate()
 	float Amount = 15.0
 	If(Config.IsAdjustStagePressed())
 		Amount = 180.0
+	ElseIf(backwards)
+		Amount = -15.0
 	EndIf
-	Amount = (-1 * backwards as float) * Amount
+	
 	bool first_pass = true
 	While(true)
 		PlayHotkeyFX(1, !backwards)
-		CenterLocation[5] = CenterLocation[5] + Amount
-		If(CenterLocation[5] >= 360.0)
-			CenterLocation[5] = CenterLocation[5] - 360.0
-		ElseIf(CenterLocation[5] < 0.0)
-			CenterLocation[5] = CenterLocation[5] + 360.0
+		float[] coords
+		coords[5] = coords[5] + Amount
+		If(coords[5] >= 360.0)
+			coords[5] = coords[5] - 360.0
+		ElseIf(coords[5] < 0.0)
+			coords[5] = coords[5] + 360.0
 		EndIf
-		CenterOnCoords(CenterLocation[0], CenterLocation[1], CenterLocation[2], 0, 0, CenterLocation[5], true)
+		CenterOnCoords(coords[0], coords[1], coords[2], 0, 0, coords[5], true)
 		Utility.Wait(0.03)
 		If(!Input.IsKeyPressed(Hotkeys[kRotateScene]))
 			RegisterForSingleUpdate(0.2)
@@ -239,17 +217,6 @@ Function RotateScene(bool backwards = false)
 			Utility.Wait(0.4)
 		EndIf
 	EndWhile
-EndFunction
-
-Function AdjustSchlong(bool backwards = false)
-	int Amount  = ((0.5 - (backwards as float)) * 2) as int
-	int AdjustPos = GetAdjustPos()
-	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
-	If(Math.Abs(Schlong) <= 9)
-		Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
-		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
-		PlayHotkeyFX(2, !backwards)
-	EndIf
 EndFunction
 
 Function AdjustChange(bool backwards = false)
@@ -270,7 +237,7 @@ Function AdjustChange(bool backwards = false)
 EndFunction
 
 Function RestoreOffsets()
-	Animation.RestoreOffsets(AdjustKey)
+	SexLabRegistry.ResetOffsetA(GetActiveScene(), GetActiveStage())
 	RealignActors()
 EndFunction
 
@@ -326,19 +293,21 @@ Function ChangePositions(bool backwards = false)
 		return
 	EndIf
 	String activeScene = GetActiveScene()
-	int pos = GetAdjustPos()
-	int i = pos + 1
-	While(i < Positions.Length + pos)
+	Actor actor_adj = AdjustAlias.GetActorReference()
+	int i_adj = GetAdjustPos()
+	int i = i_adj + 1
+	While(i < Positions.Length + i_adj)
 		If(i >= Positions.Length)
 			i -= Positions.Length
 		EndIf
-		If(SexLabRegistry.IsSimilarPosition(activeScene, pos, i))
-			Actor tmpAct = Positions[pos]
-			Positions[pos] = Positions[i]
+		If(SexLabRegistry.CanFillPosition(activeScene, i_adj, Positions[i]) && \
+				SexLabRegistry.CanFillPosition(activeScene, i, actor_adj))
+			Actor tmpAct = Positions[i_adj]
+			Positions[i_adj] = Positions[i]
 			Positions[i] = tmpAct
 
-			sslActorAlias tmpAli = ActorAlias[pos]
-			ActorAlias[pos] = ActorAlias[i]
+			sslActorAlias tmpAli = ActorAlias[i_adj]
+			ActorAlias[i_adj] = ActorAlias[i]
 			ActorAlias[i] = tmpAli
 
 			SendThreadEvent("PositionChange")
@@ -389,4 +358,16 @@ ObjectReference Function GetCenterFX()
 			i += 1
 		endWhile
 	endIf
+EndFunction
+
+
+Function AdjustSchlong(bool backwards = false)
+	int Amount  = ((0.5 - (backwards as float)) * 2) as int
+	int AdjustPos = GetAdjustPos()
+	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
+	If(Math.Abs(Schlong) <= 9)
+		Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
+		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
+		PlayHotkeyFX(2, !backwards)
+	EndIf
 EndFunction
