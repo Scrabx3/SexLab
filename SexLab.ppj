@@ -11,7 +11,7 @@
         <Variable Name="ThisProject" Value="."/>
         <Variable Name="Rel" Value=".\.release"/>
         <Variable Name="MO2" Value=".."/>
-        <Variable Name="Ver" Value="V1.8.2.5"/>
+        <Variable Name="Ver" Value="V2.0"/>
     </Variables>
     <Imports>
         <!-- <Import>@ThisProject\Scripts\Source</Import> -->
@@ -35,7 +35,7 @@
         <Folder>@ThisProject\Source\Scripts</Folder>
     </Folders>
     <ZipFiles Output="@Rel">
-        <ZipFile Name="@ModName - @Ver - LATEST" RootDir="@ThisProject" Compression="deflate">
+        <ZipFile Name="@ModName - @Ver - 1.6.640" RootDir="@ThisProject" Compression="deflate">
         	<!-- <Include>*.esp</Include>
             <Include>meshes</Include> -->
             <Include>SexLab.esm</Include>
@@ -44,19 +44,11 @@
             <Include>Source</Include>
             <Include>SKSE/Plugins/SexLabpp.dll</Include>
             <Include>SKSE/Plugins/SexLabpp.pdb</Include>
-            <Include>SKSE/SexLabpp</Include>
+            <Include>SKSE/SexLab</Include>
             <!-- <Include>SEQ</Include>
             <Include>SKSE</Include>
             <Include>Sound</Include>
             <Include>textures</Include> -->
-        </ZipFile>
-        <ZipFile Name="@ModName - @Ver - 1.6.353" RootDir="@ThisProject" Compression="deflate">
-            <Include>SexLab.esm</Include>
-            <Include>Interface</Include>
-            <Include>Scripts</Include>
-            <Include>Source</Include>
-            <Include Path="SKSE/Plugins">16353</Include>
-            <Include>SKSE/SexLabpp</Include>
         </ZipFile>
     </ZipFiles>
 </PapyrusProject>
