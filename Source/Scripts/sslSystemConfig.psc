@@ -872,7 +872,7 @@ bool Function HasThreadControl(SexLabThread akThread)
 EndFunction
 
 Function GetThreadControl(sslThreadController TargetThread)
-  If (!TargetThread || _ActiveControl || TargetThread.GetStatus() == TargetThread.STATUS_INSCENE)
+  If (!TargetThread || _ActiveControl || TargetThread.GetStatus() != TargetThread.STATUS_INSCENE)
     Log("Cannot get Control of " + TargetThread + ", another thread is already being controlled or given thread is not animating/none")
     return
   EndIf
@@ -881,7 +881,7 @@ Function GetThreadControl(sslThreadController TargetThread)
   ; Lock players movement iff they arent owned by the thread
   If (!_ActiveControl.HasPlayer)
     _ActiveControl.AutoAdvance = false
-    PlayerRef.StopCombat()
+    PlayerRef.StopCombatAlarm()
     if PlayerRef.IsWeaponDrawn()
       PlayerRef.SheatheWeapon()
     endIf
@@ -899,7 +899,7 @@ Function DisableThreadControl(sslThreadController TargetThread)
   _ActiveControl.DisableHotkeys()
   _ActiveControl.AutoAdvance = true
   ; Unlock players movement iff they arent owned by the thread
-  If (_ActiveControl.HasPlayer)
+  If (!_ActiveControl.HasPlayer)
     Game.SetPlayerAIDriven(false)
   EndIf
   _ActiveControl = none

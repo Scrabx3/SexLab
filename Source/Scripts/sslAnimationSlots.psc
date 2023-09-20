@@ -110,7 +110,7 @@ sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
   While (i < ret.Length)
     int where = _proxyid.Find(asSceneIDs[i])
     If (where > -1)
-      ret[i] = GetNthAlias(i) as sslBaseAnimation
+      ret[i] = GetNthAlias(where) as sslBaseAnimation
     EndIf
     i += 1
   EndWhile
