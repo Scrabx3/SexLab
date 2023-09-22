@@ -54,6 +54,21 @@ String Function _GetRegistryID()
 	return PROXY_ID
 EndFunction
 
+string[] function GetTags()
+	return SexLabRegistry.GetSceneTags(PROXY_ID)
+endFunction
+bool Function HasTag(string Tag)
+	return Tag && GetTags().Find(Tag) != -1
+EndFunction
+bool function AddTag(string Tag)
+	return false
+endFunction
+bool function RemoveTag(string Tag)
+	return false
+endFunction
+function AddTags(string[] TagList)
+endFunction
+
 int Function GetMaxDepth()
 	return SexLabRegistry.GetPathMax(PROXY_ID, "").Length
 EndFunction

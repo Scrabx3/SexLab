@@ -63,7 +63,7 @@ string[] function GetTags()
 endFunction
 
 bool Function HasTag(string Tag)
-	return Tags.Find(Tag) != -1
+	return Tag && Tags.Find(Tag) != -1
 EndFunction
 
 bool function AddTag(string Tag)
@@ -178,7 +178,7 @@ bool function HasOneTag(string[] TagList)
 	int i = TagList.Length
 	while i
 		i -= 1
-		if TagList[i] != "" && Tags.Find(TagList[i]) != -1
+		if HasTag(TagList[i])
 			return true
 		endIf
 	endWhile
@@ -189,7 +189,7 @@ bool function HasAllTag(string[] TagList)
 	int i = TagList.Length
 	while i
 		i -= 1
-		if TagList[i] != "" && Tags.Find(TagList[i]) == -1
+		if (!HasTag(TagList[i]))
 			return false
 		endIf
 	endWhile
