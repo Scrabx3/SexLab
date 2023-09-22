@@ -124,7 +124,6 @@ String[] Function GetPathMax(String asID, String asStage) native global
 
 ; Return the number of actors animated in this scene, including or excluding optional positions
 int Function GetActorCount(String asID) native global
-int Function GetOptionalActorCount(String asID) native global
 
 ; Are position n and m similar in the scenes context? That is, can an actor filling position n also fill position m and vice versa?
 bool Function IsSimilarPosition(String asID, int n, int m) native global
