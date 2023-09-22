@@ -11,7 +11,7 @@
         <Variable Name="ThisProject" Value="."/>
         <Variable Name="Rel" Value=".\.release"/>
         <Variable Name="MO2" Value=".."/>
-        <Variable Name="Ver" Value="V2.0"/>
+        <Variable Name="Ver" Value="V2.0.0.3"/>
     </Variables>
     <Imports>
         <!-- <Import>@ThisProject\Scripts\Source</Import> -->
@@ -42,8 +42,22 @@
             <Include>Interface</Include>
             <Include>Scripts</Include>
             <Include>Source</Include>
-            <Include>SKSE/Plugins/SexLabpp.dll</Include>
-            <Include>SKSE/Plugins/SexLabpp.pdb</Include>
+            <Include>SKSE/Plugins/SexLab.dll</Include>
+            <Include>SKSE/Plugins/SexLab.pdb</Include>
+            <Include>SKSE/SexLab</Include>
+            <!-- <Include>SEQ</Include>
+            <Include>SKSE</Include>
+            <Include>Sound</Include>
+            <Include>textures</Include> -->
+        </ZipFile>
+        <ZipFile Name="@ModName - @Ver - 1.5.97" RootDir="@ThisProject" Compression="deflate">
+        	<!-- <Include>*.esp</Include>
+            <Include>meshes</Include> -->
+            <Include>SexLab.esm</Include>
+            <Include>Interface</Include>
+            <Include>Scripts</Include>
+            <Include>Source</Include>
+            <Include Path="SKSE/Plugins">1597</Include>
             <Include>SKSE/SexLab</Include>
             <!-- <Include>SEQ</Include>
             <Include>SKSE</Include>
