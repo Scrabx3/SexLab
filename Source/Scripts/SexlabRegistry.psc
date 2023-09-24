@@ -53,8 +53,10 @@ String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, Stri
 ; The extended version will take an array and return the index of the n'th scene which the actors are sorted by (usually the first valid scene found)
 ; If fallbacks are enabled, will attempt to reinterpret the given actors to find an allowed ordering if the first pass was not successful
 ; Return false/-1 if the positions couldnt be sorted; E.g. because the scene is incompatible for the stated actors
-bool Function SortByScene(Actor[] akPositions, String asScene, bool abAllowFallback) native global
-int Function SortBySceneEx(Actor[] akPositions, String[] asScenes, bool abAllowFallback) native global
+bool Function SortByScene(Actor[] akPositions, Actor akSubmissive, String asScene, bool abAllowFallback) native global
+bool Function SortBySceneA(Actor[] akPositions, Actor[] akSubmissives, String asScene, bool abAllowFallback) native global
+int Function SortBySceneEx(Actor[] akPositions, Actor akSubmissive, String[] asScenes, bool abAllowFallback) native global
+int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[] asScenes, bool abAllowFallback) native global
 
 ; ------------------------------------------------------- ;
 ; --- Scenes                                          --- ;

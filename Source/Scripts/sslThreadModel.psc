@@ -280,7 +280,6 @@ EndFunction
 
 sslActorAlias[] Property ActorAlias Auto
 Actor[] Property Positions Auto Hidden
-Actor[] Property Submissives Auto Hidden
 
 String _ActiveScene	              ; The currently playing Animation
 String _StartScene	              ; The first animation this thread player
@@ -477,29 +476,28 @@ State Making
 			return none
 		EndIf
 		; Validate Animations
-		_CustomScenes = SexLabRegistry.ValidateScenesA(_CustomScenes, Positions, "", Submissives)
+		Actor[] submissives = GetSubmissives()
+		_CustomScenes = SexLabRegistry.ValidateScenesA(_CustomScenes, Positions, "", submissives)
 		If(_CustomScenes.Length)
 			If(LeadIn)
 				Log("LeadIn detected on custom Animations. Disabling LeadIn")
 				LeadIn = false
 			EndIf
 		Else  ; only validate if these arent overwritten by custom scenes
-      _PrimaryScenes = SexLabRegistry.ValidateScenesA(_PrimaryScenes, Positions, "", Submissives)
+      _PrimaryScenes = SexLabRegistry.ValidateScenesA(_PrimaryScenes, Positions, "", submissives)
 			If(!_PrimaryScenes.Length)
-        _PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", Submissives, _furniStatus, CenterRef)
+        _PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", submissives, _furniStatus, CenterRef)
 				If (!_PrimaryScenes.Length)
 					Fatal("Failed to start Thread -- No valid animations for given actors")
 					return none
 				EndIf
 			EndIf
 			If(LeadIn)
-				_LeadInScenes = SexLabRegistry.ValidateScenesA(_LeadInScenes, Positions, "", Submissives)
-				If(!_LeadInScenes.Length)
-					_LeadInScenes = SexLabRegistry.LookupScenesA(Positions, "LeadIn", Submissives, _furniStatus, CenterRef)
-					LeadIn = _LeadInScenes.Length
-				EndIf
+				_LeadInScenes = SexLabRegistry.ValidateScenesA(_LeadInScenes, Positions, "", submissives)
+				LeadIn = _LeadInScenes.Length
 			EndIf
 		EndIf
+		Log("Validated Scenes: " + Scenes)
 		; Start Animation
 		SendThreadEvent("AnimationStarting")
 		RunHook(Config.HOOKID_STARTING)
@@ -514,7 +512,7 @@ State Making
 		EndIf
 		CenterRef = new_center
 		_ActiveScene = out[0]
-		If (!SexLabRegistry.SortByScene(Positions, _ActiveScene, true))
+		If (!SexLabRegistry.SortBySceneA(Positions, submissives, _ActiveScene, true))
 			Fatal("Failed to start Thread -- Actors arent compatible with the requested scene")
 			return none
 		EndIf
@@ -740,7 +738,7 @@ State Animating
 
 	bool Function ResetScene(String asNewScene)
 		If (asNewScene != _ActiveScene)
-			If (!SexLabRegistry.SortByScene(Positions, asNewScene, true))
+			If (!SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), asNewScene, true))
 				Log("Cannot reset scene. New Scene is not compatible with given positions")
 				return false
 			EndIf
@@ -907,7 +905,7 @@ State Animating
 				CenterAlias.ForceRefTo(newCenter)
 				If (_ActiveScene != out[0])
 					_ActiveScene = out[0]
-					SexLabRegistry.SortByScene(Positions, _ActiveScene, true)
+					SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), _ActiveScene, true)
 				EndIf
 			EndIf
 		EndIf
@@ -953,22 +951,23 @@ State Animating
 			If(w == -1)
 				sslActorAlias slot = PickAlias(akNewPositions[n])
 				If(slot.SetActor(akNewPositions[n]))	; Add actor and move to playing state
+					slot.SetVictim(akSubmissives.Find(akNewPositions[n]) > -1)
 					slot.OnDoPrepare("", "", 0.0, none)
 				EndIf
 			EndIf
 			n += 1
 		EndWhile
-		Submissives = akSubmissives
 		; Validate Animations or get new
-		If (!SexLabRegistry.ValidateSceneA(_ActiveScene, Positions, "", Submissives))
+		Actor[] sub = GetSubmissives()
+		If (!SexLabRegistry.ValidateSceneA(_ActiveScene, Positions, "", sub))
 			ClearForcedScenes()
-			_PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", Submissives, _furniStatus, CenterRef)
+			_PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", sub, _furniStatus, CenterRef)
 			If (!_PrimaryScenes.Length)
 				Log("Changing scene actors but no animation for new positions")
 				EndAnimation()
 				return
 			ElseIf (LeadIn)
-				_LeadInScenes = SexLabRegistry.LookupScenesA(Positions, "LeadIn", Submissives, _furniStatus, CenterRef)
+				_LeadInScenes = SexLabRegistry.LookupScenesA(Positions, "LeadIn", sub, _furniStatus, CenterRef)
 				If (!_LeadInScenes.Length)
 					EndLeadIn()
 					return
@@ -1063,12 +1062,13 @@ float Function GetStageTimer(int maxstage)
 Endfunction
 
 Function ChangeActors(Actor[] NewPositions)
+	Actor[] submissives = GetSubmissives()
 	Actor[] argSub = PapyrusUtil.ActorArray(NewPositions.Length)
 	int i = 0
 	int ii = 0
-	While (i < Submissives.Length)
-		If (NewPositions.Find(Submissives[i]) > -1)
-			argSub[ii] = Submissives[i]
+	While (i < submissives.Length)
+		If (NewPositions.Find(submissives[i]) > -1)
+			argSub[ii] = submissives[i]
 			ii += 1
 		EndIf
 		i += 1
@@ -1309,7 +1309,6 @@ Function Initialize()
 	EndWhile
 	CenterAlias.TryToClear()
 	Positions = PapyrusUtil.ActorArray(0)
-	Submissives = PapyrusUtil.ActorArray(0)
 	_ActiveScene = ""
 	_StartScene = ""
 	_CustomScenes = Utility.CreateStringArray(0)
