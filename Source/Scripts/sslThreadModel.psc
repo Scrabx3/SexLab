@@ -497,23 +497,21 @@ State Making
 				LeadIn = _LeadInScenes.Length
 			EndIf
 		EndIf
-		Log("Validated Scenes: " + Scenes)
 		; Start Animation
-		SendThreadEvent("AnimationStarting")
-		RunHook(Config.HOOKID_STARTING)
 		If(_StartScene && Scenes.Find(_StartScene) == -1)
 			AddScene(_StartScene)
 		EndIf
-		String[] out = new String[1]
-		ObjectReference new_center = FindCenter(Scenes, _StartScene, out, _furniStatus)
-		If (!new_center)
+		String[] out = new String[64]
+		_BaseCoordinates = new float[4]
+		ObjectReference new_center = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
+		If (!new_center || out[0] == "")
 			Fatal("Failed to start Thread -- Unable to locate a center compatible with given scenes")
 			return none
 		EndIf
 		CenterRef = new_center
-		_ActiveScene = out[0]
+		_ActiveScene = out[GetActiveIdx(out)]
 		If (!SexLabRegistry.SortBySceneA(Positions, submissives, _ActiveScene, true))
-			Fatal("Failed to start Thread -- Actors arent compatible with the requested scene")
+			Fatal("Failed to start Thread -- Cannot sort actors to active scene")
 			return none
 		EndIf
 		GoToState(STATE_SETUP_M)
@@ -536,12 +534,14 @@ State Making_M
 		_prepareAsyncCount = 0
 		bool useFading = HasPlayer && sslSystemConfig.GetSettingInt("iUseFade") > 0
 		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid, "", useFading as float)
+		Log("Starting thread with active scene: " + _ActiveScene)
+		SendThreadEvent("AnimationStarting")
+		RunHook(Config.HOOKID_STARTING)
 		If (useFading)
 			Config.ApplyFade()
 		EndIf
-
-		_BaseCoordinates = GetBaseCoordinates(_ActiveScene)
-		_InUseCoordinates = new float[4]	; Copy to trace back changes made by the user during scene
+		; Base coordinates are first set in FindCenter() above
+		ApplySceneOffset(_ActiveScene, _BaseCoordinates)
 		_InUseCoordinates[0] = _BaseCoordinates[0]
 		_InUseCoordinates[1] = _BaseCoordinates[1]
 		_InUseCoordinates[2] = _BaseCoordinates[2]
@@ -626,12 +626,13 @@ Function SetFurnitureStatus(int aiStatus)
 	Log("Furniture status can only be set during setup", "SetFurnitureStatus()")
 EndFunction
 
-; If CenterRef is set, will look for a valid scene compatible with it, otherweise fails
-; if not set, will search for a compatible center in nearby cells, return the selected center
-; In both cases, if search does not fail, out will have the new scene in position 0
-ObjectReference Function FindCenter(String[] asSceneIDs, String asScenePrefered, String[] asOut, int aiFurniStatus) native
-bool Function GetIsCompatiblecenter(String asSceneID, ObjectReference akCenter) native
-float[] Function GetBaseCoordinates(String asScene) native
+; Validate center alias OR find a valid center in close proximity to some actor in the thread
+; asOutScene will contain all with the center valid scenes, afOutCoordinates the base coordinates to play the scene at
+; return a valid center reference or null if no center could be found
+ObjectReference Function FindCenter(String[] asScenes, String[] asOutScenes, float[] afOutCoordinates, int aiFurnitureStatus) native
+; Check if the given center has a valid offset for the given scene and update afOutScenes with the new coordinates
+bool Function UpdateBaseCoordinates(String asScene, ObjectReference akCenter, float[] afBaseOut) native
+Function ApplySceneOffset(String asScene, float[] afBaseOut) native
 
 ; --- Legacy
 
@@ -741,8 +742,14 @@ State Animating
 			If (!SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), asNewScene, true))
 				Log("Cannot reset scene. New Scene is not compatible with given positions")
 				return false
+			ElseIf (!UpdateBaseCoordinates(asNewScene, CenterRef, _BaseCoordinates))
+				Log("Cannot reset scene. Unable to find valid coordinates")
+				return false
 			EndIf
-			RecalcCenterCoordinates()
+			_InUseCoordinates[0] = _BaseCoordinates[0]
+			_InUseCoordinates[1] = _BaseCoordinates[1]
+			_InUseCoordinates[2] = _BaseCoordinates[2]
+			_InUseCoordinates[3] = _BaseCoordinates[3]
 		EndIf
 		RecordSkills()
 		SetBonuses()
@@ -889,27 +896,31 @@ State Animating
 		ObjectReference oldCenter = CenterRef
 		SetFurnitureIgnored(false)
 		CenterAlias.ForceRefTo(CenterOn)
-		If (!GetIsCompatiblecenter(_ActiveScene, CenterOn))
-			String[] out = new String[1]
-			ObjectReference newCenter = FindCenter(Scenes, _ActiveScene, out, _furniStatus)
-			If (!newCenter)	; New center has no available scenes closeby, pick new ones
+		If (!UpdateBaseCoordinates(_ActiveScene, CenterOn, _BaseCoordinates))
+			String[] out = new String[64]
+			ObjectReference newCenter = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
+			If (!newCenter || out[0] == "")	; New center has no available scenes closeby, pick new ones
 				If (Config.HasThreadControl(Self) && InvalidCenterMsg.Show() == 1)
 					Log("Cannot relocate center, end scene by player choice", "CenterOnObject")
 					EndAnimation()
-					return
 				Else
 					Log("Cannot relocate center, cancel relocation", "CenterOnObject")
 					CenterAlias.ForceRefTo(oldCenter)
+					SetFurnitureIgnored(true)
 				EndIf
-			Else
-				CenterAlias.ForceRefTo(newCenter)
-				If (_ActiveScene != out[0])
-					_ActiveScene = out[0]
-					SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), _ActiveScene, true)
-				EndIf
+				return
 			EndIf
+			CenterAlias.ForceRefTo(newCenter)
+			If (_ActiveScene != out[0])
+				_ActiveScene = out[0]
+				SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), _ActiveScene, true)
+			EndIf
+			ApplySceneOffset(_ActiveScene, _BaseCoordinates)
 		EndIf
-		RecalcCenterCoordinates()
+		_InUseCoordinates[0] = _BaseCoordinates[0]
+		_InUseCoordinates[1] = _BaseCoordinates[1]
+		_InUseCoordinates[2] = _BaseCoordinates[2]
+		_InUseCoordinates[3] = _BaseCoordinates[3]
 		SetFurnitureIgnored(true)
 		RealignActors()
 		SendThreadEvent("ActorsRelocated")
@@ -1149,6 +1160,20 @@ Function AddScene(String asSceneID)
 	EndIf
 EndFunction
 
+int Function GetActiveIdx(String[] asOutResult)
+	If (_StartScene)
+		int where = asOutResult.Find(_StartScene)
+		If (where != -1)
+			return where
+		EndIf
+	EndIf
+	int emptyidx = asOutResult.Find("")
+	If (emptyidx == -1) ; All scenes filled --> max idx = 63
+		return asOutResult.Length - 1
+	EndIf
+	return emptyidx - 1
+EndFunction
+
 sslActorAlias Function PickAlias(Actor ActorRef)
 	int i
 	while i < 5
@@ -1158,19 +1183,6 @@ sslActorAlias Function PickAlias(Actor ActorRef)
 		i += 1
 	endWhile
 	return none
-EndFunction
-
-Function RecalcCenterCoordinates()
-	float[] offset = new float[4]
-	offset[0] = _InUseCoordinates[0] - _BaseCoordinates[0]
-	offset[1] = _InUseCoordinates[1] - _BaseCoordinates[1]
-	offset[2] = _InUseCoordinates[2] - _BaseCoordinates[2]
-	offset[3] = _InUseCoordinates[3] - _BaseCoordinates[3]
-	_BaseCoordinates = GetBaseCoordinates(_ActiveScene)
-	_InUseCoordinates[0] = _BaseCoordinates[0] + offset[0]
-	_InUseCoordinates[1] = _BaseCoordinates[1] + offset[1]
-	_InUseCoordinates[2] = _BaseCoordinates[2] + offset[2]
-	_InUseCoordinates[3] = _BaseCoordinates[3] + offset[3]
 EndFunction
 
 Function SetFurnitureIgnored(bool disabling = true)
