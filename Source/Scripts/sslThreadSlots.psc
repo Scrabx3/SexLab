@@ -96,7 +96,9 @@ Function StopAll()
 EndFunction
 
 Function StopThread(sslThreadController Slot)
-  SexLabUtil.DebugLog("Force stop-request on thread + " + Slot + " during State " + Slot.GetState(), "", true)
+  If (Slot.GetStatus() != Slot.STATUS_IDLE)
+    SexLabUtil.DebugLog("Force stop-request on thread + " + Slot + " during State " + Slot.GetState(), "", true)
+  EndIf
   Slot.Initialize()
 EndFunction
 
