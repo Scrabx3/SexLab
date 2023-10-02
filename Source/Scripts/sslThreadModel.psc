@@ -502,7 +502,6 @@ State Making
 			AddScene(_StartScene)
 		EndIf
 		String[] out = new String[64]
-		_BaseCoordinates = new float[4]
 		ObjectReference new_center = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
 		If (!new_center || out[0] == "")
 			Fatal("Failed to start Thread -- Unable to locate a center compatible with given scenes")
@@ -1169,9 +1168,9 @@ int Function GetActiveIdx(String[] asOutResult)
 	EndIf
 	int emptyidx = asOutResult.Find("")
 	If (emptyidx == -1) ; All scenes filled --> max idx = 63
-		return asOutResult.Length - 1
+		return Utility.RandomInt(0, asOutResult.Length - 1)
 	EndIf
-	return emptyidx - 1
+	return Utility.RandomInt(0, emptyidx - 1)
 EndFunction
 
 sslActorAlias Function PickAlias(Actor ActorRef)
@@ -1326,8 +1325,8 @@ Function Initialize()
 	_CustomScenes = Utility.CreateStringArray(0)
 	_PrimaryScenes = Utility.CreateStringArray(0)
 	_LeadInScenes = Utility.CreateStringArray(0)
-	_BaseCoordinates = Utility.CreateFloatArray(0)
-	_InUseCoordinates = Utility.CreateFloatArray(0)
+	_BaseCoordinates = new float[4]
+	_InUseCoordinates = new float[4]
 	_ActiveStage = ""
 	_StageHistory = Utility.CreateStringArray(0)
 	_furniStatus = FURNI_ALLOW
