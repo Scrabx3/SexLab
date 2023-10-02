@@ -777,7 +777,10 @@ State Animating
 		SendThreadEvent("StageEnd")
 		RunHook(Config.HOOKID_STAGEEND)
 		String newStage = SexLabRegistry.BranchTo(_ActiveScene, _ActiveStage, aiNextBranch)
-		If (!newStage)
+		PlayNextImpl(newStage)
+	EndFunction
+	Function PlayNextImpl(String asNewStage)
+		If (!asNewStage)
 			Log("Invalid branch or previous stage is sink, ending scene")
 			If(LeadIn)
 				EndLeadIn()
@@ -785,7 +788,7 @@ State Animating
 				EndAnimation()
 			EndIf
 			return
-		ElseIf(!Leadin && !DisableOrgasms && SexLabRegistry.GetNodeType(_ActiveScene, newStage) == 2)
+		ElseIf(!Leadin && !DisableOrgasms && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
 			If (sslSystemConfig.GetSettingInt("iClimaxType") == Config.CLIMAXTYPE_LEGACY)
 				; End of animation orgasm
 				SendThreadEvent("OrgasmStart")
@@ -800,11 +803,11 @@ State Animating
 			ActorAlias[i].UpdateNext(strips_[i])
 			i += 1
 		EndWhile
-		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, newStage)
+		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, asNewStage)
 		_StageHistory = PapyrusUtil.PushString(_StageHistory, _ActiveStage)
-		ReStartTimer()
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
+		ReStartTimer()
 	EndFunction
 	Function ResetStage()
 		GoToStage(_StageHistory.Length)
@@ -829,6 +832,17 @@ State Animating
 			SendThreadEvent("StageStart")
 			RunHook(Config.HOOKID_STAGESTART)
 		EndIf
+	EndFunction
+
+	Function BranchTo(int aiNextBranch)
+		PlayNext(aiNextBranch)
+	EndFunction
+
+	Function SkipTo(String asNextStage)
+		If (!SexLabRegistry.StageExists(asNextStage))
+			return
+		EndIf
+		PlayNextImpl(asNextStage)
 	EndFunction
 
 	Function ReStartTimer()
@@ -1045,7 +1059,10 @@ Function EndLeadIn()
 	Log("Cannot end leadin outside the playing state", "EndLeadIn()")
 EndFunction
 Function PlayNext(int aiNextBranch)
-	Log("Cannot play next branch outside the playing state", "EndLeadIn()")
+	Log("Cannot play next branch outside the playing state", "PlayNext()")
+EndFunction
+Function PlayNextImpl(String asNewStage)
+	Log("Cannot play next branch outside the playing state", "PlayNextImpl()")
 EndFunction
 Function GoToStage(int ToStage)
 	Log("Cannot change playing branch outside the playing state", "GoToStage()")

@@ -73,8 +73,8 @@ int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[]
 
 ; Check if a specific ID belongs to some valid scene object
 bool Function SceneExists(String asID) native global
-; Check if all of the given scene ids represent a scene object and return all those that do
 String[] Function SceneExistA(String[] asSceneIDs) native global
+bool Function StageExists(String asID) native global
 
 ; --- Meta Data
 

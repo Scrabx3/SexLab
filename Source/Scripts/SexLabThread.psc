@@ -15,14 +15,14 @@ EndFunction
 	View and manipulate runtime data
 /;
 
-int Property STATUS_UNDEF 	= 0 AutoReadOnly  ; Undefined (oh noes)
-int Property STATUS_IDLE	 	= 1 AutoReadOnly  ; Idling (inactive)
+int Property STATUS_UNDEF 	= 0 AutoReadOnly  ; Undefined
+int Property STATUS_IDLE	 	= 1 AutoReadOnly  ; Idling (Inactive)
 int Property STATUS_SETUP 	= 2 AutoReadOnly  ; Preparing an animation. Available data may be incomplete
 int Property STATUS_INSCENE = 3 AutoReadOnly  ; Playing an animation
 int Property STATUS_ENDING	= 4 AutoReadOnly  ; Ending. Data is still available but most functionality is disabled
 
 ; Return the current status of the thread. This status divides the threads functionality in sub sections
-; Some functionality is only available while a thread is in a specific status
+; Some functionality may depend on current thread status
 int Function GetStatus()
 EndFunction
 
@@ -37,7 +37,14 @@ EndFunction
 String[] Function GetPlayingScenes()
 EndFunction
 
-; Stop this threads animation. Will error if the thread is idling/ending
+; Branch from the currently playing stage to the next. Will when the branch does not exist. Will fail outside of playing state
+Function BranchTo(int aiNextBranch)
+EndFunction
+; Skip to the specified stage. The stage has to be part of the playing scene. Will fail outside of playing state
+Function SkipTo(String asNextStage)
+EndFunction
+
+; Stop this threads animation. Will fail if the thread is idling/ending
 Function StopAnimation()
 EndFunction
 
