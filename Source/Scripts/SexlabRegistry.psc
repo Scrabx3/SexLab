@@ -131,6 +131,9 @@ int Function GetActorCount(String asID) native global
 bool Function IsSimilarPosition(String asID, int n, int m) native global
 bool Function CanFillPosition(String asID, int n, Actor akActor) native global
 
+; Obtain all ending stages/sinks
+String[] Function GetEndingStages(String asID) native global
+
 ; Obtain all stages having a fixed length flag set
 String[] Function GetFixedLengthStages(String asID) native global
 ; Return the fixed length timer of this stage, 0 if the stage isnt flagged as fixed length
