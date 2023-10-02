@@ -1338,8 +1338,8 @@ Function Initialize()
 	_ContextTags = Utility.CreateStringArray(0)
 	_Hooks = Utility.CreateStringArray(0)
 	; NOTE: Below are unreviewed (legacy) variables
-	SkillBonus = Utility.CreateFloatArray(0)
-	SkillXP = Utility.CreateFloatArray(0)
+	SkillBonus = new float[6]
+	SkillXP = new float[6]
 	SkillTime = 0.0
 	; Enter thread selection pool
 	GoToState("Unlocked")
