@@ -12,20 +12,21 @@ ScriptName SexlabRegistry Hidden
 ; ------------------------------------------------------- ;
 
 ; Obtain an integer 0-52 representing this actors race
+; The non array version returns the most strict id available. That is, the ID will avoid to represent
+; some ambiguous race (such as Canine) and instead return the more precise one instead (here: wolf or dog)
 ; -1 - Invalid query | 0 - Human | 1+ - Creature
 int Function GetRaceID(Actor akActor) native global
 int Function MapRaceKeyToID(String asRaceKey) native global
 int[] Function GetRaceIDA(Actor akActor) native global
 int[] Function MapRaceKeyToIDA(String asRaceKey) native global
-; Obtain a human readable string reprentation of some racekey
+; Obtain a human readable string reprentation of some racekey, preferring precise keys when possible
 String Function GetRaceKey(Actor akActor) native global
 String Function GetRaceKeyByRace(Race akRace) native global
 String Function MapRaceIDToRaceKey(int aiRaceID) native global
 String[] Function GetRaceKeyA(Actor akActor) native global
 String[] Function GetRaceKeyByRaceA(Race akRace) native global
 String[] Function MapRaceIDToRaceKeyA(int aiRaceID) native global
-; Obtain a list of all supported RaceKeys; An example for an ambiuous races would be
-; "Canines" which represent dogs and wolves at the same time
+; Obtain a list of all supported RaceKeys
 String[] Function GetAllRaceKeys(bool abIgnoreAmbiguous) native global
 
 ; Return this actors sex. If overwrite is not ignored, will respect the overwrite flag (set by the user or some mod author)
@@ -74,7 +75,7 @@ int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[]
 ; Check if a specific ID belongs to some valid scene object
 bool Function SceneExists(String asID) native global
 String[] Function SceneExistA(String[] asSceneIDs) native global
-bool Function StageExists(String asID) native global
+bool Function StageExists(String asID, String asStage) native global
 
 ; --- Meta Data
 
@@ -109,6 +110,10 @@ String[] Function GetAnimationEventA(String asID, String asStage) native global
 
 ; Get the first animation of this scene
 String Function GetStartAnimation(String asID) native global
+
+; Get the total amount of stages for this scene
+int Function GetNumStages(String asID) native global
+String[] Function GetAllstages(String asID) native global
 
 ; Get the n'th outgoing edge from the given Stage
 String Function BranchTo(String asID, String asStage, int n) native global
