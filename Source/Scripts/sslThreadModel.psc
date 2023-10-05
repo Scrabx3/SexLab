@@ -766,9 +766,9 @@ State Animating
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
 		_StageHistory = new String[1]
 		_StageHistory[0] = _ActiveStage
-		ReStartTimer()
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
+		ReStartTimer()
 		return true
 	EndFunction
 
@@ -828,9 +828,9 @@ State Animating
 			EndWhile
 			_ActiveStage = _StageHistory[ToStage - 1]
 			PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
-			ReStartTimer()
 			SendThreadEvent("StageStart")
 			RunHook(Config.HOOKID_STAGESTART)
+			ReStartTimer()
 		EndIf
 	EndFunction
 
