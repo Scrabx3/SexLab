@@ -727,13 +727,13 @@ State Animating
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
 		_StageHistory = new String[1]
 		_StageHistory[0] = _ActiveStage
-		ReStartTimer()
 		SendThreadEvent("AnimationStart")
 		If(LeadIn)
 			SendThreadEvent("LeadInStart")
 		EndIf
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
+		ReStartTimer()
 	EndFunction
 
 	bool Function ResetScene(String asNewScene)
@@ -839,7 +839,7 @@ State Animating
 	EndFunction
 
 	Function SkipTo(String asNextStage)
-		If (!SexLabRegistry.StageExists(asNextStage))
+		If (!SexLabRegistry.StageExists(_ActiveScene, asNextStage))
 			return
 		EndIf
 		PlayNextImpl(asNextStage)

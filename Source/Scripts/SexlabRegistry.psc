@@ -144,8 +144,9 @@ String[] Function GetFixedLengthStages(String asID) native global
 ; Return the fixed length timer of this stage, 0 if the stage isnt flagged as fixed length
 float Function GetFixedLength(String asID, String asStage) native global
 
-; Obtain all stages having a climax flag set
-String[] Function GetClimaxStages(String asID) native global
+; Obtain all stages having a climax flag set, if n > -1, only return stages in which the nth actor climaxes
+String[] Function GetClimaxStages(String asID, int n = -1) native global
+int[] Function GetClimaxingActors(String asID, String asStage) native global
 
 ; Get compatible sexes of this scenes n'th position. This ignores the "use creature sex" setting
 ; Return a bitflag with following interpretation:
