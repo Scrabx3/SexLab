@@ -110,7 +110,6 @@ String[] Function GetAnimationEventA(String asID, String asStage) native global
 
 ; Get the first animation of this scene
 String Function GetStartAnimation(String asID) native global
-
 ; Get the total amount of stages for this scene
 int Function GetNumStages(String asID) native global
 String[] Function GetAllstages(String asID) native global
@@ -183,10 +182,14 @@ String[] Function GetRaceKeyPositionA(String asID) native global
 ; returned as [X, Y, Z, Rotation]
 float[] Function GetOffset(String asID, String asStage, int n) native global
 float[] Function GetOffsetRaw(String asID, String asStage, int n) native global
+; Update  Offsets for the specified position and stage. Pass an empty stage to edit the offset of all stages at once
 Function UpdateOffset(String asID, String asStage, int n, float afValue, int aiOffsetID) native global
 Function UpdateOffsetA(String asID, String asStage, int n, float[] afNewOffset) native global
 Function ResetOffset(String asID, String asStage, int n) native global
 Function ResetOffsetA(String asID, String asStage) native global
+; Get or edit the schlong angle (value [-9, 9]) for the given position in the given stage
+int Function GetSchlongAngle(String asID, String asStage, int n) native global
+Function SetSchlongAngle(String asID, String asStage, int n, int aiValue) native global
 
 ; Get relevant strip info for the specified stage and position
 ; Strip Data is represented by a 8 bit flag:

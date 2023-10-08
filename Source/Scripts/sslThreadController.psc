@@ -78,8 +78,8 @@ Event OnKeyDown(int KeyCode)
 		AdjustSideways(Config.BackwardsPressed(), Config.AdjustStagePressed())
 	ElseIf(hotkey == kRotateScene)
 		RotateScene(Config.BackwardsPressed())
-	; ElseIf(hotkey == kAdjustSchlong)
-	; 	AdjustSchlong(Config.BackwardsPressed())
+	ElseIf(hotkey == kAdjustSchlong)
+		AdjustSchlongEx(Config.BackwardsPressed(), Config.AdjustStagePressed())
 	ElseIf(hotkey == kAdjustChange)			; Change Adjusting Position
 		AdjustChange(Config.BackwardsPressed())
 	ElseIf(hotkey == kRealignActors)
@@ -156,9 +156,11 @@ EndFunction
 Function AdjustCoordinate(bool abBackwards, bool abStageOnly, float afValue, int aiKeyIdx, int aiOffsetType)
 	; [X, Y, Z, Rotation]
 	UnregisterForUpdate()
-	Log("Shifting position by " + afValue)
 	String scene_ = GetActiveScene()
-	String stage_ = GetActiveStage()
+	String stage_ = ""
+	If (!abStageOnly)
+		stage_ = GetActiveStage()
+	EndIf
 	int AdjustPos = GetAdjustPos()
 	bool first_pass = true
 	While(true)
@@ -187,6 +189,25 @@ EndFunction
 Function AdjustUpward(bool backwards = false, bool AdjustStage = false)
 	float value = 0.5 - (backwards as float)
 	AdjustCoordinate(backwards, AdjustStage, value, kAdjustUpward, 2)
+EndFunction
+
+Function AdjustSchlongEx(bool abBackwards, bool abStageOnly)
+	int value = 1
+	If (abBackwards)
+		value = -1
+	EndIf
+	String scene_ = GetActiveScene()
+	String stage_ = ""
+	If (!abStageOnly)
+		stage_ = GetActiveStage()
+	EndIf
+	int AdjustPos = GetAdjustPos()
+	int Schlong = SexLabRegistry.GetSchlongAngle(scene_, stage_, AdjustPos) + value
+	If(Math.Abs(Schlong) <= 9)
+		SexLabRegistry.SetSchlongAngle(scene_, stage_, AdjustPos, Schlong)
+		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
+		PlayHotkeyFX(2, !abBackwards)
+	EndIf
 EndFunction
 
 Function RotateScene(bool backwards = false)
@@ -360,14 +381,6 @@ ObjectReference Function GetCenterFX()
 	endIf
 EndFunction
 
-
 Function AdjustSchlong(bool backwards = false)
-	int Amount  = ((0.5 - (backwards as float)) * 2) as int
-	int AdjustPos = GetAdjustPos()
-	int Schlong = Animation.GetSchlong(AdjustKey, AdjustPos, Stage) + Amount
-	If(Math.Abs(Schlong) <= 9)
-		Animation.AdjustSchlong(AdjustKey, AdjustPos, Stage, Amount)
-		Debug.SendAnimationEvent(Positions[AdjustPos], "SOSBend"+Schlong)
-		PlayHotkeyFX(2, !backwards)
-	EndIf
+	AdjustSchlongEx(backwards, true)
 EndFunction

@@ -513,6 +513,7 @@ State Making
 			Fatal("Failed to start Thread -- Cannot sort actors to active scene")
 			return none
 		EndIf
+		Log("Starting thread with active scene: " + _ActiveScene)
 		GoToState(STATE_SETUP_M)
     return self as sslThreadController
 	EndFunction
@@ -529,11 +530,10 @@ EndState
 ; An immediate state to disallow setting additional data while aliases process setup
 State Making_M
 	Event OnBeginState()
-		; Send event to all local aliases and have them prepare asynch. Also finidh remaining (private) setup tasks here
+		; Event to all active aliases, resync via PrepareDone() to continue startup
 		_prepareAsyncCount = 0
 		bool useFading = HasPlayer && sslSystemConfig.GetSettingInt("iUseFade") > 0
 		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid, "", useFading as float)
-		Log("Starting thread with active scene: " + _ActiveScene)
 		SendThreadEvent("AnimationStarting")
 		RunHook(Config.HOOKID_STARTING)
 		If (useFading)
