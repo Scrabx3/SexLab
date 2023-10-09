@@ -292,25 +292,46 @@ float[] function GetRawOffsets(int Position, int Stage)
 	return RawOffsets(Output, Position, Stage)
 endFunction
 
-; COMEBACK: Rewire
 float[] function _GetStageAdjustments(string Registrar, string AdjustKey, int Stage) global native
 float[] function GetPositionAdjustments(string AdjustKey, int Position, int Stage)
-	return _GetStageAdjustments(Registry, InitAdjustments(AdjustKey, Position), Stage)
+	return SexLabRegistry.GetOffset(PROXY_ID, GetStageBounded(Stage), Position)
 endFunction
 
-; COMEBACK: Rewire or discard
 float[] function _GetAllAdjustments(string Registrar, string AdjustKey) global native
 float[] function GetAllAdjustments(string AdjustKey)
-	return _GetAllAdjustments(Registry, Adjustkey)
+	String[] path = SexLabRegistry.GetPathMax(PROXY_ID, "")
+	int count = SexLabRegistry.GetActorCount(PROXY_ID)
+	float[] ret = Utility.CreateFloatArray(path.Length * count * 4)
+	int i = 0
+	While (i < path.Length)
+		int base = i * count
+		int n = 0
+		While (n < count)
+			float[] offsets = SexLabRegistry.GetOffset(PROXY_ID, path[i], n)
+			ret[base + 0] = offsets[0]
+			ret[base + 1] = offsets[1]
+			ret[base + 2] = offsets[2]
+			ret[base + 3] = offsets[3]
+			n += 1
+		EndWhile
+		i += 1
+	EndWhile
+	return ret
 endFunction
 
-; COMEBACK: Rewire or discard
 bool function _HasAdjustments(string Registrar, string AdjustKey, int Stage) global native
 bool function HasAdjustments(string AdjustKey, int Stage)
-	return _HasAdjustments(Registry, AdjustKey, Stage)
+	float[] offsets = GetAllAdjustments(AdjustKey)
+	int i = 0
+	While (i < offsets.Length)
+		If (offsets[i] != 0.0)
+			return true
+		EndIf
+		i += 1
+	EndWhile
+	return false
 endFunction
 
-; COMEBACK: BedType ID? Applicable or nah?
 function _PositionOffsets(string Registrar, string AdjustKey, string LastKey, int Stage, float[] RawOffsets) global native
 float[] function PositionOffsets(float[] Output, string AdjustKey, int Position, int Stage, int BedTypeID = 0)
 	String stage_ = GetStageBounded(Stage)
@@ -347,50 +368,37 @@ endFunction
 ; --- Adjustments                                     --- ;
 ; ------------------------------------------------------- ;
 
-; COMEBACK: Rewire or discard
 function _SetAdjustment(string Registrar, string AdjustKey, int Stage, int Slot, float Adjustment) global native
 function SetAdjustment(string AdjustKey, int Position, int Stage, int Slot, float Adjustment)
-	; if Position < Actors
-	; 	LastKeys[Position] = InitAdjustments(AdjustKey, Position)
-	; 	sslBaseAnimation._SetAdjustment(Registry, AdjustKey+"."+Position, Stage, Slot, Adjustment)
-	; endIf
+	SexLabRegistry.UpdateOffset(PROXY_ID, GetStageBounded(Stage), Position, Adjustment, Slot)
 endFunction
 
-; COMEBACK: Rewire or discard
 float function _GetAdjustment(string Registrar, string AdjustKey, int Stage, int nth) global native
 float function GetAdjustment(string AdjustKey, int Position, int Stage, int Slot)
-	return sslBaseAnimation._GetAdjustment(Registry, AdjustKey+"."+Position, Stage, Slot)
+	return SexLabRegistry.GetOffset(PROXY_ID, GetStageBounded(Stage), Position)[Slot]
 endFunction
 
-; COMEBACK: Rewire or discard
 float function _UpdateAdjustment(string Registrar, string AdjustKey, int Stage, int nth, float by) global native
 function UpdateAdjustment(string AdjustKey, int Position, int Stage, int Slot, float AdjustBy)
-	; if Position < Actors
-	; 	LastKeys[Position] = InitAdjustments(AdjustKey, Position)
-	; 	sslBaseAnimation._UpdateAdjustment(Registry, AdjustKey+"."+Position, Stage, Slot, AdjustBy)
-	; endIf
+	float v = GetAdjustment(AdjustKey, Position, Stage, Slot)
+	SetAdjustment(AdjustKey, Position, Stage, Slot, v + AdjustBy)
 endFunction
 function UpdateAdjustmentAll(string AdjustKey, int Position, int Slot, float AdjustBy)
-	; if Position < Actors
-	; 	LastKeys[Position] = InitAdjustments(AdjustKey, Position)
-	; 	int Stage = Stages
-	; 	while Stage
-	; 		sslBaseAnimation._UpdateAdjustment(Registry, AdjustKey+"."+Position, Stage, Slot, AdjustBy)
-	; 		Stage -= 1
-	; 	endWhile
-	; endIf
+	int d = GetMaxDepth()
+	int i = 0
+	While (i < d)
+		UpdateAdjustment(AdjustKey, Position, i, Slot, AdjustBy)
+		i += 1
+	EndWhile
 endFunction
 
-; COMEBACK: Rewire or discard
 function AdjustForward(string AdjustKey, int Position, int Stage, float AdjustBy, bool AdjustStage = false)
-	; if AdjustStage
-	; 	UpdateAdjustment(AdjustKey, Position, Stage, 0, AdjustBy)
-	; else
-	; 	UpdateAdjustmentAll(AdjustKey, Position, 0, AdjustBy)
-	; endIf
+	if AdjustStage
+		UpdateAdjustment(AdjustKey, Position, Stage, 0, AdjustBy)
+	else
+		UpdateAdjustmentAll(AdjustKey, Position, 0, AdjustBy)
+	endIf
 endFunction
-
-; COMEBACK: Rewire or discard
 function AdjustSideways(string AdjustKey, int Position, int Stage, float AdjustBy, bool AdjustStage = false)
 	if AdjustStage
 		UpdateAdjustment(AdjustKey, Position, Stage, 1, AdjustBy)
@@ -398,8 +406,6 @@ function AdjustSideways(string AdjustKey, int Position, int Stage, float AdjustB
 		UpdateAdjustmentAll(AdjustKey, Position, 1, AdjustBy)
 	endIf
 endFunction
-
-; COMEBACK: Rewire or discard
 function AdjustUpward(string AdjustKey, int Position, int Stage, float AdjustBy, bool AdjustStage = false)
 	if AdjustStage
 		UpdateAdjustment(AdjustKey, Position, Stage, 2, AdjustBy)
@@ -407,12 +413,14 @@ function AdjustUpward(string AdjustKey, int Position, int Stage, float AdjustBy,
 		UpdateAdjustmentAll(AdjustKey, Position, 2, AdjustBy)
 	endIf
 endFunction
-
 function AdjustSchlong(string AdjustKey, int Position, int Stage, int AdjustBy)
+	int v = SexLabRegistry.GetSchlongAngle(PROXY_ID, Stage, Position)
+	SexLabRegistry.SetSchlongAngle(PROXY_ID, Stage, Position, v + AdjustBy)
 endFunction
 
 function _ClearAdjustments(string Registrar, string AdjustKey) global native
 function RestoreOffsets(string AdjustKey)
+	
 endFunction
 
 bool function _CopyAdjustments(string Registrar, string AdjustKey, float[] Array) global native
