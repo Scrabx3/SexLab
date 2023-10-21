@@ -783,6 +783,42 @@ float[] function GetBedOffsets(Form BaseBed)
 endFunction
 
 ; ------------------------------------------------------- ;
+; --- SFX                                             --- ;
+; ------------------------------------------------------- ;
+
+; IDEA: Config system to replace SFX Sounds
+; IDEA: Use Velocity value to dynamically adjust volume
+; IDEA: SFX Types as bitflags
+; TODO: Remaining SFX Sound Types
+
+int Property NULL       = 0 AutoReadOnly
+int Property HAND       = 1 AutoReadOnly
+int Property FOOT       = 2 AutoReadOnly
+int Property FINGERA    = 3 AutoReadOnly
+int Property FINGERV    = 4 AutoReadOnly
+int Property TRIBADISM  = 5 AutoReadOnly
+int Property GRINDING   = 6 AutoReadOnly
+int Property ORAL       = 7 AutoReadOnly
+int Property ANAL       = 8 AutoReadOnly
+int Property VAGINAL    = 9 AutoReadOnly
+
+Sound property OrgasmFX auto
+Sound property SquishingFX auto
+Sound property SuckingFX auto
+Sound property SexMixedFX auto
+
+Sound Function GetSFXSound(int aiSFXType)
+  If (aiSFXType == NULL)
+    return none
+  ElseIf (aiSFXType == Anal || aiSFXType == Vaginal)
+    return SquishingFX
+  ElseIf (aiSFXType == Oral)
+    return SuckingFX
+  EndIf
+  return none
+EndFUnction
+
+; ------------------------------------------------------- ;
 ; --- Hotkeys & TargetRef                             --- ;
 ; ------------------------------------------------------- ;
 
@@ -1449,10 +1485,6 @@ Keyword property SexLabActive auto
 Keyword property FurnitureBedRoll auto
 Furniture property BaseMarker auto
 Package property DoNothing auto
-Sound property OrgasmFX auto
-Sound property SquishingFX auto
-Sound property SuckingFX auto
-Sound property SexMixedFX auto
 FormList property BedsList auto
 FormList property BedRollsList auto
 FormList property DoubleBedsList auto

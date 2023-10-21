@@ -680,10 +680,12 @@ EndFunction
 	By this time, most Scene information is read only
 /;
 
+float Property ANIMATING_UPDATE_INTERVAL = 0.5 AutoReadOnly
 int _animationSyncCount
 
 bool _SceneEndClimax	; If a (legacy) climax has been triggered
-float _StageTimer			; Additional past default time, to delay the completion of a stage
+float _StageTimer			; timer for the current stage
+float _SFXTimer				; so long until new SFX effect
 float[] _CustomTimers	; Custom set of timers to use for this animation
 float[] Property Timers hidden
 	{In use timer set of the active scene}
@@ -712,10 +714,12 @@ State Animating
 			ActorAlias[i].ReadyActor(strips_[i], sex_[i])
 			i += 1
 		EndWhile
+		_SFXTimer = Config.SFXDelay
 		_animationSyncCount = 0;
 		SendModEvent("SSL_READY_Thread" + tid)
 		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		AnimationStart()
+		RegisterSFX()
 	EndEvent
 	Function AnimationStart()
 		If (_animationSyncCount < Positions.Length)
@@ -846,20 +850,13 @@ State Animating
 	EndFunction
 
 	Function ReStartTimer()
-		If (!AutoAdvance)
-			return
-		EndIf
-		_StageTimer = 0
-		float time = GetTimer()
-		RegisterForSingleUpdate(time)
+		_StageTimer = GetTimer()
+		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
 	EndFunction
 
 	Function UpdateTimer(float AddSeconds = 0.0)
-		If (AddSeconds < 0)
-			_StageTimer = 0
-			return
-		EndIf
 		_StageTimer += AddSeconds
+		AutoAdvance = true
 	EndFunction
 
 	Function SetTimers(float[] SetTimers)
@@ -888,14 +885,30 @@ State Animating
 	Endfunction
 	
 	Event OnUpdate()
-		If (!AutoAdvance)
-			return
-		ElseIf (_StageTimer > 0)
-			RegisterForSingleUpdate(_StageTimer)
-			_StageTimer = 0
-			return
+		If (AutoAdvance)
+			_StageTimer -= ANIMATING_UPDATE_INTERVAL
+			If (_StageTimer <= 0)
+				GoToStage(_StageHistory.Length + 1)
+				return
+			EndIf
 		EndIf
-		GoToStage(_StageHistory.Length + 1)
+		If (_SFXTimer > 0)
+			_SFXTimer -= ANIMATING_UPDATE_INTERVAL
+		Else
+			; IDEA: Return the nth position this effect is taken from for more accurate sound origin
+			float[] out = new float[2]
+			If (GetSFXTypeAndVelocity(out))
+				Sound sfx = Config.GetSFXSound(out[0] as int)
+				If (sfx)
+					sfx.Play(Positions[0])
+				EndIf
+			EndIf
+			_SFXTimer = Utility.RandomFloat(0.9, 1.3) * Config.SFXDelay
+			If (_SFXTimer < 1.0)
+				_SFXTimer = 1.0
+			EndIf
+		EndIf
+		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
 	EndEvent
 
 	Function TriggerOrgasm()
@@ -1037,6 +1050,7 @@ State Animating
 	EndFunction
 
 	Event OnEndState()
+		UnregisterSFX()
 		UnregisterForUpdate()
 		SetFurnitureIgnored(false)
 	EndEvent
@@ -1112,6 +1126,9 @@ Function RePlace(Actor akActor, float[] afBaseCoordinates, String asSceneID, Str
 Function UpdatePlacement(int n, sslActorAlias akAlias)
 	RePlace(akAlias.GetActorReference(), _InUseCoordinates, _ActiveScene, _ActiveStage, n)
 EndFunction
+bool Function RegisterSFX() native
+Function UnregisterSFX() native
+bool Function GetSFXTypeAndVelocity(float[] afOut) native
 
 ; ------------------------------------------------------- ;
 ; --- Thread END                                      --- ;
