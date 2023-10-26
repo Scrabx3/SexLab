@@ -189,6 +189,7 @@ Function ResetOffset(String asID, String asStage, int n) native global
 Function ResetOffsetA(String asID, String asStage) native global
 ; Get or edit the schlong angle (value [-9, 9]) for the given position in the given stage
 int Function GetSchlongAngle(String asID, String asStage, int n) native global
+int[] Function GetSchlongAngleA(String asID, String asStage) native global
 Function SetSchlongAngle(String asID, String asStage, int n, int aiValue) native global
 
 ; Get relevant strip info for the specified stage and position

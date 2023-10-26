@@ -630,7 +630,7 @@ EndFunction
 ; return a valid center reference or null if no center could be found
 ObjectReference Function FindCenter(String[] asScenes, String[] asOutScenes, float[] afOutCoordinates, int aiFurnitureStatus) native
 ; Check if the given center has a valid offset for the given scene and update afOutScenes with the new coordinates
-bool Function UpdateBaseCoordinates(String asScene, ObjectReference akCenter, float[] afBaseOut) native
+bool Function UpdateBaseCoordinates(String asScene, float[] afBaseOut) native
 Function ApplySceneOffset(String asScene, float[] afBaseOut) native
 
 ; --- Legacy
@@ -709,9 +709,10 @@ State Animating
 		SetFurnitureIgnored(true)
 		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
 		int[] sex_ = SexLabRegistry.GetPositionSexA(_ActiveScene)
+		int[] schlongs_ = SexLabRegistry.GetSchlongAngleA(_ActiveScene, _ActiveStage)
 		int i = 0
 		While (i < Positions.Length)
-			ActorAlias[i].ReadyActor(strips_[i], sex_[i])
+			ActorAlias[i].ReadyActor(strips_[i], sex_[i], schlongs_[i])
 			i += 1
 		EndWhile
 		_SFXTimer = Config.SFXDelay
@@ -719,7 +720,7 @@ State Animating
 		SendModEvent("SSL_READY_Thread" + tid)
 		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		AnimationStart()
-		RegisterSFX()
+		RegisterSFX(Positions)
 	EndEvent
 	Function AnimationStart()
 		If (_animationSyncCount < Positions.Length)
@@ -745,7 +746,7 @@ State Animating
 			If (!SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), asNewScene, true))
 				Log("Cannot reset scene. New Scene is not compatible with given positions")
 				return false
-			ElseIf (!UpdateBaseCoordinates(asNewScene, CenterRef, _BaseCoordinates))
+			ElseIf (!UpdateBaseCoordinates(asNewScene, _BaseCoordinates))
 				Log("Cannot reset scene. Unable to find valid coordinates")
 				return false
 			EndIf
@@ -761,10 +762,11 @@ State Animating
 		_ActiveScene = asNewScene
 		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
 		int[] sex_ = SexLabRegistry.GetPositionSexA(_ActiveScene)
+		int[] schlongs_ = SexLabRegistry.GetSchlongAngleA(_ActiveScene, _ActiveStage)
 		int i = 0
 		While (i < Positions.Length)
 			ActorAlias[i].TryLock()
-			ActorAlias[i].ResetPosition(strips_[i], sex_[i])
+			ActorAlias[i].ResetPosition(strips_[i], sex_[i], schlongs_[i])
 			i += 1
 		EndWhile
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
@@ -898,7 +900,10 @@ State Animating
 			; IDEA: Return the nth position this effect is taken from for more accurate sound origin
 			float[] out = new float[2]
 			If (GetSFXTypeAndVelocity(out))
-				Sound sfx = Config.GetSFXSound(out[0] as int)
+				int sfxtype = out[0] as int
+				Debug.Notification("Getting SFX Sound " + sfxtype)
+				MiscUtil.PrintConsole("Getting SFX Sound " + sfxtype)
+				Sound sfx = Config.GetSFXSound(sfxtype)
 				If (sfx)
 					sfx.Play(Positions[0])
 				EndIf
@@ -922,7 +927,7 @@ State Animating
 		ObjectReference oldCenter = CenterRef
 		SetFurnitureIgnored(false)
 		CenterAlias.ForceRefTo(CenterOn)
-		If (!UpdateBaseCoordinates(_ActiveScene, CenterOn, _BaseCoordinates))
+		If (!UpdateBaseCoordinates(_ActiveScene, _BaseCoordinates))
 			String[] out = new String[64]
 			ObjectReference newCenter = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
 			If (!newCenter || out[0] == "")	; New center has no available scenes closeby, pick new ones
@@ -1126,7 +1131,7 @@ Function RePlace(Actor akActor, float[] afBaseCoordinates, String asSceneID, Str
 Function UpdatePlacement(int n, sslActorAlias akAlias)
 	RePlace(akAlias.GetActorReference(), _InUseCoordinates, _ActiveScene, _ActiveStage, n)
 EndFunction
-bool Function RegisterSFX() native
+bool Function RegisterSFX(Actor[] akPositions) native
 Function UnregisterSFX() native
 bool Function GetSFXTypeAndVelocity(float[] afOut) native
 

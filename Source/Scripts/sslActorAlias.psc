@@ -435,11 +435,14 @@ EndFunction
 	for strip information and the actual animation call
 /;
 
+int _schlonganglestart
+
 State Paused
 	; Should only be called once the first time the main thread enters animating state
-	Function ReadyActor(int aiStripData, int aiPositionGenders)
+	Function ReadyActor(int aiStripData, int aiPositionGenders, int aiSchlongAngle)
 		_stripData = aiStripData
 		_useStrapon = _sex == 1 && Math.LogicalAnd(aiPositionGenders, 0x2) == 0
+		_schlonganglestart = aiSchlongAngle
 		RegisterForModEvent("SSL_READY_Thread" + _Thread.tid, "OnStartPlaying")
 	EndFunction
 	Event OnStartPlaying(string asEventName, string asStringArg, float afNumArg, form akSender)
@@ -462,6 +465,8 @@ State Paused
 		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		_LastOrgasm = _StartedAt
 		_Thread.AnimationStart()
+		Utility.Wait(0.7)	; Waiting for SOS to equip the schlong ...
+		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
 		TrackedEvent(TRACK_START)
 	EndEvent
 
@@ -524,7 +529,7 @@ State Paused
 	EndFunction
 EndState
 
-Function ReadyActor(int aiStripData, int aiPositionGenders)
+Function ReadyActor(int aiStripData, int aiPositionGenders, int aiSchlongAngle)
 	Error("Cannot ready outside of idle state", "ReadyActor()")
 EndFunction
 Function LockActor()
@@ -790,11 +795,12 @@ State Animating
 		GoToState(STATE_PAUSED)
 	EndFunction
 	
-	Function ResetPosition(int aiStripData, int aiPositionGenders)
+	Function ResetPosition(int aiStripData, int aiPositionGenders, int aiSchlongAngle)
 		_stripData = aiStripData
 		_equipment = StripByDataEx(_stripData, GetStripSettings(), _stripCstm, _equipment)
 		_useStrapon = _sex == 1 && Math.LogicalAnd(aiPositionGenders, 0x2) == 0
 		ResolveStrapon()
+		Debug.SendAnimationEvent(ActorRef, "SOSBend" + aiSchlongAngle)
 	EndFunction
 
 	Function Clear()
@@ -824,7 +830,7 @@ EndFunction
 Function UpdateNext(int aiStripData)
 	Error("Cannot update to next stage outside of playing state", "UpdateNext()")
 EndFunction
-Function ResetPosition(int aiStripData, int aiPositionGenders)
+Function ResetPosition(int aiStripData, int aiPositionGenders, int aiSchlongAngle)
 	Error("Cannot reset position outside of playing state", "ResetPosition()")
 EndFunction
 function RefreshExpression()

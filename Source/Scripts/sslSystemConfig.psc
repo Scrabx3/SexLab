@@ -792,8 +792,8 @@ endFunction
 ; TODO: Remaining SFX Sound Types
 
 int Property NULL       = 0 AutoReadOnly
-int Property HAND       = 1 AutoReadOnly
-int Property FOOT       = 2 AutoReadOnly
+int Property FOOT       = 1 AutoReadOnly
+int Property HAND       = 2 AutoReadOnly
 int Property FINGERA    = 3 AutoReadOnly
 int Property FINGERV    = 4 AutoReadOnly
 int Property TRIBADISM  = 5 AutoReadOnly
