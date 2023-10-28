@@ -197,3 +197,10 @@ Function SetSchlongAngle(String asID, String asStage, int n, int aiValue) native
 ; None = 0 | Helmet = 0x1 | Gloves = 0x2 | Boots = 0x4 | Default = 0x80 | All = 0xFF
 int Function GetStripData(String asID, String asStage, int n) native global
 int[] Function GetStripDataA(String asID, String asStage) native global
+
+; If the specific extra is flagged with the given custom extra
+bool Function HasExtraCustom(String asID, int n, String asExtra) native global
+; Return custom extra data for the specific position
+String[] Function GetExtraCustom(String asID, int n) native global
+; Concatinate the custom extra data for each position and return an array [0-N] containing data for each actor
+String[] Function GetExtraCustomA(String asID) native global
