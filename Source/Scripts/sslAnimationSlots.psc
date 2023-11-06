@@ -105,6 +105,7 @@ sslBaseAnimation Function GetSetAnimation(String asScene)
 EndFunction
 
 sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
+  Log("Translating " + asSceneIDs.Length + " Animations to Legacy Class (" + asSceneIDs + ")")
   sslBaseAnimation[] ret = sslUtility.AnimationArray(asSceneIDs.Length)
   int i = 0
   While (i < ret.Length)
@@ -114,6 +115,7 @@ sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
     EndIf
     i += 1
   EndWhile
+  Log("Returning " + ret.Length + " Objects (" + asSceneIDs + ")")
   return ret
 EndFunction
 
