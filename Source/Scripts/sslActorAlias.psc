@@ -183,7 +183,7 @@ int _sex
 bool _victim
 
 int _AnimVarIsNPC
-bool _AnimVarFootIKDisable
+int _AnimVarFootIKDisable
 
 ; Center
 ObjectReference _myMarker
@@ -331,7 +331,7 @@ State Ready
 			_Config.CheckBardAudience(ActorRef, true)
 		EndIf
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
-		_AnimVarFootIKDisable = _ActorRef.GetAnimationVariableBool("FootIKDisable")
+		_AnimVarFootIKDisable = _ActorRef.GetAnimationVariableInt("FootIKDisable")
 		; TODO: Code below to pathing isnt optimizedy yet !IMPORTANT
 		Stats.SeedActor(ActorRef)
 		; Delays
@@ -493,9 +493,10 @@ State Paused
 			ActorRef.StartSneaking()
 		EndIf
 		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
-		_ActorRef.SetAnimationVariableBool("FootIKDisable", true)
+		_ActorRef.SetAnimationVariableInt("FootIKDisable", 1)
 		If (ActorRef == _PlayerRef)
 			If(_Config.AutoTFC)
+				Game.ForceThirdPerson()
 				MiscUtil.SetFreeCameraState(true)
 				MiscUtil.SetFreeCameraSpeed(_Config.AutoSUCSM)
 			EndIf
