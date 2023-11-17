@@ -66,6 +66,7 @@ Function SetStripping(int aiSlots, bool abStripWeapons, bool abApplyNow)
 	If (abApplyNow && GetState() == STATE_PLAYING)
 		int[] set
 		_equipment = StripByDataEx(0x80, set, _stripCstm, _equipment)
+		ActorRef.QueueNiNodeUpdate()
 	EndIf
 EndFunction
 
@@ -183,7 +184,7 @@ int _sex
 bool _victim
 
 int _AnimVarIsNPC
-int _AnimVarFootIKDisable
+bool _AnimVarbHumanoidFootIKDisable
 
 ; Center
 ObjectReference _myMarker
@@ -331,7 +332,7 @@ State Ready
 			_Config.CheckBardAudience(ActorRef, true)
 		EndIf
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
-		_AnimVarFootIKDisable = _ActorRef.GetAnimationVariableInt("FootIKDisable")
+		_AnimVarbHumanoidFootIKDisable = _ActorRef.GetAnimationVariableBool("bHumanoidFootIKDisable")
 		; TODO: Code below to pathing isnt optimizedy yet !IMPORTANT
 		Stats.SeedActor(ActorRef)
 		; Delays
@@ -460,6 +461,7 @@ State Paused
 			EndIf
 			_equipment = StripByData(_stripData, GetStripSettings(), _stripCstm)
 			ResolveStrapon()
+			ActorRef.QueueNiNodeUpdate()
 		EndIf
 		; Only called once on the first enter to Animating State
 		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
@@ -493,7 +495,7 @@ State Paused
 			ActorRef.StartSneaking()
 		EndIf
 		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
-		_ActorRef.SetAnimationVariableInt("FootIKDisable", 1)
+		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", 1)
 		If (ActorRef == _PlayerRef)
 			If(_Config.AutoTFC)
 				Game.ForceThirdPerson()
@@ -577,6 +579,7 @@ State Animating
 		If (_stripData != aiStripData)
 			_stripData = aiStripData
 			_equipment = StripByDataEx(_stripData, GetStripSettings(), _stripCstm, _equipment)
+			ActorRef.QueueNiNodeUpdate()
 		EndIf
 		_VoiceDelay -= Utility.RandomFloat(0.1, 0.3)
 		if _VoiceDelay < 0.8
@@ -785,7 +788,7 @@ State Animating
 	Function UnlockActor()
 		_ActorRef.SetVehicle(none)
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
-		_ActorRef.SetAnimationVariableBool("FootIKDisable", _AnimVarFootIKDisable)
+		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", _AnimVarbHumanoidFootIKDisable)
 		If (ActorRef == _PlayerRef)
 			MiscUtil.SetFreeCameraState(false)
 		Else
@@ -801,6 +804,7 @@ State Animating
 		_equipment = StripByDataEx(_stripData, GetStripSettings(), _stripCstm, _equipment)
 		_useStrapon = _sex == 1 && Math.LogicalAnd(aiPositionGenders, 0x2) == 0
 		ResolveStrapon()
+		ActorRef.QueueNiNodeUpdate()
 		Debug.SendAnimationEvent(ActorRef, "SOSBend" + aiSchlongAngle)
 	EndFunction
 
@@ -1135,6 +1139,7 @@ endFunction
 
 Function Strip()
 	_equipment = StripByDataEx(0x80, GetStripSettings(), _stripCstm, _equipment)
+	ActorRef.QueueNiNodeUpdate()
 EndFunction
 Function UnStrip()
 	Redress()
