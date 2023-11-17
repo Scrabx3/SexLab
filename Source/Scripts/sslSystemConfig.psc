@@ -810,9 +810,9 @@ Sound property SexMixedFX auto
 Sound Function GetSFXSound(int aiSFXType)
   If (aiSFXType == NULL)
     return none
-  ElseIf (aiSFXType == Anal || aiSFXType == Vaginal)
+  ElseIf (aiSFXType == ANAL || aiSFXType == VAGINAL)
     return SquishingFX
-  ElseIf (aiSFXType == Oral)
+  ElseIf (aiSFXType == ORAL)
     return SuckingFX
   EndIf
   return none

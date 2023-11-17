@@ -568,8 +568,11 @@ State Making_M
 				; Inheritance is kinda backwards
 				Config.GetThreadControl(self as sslThreadController)
 			EndIf
-		ElseIf (Config.ShowInMap && PlayerRef.GetDistance(CenterRef) > 750)
-			SetObjectiveDisplayed(0, True)
+		Else
+			AutoAdvance = true
+			If (Config.ShowInMap && PlayerRef.GetDistance(CenterRef) > 750)
+				SetObjectiveDisplayed(0, True)
+			EndIf
 		EndIf
 		Log("Prepare completed, entering playing state")
 		GoToState(STATE_PLAYING)
@@ -901,16 +904,21 @@ State Animating
 			float[] out = new float[2]
 			If (GetSFXTypeAndVelocity(out))
 				int sfxtype = out[0] as int
-				Debug.Notification("Getting SFX Sound " + sfxtype)
-				MiscUtil.PrintConsole("Getting SFX Sound " + sfxtype)
+				; Debug.Notification("Getting SFX Sound " + sfxtype)
+				; MiscUtil.PrintConsole("Getting SFX Sound " + sfxtype)
 				Sound sfx = Config.GetSFXSound(sfxtype)
+				; Debug.Notification("Playing SFX Sound " + sfx)
+				; MiscUtil.PrintConsole("Playing SFX Sound " + sfx)
 				If (sfx)
-					sfx.Play(Positions[0])
+					int instance = sfx.Play(Positions[0])
+					; Debug.Notification("Playing SFX Sound; Instance: " + instance)
+					; MiscUtil.PrintConsole("Playing SFX Sound; Instance: " + instance + " at volume: " + Config.SFXVolume)
+					Sound.SetInstanceVolume(instance, Config.SFXVolume)
 				EndIf
 			EndIf
 			_SFXTimer = Utility.RandomFloat(0.9, 1.3) * Config.SFXDelay
-			If (_SFXTimer < 1.0)
-				_SFXTimer = 1.0
+			If (_SFXTimer < 0.8)
+				_SFXTimer = 0.8
 			EndIf
 		EndIf
 		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
@@ -1371,7 +1379,7 @@ Function Initialize()
 	_furniStatus = FURNI_ALLOW
 	StartedAt = 0.0
 	DisableOrgasms = false
-	AutoAdvance = false
+	AutoAdvance = true
 	LeadIn = false
 	_ThreadTags = Utility.CreateStringArray(0)
 	_ContextTags = Utility.CreateStringArray(0)
