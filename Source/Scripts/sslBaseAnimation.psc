@@ -40,13 +40,19 @@ EndFunction
 String Property PROXY_ID Auto Hidden
 
 bool Function _GetEnabled()
-	return SexLabRegistry.IsSceneEnabled(PROXY_ID)
+	return SexLabRegistry.SceneExists(PROXY_ID) && SexLabRegistry.IsSceneEnabled(PROXY_ID)
 EndFunction
 Function _SetEnabled(bool aSet)
+	If (!SexLabRegistry.SceneExists(PROXY_ID))
+		return
+	EndIf
 	SexLabRegistry.SetSceneEnabled(PROXY_ID, aSet)
 EndFunction
 
 String Function _GetName()
+	If (!SexLabRegistry.SceneExists(PROXY_ID))
+		return ""
+	EndIf
 	return SexLabRegistry.GetSceneName(PROXY_ID)
 EndFunction
 
