@@ -559,7 +559,7 @@ Event OnMenuOpenST()
 		SetMenuDialogOptions(_ClimaxTypes)
 	ElseIf (s[0] == "SexSelect")
 		int sex
-		If (s[0] == "0")
+		If (s[1] == "0")
 			sex = SexLabRegistry.GetSex(PlayerRef, true)
 		Else
 			sex = SexLabRegistry.GetSex(Config.TargetRef, true)
@@ -599,7 +599,7 @@ Event OnMenuAcceptST(int aiIndex)
 		sslSystemConfig.SetSettingInt("iClimaxType", aiIndex)
 		SetMenuOptionValueST(_ClimaxTypes[aiIndex])
 	ElseIf (s[0] == "SexSelect")
-		If (s[0] == "0")
+		If (s[1] == "0")
 			ActorLib.TreatAsSex(PlayerRef, aiIndex)
 		Else
 			ActorLib.TreatAsSex(Config.TargetRef, aiIndex)
