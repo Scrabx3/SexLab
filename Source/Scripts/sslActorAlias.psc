@@ -356,6 +356,8 @@ State Ready
 		endIf
 		If(_Voice)
 			LogInfo += "Voice[" + _Voice.Name + "] "
+		Else
+			LogInfo += "Voice[NONE] "
 		EndIf
 		; Strapon & Expression (for NPC only)
 		If(_sex <= 2)
@@ -585,6 +587,7 @@ State Animating
 		if _VoiceDelay < 0.8
 			_VoiceDelay = 0.8 ; Can't have delay shorter than animation update loop
 		endIf
+		RegisterForSingleUpdate(_VoiceDelay)
 	EndFunction
 
 	Function SetStrapon(Form ToStrapon)
