@@ -166,7 +166,7 @@ String Property STATE_PLAYING = "Animating" AutoReadOnly
 
 String Property TRACK_ADDED 	= "Added" AutoReadOnly
 String Property TRACK_START 	= "Start" AutoReadOnly
-String Property TRACK_END		 	= "Start" AutoReadOnly
+String Property TRACK_END		 	= "End" AutoReadOnly
 
 ; ------------------------------------------------------- ;
 ; --- Alias Data                                      --- ;
