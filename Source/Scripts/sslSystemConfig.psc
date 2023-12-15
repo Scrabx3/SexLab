@@ -791,16 +791,14 @@ endFunction
 ; IDEA: SFX Types as bitflags
 ; TODO: Remaining SFX Sound Types
 
-int Property NULL       = 0 AutoReadOnly
-int Property FOOT       = 1 AutoReadOnly
-int Property HAND       = 2 AutoReadOnly
-int Property FINGERA    = 3 AutoReadOnly
-int Property FINGERV    = 4 AutoReadOnly
-int Property TRIBADISM  = 5 AutoReadOnly
-int Property GRINDING   = 6 AutoReadOnly
-int Property ORAL       = 7 AutoReadOnly
-int Property ANAL       = 8 AutoReadOnly
-int Property VAGINAL    = 9 AutoReadOnly
+int Property TYPE_NULL      = 0 AutoReadOnly
+int Property TYPE_FOOT      = 1 AutoReadOnly
+int Property TYPE_HAND      = 2 AutoReadOnly
+int Property TYPE_TRIBADISM = 4 AutoReadOnly
+int Property TYPE_GRINDING  = 8 AutoReadOnly
+int Property TYPE_ORAL      = 16 AutoReadOnly
+int Property TYPE_ANAL      = 32 AutoReadOnly
+int Property TYPE_VAGINAL   = 64 AutoReadOnly
 
 Sound property OrgasmFX auto
 Sound property SquishingFX auto
@@ -808,11 +806,17 @@ Sound property SuckingFX auto
 Sound property SexMixedFX auto
 
 Sound Function GetSFXSound(int aiSFXType)
-  If (aiSFXType == NULL)
+  If (aiSFXType == TYPE_NULL)
     return none
-  ElseIf (aiSFXType == ANAL || aiSFXType == VAGINAL)
-    return SquishingFX
-  ElseIf (aiSFXType == ORAL)
+  EndIf
+  int all = TYPE_ANAL + TYPE_VAGINAL + TYPE_ORAL
+  If (Math.LogicalAnd(aiSFXType, TYPE_ANAL + TYPE_VAGINAL + TYPE_ORAL) > 0)
+    If (Math.LogicalAnd(aiSFXType, TYPE_ORAL) == 0)
+      return SquishingFX
+    Else
+      return SexMixedFX
+    EndIf
+  ElseIf (Math.LogicalAnd(aiSFXType, TYPE_ORAL) > 0)
     return SuckingFX
   EndIf
   return none

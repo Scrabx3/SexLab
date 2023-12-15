@@ -900,21 +900,11 @@ State Animating
 		If (_SFXTimer > 0)
 			_SFXTimer -= ANIMATING_UPDATE_INTERVAL
 		Else
-			; IDEA: Return the nth position this effect is taken from for more accurate sound origin
-			float[] out = new float[2]
-			If (GetSFXTypeAndVelocity(out))
-				int sfxtype = out[0] as int
-				; Debug.Notification("Getting SFX Sound " + sfxtype)
-				; MiscUtil.PrintConsole("Getting SFX Sound " + sfxtype)
-				Sound sfx = Config.GetSFXSound(sfxtype)
-				; Debug.Notification("Playing SFX Sound " + sfx)
-				; MiscUtil.PrintConsole("Playing SFX Sound " + sfx)
-				If (sfx)
-					int instance = sfx.Play(Positions[0])
-					; Debug.Notification("Playing SFX Sound; Instance: " + instance)
-					; MiscUtil.PrintConsole("Playing SFX Sound; Instance: " + instance + " at volume: " + Config.SFXVolume)
-					Sound.SetInstanceVolume(instance, Config.SFXVolume)
-				EndIf
+			int sfxtype = GetSFXType()
+			Sound sfx = Config.GetSFXSound(sfxtype)
+			; MiscUtil.PrintConsole("[SLP+] Getting SFX Sound " + type + " -> Obj = " + sfx)
+			If (sfx)
+				sfx.Play(CenterRef)
 			EndIf
 			_SFXTimer = Utility.RandomFloat(0.9, 1.3) * Config.SFXDelay
 			If (_SFXTimer < 0.8)
@@ -1141,7 +1131,7 @@ Function UpdatePlacement(int n, sslActorAlias akAlias)
 EndFunction
 bool Function RegisterSFX(Actor[] akPositions) native
 Function UnregisterSFX() native
-bool Function GetSFXTypeAndVelocity(float[] afOut) native
+int Function GetSFXType() native
 
 ; ------------------------------------------------------- ;
 ; --- Thread END                                      --- ;
