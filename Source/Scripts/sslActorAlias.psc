@@ -490,6 +490,7 @@ State Paused
 			If (!_myMarker)
 				_myMarker = _ActorRef.PlaceAtMe(_xMarker)
 			EndIf
+			Utility.Wait(0.5)
 			_ActorRef.SetVehicle(_myMarker)
 		EndIf
 		_ActorRef.SheatheWeapon()
@@ -524,6 +525,7 @@ State Paused
 		EndIf
 		; If we are here, the animation is officially "started"
 		; Clearing should only remove the actor from the alias but not re iniitlaize the whole script
+		TrackedEvent(TRACK_END)
 		GoToState(STATE_IDLE)
 		Clear()
 	EndFunction
