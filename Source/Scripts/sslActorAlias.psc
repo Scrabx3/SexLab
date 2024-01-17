@@ -576,7 +576,7 @@ float _RefreshExpressionDelay
 
 State Animating
 	Event OnBeginState()
-		RegisterForModEvent("SSL_ORGASM_Thread" + _Thread.tid, "OnOrgasmALL")
+		RegisterForModEvent("SSL_ORGASM_Thread" + _Thread.tid, "OnOrgasm")
 	EndEvent
 
 	Function UpdateNext(int aiStripData)
@@ -676,6 +676,9 @@ State Animating
 		Sound.SetInstanceVolume(SFX.Play(FromRef), Volume)
 	EndFunction
 
+	Event OnOrgasm()
+		DoOrgasm()
+	EndEvent
 	Function DoOrgasm(bool Forced = false)
 		; TODO: Review this block below
 		int Enjoyment = GetEnjoyment()
@@ -852,6 +855,9 @@ endFunction
 Function PlayLouder(Sound SFX, ObjectReference FromRef, float Volume)
 	Error("Cannot play sound outside of playing state", "PlayLouder()")
 EndFunction
+Event OnOrgasm()
+	Error("Cannot create orgasm effects outside of playing state", "OnOrgasm()")
+EndEvent
 
 Function TryUnlock()
 EndFunction
@@ -1158,9 +1164,6 @@ endFunction
 function OrgasmEffect()
 	DoOrgasm()
 endFunction
-event OnOrgasm()
-	DoOrgasm()
-endEvent
 event OrgasmStage()
 	DoOrgasm()
 endEvent

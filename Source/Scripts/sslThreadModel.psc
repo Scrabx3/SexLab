@@ -798,12 +798,23 @@ State Animating
 				EndAnimation()
 			EndIf
 			return
-		ElseIf(!Leadin && !DisableOrgasms && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
-			If (sslSystemConfig.GetSettingInt("iClimaxType") == Config.CLIMAXTYPE_LEGACY)
-				; End of animation orgasm
+		ElseIf(!Leadin && !DisableOrgasms)
+			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
+			If (ctype == Config.CLIMAXTYPE_LEGACY && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
+				; End of animation climax
 				SendThreadEvent("OrgasmStart")
 				_SceneEndClimax = true
 				TriggerOrgasm()
+			ElseIf (ctype == Config.CLIMAXTYPE_SCENE)
+				; Scene embedded climax
+				int[] cactors = SexLabRegistry.GetClimaxingActors(_ActiveScene, asNewStage)
+				int i = 0
+				While (i < cactors.Length)
+					ActorAlias[cactors[i]].DoOrgasm()
+					i += 1
+				EndWhile
+			; Else
+				; External climax
 			EndIf
 		EndIf
 		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
@@ -819,6 +830,10 @@ State Animating
 		RunHook(Config.HOOKID_STAGESTART)
 		ReStartTimer()
 	EndFunction
+	Function TriggerOrgasm()
+		SendModEvent("SSL_ORGASM_Thread" + tid)
+	EndFunction
+
 	Function ResetStage()
 		GoToStage(_StageHistory.Length)
 	EndFunction
@@ -843,11 +858,9 @@ State Animating
 			ReStartTimer()
 		EndIf
 	EndFunction
-
 	Function BranchTo(int aiNextBranch)
 		PlayNext(aiNextBranch)
 	EndFunction
-
 	Function SkipTo(String asNextStage)
 		If (!SexLabRegistry.StageExists(_ActiveScene, asNextStage))
 			return
@@ -914,10 +927,6 @@ State Animating
 		EndIf
 		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
 	EndEvent
-
-	Function TriggerOrgasm()
-		SendModEvent("SSL_ORGASM_Thread" + tid)
-	EndFunction
 
 	Function CenterOnObject(ObjectReference CenterOn, bool resync = true)
 		If (!CenterOn)
