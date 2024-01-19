@@ -573,12 +573,13 @@ State Making
 		If(_StartScene && Scenes.Find(_StartScene) == -1)
 			AddScene(_StartScene)
 		EndIf
-		String[] out = new String[64]
+		String[] out = new String[128]
 		ObjectReference new_center = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
 		If (!new_center || out[0] == "")
 			Fatal("Failed to start Thread -- Unable to locate a center compatible with given scenes")
 			return none
 		EndIf
+		Log("Found center " + new_center + "; " + out.Find("") + "/" + Scenes.Length + " matching scenes.")
 		CenterRef = new_center
 		_ActiveScene = out[GetActiveIdx(out)]
 		If (!SexLabRegistry.SortBySceneA(Positions, submissives, _ActiveScene, true))
@@ -1270,11 +1271,11 @@ Function AddScene(String asSceneID)
 		return
 	EndIf
 	If(_CustomScenes.Length > 0)
-		_CustomScenes = PapyrusUtil.PushString(_CustomScenes, _StartScene)
+		_CustomScenes = PapyrusUtil.PushString(_CustomScenes, asSceneID)
 	ElseIf(LeadIn)
-		_LeadInScenes = PapyrusUtil.PushString(_LeadInScenes, _StartScene)
+		_LeadInScenes = PapyrusUtil.PushString(_LeadInScenes, asSceneID)
 	Else
-		_PrimaryScenes = PapyrusUtil.PushString(_PrimaryScenes, _StartScene)
+		_PrimaryScenes = PapyrusUtil.PushString(_PrimaryScenes, asSceneID)
 	EndIf
 EndFunction
 
@@ -1286,7 +1287,7 @@ int Function GetActiveIdx(String[] asOutResult)
 		EndIf
 	EndIf
 	int emptyidx = asOutResult.Find("")
-	If (emptyidx == -1) ; All scenes filled --> max idx = 63
+	If (emptyidx == -1) ; All scenes filled
 		return Utility.RandomInt(0, asOutResult.Length - 1)
 	EndIf
 	return Utility.RandomInt(0, emptyidx - 1)
