@@ -369,7 +369,7 @@ State Ready
 					_Strapon = _HadStrapon
 				EndIf
 			EndIf
-			LogInfo += "_Strapon[" + _Strapon + "] "
+			LogInfo += "Strapon[" + _Strapon + "] "
 			if !_Expression && _Config.UseExpressions
 				_Expressions = _Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim(), _Thread.IsType[0] && !IsVictim())
 				if _Expressions && _Expressions.Length > 0
@@ -1177,14 +1177,14 @@ function ClearEvents()
 endFunction
 
 function EquipStrapon()
-	if _Strapon && !ActorRef.IsEquipped(_Strapon)
-		ActorRef.EquipItem(_Strapon, true, true)
-	endIf
+	; if _Strapon && !ActorRef.IsEquipped(_Strapon)
+	; 	ActorRef.EquipItem(_Strapon, true, true)
+	; endIf
 endFunction
 function UnequipStrapon()
-	if _Strapon && ActorRef.IsEquipped(_Strapon)
-		ActorRef.UnequipItem(_Strapon, true, true)
-	endIf
+	; if _Strapon && ActorRef.IsEquipped(_Strapon)
+	; 	ActorRef.UnequipItem(_Strapon, true, true)
+	; endIf
 endFunction
 
 function RefreshLoc()

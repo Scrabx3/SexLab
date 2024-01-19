@@ -91,37 +91,79 @@ EndFunction
 Actor[] Function GetPositions()
 EndFunction
 
+; --- Submission
+
 ; Return if the given actor is a submissive or not
 bool Function GetSubmissive(Actor akActor)
 EndFunction
 Function SetIsSubmissive(Actor akActor, bool abIsSubmissive)
 EndFunction
-
 ; Get all submissives for the current animation
 Actor[] Function GetSubmissives()
 EndFunction
+
+; --- Stripping
 
 ; Set custom strip settings for this actor
 ; aiSlots represents a slot mask of all slots that should be unequipped (if possible)
 Function SetCustomStrip(Actor akActor, int aiSlots, bool abWeapon, bool abApplyNow)
 EndFunction
-
 ; If the actor will play a short animation on scene start when undressing. Only used before entering playing state
 bool Function IsUndressAnimationAllowed(Actor akActor)
 EndFunction
 Function SetIsUndressAnimationAllowed(Actor akActor, bool abAllowed)
 EndFunction
-
 ; if the actor will re-equip their gear after the animation (and they are not a submissive)
 bool Function IsRedressAllowed(Actor akActor)
 EndFunction
 Function SetIsRedressAllowed(Actor akActor, bool abAllowed)
 EndFunction
 
+; --- Voice
+
+; Force the given actors voice, can only be used before entering playing state
+Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
+EndFunction
+sslBaseVoice Function GetVoice(Actor ActorRef)
+EndFunction
+
+; --- Expressions
+
+; Update the given actors expression
+Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
+EndFunction
+sslBaseExpression Function GetExpression(Actor ActorRef)
+EndFunction
+
+; --- Orgasms
+
+; Disable or enable orgasm events for the stated actor
+Function DisableOrgasm(Actor ActorRef, bool OrgasmDisabled = true)
+EndFunction
+bool Function IsOrgasmAllowed(Actor ActorRef)
+EndFunction
+; Create an orgasm event for the given actor
+Function ForceOrgasm(Actor ActorRef)
+EndFunction
+
+; --- Strapons
+
+; Set the strapon this actor should use. Will fail if the actor isnt a valid target for strapon usage
+Function SetStrapon(Actor ActorRef, Form ToStrapon)
+endfunction
+Form Function GetStrapon(Actor ActorRef)
+endfunction
+; if the given actor is currently using a strapon
+bool Function IsUsingStrapon(Actor ActorRef)
+EndFunction
+
+; --- Pathing
+
 int Property PATHING_DISABLE = -1 AutoReadOnly	; Always be teleported
 int Property PATHING_ENABLE = 0 AutoReadOnly		; Let the user config decide (default)
 int Property PATHING_FORCE = 1 AutoReadOnly			; Always try to walk unless the distance is too great
 
 ; Set the pathing flag of the position, determing if this actor can walk to the center or should be teleported to it
+; This can only be set before playing state
 Function SetPathingFlag(Actor akActor, int aiPathingFlag)
 EndFunction

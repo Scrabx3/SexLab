@@ -89,6 +89,79 @@ Function SetPathingFlag(Actor akActor, int aiPathingFlag)
 	it.SetPathing(aiPathingFlag)
 EndFunction
 
+; Voice
+Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return
+	EndIf
+	ref.SetVoice(Voice, ForceSilent)
+EndFunction
+
+sslBaseVoice Function GetVoice(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.GetVoice()
+EndFunction
+
+; Expressions
+Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return
+	EndIf
+	ref.SetExpression(Expression)
+EndFunction
+
+sslBaseExpression Function GetExpression(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.GetExpression()
+EndFunction
+
+; Orgasms
+Function DisableOrgasm(Actor ActorRef, bool OrgasmDisabled = true)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.DisableOrgasm(OrgasmDisabled)
+EndFunction
+
+bool Function IsOrgasmAllowed(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.IsOrgasmAllowed()
+EndFunction
+
+Function ForceOrgasm(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.DoOrgasm(true)
+EndFunction
+
+; Actor Strapons
+
+bool Function IsUsingStrapon(Actor ActorRef)
+	return ActorAlias(ActorRef).IsUsingStrapon()
+EndFunction
+
+Function SetStrapon(Actor ActorRef, Form ToStrapon)
+	ActorAlias(ActorRef).SetStrapon(ToStrapon)
+endfunction
+
+Form Function GetStrapon(Actor ActorRef)
+	return ActorAlias(ActorRef).GetStrapon()
+endfunction
+
 ; ------------------------------------------------------- ;
 ; --- Submission                                      --- ;
 ; ------------------------------------------------------- ;
@@ -334,7 +407,6 @@ float Property TotalTime Hidden
 	EndFunction
 EndProperty
 
-bool property DisableOrgasms auto hidden
 bool Property AutoAdvance auto hidden
 bool Property LeadIn auto hidden
 
@@ -798,7 +870,7 @@ State Animating
 				EndAnimation()
 			EndIf
 			return
-		ElseIf(!Leadin && !DisableOrgasms)
+		ElseIf(!Leadin)
 			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
 			If (ctype == Config.CLIMAXTYPE_LEGACY && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
 				; End of animation climax
@@ -1378,7 +1450,6 @@ Function Initialize()
 	_StageHistory = Utility.CreateStringArray(0)
 	_furniStatus = FURNI_ALLOW
 	StartedAt = 0.0
-	DisableOrgasms = false
 	AutoAdvance = true
 	LeadIn = false
 	_ThreadTags = Utility.CreateStringArray(0)
@@ -2112,80 +2183,50 @@ Function ForcePathToCenter(Actor ActorRef = none, bool forced = true)
 	endIf
 EndFunction
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-; Orgasms
+bool property DisableOrgasms hidden
+	bool Function Get()
+		bool ret = false
+		int i = 0
+		While (i < ActorAlias.Length && !ret)
+			ret = !ActorAlias[i].IsOrgasmAllowed()
+			i += 1
+		EndWhile
+		return ret
+	EndFunction
+	Function Set(bool abDisable)
+		int i = 0
+		While (i < ActorAlias.Length)
+			ActorAlias[i].DisableOrgasm(abDisable)
+			i += 1
+		EndWhile
+	EndFunction
+EndProperty
 Function DisableAllOrgasms(bool OrgasmsDisabled = true)
 	DisableOrgasms = OrgasmsDisabled
 EndFunction
-
-Function DisableOrgasm(Actor ActorRef, bool OrgasmDisabled = true)
-	if ActorRef
-		ActorAlias(ActorRef).DisableOrgasm(OrgasmDisabled)
-	endIf
-EndFunction
-
-bool Function IsOrgasmAllowed(Actor ActorRef)
-	return ActorAlias(ActorRef).IsOrgasmAllowed()
-EndFunction
-
 bool Function NeedsOrgasm(Actor ActorRef)
 	return ActorAlias(ActorRef).NeedsOrgasm()
 EndFunction
 
-Function ForceOrgasm(Actor ActorRef)
-	if ActorRef
-		ActorAlias(ActorRef).DoOrgasm(true)
-	endIf
-EndFunction
-
-; Voice
-Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
-	ActorAlias(ActorRef).SetVoice(Voice, ForceSilent)
-EndFunction
-
-sslBaseVoice Function GetVoice(Actor ActorRef)
-	return ActorAlias(ActorRef).GetVoice()
-EndFunction
-
-; Actor Strapons
-bool Function IsUsingStrapon(Actor ActorRef)
-	return ActorAlias(ActorRef).IsUsingStrapon()
-EndFunction
-
+; These are empty funcs on alias script. Correct equipping of strapons should be internal and function autonomous
 Function EquipStrapon(Actor ActorRef)
 	ActorAlias(ActorRef).EquipStrapon()
 EndFunction
-
 Function UnequipStrapon(Actor ActorRef)
 	ActorAlias(ActorRef).UnequipStrapon()
 EndFunction
 
-Function SetStrapon(Actor ActorRef, Form ToStrapon)
-	ActorAlias(ActorRef).SetStrapon(ToStrapon)
-endfunction
-
-Form Function GetStrapon(Actor ActorRef)
-	return ActorAlias(ActorRef).GetStrapon()
-endfunction
-
-; Expressions
-Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
-	ActorAlias(ActorRef).SetExpression(Expression)
-EndFunction
-sslBaseExpression Function GetExpression(Actor ActorRef)
-	return ActorAlias(ActorRef).GetExpression()
-EndFunction
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; Enjoyment/Pain
 int Function GetEnjoyment(Actor ActorRef)
