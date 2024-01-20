@@ -610,7 +610,7 @@ State Making_M
 		SendThreadEvent("AnimationStarting")
 		RunHook(Config.HOOKID_STARTING)
 		If (useFading)
-			Utility.Wait(0.5)
+			; Utility.Wait(0.5)
 			Config.ApplyFade()
 		EndIf
 		; Base coordinates are first set in FindCenter() above

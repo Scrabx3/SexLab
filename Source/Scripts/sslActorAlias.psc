@@ -20,7 +20,7 @@ bool Function IsAggressor()
 EndFunction
 
 Function SetVictim(bool Victimize)
-	Error("Cannot mark as victim outside of setup state", "SetVictim()")
+	_victim = Victimize
 EndFunction
 
 int Function GetSex()
@@ -103,7 +103,10 @@ sslBaseVoice function GetVoice()
 endFunction
 
 Function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
-	Error("Cannot set voice outside of setup state", "SetVoice()")
+	_IsForcedSilent = ForceSilence
+	if ToVoice && (_sex > 2) == ToVoice.Creature
+		_Voice = ToVoice
+	endIf
 EndFunction
 
 bool Function IsSilent()
@@ -308,17 +311,6 @@ State Ready
 	Event OnBeginState()
 		RegisterForModEvent("SSL_PREPARE_Thread" + _Thread.tid, "OnDoPrepare")
 	EndEvent
-	
-	Function SetVictim(bool Victimize)
-		_victim = Victimize
-	EndFunction
-
-	Function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
-		_IsForcedSilent = ForceSilence
-		if ToVoice && (_sex > 2) == ToVoice.Creature
-			_Voice = ToVoice
-		endIf
-	EndFunction
 
 	Function SetStrapon(Form ToStrapon)
 		_Strapon = ToStrapon
@@ -449,8 +441,8 @@ State Paused
 		RegisterForModEvent("SSL_READY_Thread" + _Thread.tid, "OnStartPlaying")
 	EndFunction
 	Event OnStartPlaying(string asEventName, string asStringArg, float afNumArg, form akSender)
+		; Only called once on the first enter to Animating State
 		UnregisterForModEvent("SSL_READY_Thread" + _Thread.tid)
-		LockActor()
 		If (_sex <= 2)
 			If (DoUndress)
 				DoUndress = false
@@ -465,11 +457,12 @@ State Paused
 			ResolveStrapon()
 			ActorRef.QueueNiNodeUpdate()
 		EndIf
-		; Only called once on the first enter to Animating State
 		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		_LastOrgasm = _StartedAt
 		_Thread.AnimationStart()
-		Utility.Wait(0.7)	; Waiting for SOS to equip the schlong ...
+		; wait to ensure schlong mesh and AI package are updated
+		Utility.Wait(0.7)
+		LockActor()
 		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
 		TrackedEvent(TRACK_START)
 	EndEvent
@@ -490,7 +483,7 @@ State Paused
 			If (!_myMarker)
 				_myMarker = _ActorRef.PlaceAtMe(_xMarker)
 			EndIf
-			Utility.Wait(0.5)
+			; Utility.Wait(0.5)
 			_ActorRef.SetVehicle(_myMarker)
 		EndIf
 		_ActorRef.SheatheWeapon()

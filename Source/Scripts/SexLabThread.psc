@@ -121,7 +121,7 @@ EndFunction
 
 ; --- Voice
 
-; Force the given actors voice, can only be used before entering playing state
+; Update the given actors voice
 Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
 EndFunction
 sslBaseVoice Function GetVoice(Actor ActorRef)
