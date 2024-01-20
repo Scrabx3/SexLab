@@ -36,7 +36,7 @@ function DisableOrgasm(bool bNoOrgasm)
 endFunction
 
 bool function IsOrgasmAllowed()
-	return _canOrgasm && !_Thread.DisableOrgasms
+	return _canOrgasm
 endFunction
 
 bool function PregnancyRisk()
@@ -459,10 +459,11 @@ State Paused
 		EndIf
 		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
 		_LastOrgasm = _StartedAt
-		_Thread.AnimationStart()
 		; wait to ensure schlong mesh and AI package are updated
-		Utility.Wait(0.7)
+		Utility.Wait(0.5)
 		LockActor()
+		_Thread.AnimationStart()
+		Utility.Wait(0.2)
 		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
 		TrackedEvent(TRACK_START)
 	EndEvent

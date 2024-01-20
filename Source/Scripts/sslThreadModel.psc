@@ -127,7 +127,7 @@ EndFunction
 Function DisableOrgasm(Actor ActorRef, bool OrgasmDisabled = true)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
-		return none
+		return
 	EndIf
 	return ref.DisableOrgasm(OrgasmDisabled)
 EndFunction
@@ -135,7 +135,7 @@ EndFunction
 bool Function IsOrgasmAllowed(Actor ActorRef)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
-		return none
+		return false
 	EndIf
 	return ref.IsOrgasmAllowed()
 EndFunction
