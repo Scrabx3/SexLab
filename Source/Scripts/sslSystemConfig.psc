@@ -49,8 +49,10 @@ bool property DebugMode hidden
       Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
       MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")
       if PlayerRef && PlayerRef != none
-        PlayerRef.AddSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
-        PlayerRef.AddSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3301, "SexLab.esm") as Spell))
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB330A, "SexLab.esm") as Spell))
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB330B, "SexLab.esm") as Spell))
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB330C, "SexLab.esm") as Spell))
       endIf        
     else
       if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
@@ -58,8 +60,10 @@ bool property DebugMode hidden
       endIf
       MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")
       if PlayerRef && PlayerRef != none
-        PlayerRef.RemoveSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
-        PlayerRef.RemoveSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3301, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB330A, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB330B, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB330C, "SexLab.esm") as Spell))
       endIf        
     endIf
     int eid = ModEvent.Create("SexLabDebugMode")
@@ -95,12 +99,14 @@ int Function GetSettingInt(String asSetting) native global
 float Function GetSettingFlt(String asSetting) native global
 int Function GetSettingIntA(String asSetting, int n) native global
 float Function GetSettingFltA(String asSetting, int n) native global
+string Function GetSettingStr(String asSetting) native global
 
 Function SetSettingBool(String asSetting, bool abValue) native global
 Function SetSettingInt(String asSetting, int aiValue) native global
 Function SetSettingFlt(String asSetting, float aiValue) native global
 Function SetSettingIntA(String asSetting, int aiValue, int n) native global
 Function SetSettingFltA(String asSetting, float aiValue, int n) native global
+Function SetSettingString(String asSetting, String asValue) native global
 
 int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
 int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
@@ -246,6 +252,14 @@ bool property UndressAnimation hidden
     SetSettingBool("bUndressAnimation", aSet)
   EndFunction
 EndProperty
+bool property SubmissiveActor hidden
+  bool Function Get()
+	return GetSettingBool("bSubmissiveActor")
+  EndFunction
+  Function Set(bool aSet)
+	SetSettingBool("bSubmissiveActor", aSet)
+  EndFunction
+EndProperty
 
 ; Integers
 int property AskBed hidden
@@ -287,6 +301,41 @@ int property Backwards hidden
   Function Set(int aiSet)
     SetSettingInt("iBackwards", aiSet)
   EndFunction
+EndProperty
+
+; Strings
+
+string property Tags hidden
+	string Function Get()
+		return GetSettingStr("sTags")
+	EndFunction
+	Function Set(string asSet)
+		SetSettingString("sTags", asSet)
+	EndFunction
+EndProperty
+string property RequiredTags hidden
+	string Function Get()
+		return GetSettingStr("sRequiredTags")
+	EndFunction
+	Function Set(string asSet)
+		SetSettingString("sRequiredTags", asSet)
+	EndFunction
+EndProperty
+string property ExcludedTags hidden
+	string Function Get()
+		return GetSettingStr("sExcludedTags")
+	EndFunction
+	Function Set(string asSet)
+		SetSettingString("sExcludedTags", asSet)
+	EndFunction
+EndProperty
+string property OptionalTags hidden
+	string Function Get()
+		return GetSettingStr("sOptionalTags")
+	EndFunction
+	Function Set(string asSet)
+		SetSettingString("sOptionalTags", asSet)
+	EndFunction
 EndProperty
 
 ; Expressions

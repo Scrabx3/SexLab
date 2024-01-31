@@ -61,7 +61,7 @@ Event OnGameReload()
 EndEvent
 
 Event OnConfigInit()
-	Pages = new string[10]
+	Pages = new string[11]
 	Pages[0] = "$SSL_SexDiary"
 	Pages[1] = "$SSL_AnimationSettings"
 	Pages[2] = "$SSL_SoundSettings"
@@ -72,6 +72,7 @@ Event OnConfigInit()
 	Pages[7] = "$SSL_ExpressionEditor"
 	Pages[8] = "$SSL_StripEditor"
 	Pages[9] = "$SSL_RebuildClean"
+	Pages[10] = "$SSL_DebugMenu"
 
 	; Animation Settings
 	Chances = new string[3]
@@ -204,6 +205,8 @@ Event OnPageReset(string page)
 			SexDiary()
 		elseIf page == "$SSL_RebuildClean"
 			RebuildClean()
+		elseIf page == "$SSL_DebugMenu"
+			DebugMenu()
 		endIf
 	else
 		if (Config.GetThreadControlled() || ThreadSlots.FindActorController(PlayerRef) != -1)
@@ -690,7 +693,17 @@ Event OnInputOpenST()
 	; Set OralCount Actor Stat
 	elseIf Options[0] == "SetStatOralCount"
 		SetInputDialogStartText(Stats.GetSkill(StatRef, "OralCount") as string)
-	
+
+	; Set Tags
+	elseIf Options[0] == "InputTags"
+		SetInputDialogStartText(Config.Tags as string)
+	elseIf Options[0] == "InputRequiredTags"
+		SetInputDialogStartText(Config.RequiredTags as string)
+	elseIf Options[0] == "InputExcludedTags"
+		SetInputDialogStartText(Config.ExcludedTags as string)
+	elseIf Options[0] == "InputOptionalTags"
+		SetInputDialogStartText(Config.OptionalTags as string)
+
 	else
 		SetInputDialogStartText("Error Fatal: Opcion Desconocida")
 	
@@ -812,6 +825,29 @@ Event OnInputAcceptST(String inputString)
 			SetInputOptionValueST(Stats.GetSkill(StatRef, "OralCount"))
 		endIf
 	
+	elseIf Options[0] == "InputTags"
+		if inputString as int > 0
+			SetInputDialogStartText(inputString as string)
+			Config.Tags = inputString as string
+		endIf
+	
+	elseIf Options[0] == "InputRequiredTags"
+		if inputString as int > 0
+			SetInputDialogStartText(inputString as string)
+			Config.RequiredTags = inputString as string
+		endIf
+
+	elseIf Options[0] == "InputExcludedTags"
+		if inputString as int > 0
+			SetInputDialogStartText(inputString as string)
+			Config.ExcludedTags = inputString as string
+		endIf
+
+	elseIf Options[0] == "InputOptionalTags"
+		if inputString as int > 0
+			SetInputDialogStartText(inputString as string)
+			Config.OptionalTags = inputString as string
+		endIf
 	endIf
 EndEvent
 
@@ -954,6 +990,13 @@ event OnSelectST()
 		SetOptionFlagsST(OPTION_FLAG_DISABLED)
 		SetTextOptionValueST("Working...")
 		SystemAlias.InstallSystem()
+		ForcePageReset()
+
+	; Reset Debug Tags
+	elseIf Options[0] == "TextTags"
+		SetOptionFlagsST(OPTION_FLAG_DISABLED)
+		SetTextOptionValueST("Resetting tags...")
+		; TODO: Reset tags here
 		ForcePageReset()
 	endIf
 endEvent
@@ -3209,7 +3252,6 @@ function RebuildClean()
 	else
 		AddTextOptionST("ToggleSystem","$SSL_DisabledSystem", "$SSL_DoEnable")
 	endIf
-	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
 	AddHeaderOption("$SSL_Maintenance")
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")
 	AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")
@@ -3239,6 +3281,23 @@ function RebuildClean()
 	AddHeaderOption("System Requirements")
 	SystemCheckOptions()	
 endFunction
+
+
+; ------------------------------------------------------- ;
+; --- Debug Menu	                                  --- ;
+; ------------------------------------------------------- ;
+
+function DebugMenu()
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
+	AddInputOptionST("InputTags", "$SSL_InputTags", "")
+	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", "")
+	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", "")
+	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", "")
+	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere")
+	AddToggleOptionST("ToggleSubmissiveActor","$SSL_ToggleSubmissiveActor", Config.SubmissiveActor)
+endFunction
+
 
 ; ------------------------------------------------------- ;
 ; --- Unorganized State Option Dump                   --- ;
