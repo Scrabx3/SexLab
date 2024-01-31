@@ -68,7 +68,7 @@ bool Function AddActors(Actor akTarget)
 		sceneActors = PapyrusUtil.ActorArray(5)
 
 	ElseIf (SexLab.ValidateActor(akTarget) < 0)
-		Debug.Trace("[SexLab P+ Quick Scene] - Actor " + SexLabUtil.ActorName(akTarget) + " was invalid")
+		Debug.Trace("[SexLab Debug] - Actor " + SexLabUtil.ActorName(akTarget) + " was invalid")
 		UnregisterForUpdate()
 		Return false
 	EndIf
@@ -78,8 +78,8 @@ bool Function AddActors(Actor akTarget)
 			If sceneActors[i] == none
 				sceneActors[i] = akTarget
 				Debug.Notification("Added Actor: " + SexLabUtil.ActorName(akTarget))
-				Debug.Trace("[SexLab P+ Quick Scene] - Actor " + SexLabUtil.ActorName(akTarget) + " was added to the array.")
-				Debug.Trace("[SexLab P+ Quick Scene] - Actor " + SexLabUtil.ActorName(akTarget) + " is considered as: " + Parse_Sex(akTarget))
+				Debug.Trace("[SexLab Debug] - Actor " + SexLabUtil.ActorName(akTarget) + " was added to the array.")
+				Debug.Trace("[SexLab Debug] - Actor " + SexLabUtil.ActorName(akTarget) + " is considered as: " + Parse_Sex(akTarget))
 				RegisterForSingleUpdate(10.0)
 				Return true
 			Else
@@ -101,7 +101,7 @@ Function TriggerSex(Actor[] akPassed = none)
 	EndIf
 
 	sceneActors = PapyrusUtil.RemoveActor(sceneActors, none)
-	Debug.Trace("[SexLab P+ Quick Scene] - Received following array: " + sceneActors)
+	Debug.Trace("[SexLab Debug] - Received following array: " + sceneActors)
 
 	If (Config.SubmissiveActor)
 		GetSubmissiveActor(sceneActors)
@@ -113,16 +113,16 @@ Function TriggerSex(Actor[] akPassed = none)
 
 
 	If (availableScenes.Length < 1 && !Config.SubmissiveActor)
-		Debug.Trace("[SexLab P+ Quick Scene] - No valid animations found, attempting fallback lookup!", 1)
+		Debug.Trace("[SexLab Debug] - No valid animations found, attempting fallback lookup!", 1)
 		GetSubmissiveActor(sceneActors)
 		availableScenes = SexLabRegistry.LookupScenes(sceneActors, Config.Tags, akSub, 1, none)
 		If availableScenes.Length > 0
-			Debug.Trace("[SexLab P+ Quick Scene] - Scenes found with fallback lookup: " + availableScenes.Length)
+			Debug.Trace("[SexLab Debug] - Scenes found with fallback lookup: " + availableScenes.Length)
 		EndIf
 	EndIf
 	If availableScenes.Length > 0
 		Debug.Notification("Valid scenes found: " + availableScenes.Length)
-		Debug.Trace("[SexLab P+ Quick Scene] - Scenes found: " + availableScenes.Length)
+		Debug.Trace("[SexLab Debug] - Scenes found: " + availableScenes.Length)
 		SexLab.StartScene(sceneActors, Config.Tags, akSub, asHook = "AnimationStart, AnimationEnd")
 	Else
 		NoValidAnimations(sceneActors)
@@ -134,21 +134,21 @@ Event AnimationStarted(int aiThread, bool abHasPlayer)
 	UnregisterForUpdate()
 	SexLabThread thread = SexLab.GetThread(aiThread)
 	Debug.Notification("Scene started: " + SexLabRegistry.GetSceneName(thread.GetActiveScene()))
-	Debug.Trace("[SexLab P+ Quick Scene] - ###### START LOGGING SCENE DATA #####")
-	Debug.Trace("[SexLab P+ Quick Scene] - Current thread name: " + thread.GetName())
-	Debug.Trace("[SexLab P+ Quick Scene] - Current active stage: " + thread.GetActiveStage())
-	Debug.Trace("[SexLab P+ Quick Scene] - Current active scene: " + thread.GetActiveScene())
-	Debug.Trace("[SexLab P+ Quick Scene] - Current playing scene: " + thread.GetPlayingScenes())
-	Debug.Trace("[SexLab P+ Quick Scene] - Current scene name: " + SexLabRegistry.GetSceneName(thread.GetActiveScene()))
-	Debug.Trace("[SexLab P+ Quick Scene] - Current submissive actor(s): " + thread.GetSubmissives())
-	Debug.Trace("[SexLab P+ Quick Scene] - ###### END LOGGING SCENE DATA #####")
+	Debug.Trace("[SexLab Debug] - ###### START LOGGING SCENE DATA #####")
+	Debug.Trace("[SexLab Debug] - Current thread name: " + thread.GetName())
+	Debug.Trace("[SexLab Debug] - Current active stage: " + thread.GetActiveStage())
+	Debug.Trace("[SexLab Debug] - Current active scene: " + thread.GetActiveScene())
+	Debug.Trace("[SexLab Debug] - Current playing scene: " + thread.GetPlayingScenes())
+	Debug.Trace("[SexLab Debug] - Current scene name: " + SexLabRegistry.GetSceneName(thread.GetActiveScene()))
+	Debug.Trace("[SexLab Debug] - Current submissive actor(s): " + thread.GetSubmissives())
+	Debug.Trace("[SexLab Debug] - ###### END LOGGING SCENE DATA #####")
 	sceneActors = PapyrusUtil.ActorArray(5)
-	Debug.Trace("[SexLab P+ Quick Scene] - Actor array has been reset")
+	Debug.Trace("[SexLab Debug] - Actor array has been reset")
 EndEvent
 
 Event AnimationEnded(int aiThread, bool abHasPlayer)
 	SexLabThread thread = SexLab.GetThread(aiThread)
-	Debug.Trace("[SexLab P+ Quick Scene] - Scene " + SexLabRegistry.GetSceneName(thread.GetActiveScene()) + " ended successfully")
+	Debug.Trace("[SexLab Debug] - Scene " + SexLabRegistry.GetSceneName(thread.GetActiveScene()) + " ended successfully")
 EndEvent
 
 Event OnUpdate()
@@ -165,6 +165,6 @@ EndFunction
 
 Function NoValidAnimations(Actor[] akActors)
     Debug.Notification("No valid animations found.")
-    Debug.Trace("[SexLab P+ Quick Scene] - Actor combination [" + Parse_Sexes_And_Races(SexLab.GetSexAll(sceneActors), sceneActors) + "] has no valid scenes, aborting!")
+    Debug.Trace("[SexLab Debug] - Actor combination [" + Parse_Sexes_And_Races(SexLab.GetSexAll(sceneActors), sceneActors) + "] has no valid scenes, aborting!")
     sceneActors = PapyrusUtil.ActorArray(5)
 EndFunction
