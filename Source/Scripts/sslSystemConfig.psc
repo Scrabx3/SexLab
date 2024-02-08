@@ -49,10 +49,10 @@ bool property DebugMode hidden
       Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
       MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")
       if PlayerRef && PlayerRef != none
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3301, "SexLab.esm") as Spell))
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB330A, "SexLab.esm") as Spell))
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB330B, "SexLab.esm") as Spell))
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB330C, "SexLab.esm") as Spell))
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell), true)
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell), true)
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell), true)
+        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell), true)
       endIf        
     else
       if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
@@ -60,10 +60,10 @@ bool property DebugMode hidden
       endIf
       MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")
       if PlayerRef && PlayerRef != none
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3301, "SexLab.esm") as Spell))
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB330A, "SexLab.esm") as Spell))
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB330B, "SexLab.esm") as Spell))
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB330C, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell))
+		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell))
       endIf        
     endIf
     int eid = ModEvent.Create("SexLabDebugMode")
@@ -252,14 +252,30 @@ bool property UndressAnimation hidden
     SetSettingBool("bUndressAnimation", aSet)
   EndFunction
 EndProperty
-bool property SubmissiveActor hidden
+bool property Benchmark hidden
+	bool Function Get()
+		return GetSettingBool("bBenchmark")
+	EndFunction
+	Function Set(bool aSet)
+	  SetSettingBool("bBenchmark", aSet)
+	EndFunction
+EndProperty
+bool property SubmissivePlayer hidden
   bool Function Get()
-	return GetSettingBool("bSubmissiveActor")
+	return GetSettingBool("bSubmissivePlayer")
   EndFunction
   Function Set(bool aSet)
-	SetSettingBool("bSubmissiveActor", aSet)
+	SetSettingBool("bSubmissivePlayer", aSet)
   EndFunction
 EndProperty
+bool property SubmissiveTarget hidden
+	bool Function Get()
+	  return GetSettingBool("bSubmissiveTarget")
+	EndFunction
+	Function Set(bool aSet)
+	  SetSettingBool("bSubmissiveTarget", aSet)
+	EndFunction
+  EndProperty
 
 ; Integers
 int property AskBed hidden

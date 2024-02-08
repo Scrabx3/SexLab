@@ -9,6 +9,8 @@ Actor property PlayerRef auto
 
 Actor[] sceneActors
 Actor akSub
+Actor[] akSubA
+String[] availableScenes
 
 String Function Parse_Sex(Actor akTarget)
 	If SexLab.GetSex(akTarget) == 0
@@ -103,16 +105,25 @@ Function TriggerSex(Actor[] akPassed = none)
 	sceneActors = PapyrusUtil.RemoveActor(sceneActors, none)
 	Debug.Trace("[SexLab Debug] - Received following array: " + sceneActors)
 
-	If (Config.SubmissiveActor)
-		GetSubmissiveActor(sceneActors)
-	Else
-		akSub = none
+	; TODO: Ensure to use an index which doesn't correspond to the player
+	If (Config.SubmissivePlayer && !Config.SubmissiveTarget)
+		akSub = PlayerRef
+	ElseIf (Config.SubmissiveTarget && !Config.SubmissivePlayer)
+		akSub = sceneActors[1]
 	EndIf
 
-	String[] availableScenes = SexLabRegistry.LookupScenes(sceneActors, Config.Tags, akSub, 1, none)
+	If (Config.SubmissivePlayer && Config.SubmissiveTarget)
+		akSubA = PapyrusUtil.ActorArray(2)
+		akSubA[0] = PlayerRef
+		; TODO: Ensure to not grab the player here
+		akSubA[1] = sceneActors[1]
+		availableScenes = SexLabRegistry.LookupScenesA(sceneActors, Config.Tags, akSubA, 1, none)
+	Else
+		availableScenes = SexLabRegistry.LookupScenes(sceneActors, Config.Tags, akSub, 1, none)
+	EndIf
 
 
-	If (availableScenes.Length < 1 && !Config.SubmissiveActor)
+	If (availableScenes.Length < 1 && !Config.SubmissivePlayer)
 		Debug.Trace("[SexLab Debug] - No valid animations found, attempting fallback lookup!", 1)
 		GetSubmissiveActor(sceneActors)
 		availableScenes = SexLabRegistry.LookupScenes(sceneActors, Config.Tags, akSub, 1, none)
@@ -155,6 +166,7 @@ Event OnUpdate()
 	TriggerSex()
 EndEvent
 
+; FIXME: Do I still need this?
 Function GetSubmissiveActor(Actor[] actors)
 	If (actors.Find(PlayerRef) < 0)
 		akSub = actors[1]

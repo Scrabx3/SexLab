@@ -3290,12 +3290,17 @@ endFunction
 function DebugMenu()
 	SetCursorFillMode(TOP_TO_BOTTOM)
 	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
+	AddToggleOptionST("Benchmark", "$SSL_Benchmark", Config.Benchmark)
+	AddHeaderOption("$SSL_DebugTagsSettings")
 	AddInputOptionST("InputTags", "$SSL_InputTags", "")
 	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", "")
 	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", "")
 	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", "")
 	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere")
-	AddToggleOptionST("ToggleSubmissiveActor","$SSL_ToggleSubmissiveActor", Config.SubmissiveActor)
+	SetCursorPosition(1)
+	AddHeaderOption("$SSL_DebugActorSettings")
+	AddToggleOptionST("ToggleSubmissivePlayer","$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer)
+	AddToggleOptionST("ToggleSubmissiveTarget","$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget)
 endFunction
 
 
@@ -4039,6 +4044,15 @@ state DebugMode
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoDebugMode")
+	endEvent
+endState
+state Benchmark
+	event OnSelectST()
+		Config.Benchmark = !Config.Benchmark
+		SetToggleOptionValueST(Config.Benchmark)
+	endEvent
+	event OnHighlightST()
+		SetInfoText("$SSL_InfoBenchmark")
 	endEvent
 endState
 state ResetPlayerSexStats
