@@ -47,28 +47,40 @@ bool property DebugMode hidden
     if InDebugMode
       Debug.OpenUserLog("SexLabDebug")
       Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
-      MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")
-      if PlayerRef && PlayerRef != none
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell), true)
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell), true)
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell), true)
-        PlayerRef.AddSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell), true)
-      endIf        
+      MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")        
     else
       if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
         Debug.CloseUserLog("SexLabDebug")
       endIf
-      MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")
-      if PlayerRef && PlayerRef != none
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell))
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell))
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell))
-		PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell))
-      endIf        
+      MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")     
     endIf
     int eid = ModEvent.Create("SexLabDebugMode")
     ModEvent.PushBool(eid, value)
     ModEvent.Send(eid)
+  endFunction
+endProperty
+
+bool property MatchMaker hidden
+  bool function get()
+	return MatchMakerActive
+  endFunction
+  function set(bool value)
+	MatchMakerActive = value
+	if MatchMakerActive
+		if PlayerRef && PlayerRef != none
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell), true)
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell), true)
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell), true)
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell), true)
+		endIf
+	else
+		if PlayerRef && PlayerRef != none
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell))
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell))
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell))
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell))
+		endIf
+	endIf
   endFunction
 endProperty
 

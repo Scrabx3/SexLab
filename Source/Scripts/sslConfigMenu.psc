@@ -68,11 +68,11 @@ Event OnConfigInit()
 	Pages[3] = "$SSL_PlayerHotkeys"
 	Pages[4] = "$SSL_TimersStripping"
 	Pages[5] = "$SSL_ToggleAnimations"
-	Pages[6] = "$SSL_AnimationEditor"
-	Pages[7] = "$SSL_ExpressionEditor"
-	Pages[8] = "$SSL_StripEditor"
-	Pages[9] = "$SSL_RebuildClean"
-	Pages[10] = "$SSL_DebugMenu"
+	Pages[6] = "$SSL_MatchMaker"
+	Pages[7] = "$SSL_AnimationEditor"
+	Pages[8] = "$SSL_ExpressionEditor"
+	Pages[9] = "$SSL_StripEditor"
+	Pages[10] = "$SSL_RebuildClean"
 
 	; Animation Settings
 	Chances = new string[3]
@@ -197,6 +197,8 @@ Event OnPageReset(string page)
 			StripEditor()
 		elseIf page == "$SSL_ToggleAnimations"
 			ToggleAnimations()
+		elseIf page == "$SSL_MatchMaker"
+			MatchMaker()
 		elseIf page == "$SSL_AnimationEditor"
 			AnimationEditor()
 		elseIf page == "$SSL_ExpressionEditor"
@@ -205,8 +207,6 @@ Event OnPageReset(string page)
 			SexDiary()
 		elseIf page == "$SSL_RebuildClean"
 			RebuildClean()
-		elseIf page == "$SSL_DebugMenu"
-			DebugMenu()
 		endIf
 	else
 		if (Config.GetThreadControlled() || ThreadSlots.FindActorController(PlayerRef) != -1)
@@ -2409,6 +2409,25 @@ function ToggleExpressions()
 endFunction
 
 ; ------------------------------------------------------- ;
+; --- Matchmaker	                                  --- ;
+; ------------------------------------------------------- ;
+
+function MatchMaker()
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	AddToggleOptionST("ToggleMatchMaker","$SSL_ToggleMatchMaker", Config.MatchMaker)
+	AddHeaderOption("$SSL_MatchMakerTagsSettings")
+	AddInputOptionST("InputTags", "$SSL_InputTags", "")
+	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", "")
+	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", "")
+	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", "")
+	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere")
+	SetCursorPosition(1)
+	AddHeaderOption("$SSL_MatchMakerActorSettings")
+	AddToggleOptionST("ToggleSubmissivePlayer","$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer)
+	AddToggleOptionST("ToggleSubmissiveTarget","$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget)
+endFunction
+
+; ------------------------------------------------------- ;
 ; --- Expression Editor                               --- ;
 ; ------------------------------------------------------- ;
 
@@ -3253,6 +3272,8 @@ function RebuildClean()
 		AddTextOptionST("ToggleSystem","$SSL_DisabledSystem", "$SSL_DoEnable")
 	endIf
 	AddHeaderOption("$SSL_Maintenance")
+	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
+	AddToggleOptionST("Benchmark", "$SSL_Benchmark", Config.Benchmark)
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")
 	AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")
 	AddTextOptionST("ResetAnimationRegistry","$SSL_ResetAnimationRegistry", "$SSL_ClickHere")
@@ -3281,28 +3302,6 @@ function RebuildClean()
 	AddHeaderOption("System Requirements")
 	SystemCheckOptions()	
 endFunction
-
-
-; ------------------------------------------------------- ;
-; --- Debug Menu	                                  --- ;
-; ------------------------------------------------------- ;
-
-function DebugMenu()
-	SetCursorFillMode(TOP_TO_BOTTOM)
-	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
-	AddToggleOptionST("Benchmark", "$SSL_Benchmark", Config.Benchmark)
-	AddHeaderOption("$SSL_DebugTagsSettings")
-	AddInputOptionST("InputTags", "$SSL_InputTags", "")
-	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", "")
-	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", "")
-	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", "")
-	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere")
-	SetCursorPosition(1)
-	AddHeaderOption("$SSL_DebugActorSettings")
-	AddToggleOptionST("ToggleSubmissivePlayer","$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer)
-	AddToggleOptionST("ToggleSubmissiveTarget","$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget)
-endFunction
-
 
 ; ------------------------------------------------------- ;
 ; --- Unorganized State Option Dump                   --- ;
@@ -3734,6 +3733,16 @@ state StraponsFemale
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoUseStrapons")
+	endEvent
+endState
+
+state MatchMaker
+	event OnSelectST()
+		Config.MatchMaker = !Config.MatchMaker
+		SetToggleOptionValueST(Config.MatchMaker)
+	endEvent
+	event OnHighlightST()
+		SetInfoText("$SSL_InfoMatchMaker")
 	endEvent
 endState
 

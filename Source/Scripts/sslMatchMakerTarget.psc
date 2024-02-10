@@ -1,8 +1,8 @@
-Scriptname sslDebugEffectTarget extends ActiveMagicEffect
+Scriptname sslMatchMakerTarget extends ActiveMagicEffect
 {A very basic spell effect that starts a SexLab scene in a modern way.}
 
 SexLabFramework property SexLab auto
-sslEffectDebugMain Property DebugMain Auto
+sslMatchMakerMain Property MatchMakerMain Auto
 
 Event OnEffectStart(Actor TargetRef, Actor CasterRef)
 
@@ -10,7 +10,7 @@ Event OnEffectStart(Actor TargetRef, Actor CasterRef)
     sceneActors[0] = CasterRef
     sceneActors[1] = TargetRef
     
-    DebugMain.TriggerSex(sceneActors)
+    MatchMakerMain.TriggerSex(sceneActors)
 
     Dispel()
 EndEvent
