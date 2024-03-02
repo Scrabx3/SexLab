@@ -61,17 +61,18 @@ Event OnGameReload()
 EndEvent
 
 Event OnConfigInit()
-	Pages = new string[10]
+	Pages = new string[11]
 	Pages[0] = "$SSL_SexDiary"
 	Pages[1] = "$SSL_AnimationSettings"
 	Pages[2] = "$SSL_SoundSettings"
 	Pages[3] = "$SSL_PlayerHotkeys"
 	Pages[4] = "$SSL_TimersStripping"
 	Pages[5] = "$SSL_ToggleAnimations"
-	Pages[6] = "$SSL_AnimationEditor"
-	Pages[7] = "$SSL_ExpressionEditor"
-	Pages[8] = "$SSL_StripEditor"
-	Pages[9] = "$SSL_RebuildClean"
+	Pages[6] = "$SSL_MatchMaker"
+	Pages[7] = "$SSL_AnimationEditor"
+	Pages[8] = "$SSL_ExpressionEditor"
+	Pages[9] = "$SSL_StripEditor"
+	Pages[10] = "$SSL_RebuildClean"
 
 	; Animation Settings
 	Chances = new string[3]
@@ -201,6 +202,8 @@ Event OnPageReset(string page)
 			StripEditor()
 		elseIf page == "$SSL_ToggleAnimations"
 			ToggleAnimations()
+		elseIf page == "$SSL_MatchMaker"
+			MatchMaker()
 		elseIf page == "$SSL_AnimationEditor"
 			AnimationEditor()
 		elseIf page == "$SSL_ExpressionEditor"
@@ -695,10 +698,17 @@ Event OnInputOpenST()
 	; Set OralCount Actor Stat
 	elseIf Options[0] == "SetStatOralCount"
 		SetInputDialogStartText(Stats.GetSkill(StatRef, "OralCount") as string)
-	
+
+		; --- Matchmaker Tags
+	ElseIf Options[0] == "InputRequiredTags"
+		SetInputDialogStartText(Config.RequiredTags)
+	ElseIf Options[0] == "InputExcludedTags"
+		SetInputDialogStartText(Config.ExcludedTags)
+	ElseIf Options[0] == "InputOptionalTags"
+		SetInputDialogStartText(Config.OptionalTags)
+
 	else
 		SetInputDialogStartText("Error Fatal: Opcion Desconocida")
-	
 	endIf
 EndEvent
 
@@ -816,7 +826,17 @@ Event OnInputAcceptST(String inputString)
 			Stats.SetSkill(StatRef, "OralCount", inputString as int)
 			SetInputOptionValueST(Stats.GetSkill(StatRef, "OralCount"))
 		endIf
-	
+
+		; --- Matchmaker Tags
+	elseIf Options[0] == "InputRequiredTags"
+		Config.RequiredTags = inputString
+		SetInputOptionValueST(Config.RequiredTags)
+	elseIf Options[0] == "InputExcludedTags"
+		Config.ExcludedTags = inputString
+		SetInputOptionValueST(Config.ExcludedTags)
+	elseIf Options[0] == "InputOptionalTags"
+		Config.OptionalTags = inputString
+		SetInputOptionValueST(Config.OptionalTags)
 	endIf
 EndEvent
 
@@ -960,6 +980,31 @@ event OnSelectST()
 		SetTextOptionValueST("Working...")
 		SystemAlias.InstallSystem()
 		ForcePageReset()
+
+	; Reset Debug Tags
+	elseIf Options[0] == "TextTags"
+		SetOptionFlagsST(OPTION_FLAG_DISABLED)
+		SetTextOptionValueST("Resetting tags...")
+		; TODO: Reset tags here
+		ForcePageReset()
+
+		; --- Matchmaker Tags
+	ElseIf (Options[0] == "InputTags")
+		ShowMessage(sslSystemConfig.ParseMMTagString(), false, "$Done")
+	ElseIf (Options[0] == "TextResetTags")
+		If (!ShowMessage("$SSL_TagResetAreYouSure"))
+			return
+		EndIf
+		sslSystemConfig.SetSettingStr("sRequiredTags", "")
+		sslSystemConfig.SetSettingStr("sOptionalTags", "")
+		sslSystemConfig.SetSettingStr("sExcludedTags", "")
+		ForcePageReset()
+	ElseIf (Options[0] == "ToggleSubmissivePlayer")
+		Config.SubmissivePlayer = !Config.SubmissivePlayer
+		SetToggleOptionValueST(Config.SubmissivePlayer)
+	ElseIf (Options[0] == "ToggleSubmissiveTarget")
+		Config.SubmissiveTarget = !Config.SubmissiveTarget
+		SetToggleOptionValueST(Config.SubmissiveTarget)
 	endIf
 endEvent
 
@@ -2371,6 +2416,43 @@ function ToggleExpressions()
 endFunction
 
 ; ------------------------------------------------------- ;
+; --- Matchmaker	                                  --- ;
+; ------------------------------------------------------- ;
+
+Function MatchMaker()
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	int flag = DoDisable(!Config.MatchMaker)
+	AddToggleOptionST("ToggleMatchMaker", "$SSL_ToggleMatchMaker", Config.MatchMaker)
+	AddHeaderOption("$SSL_MatchMakerTagsSettings", flag)
+	AddTextOptionST("InputTags", "$SSL_InputTags", sslSystemConfig.ParseMMTagString(), flag)
+	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", Config.RequiredTags, flag)
+	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", Config.ExcludedTags, flag)
+	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", Config.OptionalTags, flag)
+	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere", flag)
+	SetCursorPosition(1)
+	AddHeaderOption("$SSL_MatchMakerActorSettings", flag)
+	AddToggleOptionST("ToggleSubmissivePlayer", "$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer, flag)
+	AddToggleOptionST("ToggleSubmissiveTarget", "$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget, flag)
+EndFunction
+
+State ToggleMatchMaker
+	; IDEA: Have this be saved natively and read it on game init/reload, add remove Spells based on it
+	Event OnSelectST()
+		Config.MatchMaker = !Config.MatchMaker
+		SetToggleOptionValueST(Config.MatchMaker)
+		ForcePageReset()
+	EndEvent
+	Event OnDefaultST()
+		Config.MatchMaker = false
+		SetToggleOptionValueST(Config.MatchMaker)
+		ForcePageReset()
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_InfoMatchMaker")
+	EndEvent
+EndState
+
+; ------------------------------------------------------- ;
 ; --- Expression Editor                               --- ;
 ; ------------------------------------------------------- ;
 
@@ -3214,8 +3296,9 @@ function RebuildClean()
 	else
 		AddTextOptionST("ToggleSystem","$SSL_DisabledSystem", "$SSL_DoEnable")
 	endIf
-	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
 	AddHeaderOption("$SSL_Maintenance")
+	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
+	AddToggleOptionST("Benchmark", "$SSL_Benchmark", Config.Benchmark)
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")
 	AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")
 	AddTextOptionST("ResetAnimationRegistry","$SSL_ResetAnimationRegistry", "$SSL_ClickHere")
@@ -3678,7 +3761,6 @@ state StraponsFemale
 	endEvent
 endState
 
-
 string[] VoiceNames
 state PlayerVoice
 	event OnMenuOpenST()
@@ -3985,6 +4067,15 @@ state DebugMode
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoDebugMode")
+	endEvent
+endState
+state Benchmark
+	event OnSelectST()
+		Config.Benchmark = !Config.Benchmark
+		SetToggleOptionValueST(Config.Benchmark)
+	endEvent
+	event OnHighlightST()
+		SetInfoText("$SSL_InfoBenchmark")
 	endEvent
 endState
 state ResetPlayerSexStats

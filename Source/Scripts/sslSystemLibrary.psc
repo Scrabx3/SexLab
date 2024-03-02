@@ -120,6 +120,11 @@ event SetDebugMode(bool ToMode)
 	InDebugMode = ToMode
 endEvent
 
+bool property MatchMakerActive auto hidden
+event EnableMatchMaker(bool ToMode)
+	MatchMakerActive = ToMode
+endEvent
+
 event OnInit()
 	; LoadLibs(false)
 	; Debug.Trace("SEXLAB -- Init "+self)

@@ -47,24 +47,40 @@ bool property DebugMode hidden
     if InDebugMode
       Debug.OpenUserLog("SexLabDebug")
       Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
-      MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")
-      if PlayerRef && PlayerRef != none
-        PlayerRef.AddSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
-        PlayerRef.AddSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
-      endIf        
+      MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")        
     else
       if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
         Debug.CloseUserLog("SexLabDebug")
       endIf
-      MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")
-      if PlayerRef && PlayerRef != none
-        PlayerRef.RemoveSpell((Game.GetFormFromFile(0x073CC, "SexLab.esm") as Spell))
-        PlayerRef.RemoveSpell((Game.GetFormFromFile(0x5FE9B, "SexLab.esm") as Spell))
-      endIf        
+      MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")     
     endIf
     int eid = ModEvent.Create("SexLabDebugMode")
     ModEvent.PushBool(eid, value)
     ModEvent.Send(eid)
+  endFunction
+endProperty
+
+bool property MatchMaker hidden
+  bool function get()
+	return MatchMakerActive
+  endFunction
+  function set(bool value)
+	MatchMakerActive = value
+	if MatchMakerActive
+		if PlayerRef && PlayerRef != none
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell), true)
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell), true)
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell), true)
+			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell), true)
+		endIf
+	else
+		if PlayerRef && PlayerRef != none
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell))
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell))
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell))
+			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell))
+		endIf
+	endIf
   endFunction
 endProperty
 
@@ -93,14 +109,37 @@ Form[] Function GetStrippableItems(Actor akActor, bool abWornOnly) native global
 bool Function GetSettingBool(String asSetting) native global
 int Function GetSettingInt(String asSetting) native global
 float Function GetSettingFlt(String asSetting) native global
+String Function GetSettingStr(String asSetting) native global
 int Function GetSettingIntA(String asSetting, int n) native global
 float Function GetSettingFltA(String asSetting, int n) native global
+String Function GetSettingStrA(String asSetting, int n) native global
 
 Function SetSettingBool(String asSetting, bool abValue) native global
 Function SetSettingInt(String asSetting, int aiValue) native global
 Function SetSettingFlt(String asSetting, float aiValue) native global
+Function SetSettingStr(String asSetting, String asValue) native global
 Function SetSettingIntA(String asSetting, int aiValue, int n) native global
 Function SetSettingFltA(String asSetting, float aiValue, int n) native global
+Function SetSettingStrA(String asSetting, String asValue, int n) native global
+
+String Function ParseMMTagString() global
+	String req = sslSystemConfig.GetSettingStr("sRequiredTags")
+	String opt = sslSystemConfig.GetSettingStr("sOptionalTags")
+	String neg = sslSystemConfig.GetSettingStr("sExcludedTags")
+	String[] optA = PapyrusUtil.StringSplit(opt, ",")
+	String[] negA = PapyrusUtil.StringSplit(neg, ",")
+	int i = 0
+	While (i < optA.Length)
+		req += ", " + optA[i]
+		i += 1
+	EndWhile
+	int n = 0
+	While (n < negA.Length)
+		req += ", " + negA[i]
+		n += 1
+	EndWhile
+	return req
+EndFunction
 
 int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
 int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
@@ -246,6 +285,30 @@ bool property UndressAnimation hidden
     SetSettingBool("bUndressAnimation", aSet)
   EndFunction
 EndProperty
+bool property Benchmark hidden
+	bool Function Get()
+		return GetSettingBool("bBenchmark")
+	EndFunction
+	Function Set(bool aSet)
+	  SetSettingBool("bBenchmark", aSet)
+	EndFunction
+EndProperty
+bool property SubmissivePlayer hidden
+  bool Function Get()
+	return GetSettingBool("bSubmissivePlayer")
+  EndFunction
+  Function Set(bool aSet)
+	SetSettingBool("bSubmissivePlayer", aSet)
+  EndFunction
+EndProperty
+bool property SubmissiveTarget hidden
+	bool Function Get()
+	  return GetSettingBool("bSubmissiveTarget")
+	EndFunction
+	Function Set(bool aSet)
+	  SetSettingBool("bSubmissiveTarget", aSet)
+	EndFunction
+  EndProperty
 
 ; Integers
 int property AskBed hidden
@@ -287,6 +350,33 @@ int property Backwards hidden
   Function Set(int aiSet)
     SetSettingInt("iBackwards", aiSet)
   EndFunction
+EndProperty
+
+; Strings
+
+string property RequiredTags hidden
+	string Function Get()
+		return GetSettingStr("sRequiredTags")
+	EndFunction
+	Function Set(string asSet)
+		SetSettingStr("sRequiredTags", asSet)
+	EndFunction
+EndProperty
+string property ExcludedTags hidden
+	string Function Get()
+		return GetSettingStr("sExcludedTags")
+	EndFunction
+	Function Set(string asSet)
+		SetSettingStr("sExcludedTags", asSet)
+	EndFunction
+EndProperty
+string property OptionalTags hidden
+	string Function Get()
+		return GetSettingStr("sOptionalTags")
+	EndFunction
+	Function Set(string asSet)
+		SetSettingStr("sOptionalTags", asSet)
+	EndFunction
 EndProperty
 
 ; Expressions
