@@ -44,6 +44,7 @@
             <Include>Source</Include>
             <Include>SKSE/Plugins/SexLab.dll</Include>
             <Include>SKSE/Plugins/SexLab.pdb</Include>
+            <Include>SKSE/Plugins/SexLab.ini</Include>
             <Include>SKSE/SexLab</Include>
             <!-- <Include>SEQ</Include>
             <Include>SKSE</Include>
@@ -58,6 +59,7 @@
             <Include>Scripts</Include>
             <Include>Source</Include>
             <Include Path="SKSE/Plugins">1597</Include>
+            <Include>SKSE/Plugins/SexLab.ini</Include>
             <Include>SKSE/SexLab</Include>
             <!-- <Include>SEQ</Include>
             <Include>SKSE</Include>
