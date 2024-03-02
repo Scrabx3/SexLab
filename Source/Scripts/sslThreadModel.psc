@@ -38,6 +38,13 @@ float Function TotalTime()
 	return TotalTime
 EndFunction
 
+String[] Function GetStageHistory()
+	return PapyrusUtil.RemoveString(_StageHistory, "%")
+EndFunction
+int Function GetStageHistoryLength()
+	return _StageHistory.Length
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Position Access                                 --- ;
 ; ------------------------------------------------------- ;

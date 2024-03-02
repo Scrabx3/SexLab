@@ -49,8 +49,47 @@ EndFunction
 Function SkipTo(String asNextStage)
 EndFunction
 
+; Return a list of all played stages (including the currently playing one)
+; This list may include duplicates if the scene looped (e.g. A -> B -> C -> A) and resets when the scene changes
+; This creates a copy of the internal history, dont call this repeatedly when you can cache the result
+String[] Function GetStageHistory()
+EndFunction
+; Same as above, but only returns the length of the history
+int Function GetStageHistoryLength()
+EndFunction
+
 ; Stop this threads animation. Will fail if the thread is idling/ending
 Function StopAnimation()
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Tags		                                        --- ;
+; ------------------------------------------------------- ;
+;/
+	Tags are used to further describe a scene, they have different scopes:
+		- Thread: A list of tags shared by every scene the thread has been initiaited with
+		- Scene: Tags that describe the playing scene loosely, for each tag there is at least one stage that uses it
+		- Stage: Tags only describing the currently playing stage
+/;
+
+; If this thread is tagged with the given argument
+bool Function HasTag(String asTag)
+EndFunction
+; If the active scene is tagged with the given argument
+bool Function HasSceneTag(String asTag)
+EndFunction
+; If the active stage is tagged with the given argument
+bool Function HasStageTag(String asTag)
+EndFunction
+
+bool Function IsSceneVaginal()
+	return HasSceneTag("Vaginal")
+EndFunction
+bool Function IsSceneAnal()
+	return HasSceneTag("Anal")
+EndFunction
+bool Function IsSceneOral()
+	return HasSceneTag("Oral")
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -81,29 +120,12 @@ EndFunction
 bool Function IsLeadIn()
 EndFunction
 
-; --- Tags
-
-; If this thread is tagged with the given argument
-bool Function HasTag(String Tag)
-EndFunction
-; If the active scene is tagged with the given argument
-bool Function HasSceneTag(String Tag)
-EndFunction
-; If the active stage is tagged with the given argument
-bool Function HasStageTag(String Tag)
-EndFunction
-
-bool Function IsSceneVaginal()
-	return HasSceneTag("Vaginal")
-EndFunction
-bool Function IsSceneAnal()
-	return HasSceneTag("Anal")
-EndFunction
-bool Function IsSceneOral()
-	return HasSceneTag("Oral")
-EndFunction
-
-; --- Time
+; ------------------------------------------------------- ;
+; --- Position Info                                   --- ;
+; ------------------------------------------------------- ;
+;/
+	Time related data
+/;
 
 ; The timestamp at which the thread has started
 ; Time is returned as real time seconds since the save has been created
