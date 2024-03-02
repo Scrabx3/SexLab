@@ -1,6 +1,4 @@
-scriptname SexLabFramework extends Quest
-
-; TODO: MERGE MATCHMAKER INTO THE FRAMEWORK AS AN OPTION TO TOGGLE ON/OFF IN THE MCM.
+ScriptName SexLabFramework extends Quest
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;

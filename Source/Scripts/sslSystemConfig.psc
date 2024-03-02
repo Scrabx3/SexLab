@@ -37,7 +37,6 @@ bool property Enabled hidden
   endFunction
 endProperty
 
-; bool property InDebugMode auto hidden
 bool property DebugMode hidden
   bool function get()
     return InDebugMode
@@ -60,29 +59,24 @@ bool property DebugMode hidden
   endFunction
 endProperty
 
-bool property MatchMaker hidden
-  bool function get()
-	return MatchMakerActive
-  endFunction
-  function set(bool value)
-	MatchMakerActive = value
-	if MatchMakerActive
-		if PlayerRef && PlayerRef != none
-			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell), true)
-			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell), true)
-			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell), true)
-			PlayerRef.AddSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell), true)
-		endIf
-	else
-		if PlayerRef && PlayerRef != none
-			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3306, "SexLab.esm") as Spell))
-			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3307, "SexLab.esm") as Spell))
-			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3308, "SexLab.esm") as Spell))
-			PlayerRef.RemoveSpell((Game.GetFormFromFile(0xB3309, "SexLab.esm") as Spell))
-		endIf
-	endIf
-  endFunction
-endProperty
+Spell[] Property MatchMakerSpells Auto
+{4 Spells: Solo | Target | OrgySolo | OrgyTarget}
+bool Property MatchMaker Hidden
+  bool Function Get()
+	  return PlayerRef.HasSpell(MatchMakerSpells[0])
+  EndFunction
+  Function set(bool abValue)
+    int i = 0
+    While (i < MatchMakerSpells.Length)
+      If (abValue)
+        PlayerRef.AddSpell(MatchMakerSpells[i], true)
+      Else
+        PlayerRef.RemoveSpell(MatchMakerSpells[i])
+      EndIf
+      i += 1
+    EndWhile
+  EndFunction
+EndProperty
 
 Sound[] property HotkeyUp auto
 Sound[] property HotkeyDown auto
@@ -646,7 +640,7 @@ EndProperty
 
 ; Float Array
 ; fTimers is a 5x3 Matrix / [Stage] x [Type]
-float[] property StageTimer
+float[] property StageTimer hidden
   float[] Function Get()
     return _GetfTimers(0)
   EndFunction
@@ -654,7 +648,7 @@ float[] property StageTimer
     _SetfTimers(0, aSet)
   EndFunction
 EndProperty
-float[] property StageTimerLeadIn
+float[] property StageTimerLeadIn hidden
   float[] Function Get()
     return _GetfTimers(5)
   EndFunction
@@ -662,7 +656,7 @@ float[] property StageTimerLeadIn
     _SetfTimers(5, aSet)
   EndFunction
 EndProperty
-float[] property StageTimerAggr
+float[] property StageTimerAggr hidden
   float[] Function Get()
     return _GetfTimers(10)
   EndFunction
@@ -732,7 +726,7 @@ float[] property OpenMouthFemale hidden
 EndProperty
 
 ; Compatibility checks
-bool property HasNiOverride
+bool property HasNiOverride hidden
   bool Function Get()
     return SKSE.GetPluginVersion("SKEE64") >= 7 || NiOverride.GetScriptVersion() >= 7
   EndFUnction
@@ -1569,6 +1563,8 @@ endFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+; TODO: Change these to manual properties that get their item through GetFromFile() !IMPORTANT
+
 Faction property AnimatingFaction auto
 Faction property GenderFaction auto
 Faction property ForbiddenFaction auto
@@ -1826,32 +1822,32 @@ bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive
   return sslUtility.BitsToBool(ret[0], ret[1])
 endFunction
 
-bool[] property StripMale
+bool[] property StripMale Hidden
   bool[] Function Get()
     return GetStrip(false, false, false, false)
   EndFunction
 EndProperty
-bool[] property StripFemale
+bool[] property StripFemale Hidden
   bool[] Function Get()
     return GetStrip(true, false, false, false)
   EndFunction
 EndProperty
-bool[] property StripLeadInMale
+bool[] property StripLeadInMale Hidden
   bool[] Function Get()
     return GetStrip(false, true, false, false)
   EndFunction
 EndProperty
-bool[] property StripLeadInFemale
+bool[] property StripLeadInFemale Hidden
   bool[] Function Get()
     return GetStrip(true, true, false, false)
   EndFunction
 EndProperty
-bool[] property StripVictim
+bool[] property StripVictim Hidden
   bool[] Function Get()
     return GetStrip(false, false, true, true)
   EndFunction
 EndProperty
-bool[] property StripAggressor
+bool[] property StripAggressor Hidden
   bool[] Function Get()
     return GetStrip(false, false, true, false)
   EndFunction
