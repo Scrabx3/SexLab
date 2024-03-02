@@ -2416,17 +2416,18 @@ endFunction
 
 Function MatchMaker()
 	SetCursorFillMode(TOP_TO_BOTTOM)
+	int flag = DoDisable(!Config.MatchMaker)
 	AddToggleOptionST("ToggleMatchMaker", "$SSL_ToggleMatchMaker", Config.MatchMaker)
-	AddHeaderOption("$SSL_MatchMakerTagsSettings", DoDisable(!Config.MatchMaker))
-	AddTextOptionST("InputTags", "$SSL_InputTags", sslSystemConfig.ParseMMTagString(), DoDisable(!Config.MatchMaker))
-	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", Config.RequiredTags, DoDisable(!Config.MatchMaker))
-	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", Config.ExcludedTags, DoDisable(!Config.MatchMaker))
-	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", Config.OptionalTags, DoDisable(!Config.MatchMaker))
-	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere", DoDisable(!Config.MatchMaker))
+	AddHeaderOption("$SSL_MatchMakerTagsSettings", flag)
+	AddTextOptionST("InputTags", "$SSL_InputTags", sslSystemConfig.ParseMMTagString(), flag)
+	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", Config.RequiredTags, flag)
+	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", Config.ExcludedTags, flag)
+	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", Config.OptionalTags, flag)
+	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere", flag)
 	SetCursorPosition(1)
-	AddHeaderOption("$SSL_MatchMakerActorSettings", DoDisable(!Config.MatchMaker))
-	AddToggleOptionST("ToggleSubmissivePlayer", "$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer, DoDisable(!Config.MatchMaker))
-	AddToggleOptionST("ToggleSubmissiveTarget", "$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget, DoDisable(!Config.MatchMaker))
+	AddHeaderOption("$SSL_MatchMakerActorSettings", flag)
+	AddToggleOptionST("ToggleSubmissivePlayer", "$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer, flag)
+	AddToggleOptionST("ToggleSubmissiveTarget", "$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget, flag)
 EndFunction
 
 State ToggleMatchMaker
@@ -2434,10 +2435,12 @@ State ToggleMatchMaker
 	Event OnSelectST()
 		Config.MatchMaker = !Config.MatchMaker
 		SetToggleOptionValueST(Config.MatchMaker)
+		ForcePageReset()
 	EndEvent
 	Event OnDefaultST()
 		Config.MatchMaker = false
 		SetToggleOptionValueST(Config.MatchMaker)
+		ForcePageReset()
 	EndEvent
 	Event OnHighlightST()
 		SetInfoText("$SSL_InfoMatchMaker")
