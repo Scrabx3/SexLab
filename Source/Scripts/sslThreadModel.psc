@@ -825,6 +825,11 @@ State Animating
 				return false
 			ElseIf (!UpdateBaseCoordinates(asNewScene, _BaseCoordinates))
 				Log("Cannot reset scene. Unable to find valid coordinates")
+				int i = 0
+				While (i < Positions.Length)
+					Positions[i] = ActorAlias[i].GetReference() as Actor
+					i += 1
+				EndWhile
 				return false
 			EndIf
 			_InUseCoordinates[0] = _BaseCoordinates[0]
@@ -855,12 +860,12 @@ State Animating
 		return true
 	EndFunction
 
-	Function PlayNext(int aiNextBranch)
+	bool Function PlayNext(int aiNextBranch)
 		UnregisterForUpdate()
 		SendThreadEvent("StageEnd")
 		RunHook(Config.HOOKID_STAGEEND)
 		String newStage = SexLabRegistry.BranchTo(_ActiveScene, _ActiveStage, aiNextBranch)
-		PlayNextImpl(newStage)
+		return PlayNextImpl(newStage)
 	EndFunction
 	Function PlayNextImpl(String asNewStage)
 		If (!asNewStage)
@@ -870,7 +875,6 @@ State Animating
 			Else
 				EndAnimation()
 			EndIf
-			return
 		ElseIf(!Leadin)
 			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
 			If (ctype == Config.CLIMAXTYPE_LEGACY && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
@@ -935,9 +939,6 @@ State Animating
 		PlayNext(aiNextBranch)
 	EndFunction
 	Function SkipTo(String asNextStage)
-		If (!SexLabRegistry.StageExists(_ActiveScene, asNextStage))
-			return
-		EndIf
 		PlayNextImpl(asNextStage)
 	EndFunction
 
@@ -980,6 +981,7 @@ State Animating
 		If (AutoAdvance)
 			_StageTimer -= ANIMATING_UPDATE_INTERVAL
 			If (_StageTimer <= 0)
+				; IDEA: Randomize branching..?
 				GoToStage(_StageHistory.Length + 1)
 				return
 			EndIf
@@ -1158,8 +1160,9 @@ EndFunction
 Function EndLeadIn()
 	Log("Cannot end leadin outside the playing state", "EndLeadIn()")
 EndFunction
-Function PlayNext(int aiNextBranch)
+bool Function PlayNext(int aiNextBranch)
 	Log("Cannot play next branch outside the playing state", "PlayNext()")
+	return false
 EndFunction
 Function PlayNextImpl(String asNewStage)
 	Log("Cannot play next branch outside the playing state", "PlayNextImpl()")
@@ -1187,6 +1190,12 @@ float Function GetStageTimer(int maxstage)
 	Log("timers are not defined outside of playing state", "GetStageTimer()")
 	return 0.0
 Endfunction
+Function BranchTo(int aiNextBranch)
+	Log("Cannot branch to another stage while scene is not playing", "BranchTo()")
+EndFunction
+Function SkipTo(String asNextStage)
+	Log("Cannot skip to another stage while scene is not playing", "SkipTo()")
+EndFunction
 
 Function ChangeActors(Actor[] NewPositions)
 	Actor[] submissives = GetSubmissives()
