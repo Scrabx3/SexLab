@@ -81,6 +81,38 @@ EndFunction
 bool Function IsLeadIn()
 EndFunction
 
+; --- Tags
+
+; If this thread is tagged with the given argument
+bool Function HasTag(String Tag)
+EndFunction
+; If the active scene is tagged with the given argument
+bool Function HasSceneTag(String Tag)
+EndFunction
+; If the active stage is tagged with the given argument
+bool Function HasStageTag(String Tag)
+EndFunction
+
+bool Function IsSceneVaginal()
+	return HasSceneTag("Vaginal")
+EndFunction
+bool Function IsSceneAnal()
+	return HasSceneTag("Anal")
+EndFunction
+bool Function IsSceneOral()
+	return HasSceneTag("Oral")
+EndFunction
+
+; --- Time
+
+; The timestamp at which the thread has started
+; Time is returned as real time seconds since the save has been created
+float Function GetTime()
+EndFunction
+; Returns the threads current total runtime
+float Function GetTimeTotal()
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Position Info                                   --- ;
 ; ------------------------------------------------------- ;
@@ -150,6 +182,11 @@ EndFunction
 ; Create an orgasm event for the given actor
 Function ForceOrgasm(Actor ActorRef)
 EndFunction
+
+; Return the current enjoyment/arousal level for this actor
+int Function GetEnjoyment(Actor akActor)
+EndFunction
+
 ; If the given actor has a chance of impregnation at some point during this scene. That is, the function will check
 ; if at any point during this scene this actor had vaginal contact with an orgasming male actor, either direct or indirect
 ; This function only considers stages that have already been played

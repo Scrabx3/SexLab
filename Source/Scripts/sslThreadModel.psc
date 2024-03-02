@@ -31,6 +31,13 @@ Function StopAnimation()
 	EndAnimation()
 EndFunction
 
+float Function GetTime()
+	return StartedAt
+endfunction
+float Function TotalTime()
+	return TotalTime
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Position Access                                 --- ;
 ; ------------------------------------------------------- ;
@@ -271,6 +278,24 @@ EndFunction
 bool Function HasTag(String Tag)
 	return _ThreadTags.Length && _ThreadTags.Find(Tag) > -1
 EndFunction
+
+bool Function HasSceneTag(String Tag)
+	return SexLabRegistry.IsSceneTag(_ActiveScene, Tag)
+EndFunction
+bool Function IsVaginal()
+	return HasSceneTag("Vaginal")
+EndFunction
+bool Function IsAnal()
+	return HasSceneTag("Anal")
+EndFunction
+bool Function IsOral()
+	return HasSceneTag("Oral")
+EndFunction
+
+bool Function HasStageTag(String Tag)
+	return SexLabRegistry.IsStageTag(_ActiveScene, _ActiveStage, Tag)
+EndFunction
+
 String[] Function GetTags()
 	return PapyrusUtil.ClearEmpty(_ThreadTags)
 EndFunction
@@ -2062,9 +2087,6 @@ EndFunction
 Actor Function GetVictim()
 	return VictimRef
 EndFunction
-float Function GetTime()
-	return StartedAt
-endfunction
 
 Function RemoveFade()
 	if HasPlayer
