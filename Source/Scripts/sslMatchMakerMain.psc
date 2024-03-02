@@ -112,21 +112,22 @@ Function TriggerSex(Actor[] akPassed = none)
 		akSub = sceneActors[1]
 	EndIf
 
+	String tags = sslSystemConfig.ParseMMTagString()
 	If (Config.SubmissivePlayer && Config.SubmissiveTarget)
 		akSubA = PapyrusUtil.ActorArray(2)
 		akSubA[0] = PlayerRef
 		; TODO: Ensure to not grab the player here
 		akSubA[1] = sceneActors[1]
-		availableScenes = SexLabRegistry.LookupScenesA(sceneActors, Config.Tags, akSubA, 1, none)
+		availableScenes = SexLabRegistry.LookupScenesA(sceneActors, tags, akSubA, 1, none)
 	Else
-		availableScenes = SexLabRegistry.LookupScenes(sceneActors, Config.Tags, akSub, 1, none)
+		availableScenes = SexLabRegistry.LookupScenes(sceneActors, tags, akSub, 1, none)
 	EndIf
 
 
 	If (availableScenes.Length < 1 && !Config.SubmissivePlayer)
 		Config.Log("[SexLab MatchMaker] - No valid animations found, attempting fallback lookup!", 1)
 		GetSubmissiveActor(sceneActors)
-		availableScenes = SexLabRegistry.LookupScenes(sceneActors, Config.Tags, akSub, 1, none)
+		availableScenes = SexLabRegistry.LookupScenes(sceneActors, tags, akSub, 1, none)
 		If availableScenes.Length > 0
 			Config.Log("[SexLab MatchMaker] - Scenes found with fallback lookup: " + availableScenes.Length)
 		EndIf
@@ -134,7 +135,7 @@ Function TriggerSex(Actor[] akPassed = none)
 	If availableScenes.Length > 0
 		Debug.Notification("Valid scenes found: " + availableScenes.Length)
 		Config.Log("[SexLab MatchMaker] - Scenes found: " + availableScenes.Length)
-		SexLab.StartScene(sceneActors, Config.Tags, akSub, asHook = "AnimationStart, AnimationEnd")
+		SexLab.StartScene(sceneActors, tags, akSub, asHook = "AnimationStart, AnimationEnd")
 	Else
 		NoValidAnimations(sceneActors)
 		Return

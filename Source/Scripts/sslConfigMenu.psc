@@ -694,19 +694,16 @@ Event OnInputOpenST()
 	elseIf Options[0] == "SetStatOralCount"
 		SetInputDialogStartText(Stats.GetSkill(StatRef, "OralCount") as string)
 
-	; Set Tags
-	elseIf Options[0] == "InputTags"
-		SetInputDialogStartText(Config.Tags as string)
-	elseIf Options[0] == "InputRequiredTags"
-		SetInputDialogStartText(Config.RequiredTags as string)
-	elseIf Options[0] == "InputExcludedTags"
-		SetInputDialogStartText(Config.ExcludedTags as string)
-	elseIf Options[0] == "InputOptionalTags"
-		SetInputDialogStartText(Config.OptionalTags as string)
+		; --- Matchmaker Tags
+	ElseIf Options[0] == "InputRequiredTags"
+		SetInputDialogStartText(Config.RequiredTags)
+	ElseIf Options[0] == "InputExcludedTags"
+		SetInputDialogStartText(Config.ExcludedTags)
+	ElseIf Options[0] == "InputOptionalTags"
+		SetInputDialogStartText(Config.OptionalTags)
 
 	else
 		SetInputDialogStartText("Error Fatal: Opcion Desconocida")
-	
 	endIf
 EndEvent
 
@@ -824,30 +821,17 @@ Event OnInputAcceptST(String inputString)
 			Stats.SetSkill(StatRef, "OralCount", inputString as int)
 			SetInputOptionValueST(Stats.GetSkill(StatRef, "OralCount"))
 		endIf
-	
-	elseIf Options[0] == "InputTags"
-		if inputString as int > 0
-			SetInputDialogStartText(inputString as string)
-			Config.Tags = inputString as string
-		endIf
-	
+
+		; --- Matchmaker Tags
 	elseIf Options[0] == "InputRequiredTags"
-		if inputString as int > 0
-			SetInputDialogStartText(inputString as string)
-			Config.RequiredTags = inputString as string
-		endIf
-
+		Config.RequiredTags = inputString
+		SetInputOptionValueST(Config.RequiredTags)
 	elseIf Options[0] == "InputExcludedTags"
-		if inputString as int > 0
-			SetInputDialogStartText(inputString as string)
-			Config.ExcludedTags = inputString as string
-		endIf
-
+		Config.ExcludedTags = inputString
+		SetInputOptionValueST(Config.ExcludedTags)
 	elseIf Options[0] == "InputOptionalTags"
-		if inputString as int > 0
-			SetInputDialogStartText(inputString as string)
-			Config.OptionalTags = inputString as string
-		endIf
+		Config.OptionalTags = inputString
+		SetInputOptionValueST(Config.OptionalTags)
 	endIf
 EndEvent
 
@@ -998,6 +982,24 @@ event OnSelectST()
 		SetTextOptionValueST("Resetting tags...")
 		; TODO: Reset tags here
 		ForcePageReset()
+
+		; --- Matchmaker Tags
+	ElseIf (Options[0] == "InputTags")
+		ShowMessage(sslSystemConfig.ParseMMTagString(), false, "$Done")
+	ElseIf (Options[0] == "TextResetTags")
+		If (!ShowMessage("$SSL_TagResetAreYouSure"))
+			return
+		EndIf
+		sslSystemConfig.SetSettingStr("sRequiredTags", "")
+		sslSystemConfig.SetSettingStr("sOptionalTags", "")
+		sslSystemConfig.SetSettingStr("sExcludedTags", "")
+		ForcePageReset()
+	ElseIf (Options[0] == "ToggleSubmissivePlayer")
+		Config.SubmissivePlayer = !Config.SubmissivePlayer
+		SetToggleOptionValueST(Config.SubmissivePlayer)
+	ElseIf (Options[0] == "ToggleSubmissiveTarget")
+		Config.SubmissiveTarget = !Config.SubmissiveTarget
+		SetToggleOptionValueST(Config.SubmissiveTarget)
 	endIf
 endEvent
 
@@ -2412,20 +2414,35 @@ endFunction
 ; --- Matchmaker	                                  --- ;
 ; ------------------------------------------------------- ;
 
-function MatchMaker()
+Function MatchMaker()
 	SetCursorFillMode(TOP_TO_BOTTOM)
-	AddToggleOptionST("ToggleMatchMaker","$SSL_ToggleMatchMaker", Config.MatchMaker)
-	AddHeaderOption("$SSL_MatchMakerTagsSettings")
-	AddInputOptionST("InputTags", "$SSL_InputTags", "")
-	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", "")
-	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", "")
-	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", "")
-	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere")
+	AddToggleOptionST("ToggleMatchMaker", "$SSL_ToggleMatchMaker", Config.MatchMaker)
+	AddHeaderOption("$SSL_MatchMakerTagsSettings", DoDisable(!Config.MatchMaker))
+	AddTextOptionST("InputTags", "$SSL_InputTags", sslSystemConfig.ParseMMTagString(), DoDisable(!Config.MatchMaker))
+	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", Config.RequiredTags, DoDisable(!Config.MatchMaker))
+	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", Config.ExcludedTags, DoDisable(!Config.MatchMaker))
+	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", Config.OptionalTags, DoDisable(!Config.MatchMaker))
+	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere", DoDisable(!Config.MatchMaker))
 	SetCursorPosition(1)
-	AddHeaderOption("$SSL_MatchMakerActorSettings")
-	AddToggleOptionST("ToggleSubmissivePlayer","$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer)
-	AddToggleOptionST("ToggleSubmissiveTarget","$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget)
-endFunction
+	AddHeaderOption("$SSL_MatchMakerActorSettings", DoDisable(!Config.MatchMaker))
+	AddToggleOptionST("ToggleSubmissivePlayer", "$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer, DoDisable(!Config.MatchMaker))
+	AddToggleOptionST("ToggleSubmissiveTarget", "$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget, DoDisable(!Config.MatchMaker))
+EndFunction
+
+State ToggleMatchMaker
+	; IDEA: Have this be saved natively and read it on game init/reload, add remove Spells based on it
+	Event OnSelectST()
+		Config.MatchMaker = !Config.MatchMaker
+		SetToggleOptionValueST(Config.MatchMaker)
+	EndEvent
+	Event OnDefaultST()
+		Config.MatchMaker = false
+		SetToggleOptionValueST(Config.MatchMaker)
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_InfoMatchMaker")
+	EndEvent
+EndState
 
 ; ------------------------------------------------------- ;
 ; --- Expression Editor                               --- ;
@@ -3735,17 +3752,6 @@ state StraponsFemale
 		SetInfoText("$SSL_InfoUseStrapons")
 	endEvent
 endState
-
-state MatchMaker
-	event OnSelectST()
-		Config.MatchMaker = !Config.MatchMaker
-		SetToggleOptionValueST(Config.MatchMaker)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoMatchMaker")
-	endEvent
-endState
-
 
 string[] VoiceNames
 state PlayerVoice

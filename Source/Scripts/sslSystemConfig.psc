@@ -109,16 +109,37 @@ Form[] Function GetStrippableItems(Actor akActor, bool abWornOnly) native global
 bool Function GetSettingBool(String asSetting) native global
 int Function GetSettingInt(String asSetting) native global
 float Function GetSettingFlt(String asSetting) native global
+String Function GetSettingStr(String asSetting) native global
 int Function GetSettingIntA(String asSetting, int n) native global
 float Function GetSettingFltA(String asSetting, int n) native global
-string Function GetSettingStr(String asSetting) native global
+String Function GetSettingStrA(String asSetting, int n) native global
 
 Function SetSettingBool(String asSetting, bool abValue) native global
 Function SetSettingInt(String asSetting, int aiValue) native global
 Function SetSettingFlt(String asSetting, float aiValue) native global
+Function SetSettingStr(String asSetting, String asValue) native global
 Function SetSettingIntA(String asSetting, int aiValue, int n) native global
 Function SetSettingFltA(String asSetting, float aiValue, int n) native global
-Function SetSettingString(String asSetting, String asValue) native global
+Function SetSettingStrA(String asSetting, String asValue, int n) native global
+
+String Function ParseMMTagString() global
+	String req = sslSystemConfig.GetSettingStr("sRequiredTags")
+	String opt = sslSystemConfig.GetSettingStr("sOptionalTags")
+	String neg = sslSystemConfig.GetSettingStr("sExcludedTags")
+	String[] optA = PapyrusUtil.StringSplit(opt, ",")
+	String[] negA = PapyrusUtil.StringSplit(neg, ",")
+	int i = 0
+	While (i < optA.Length)
+		req += ", " + optA[i]
+		i += 1
+	EndWhile
+	int n = 0
+	While (n < negA.Length)
+		req += ", " + negA[i]
+		n += 1
+	EndWhile
+	return req
+EndFunction
 
 int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
 int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
@@ -333,20 +354,12 @@ EndProperty
 
 ; Strings
 
-string property Tags hidden
-	string Function Get()
-		return GetSettingStr("sTags")
-	EndFunction
-	Function Set(string asSet)
-		SetSettingString("sTags", asSet)
-	EndFunction
-EndProperty
 string property RequiredTags hidden
 	string Function Get()
 		return GetSettingStr("sRequiredTags")
 	EndFunction
 	Function Set(string asSet)
-		SetSettingString("sRequiredTags", asSet)
+		SetSettingStr("sRequiredTags", asSet)
 	EndFunction
 EndProperty
 string property ExcludedTags hidden
@@ -354,7 +367,7 @@ string property ExcludedTags hidden
 		return GetSettingStr("sExcludedTags")
 	EndFunction
 	Function Set(string asSet)
-		SetSettingString("sExcludedTags", asSet)
+		SetSettingStr("sExcludedTags", asSet)
 	EndFunction
 EndProperty
 string property OptionalTags hidden
@@ -362,7 +375,7 @@ string property OptionalTags hidden
 		return GetSettingStr("sOptionalTags")
 	EndFunction
 	Function Set(string asSet)
-		SetSettingString("sOptionalTags", asSet)
+		SetSettingStr("sOptionalTags", asSet)
 	EndFunction
 EndProperty
 
