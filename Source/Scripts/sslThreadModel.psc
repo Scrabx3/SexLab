@@ -31,6 +31,13 @@ Function StopAnimation()
 	EndAnimation()
 EndFunction
 
+float Function GetTime()
+	return StartedAt
+endfunction
+float Function TotalTime()
+	return TotalTime
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Position Access                                 --- ;
 ; ------------------------------------------------------- ;
@@ -127,7 +134,7 @@ EndFunction
 Function DisableOrgasm(Actor ActorRef, bool OrgasmDisabled = true)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
-		return none
+		return
 	EndIf
 	return ref.DisableOrgasm(OrgasmDisabled)
 EndFunction
@@ -135,7 +142,7 @@ EndFunction
 bool Function IsOrgasmAllowed(Actor ActorRef)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
-		return none
+		return false
 	EndIf
 	return ref.IsOrgasmAllowed()
 EndFunction
@@ -146,6 +153,38 @@ Function ForceOrgasm(Actor ActorRef)
 		return none
 	EndIf
 	return ref.DoOrgasm(true)
+EndFunction
+
+Actor[] Function CanBeImpregnated(Actor akActor,  bool abAllowFutaImpregnation, bool abFutaCanPregnate, bool abCreatureCanPregnate)
+	Actor[] ret
+	sslActorAlias ref = ActorAlias(akActor)
+	If (!ref)
+		return ret
+	EndIf
+	int refsex = ref.GetSex()
+	If !(refsex == 1 || abAllowFutaImpregnation && refsex == 2)
+		return ret
+	EndIf
+	ret = new Actor[5]
+	String[] orgasmStages = SexLabRegistry.GetClimaxStages(_ActiveScene)
+	int i = 0
+	While (i < orgasmStages.Length)
+		If (_StageHistory.Find(orgasmStages[i]) > -1 && SexLabRegistry.IsStageTag(_ActiveScene, orgasmStages[i], "~Grinding, ~Vaginal, Penetration"))
+			int[] orgP = SexLabRegistry.GetClimaxingActors(_ActiveScene, orgasmStages[i])
+			int n = 0
+			While (n < orgP.Length)
+				If (Positions[n] != akActor && ActorAlias[n].IsOrgasmAllowed())
+					int orgSex = ActorAlias[n].GetSex()
+					If (orgSex == 0 || (abFutaCanPregnate && orgSex == 2) || (abCreatureCanPregnate && orgSex == 3))
+						ret[n] = Positions[n]
+					EndIf
+				EndIf
+				n += 1
+			EndWhile
+		EndIf
+		i += 1
+	EndWhile
+	return PapyrusUtil.RemoveActor(ret, none)
 EndFunction
 
 ; Actor Strapons
@@ -239,6 +278,24 @@ EndFunction
 bool Function HasTag(String Tag)
 	return _ThreadTags.Length && _ThreadTags.Find(Tag) > -1
 EndFunction
+
+bool Function HasSceneTag(String Tag)
+	return SexLabRegistry.IsSceneTag(_ActiveScene, Tag)
+EndFunction
+bool Function IsVaginal()
+	return HasSceneTag("Vaginal")
+EndFunction
+bool Function IsAnal()
+	return HasSceneTag("Anal")
+EndFunction
+bool Function IsOral()
+	return HasSceneTag("Oral")
+EndFunction
+
+bool Function HasStageTag(String Tag)
+	return SexLabRegistry.IsStageTag(_ActiveScene, _ActiveStage, Tag)
+EndFunction
+
 String[] Function GetTags()
 	return PapyrusUtil.ClearEmpty(_ThreadTags)
 EndFunction
@@ -573,12 +630,13 @@ State Making
 		If(_StartScene && Scenes.Find(_StartScene) == -1)
 			AddScene(_StartScene)
 		EndIf
-		String[] out = new String[64]
+		String[] out = new String[128]
 		ObjectReference new_center = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
 		If (!new_center || out[0] == "")
 			Fatal("Failed to start Thread -- Unable to locate a center compatible with given scenes")
 			return none
 		EndIf
+		Log("Found center " + new_center + "; " + out.Find("") + "/" + Scenes.Length + " matching scenes.")
 		CenterRef = new_center
 		_ActiveScene = out[GetActiveIdx(out)]
 		If (!SexLabRegistry.SortBySceneA(Positions, submissives, _ActiveScene, true))
@@ -609,7 +667,7 @@ State Making_M
 		SendThreadEvent("AnimationStarting")
 		RunHook(Config.HOOKID_STARTING)
 		If (useFading)
-			Utility.Wait(0.5)
+			; Utility.Wait(0.5)
 			Config.ApplyFade()
 		EndIf
 		; Base coordinates are first set in FindCenter() above
@@ -824,6 +882,11 @@ State Animating
 				return false
 			ElseIf (!UpdateBaseCoordinates(asNewScene, _BaseCoordinates))
 				Log("Cannot reset scene. Unable to find valid coordinates")
+				int i = 0
+				While (i < Positions.Length)
+					Positions[i] = ActorAlias[i].GetReference() as Actor
+					i += 1
+				EndWhile
 				return false
 			EndIf
 			_InUseCoordinates[0] = _BaseCoordinates[0]
@@ -854,12 +917,12 @@ State Animating
 		return true
 	EndFunction
 
-	Function PlayNext(int aiNextBranch)
+	bool Function PlayNext(int aiNextBranch)
 		UnregisterForUpdate()
 		SendThreadEvent("StageEnd")
 		RunHook(Config.HOOKID_STAGEEND)
 		String newStage = SexLabRegistry.BranchTo(_ActiveScene, _ActiveStage, aiNextBranch)
-		PlayNextImpl(newStage)
+		return PlayNextImpl(newStage)
 	EndFunction
 	Function PlayNextImpl(String asNewStage)
 		If (!asNewStage)
@@ -869,7 +932,6 @@ State Animating
 			Else
 				EndAnimation()
 			EndIf
-			return
 		ElseIf(!Leadin)
 			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
 			If (ctype == Config.CLIMAXTYPE_LEGACY && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
@@ -934,9 +996,6 @@ State Animating
 		PlayNext(aiNextBranch)
 	EndFunction
 	Function SkipTo(String asNextStage)
-		If (!SexLabRegistry.StageExists(_ActiveScene, asNextStage))
-			return
-		EndIf
 		PlayNextImpl(asNextStage)
 	EndFunction
 
@@ -979,6 +1038,7 @@ State Animating
 		If (AutoAdvance)
 			_StageTimer -= ANIMATING_UPDATE_INTERVAL
 			If (_StageTimer <= 0)
+				; IDEA: Randomize branching..?
 				GoToStage(_StageHistory.Length + 1)
 				return
 			EndIf
@@ -1157,8 +1217,9 @@ EndFunction
 Function EndLeadIn()
 	Log("Cannot end leadin outside the playing state", "EndLeadIn()")
 EndFunction
-Function PlayNext(int aiNextBranch)
+bool Function PlayNext(int aiNextBranch)
 	Log("Cannot play next branch outside the playing state", "PlayNext()")
+	return false
 EndFunction
 Function PlayNextImpl(String asNewStage)
 	Log("Cannot play next branch outside the playing state", "PlayNextImpl()")
@@ -1186,6 +1247,12 @@ float Function GetStageTimer(int maxstage)
 	Log("timers are not defined outside of playing state", "GetStageTimer()")
 	return 0.0
 Endfunction
+Function BranchTo(int aiNextBranch)
+	Log("Cannot branch to another stage while scene is not playing", "BranchTo()")
+EndFunction
+Function SkipTo(String asNextStage)
+	Log("Cannot skip to another stage while scene is not playing", "SkipTo()")
+EndFunction
 
 Function ChangeActors(Actor[] NewPositions)
 	Actor[] submissives = GetSubmissives()
@@ -1270,11 +1337,11 @@ Function AddScene(String asSceneID)
 		return
 	EndIf
 	If(_CustomScenes.Length > 0)
-		_CustomScenes = PapyrusUtil.PushString(_CustomScenes, _StartScene)
+		_CustomScenes = PapyrusUtil.PushString(_CustomScenes, asSceneID)
 	ElseIf(LeadIn)
-		_LeadInScenes = PapyrusUtil.PushString(_LeadInScenes, _StartScene)
+		_LeadInScenes = PapyrusUtil.PushString(_LeadInScenes, asSceneID)
 	Else
-		_PrimaryScenes = PapyrusUtil.PushString(_PrimaryScenes, _StartScene)
+		_PrimaryScenes = PapyrusUtil.PushString(_PrimaryScenes, asSceneID)
 	EndIf
 EndFunction
 
@@ -1286,7 +1353,7 @@ int Function GetActiveIdx(String[] asOutResult)
 		EndIf
 	EndIf
 	int emptyidx = asOutResult.Find("")
-	If (emptyidx == -1) ; All scenes filled --> max idx = 63
+	If (emptyidx == -1) ; All scenes filled
 		return Utility.RandomInt(0, asOutResult.Length - 1)
 	EndIf
 	return Utility.RandomInt(0, emptyidx - 1)
@@ -2020,9 +2087,6 @@ EndFunction
 Actor Function GetVictim()
 	return VictimRef
 EndFunction
-float Function GetTime()
-	return StartedAt
-endfunction
 
 Function RemoveFade()
 	if HasPlayer
@@ -2216,6 +2280,10 @@ Function UnequipStrapon(Actor ActorRef)
 	ActorAlias(ActorRef).UnequipStrapon()
 EndFunction
 
+bool Function PregnancyRisk(Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
+	return CanBeImpregnated(ActorRef, true, AllowFemaleCum, AllowCreatureCum)
+EndFunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -2234,12 +2302,6 @@ int Function GetEnjoyment(Actor ActorRef)
 EndFunction
 int Function GetPain(Actor ActorRef)
 	return ActorAlias(ActorRef).GetPain()
-EndFunction
-
-; Actor Information
-bool Function PregnancyRisk(Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
-	return ActorRef && HasActor(ActorRef) && ActorCount > 1 && ActorAlias(ActorRef).PregnancyRisk() \
-		&& (Males > 0 || (AllowFemaleCum && Females > 1 && Config.AllowFFCum) || (AllowCreatureCum && MaleCreatures > 0))
 EndFunction
 
 ; ------------------------------------------------------- ;

@@ -19,19 +19,58 @@ ScriptName sslCreatureAnimationSlots extends sslAnimationSlots
 ; --- Creature aniamtion support                      --- ;
 ; ------------------------------------------------------- ;
 
-; FIXME: Rewire or invalidate these
-string function GetRaceKey(Race RaceRef) global native
-string function GetRaceKeyByID(string RaceID) global native
-function AddRaceID(string RaceKey, string RaceID) global native
-bool function HasRaceID(string RaceKey, string RaceID) global native
-bool function HasRaceKey(string RaceKey) global native
-bool function ClearRaceKey(string RaceKey) global native
-bool function HasRaceIDType(string RaceID) global native
-bool function HasCreatureType(Actor ActorRef) global native
-bool function HasRaceType(Race RaceRef) global native
-string[] function GetAllRaceKeys(Race RaceRef = none) global native
-string[] function GetAllRaceIDs(string RaceKey) global native
-Race[] function GetAllRaces(string RaceKey) global native
+string function GetRaceKey(Race RaceRef) global
+  return SexLabRegistry.GetRaceKeyByRace(RaceRef)
+EndFunction
+
+Race Function GetRaceByEditorID(String asEditorID) global native
+string function GetRaceKeyByID(string RaceID) global
+  Race r = GetRaceByEditorID(RaceID)
+  If (!r)
+    return ""
+  EndIf
+  return GetRaceKey(r)
+EndFunction
+bool function HasRaceIDType(string RaceID) global
+  return GetRaceKeyByID(RaceID) != ""
+EndFunction
+
+function AddRaceID(string RaceKey, string RaceID) global
+EndFunction
+
+bool function HasRaceID(string RaceKey, string RaceID) global
+  return true
+EndFunction
+bool function HasRaceKey(string RaceKey) global
+  return SexLabRegistry.GetAllRaceKeys(false).Find(RaceKey) > -1
+EndFunction
+bool function ClearRaceKey(string RaceKey) global
+  return true
+EndFunction
+bool function HasCreatureType(Actor ActorRef) global
+  return true
+EndFunction
+bool function HasRaceType(Race RaceRef) global
+  return true
+EndFunction
+
+string[] function GetAllRaceKeys(Race RaceRef = none) global
+  If (!RaceRef)
+    SexLabRegistry.GetAllRaceKeys(false)
+  EndIf
+  return SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
+EndFunction
+
+string[] function GetAllRaceIDs(string RaceKey) global
+  Debug.MessageBox("The function \"GetAllRaceIDs\" in sslCreatureAnimation is no longer supported in SLP+ 2.0+")
+  String[] ret = new String[1]
+  return ret
+EndFunction
+Race[] function GetAllRaces(string RaceKey) global
+  Debug.MessageBox("The function \"GetAllRaces\" in sslCreatureAnimation is no longer supported in SLP+ 2.0+")
+  Race[] ret = new Race[1]
+  return ret
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Lookup creature aniamtions                      --- ;

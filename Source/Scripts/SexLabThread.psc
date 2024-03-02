@@ -37,10 +37,15 @@ EndFunction
 String[] Function GetPlayingScenes()
 EndFunction
 
-; Branch from the currently playing stage to the next. Will when the branch does not exist. Will fail outside of playing state
+; Force the argument scene to be played instead of the currently active one
+; On success, will delete stage history and sort actors to the new scene
+bool Function ResetScene(String asScene)
+EndFunction
+
+; Branch or skip from the currently playing stage. Will fail if called outside of playing state
+; If the given branch/stage does not exist will end the scene
 Function BranchTo(int aiNextBranch)
 EndFunction
-; Skip to the specified stage. The stage has to be part of the playing scene. Will fail outside of playing state
 Function SkipTo(String asNextStage)
 EndFunction
 
@@ -74,6 +79,38 @@ EndFunction
 
 ; If the thread is currently in a lead in phase
 bool Function IsLeadIn()
+EndFunction
+
+; --- Tags
+
+; If this thread is tagged with the given argument
+bool Function HasTag(String Tag)
+EndFunction
+; If the active scene is tagged with the given argument
+bool Function HasSceneTag(String Tag)
+EndFunction
+; If the active stage is tagged with the given argument
+bool Function HasStageTag(String Tag)
+EndFunction
+
+bool Function IsSceneVaginal()
+	return HasSceneTag("Vaginal")
+EndFunction
+bool Function IsSceneAnal()
+	return HasSceneTag("Anal")
+EndFunction
+bool Function IsSceneOral()
+	return HasSceneTag("Oral")
+EndFunction
+
+; --- Time
+
+; The timestamp at which the thread has started
+; Time is returned as real time seconds since the save has been created
+float Function GetTime()
+EndFunction
+; Returns the threads current total runtime
+float Function GetTimeTotal()
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -121,7 +158,7 @@ EndFunction
 
 ; --- Voice
 
-; Force the given actors voice, can only be used before entering playing state
+; Update the given actors voice
 Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
 EndFunction
 sslBaseVoice Function GetVoice(Actor ActorRef)
@@ -144,6 +181,22 @@ bool Function IsOrgasmAllowed(Actor ActorRef)
 EndFunction
 ; Create an orgasm event for the given actor
 Function ForceOrgasm(Actor ActorRef)
+EndFunction
+
+; Return the current enjoyment/arousal level for this actor
+int Function GetEnjoyment(Actor akActor)
+EndFunction
+
+; If the given actor has a chance of impregnation at some point during this scene. That is, the function will check
+; if at any point during this scene this actor had vaginal contact with an orgasming male actor, either direct or indirect
+; This function only considers stages that have already been played
+; --- Arguments
+; abAllowFutaImpregnation	- if akActor is a futa, can they still be impregnated?
+; abFutaCanPregnate				- if the orgasming actor is a futa, can they impregnate?
+; abCreatureCanPregnate		- if the orgasming actor is a creature, can they impregnate?
+; --- Return
+; All actors that had vaginal intercourse with the given actor
+Actor[] Function CanBeImpregnated(Actor akActor, bool abAllowFutaImpregnation, bool abFutaCanPregnate, bool abCreatureCanPregnate)
 EndFunction
 
 ; --- Strapons
