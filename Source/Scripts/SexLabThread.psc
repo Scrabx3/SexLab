@@ -150,6 +150,17 @@ EndFunction
 ; Create an orgasm event for the given actor
 Function ForceOrgasm(Actor ActorRef)
 EndFunction
+; If the given actor has a chance of impregnation at some point during this scene. That is, the function will check
+; if at any point during this scene this actor had vaginal contact with an orgasming male actor, either direct or indirect
+; This function only considers stages that have already been played
+; --- Arguments
+; abAllowFutaImpregnation	- if akActor is a futa, can they still be impregnated?
+; abFutaCanPregnate				- if the orgasming actor is a futa, can they impregnate?
+; abCreatureCanPregnate		- if the orgasming actor is a creature, can they impregnate?
+; --- Return
+; All actors that had vaginal intercourse with the given actor
+Actor[] Function CanBeImpregnated(Actor akActor, bool abAllowFutaImpregnation, bool abFutaCanPregnate, bool abCreatureCanPregnate)
+EndFunction
 
 ; --- Strapons
 

@@ -39,22 +39,6 @@ bool function IsOrgasmAllowed()
 	return _canOrgasm
 endFunction
 
-bool function PregnancyRisk()
-	If(_sex != 1)
-		return false
-	EndIf
-	String activeScene = _Thread.GetActiveScene()
-	String[] orgasmStages = SexLabRegistry.GetClimaxStages(activeScene)
-	int i = 0
-	While (i < orgasmStages.Length)
-		If (SexLabRegistry.IsStageTag(activeScene, orgasmStages[i], "Vaginal"))
-			return true
-		EndIf
-		i += 1
-	EndWhile
-	return false
-endFunction
-
 ; ------------------------------------------------------- ;
 ; --- Stripping									                      --- ;
 ; ------------------------------------------------------- ;
@@ -1209,6 +1193,10 @@ endfunction
 
 function ClearAlias()
 	Clear()
+endFunction
+
+bool function PregnancyRisk()
+	return _Thread.PregnancyRisk(_ActorRef)
 endFunction
 
 ; Below functions are all strictly redundant

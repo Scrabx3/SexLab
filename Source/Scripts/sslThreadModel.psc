@@ -148,6 +148,38 @@ Function ForceOrgasm(Actor ActorRef)
 	return ref.DoOrgasm(true)
 EndFunction
 
+Actor[] Function CanBeImpregnated(Actor akActor,  bool abAllowFutaImpregnation, bool abFutaCanPregnate, bool abCreatureCanPregnate)
+	Actor[] ret
+	sslActorAlias ref = ActorAlias(akActor)
+	If (!ref)
+		return ret
+	EndIf
+	int refsex = ref.GetSex()
+	If !(refsex == 1 || abAllowFutaImpregnation && refsex == 2)
+		return ret
+	EndIf
+	ret = new Actor[5]
+	String[] orgasmStages = SexLabRegistry.GetClimaxStages(_ActiveScene)
+	int i = 0
+	While (i < orgasmStages.Length)
+		If (_StageHistory.Find(orgasmStages[i]) > -1 && SexLabRegistry.IsStageTag(_ActiveScene, orgasmStages[i], "~Grinding, ~Vaginal, Penetration"))
+			int[] orgP = SexLabRegistry.GetClimaxingActors(_ActiveScene, orgasmStages[i])
+			int n = 0
+			While (n < orgP.Length)
+				If (Positions[n] != akActor && ActorAlias[n].IsOrgasmAllowed())
+					int orgSex = ActorAlias[n].GetSex()
+					If (orgSex == 0 || (abFutaCanPregnate && orgSex == 2) || (abCreatureCanPregnate && orgSex == 3))
+						ret[n] = Positions[n]
+					EndIf
+				EndIf
+				n += 1
+			EndWhile
+		EndIf
+		i += 1
+	EndWhile
+	return PapyrusUtil.RemoveActor(ret, none)
+EndFunction
+
 ; Actor Strapons
 
 bool Function IsUsingStrapon(Actor ActorRef)
@@ -2226,6 +2258,10 @@ Function UnequipStrapon(Actor ActorRef)
 	ActorAlias(ActorRef).UnequipStrapon()
 EndFunction
 
+bool Function PregnancyRisk(Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
+	return CanBeImpregnated(ActorRef, true, AllowFemaleCum, AllowCreatureCum)
+EndFunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -2244,12 +2280,6 @@ int Function GetEnjoyment(Actor ActorRef)
 EndFunction
 int Function GetPain(Actor ActorRef)
 	return ActorAlias(ActorRef).GetPain()
-EndFunction
-
-; Actor Information
-bool Function PregnancyRisk(Actor ActorRef, bool AllowFemaleCum = false, bool AllowCreatureCum = false)
-	return ActorRef && HasActor(ActorRef) && ActorCount > 1 && ActorAlias(ActorRef).PregnancyRisk() \
-		&& (Males > 0 || (AllowFemaleCum && Females > 1 && Config.AllowFFCum) || (AllowCreatureCum && MaleCreatures > 0))
 EndFunction
 
 ; ------------------------------------------------------- ;
