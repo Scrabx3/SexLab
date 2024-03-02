@@ -138,6 +138,14 @@ sslBaseExpression Function GetExpression(Actor ActorRef)
 EndFunction
 
 ; Orgasms
+int Function GetEnjoyment(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return 0
+	EndIf
+	return ref.GetEnjoyment()
+EndFunction
+
 Function DisableOrgasm(Actor ActorRef, bool OrgasmDisabled = true)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
@@ -2304,9 +2312,6 @@ EndFunction
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; Enjoyment/Pain
-int Function GetEnjoyment(Actor ActorRef)
-	return ActorAlias(ActorRef).GetEnjoyment()
-EndFunction
 int Function GetPain(Actor ActorRef)
 	return ActorAlias(ActorRef).GetPain()
 EndFunction
