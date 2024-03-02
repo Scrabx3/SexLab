@@ -170,6 +170,11 @@ Event OnConfigInit()
 	TSModes[0] = "$SSL_NormalTimersStripping"
 	TSModes[1] = "$SSL_ForeplayTimersStripping"
 	TSModes[2] = "$SSL_AggressiveTimersStripping"
+
+	If (SKSE.GetVersionMinor() < 2)
+		Config.DisableScale = true
+		Debug.MessageBox("[SexLab]\nYou seem to be using a pre-historic version of Skyrim and scaling has thus been disabled to prevent crashes.\nYou lost your right to complain about misalignments and if you still do I'll turn you into a rabbit.\n~~Scrab, that lost a neverending battle against the stubborness of their discord userbase and thus eventually succumbed for being simply too nice a person\n02.03.2024")
+	EndIf
 EndEvent
 
 ; ------------------------------------------------------- ;
