@@ -37,10 +37,15 @@ EndFunction
 String[] Function GetPlayingScenes()
 EndFunction
 
-; Branch from the currently playing stage to the next. Will when the branch does not exist. Will fail outside of playing state
+; Force the argument scene to be played instead of the currently active one
+; On success, will delete stage history and sort actors to the new scene
+bool Function ResetScene(String asScene)
+EndFunction
+
+; Branch or skip from the currently playing stage. Will fail if called outside of playing state
+; If the given branch/stage does not exist will end the scene
 Function BranchTo(int aiNextBranch)
 EndFunction
-; Skip to the specified stage. The stage has to be part of the playing scene. Will fail outside of playing state
 Function SkipTo(String asNextStage)
 EndFunction
 
