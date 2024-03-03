@@ -34,7 +34,7 @@ EndEvent
 ; --- Interface                                       --- ;
 ; ------------------------------------------------------- ;
 ;/
-  The following scripts are to be implemented/overwritten by your own script
+  The following functions are to be implemented/overwritten by your own script
 /;
 
 ; Called when all of the threads data is set, before the active animation is chosen
@@ -79,9 +79,8 @@ EndFunction
 ; --- Lock                                            --- ;
 ; ------------------------------------------------------- ;
 ;/
-  Example implementation for a simple locking system
-  There is no need to implement this system if you only care about hooking one specific function
-  Ensure that OnInit() can be called here, i.e. if you overwrite OnInit() call "parent.OnInit()" at before exiting the OnInit event
+  Simple locking system to skip processing threads you do not care about. If using this, ensure OnInit() has been called
+  If you overwrite OnInit() in your implementation, call "Parent.OnInit()" before exiting your OnInit event
 
   **USAGE**
   Function OnAnimationStarting(SexLabThread akThread)
