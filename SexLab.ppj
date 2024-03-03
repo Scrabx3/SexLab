@@ -5,13 +5,13 @@
     Output="Scripts" 
     Optimize="true" 
     Anonymize="true" 
-    Zip="false">
+    Zip="true">
     <Variables>
         <Variable Name="ModName" Value="SexLab Framework PPLUS"/>
         <Variable Name="ThisProject" Value="."/>
         <Variable Name="Rel" Value=".\.release"/>
         <Variable Name="MO2" Value=".."/>
-        <Variable Name="Ver" Value="V2.3.2.3"/>
+        <Variable Name="Ver" Value="V2.3.3.1"/>
     </Variables>
     <Imports>
         <!-- <Import>@ThisProject\Scripts\Source</Import> -->
