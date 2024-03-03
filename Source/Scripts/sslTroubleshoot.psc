@@ -1,7 +1,18 @@
 scriptname sslTroubleshoot extends Quest
+{
+	Support script for attempting to troubleshoot certain issues. No longer used
+}
 
-import Debug
-import SexLabUtil
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 Actor property PlayerRef auto
 SexLabFramework property SexLab auto
@@ -230,7 +241,7 @@ endState
 bool function Prepare()
 	GoToState("")
 	UnregisterForUpdate()
-	OpenUserLog("SexLab")
+	Debug.OpenUserLog("SexLab")
 
 	; ; Turn on Papyrus log and tracing
 	; Utility.SetINIBool("bEnableLogging:Papyrus", true)
@@ -251,8 +262,8 @@ bool function Prepare()
 	Checks[9] = SexLab.Stats != none
 	if Checks.Find(false) != -1
 		Error(20, "SexLab is missing a resource. This is generally a sign something is wrong with your SexLab.esm or you are missing scripts.")
-		Trace("SexLabFramework Checks -- "+Checks)
-		PrintConsole("SexLabFramework Checks -- "+Checks)
+		Debug.Trace("SexLabFramework Checks -- "+Checks)
+		SexLabUtil.PrintConsole("SexLabFramework Checks -- "+Checks)
 		return false
 	endIf
 

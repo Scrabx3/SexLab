@@ -1,6 +1,6 @@
 Scriptname sslEffectDebug extends ActiveMagicEffect
 {
-	Old Debug-only Matchmaker Script, no longer used
+	Old debug-only Matchmaker Script, no longer used
 }
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;

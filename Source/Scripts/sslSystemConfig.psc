@@ -1655,7 +1655,7 @@ FormList property SexLabVoices Hidden
   EndFunction
 EndProperty
 Idle property IdleReset Hidden
-  Idle Function sGet()
+  Idle Function Get()
     return Game.GetFormFromFile(0x87FCA, "SexLab.esm") as Idle
   EndFunction
 EndProperty

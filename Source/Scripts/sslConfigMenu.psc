@@ -1553,46 +1553,6 @@ state AdjustTargetStage
 endState
 
 ; ------------------------------------------------------- ;
-; --- Troubleshoot                                    --- ;
-; ------------------------------------------------------- ;
-
-function Troubleshoot()
-	AddTextOptionST("AnimationTrouble", "Animations Don't Play", "$SSL_ClickHere")
-	AddTextOptionST("VoiceTrouble", "Characters don't play any moans during animation", "$SSL_ClickHere")
-	AddTextOptionST("LipSyncTrouble", "Characters don't lipsync their moans", "$SSL_ClickHere")
-endFunction
-
-state AnimationTrouble
-	event OnSelectST()
-		if ShowMessage("To perform this test, you will need to find a safe location to wait while the tests are performed. Are you in a safe location?", true, "$Yes", "$No")
-			ShowMessage("Close all menus to continue...", false)
-			Utility.Wait(0.1)
-			(Quest.GetQuest("SexLabTroubleshoot") as sslTroubleshoot).PerformTests("FNIS,ThreadSlots,AnimSlots")
-		endIf
-	endEvent
-endState
-
-state VoiceTrouble
-	event OnSelectST()
-		if ShowMessage("To perform this test, you will need to find a safe location to wait while the tests are performed. Are you in a safe location?", true, "$Yes", "$No")
-			ShowMessage("Close all menus to continue...", false)
-			Utility.Wait(0.1)
-			(Quest.GetQuest("SexLabTroubleshoot") as sslTroubleshoot).PerformTests("VoiceSlots,PlayVoice")
-		endIf
-	endEvent
-endState
-
-state LipSyncTrouble
-	event OnSelectST()
-		if ShowMessage("To perform this test, you will need to find a safe location to wait while the tests are performed. Are you in a safe location?", true, "$Yes", "$No")
-			ShowMessage("Close all menus to continue...", false)
-			Utility.Wait(0.1)
-			(Quest.GetQuest("SexLabTroubleshoot") as sslTroubleshoot).PerformTests("PlayVoice,LipSync")
-		endIf
-	endEvent
-endState
-
-; ------------------------------------------------------- ;
 ; --- Sound Settings                                  --- ;
 ; ------------------------------------------------------- ;
 
@@ -4166,6 +4126,9 @@ endFunction
 ;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+function Troubleshoot()
+endFunction
 
 int function AddItemToggles(Form[] Items, int ID, int Max)
 endFunction
