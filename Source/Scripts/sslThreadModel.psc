@@ -1317,7 +1317,6 @@ State Ending
 		SendThreadEvent("AnimationEnding")
 		SendThreadEvent("AnimationEnd")
 		RunHook(Config.HOOKID_END)
-		; UpdateOffset(_ActiveScene, _BaseCoordinates, _InUseCoordinates)
 		; Cant use default OnUpdate() event as the previous state could leak a registration into this one here
 		; any attempt to prevent this leak without artificially slowing down the code have failed
 		; 0.1 gametime = 6ig minutes = 360 ig seconds = 360 / 20 rt seconds = 18 rt seconds with default timescale
@@ -1336,9 +1335,6 @@ State Ending
 		return STATUS_ENDING
 	EndFunction
 EndState
-
-; TODO: Implement
-Function UpdateOffset(String asScene, float[] afBaseCoordinates, float[] afInUseCoordinates) native
 
 ; ------------------------------------------------------- ;
 ; --- State Independent                               --- ;
@@ -2180,7 +2176,6 @@ Function CenterOnCoords(float LocX = 0.0, float LocY = 0.0, float LocZ = 0.0, fl
 	CenterOnObject(new_center, resync)
 EndFunction
 
-; NOTE: This is used in the MoveScene function (child script). Idk if theres any point or nah
 int Function AreUsingFurniture(Actor[] ActorList)	
 	int i = 0
 	While(i < ActorList.Length)
