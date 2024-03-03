@@ -1563,73 +1563,330 @@ endFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; TODO: Change these to manual properties that get their item through GetFromFile() !IMPORTANT
+Faction property AnimatingFaction Hidden
+  Faction Function Get()
+    return Game.GetFormFromFile(0xE50F, "SexLab.esm") as Faction
+  EndFunction
+EndProperty
+Faction property GenderFaction Hidden
+  Faction Function Get()
+    return Game.GetFormFromFile(0x43A43, "SexLab.esm") as Faction
+  EndFunction
+EndProperty
+Faction property ForbiddenFaction Hidden
+  Faction Function Get()
+    return Game.GetFormFromFile(0x49068, "SexLab.esm") as Faction
+  EndFunction
+EndProperty
+Weapon property DummyWeapon Hidden
+  Weapon Function Get()
+    return Game.GetFormFromFile(0x311BF, "SexLab.esm") as Weapon
+  EndFunction
+EndProperty
+Armor property NudeSuit Hidden
+  Armor Function Get()
+    return Game.GetFormFromFile(0x18715, "SexLab.esm") as Armor
+  EndFunction
+EndProperty
+Keyword property ActorTypeNPC Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("ActorTypeNPC")
+  EndFunction
+EndProperty
+Keyword property SexLabActive Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("SexLabActive")
+  EndFunction
+EndProperty
+Keyword property FurnitureBedRoll Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("FurnitureBedRoll")
+  EndFunction
+EndProperty
+Furniture property BaseMarker Hidden
+  Furniture Function Get()
+    return Game.GetFormFromFile(0x45A93, "SexLab.esm") as Furniture
+  EndFunction
+EndProperty
+Package property DoNothing Hidden
+  Package Function Get()
+    return Game.GetFormFromFile(0xE50E, "SexLab.esm") as Package
+  EndFunction
+EndProperty
+FormList property BedsList Hidden
+  FormList Function Get()
+    return Game.GetFormFromFile(0x181B1, "SexLab.esm") as FormList
+  EndFunction
+EndProperty
+FormList property BedRollsList Hidden
+  FormList Function Get()
+    return Game.GetFormFromFile(0x6198C, "SexLab.esm") as FormList
+  EndFunction
+EndProperty
+FormList property DoubleBedsList Hidden
+  FormList Function Get()
+    return Game.GetFormFromFile(0x854B8, "SexLab.esm") as FormList
+  EndFunction
+EndProperty
+Static property LocationMarker Hidden
+  Static Function Get()
+    return Game.GetFormFromFile(0x2803E, "SexLab.esm") as Static
+  EndFunction
+EndProperty
+Message property UseBed Hidden
+  Message Function Get()
+    return Game.GetFormFromFile(0x65F97, "SexLab.esm") as Message
+  EndFunction
+EndProperty
+Topic property LipSync Hidden
+  Topic Function Get()
+    return Game.GetFormFromFile(0x68590, "SexLab.esm") as Topic
+  EndFunction
+EndProperty
+VoiceType property SexLabVoiceM Hidden
+  VoiceType Function Get()
+    return Game.GetFormFromFile(0x2CBBD, "SexLab.esm") as VoiceType
+  EndFunction
+EndProperty
+VoiceType property SexLabVoiceF Hidden
+  VoiceType Function Get()
+    return Game.GetFormFromFile(0x2CBBE, "SexLab.esm") as VoiceType
+  EndFunction
+EndProperty
+FormList property SexLabVoices Hidden
+  FormList Function Get()
+    return Game.GetFormFromFile(0x2CBBC, "SexLab.esm") as FormList
+  EndFunction
+EndProperty
+Idle property IdleReset Hidden
+  Idle Function sGet()
+    return Game.GetFormFromFile(0x87FCA, "SexLab.esm") as Idle
+  EndFunction
+EndProperty
 
-Faction property AnimatingFaction auto
-Faction property GenderFaction auto
-Faction property ForbiddenFaction auto
-Weapon property DummyWeapon auto
-Armor property NudeSuit auto
-Keyword property ActorTypeNPC auto
-Keyword property SexLabActive auto
-Keyword property FurnitureBedRoll auto
-Furniture property BaseMarker auto
-Package property DoNothing auto
-FormList property BedsList auto
-FormList property BedRollsList auto
-FormList property DoubleBedsList auto
-Static property LocationMarker auto
-Message property UseBed auto
+Spell property CumVaginalOralAnalSpell Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x43A3F, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property CumOralAnalSpell Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x43A41, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property CumVaginalOralSpell Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x43A3B, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property CumVaginalAnalSpell Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x43A3D, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property CumVaginalSpell Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x41478, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property CumOralSpell Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x434D5, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property CumAnalSpell Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x434D7, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Oral1Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D651, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Oral1Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D653, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Oral2Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D655, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Oral1Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D657, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Oral2Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D659, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Oral2Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D65B, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Oral1Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D65D, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Oral2Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D65F, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Oral1Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D661, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Oral2Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D663, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Oral1Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D665, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Oral2Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D667, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Oral1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D669, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Oral1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D66B, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Oral2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D66D, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Oral2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D66F, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D671, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D673, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D675, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D677, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D679, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Vaginal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D67B, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Oral1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D67D, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Oral2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D67F, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Anal1 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D681, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Spell property Anal2 Hidden
+  Spell Function Get()
+    return Game.GetFormFromFile(0x8D683, "SexLab.esm") as Spell
+  EndFunction
+EndProperty
+Keyword property CumOralKeyword Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("SexLabOralCum")
+  EndFunction
+EndProperty
+Keyword property CumAnalKeyword Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("SexLabAnalCum")
+  EndFunction
+EndProperty
+Keyword property CumVaginalKeyword Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("SexLabVaginalCum")
+  EndFunction
+EndProperty
+Keyword property CumOralStackedKeyword Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("SexLabOralStackedCum")
+  EndFunction
+EndProperty
+Keyword property CumAnalStackedKeyword Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("SexLabAnalStackedCum")
+  EndFunction
+  Function Set(Keyword aSet)
+  EndFunction
+EndProperty
+Keyword property CumVaginalStackedKeyword Hidden
+  Keyword Function Get()
+    return Keyword.GetKeyword("SexLabVaginalStackedCum")
+  EndFunction
+EndProperty
 
-Spell property CumVaginalOralAnalSpell auto
-Spell property CumOralAnalSpell auto
-Spell property CumVaginalOralSpell auto
-Spell property CumVaginalAnalSpell auto
-Spell property CumVaginalSpell auto
-Spell property CumOralSpell auto
-Spell property CumAnalSpell auto
-Spell property Vaginal1Oral1Anal1 auto
-Spell property Vaginal2Oral1Anal1 auto
-Spell property Vaginal2Oral2Anal1 auto
-Spell property Vaginal2Oral1Anal2 auto
-Spell property Vaginal1Oral2Anal1 auto
-Spell property Vaginal1Oral2Anal2 auto
-Spell property Vaginal1Oral1Anal2 auto
-Spell property Vaginal2Oral2Anal2 auto
-Spell property Oral1Anal1 auto
-Spell property Oral2Anal1 auto
-Spell property Oral1Anal2 auto
-Spell property Oral2Anal2 auto
-Spell property Vaginal1Oral1 auto
-Spell property Vaginal2Oral1 auto
-Spell property Vaginal1Oral2 auto
-Spell property Vaginal2Oral2 auto
-Spell property Vaginal1Anal1 auto
-Spell property Vaginal2Anal1 auto
-Spell property Vaginal1Anal2 auto
-Spell property Vaginal2Anal2 auto
-Spell property Vaginal1 auto
-Spell property Vaginal2 auto
-Spell property Oral1 auto
-Spell property Oral2 auto
-Spell property Anal1 auto
-Spell property Anal2 auto
-Keyword property CumOralKeyword auto
-Keyword property CumAnalKeyword auto
-Keyword property CumVaginalKeyword auto
-Keyword property CumOralStackedKeyword auto
-Keyword property CumAnalStackedKeyword auto
-Keyword property CumVaginalStackedKeyword auto
-GlobalVariable property DebugVar1 auto
-GlobalVariable property DebugVar2 auto
-GlobalVariable property DebugVar3 auto
-GlobalVariable property DebugVar4 auto
-GlobalVariable property DebugVar5 auto
-Topic property LipSync auto
-VoiceType property SexLabVoiceM auto
-VoiceType property SexLabVoiceF auto
-FormList property SexLabVoices auto
-Idle property IdleReset auto
+GlobalVariable property DebugVar1 Hidden
+  GlobalVariable Function Get()
+    return Game.GetFormFromFile(0x7DE45, "SexLab.esm") as GlobalVariable
+  EndFunction
+EndProperty
+GlobalVariable property DebugVar2 Hidden
+  GlobalVariable Function Get()
+    return Game.GetFormFromFile(0x7DE46, "SexLab.esm") as GlobalVariable
+  EndFunction
+EndProperty
+GlobalVariable property DebugVar3 Hidden
+  GlobalVariable Function Get()
+    return Game.GetFormFromFile(0x7DE47, "SexLab.esm") as GlobalVariable
+  EndFunction
+EndProperty
+GlobalVariable property DebugVar4 Hidden
+  GlobalVariable Function Get()
+    return Game.GetFormFromFile(0x7DE48, "SexLab.esm") as GlobalVariable
+  EndFunction
+EndProperty
+GlobalVariable property DebugVar5 Hidden
+  GlobalVariable Function Get()
+    return Game.GetFormFromFile(0x7DE49, "SexLab.esm") as GlobalVariable
+  EndFunction
+EndProperty
 
 Actor[] property TargetRefs auto hidden
 
@@ -1637,15 +1894,11 @@ bool property HasSchlongs Hidden
   bool Function Get()
     return Game.GetModByName("Schlongs of Skyrim - Core.esm") != 255 || Game.GetModByName("SAM - Shape Atlas for Men.esp") != 255
   EndFunction
-  Function Set(bool aSet)
-  EndFunction
 EndProperty
 
 bool property HasFrostfall
   bool Function Get()
     return Game.GetModByName("Frostfall.esp") != 255
-  EndFunction
-  Function Set(bool aSet)
   EndFunction
 EndProperty
 
@@ -1656,8 +1909,6 @@ FormList property FrostExceptions
     EndIf
     return none
   EndFunction
-  Function Set(FormList aSet)
-  EndFunction
 EndProperty
 
 float[] property BedOffset hidden
@@ -1665,8 +1916,6 @@ float[] property BedOffset hidden
     float[] ret = new float[4]
     ret[2] = 37.0
     return ret
-  EndFunction
-  Function Set(float[] aSet)
   EndFunction
 EndProperty
 
