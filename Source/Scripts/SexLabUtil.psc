@@ -75,19 +75,6 @@ bool function HasRace(Race RaceRef) global
 	return sslCreatureAnimationSlots.HasRaceType(RaceRef)
 endFunction
 
-bool function IsImportant(Actor ActorRef, bool Strict = false) global
-	if ActorRef == Game.GetPlayer()
-		return true
-	elseIf !ActorRef || ActorRef.IsDead() || ActorRef.IsDeleted() || ActorRef.IsChild()
-		return false
-	elseIf !Strict
-		return true
-	endIf
-	; Strict check
-	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-	return BaseRef.IsUnique() || BaseRef.IsEssential() || BaseRef.IsInvulnerable() || BaseRef.IsProtected() || ActorRef.IsGuard() || ActorRef.IsPlayerTeammate() || ActorRef.Is3DLoaded()
-endFunction
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
@@ -253,6 +240,19 @@ endFunction
 string function MakeGenderTag(Actor[] Positions) global
 	int[] Genders = GetAPI().GenderCount(Positions)
 	return GetGenderTag(Genders[1], Genders[0], Genders[2] + Genders[3])
+endFunction
+
+bool function IsImportant(Actor ActorRef, bool Strict = false) global
+	if ActorRef == Game.GetPlayer()
+		return true
+	elseIf !ActorRef || ActorRef.IsDead() || ActorRef.IsDeleted() || ActorRef.IsChild()
+		return false
+	elseIf !Strict
+		return true
+	endIf
+	; Strict check
+	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
+	return BaseRef.IsUnique() || BaseRef.IsEssential() || BaseRef.IsInvulnerable() || BaseRef.IsProtected() || ActorRef.IsGuard() || ActorRef.IsPlayerTeammate() || ActorRef.Is3DLoaded()
 endFunction
 
 string function GetGenderTag(int Females = 0, int Males = 0, int Creatures = 0) global
