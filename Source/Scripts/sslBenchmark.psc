@@ -1,12 +1,21 @@
 scriptname sslBenchmark extends sslSystemLibrary
+{
+	Old time measurement, no longer used
+	Time is measured by the default matchmaker in debug mode
+}
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 function PreBenchmarkSetup()
-	; // Prepare whatever is needed before benchmarking
-	; JsonUtil.SetIntValue("Benchmark.json", "test", 1)
-	; JsonUtil.SetFormValue("Benchmark.json", "test", self)
-	; JsonUtil.Save("Benchmark.json")
-
-	; Anim = AnimSlots.GetbyRegistrar("LeitoCowgirl")
 endFunction
 sslBaseAnimation[] arr1
 sslBaseAnimation[] arr2
@@ -64,80 +73,6 @@ state Test1
 		return Utility.GetCurrentRealTime() - baseline
 	endFunction
 endState
-
-
-
-;/ 
-state Test1
-	string function Label()
-		return "JsonUtil"
-	endFunction
-
-	string function Proof()
-		string Output
-		JsonUtil.SetIntValue("Benchmark.json", "test", 1)
-		JsonUtil.SetFormValue("Benchmark.json", "test", self)
-
-		Output += " Int["+JsonUtil.GetIntValue("Benchmark.json", "test", -1)+"]"
-		Output += " Form["+JsonUtil.GetFormValue("Benchmark.json", "test", none)+"]"
-
-		return Output
-	endFunction
-
-	float function RunTest(int nth = 5000, float baseline = 0.0)
- 		; START any variable preparions needed
- 		int var1
- 		form var2
-		; END any variable preparions needed
-		baseline += Utility.GetCurrentRealTime()
-		while nth
-			nth -= 1
-			; START code to benchmark
-			JsonUtil.SetIntValue("Benchmark.json", "test", nth)
-			JsonUtil.SetFormValue("Benchmark.json", "test", self)
-			var1 = JsonUtil.GetIntValue("Benchmark.json", "test", nth)
-			var2 = JsonUtil.GetFormValue("Benchmark.json", "test", self)
-			; END code to benchmark
-		endWhile
-		return Utility.GetCurrentRealTime() - baseline
-	endFunction
-endState
-
-state Test2
-	string function Label()
-		return "StorageUtil"
-	endFunction
-
-	string function Proof()
-		string Output
-		StorageUtil.SetIntValue(Config, "test", 1)
-		StorageUtil.SetFormValue(Config, "test", self)
-
-		Output += " Int["+StorageUtil.GetIntValue(Config, "test", -1)+"]"
-		Output += " Form["+StorageUtil.GetFormValue(Config, "test", none)+"]"
-
-		return Output
-	endFunction
-
-	float function RunTest(int nth = 5000, float baseline = 0.0)
- 		; START any variable preparions needed
- 		int var1
- 		form var2
-		; END any variable preparions needed
-		baseline += Utility.GetCurrentRealTime()
-		while nth
-			nth -= 1
-			; START code to benchmark
-			StorageUtil.SetIntValue(Config, "test", nth)
-			StorageUtil.SetFormValue(Config, "test", self)
-			var1 = StorageUtil.GetIntValue(Config, "test", nth)
-			var2 = StorageUtil.GetFormValue(Config, "test", self)
-			; END code to benchmark
-		endWhile
-		return Utility.GetCurrentRealTime() - baseline
-	endFunction
-endState
-/;
 
 function StartBenchmark(int Tests = 1, int Iterations = 5000, int Loops = 10, bool UseBaseLoop = false)
 	Setup()
@@ -217,66 +152,13 @@ float function RunTest(int nth = 5000, float baseline = 0.0)
 	return Utility.GetCurrentRealTime() - baseline
 endFunction
 
-; int Count
-; int Result
-; float Delay
-; float Loop
-; float Started
-
 int function LatencyTest()
 	return 0
-	; Result  = 0
-	; Count   = 0
-	; Delay   = 0.0
-	; Started = Utility.GetCurrentRealTime()
-	; RegisterForSingleUpdate(0)
-	; while Result == 0
-	; 	Utility.Wait(0.1)
-	; endWhile
-	; return Result
 endFunction
 
 event OnUpdate()
 	return
-	; Delay += (Utility.GetCurrentRealTime() - Started)
-	; Count += 1
-	; if Count < 10
-	; 	Started = Utility.GetCurrentRealTime()
-	; 	RegisterForSingleUpdate(0.0)
-	; else
-	; 	Result = ((Delay / 10.0) * 1000.0) as int
-	; 	Debug.Notification("Latency Test Result: "+Result+"ms")
-	; endIf
 endEvent
-
 
 event Hook(int tid, bool HasPlayer)
 endEvent
-
-
-; Form[] function GetEquippedItems(Actor ActorRef)
-; 	Form ItemRef
-; 	Form[] Output = new Form[34]
-
-; 	; Weapons
-; 	ItemRef = ActorRef.GetEquippedWeapon(false) ; Right Hand
-; 	if ItemRef && IsToggleable(ItemRef)
-; 		Output[33] = ItemRef
-; 	endIf
-; 	ItemRef = ActorRef.GetEquippedWeapon(true) ; Left Hand
-; 	if ItemRef && ItemRef != Output[33] && IsToggleable(ItemRef)
-; 		Output[32] = ItemRef
-; 	endIf
-
-; 	; Armor
-; 	int i = 32
-; 	while i
-; 		i -= 1
-; 		ItemRef = ActorRef.GetWornForm(Armor.GetMaskForSlot(i + 30))
-; 		if ItemRef && Output.Find(ItemRef) == -1 && IsToggleable(ItemRef)
-; 			Output[i] = ItemRef
-; 		endIf
-; 	endWhile
-
-; 	return PapyrusUtil.ClearNone(Output)
-; endFunction

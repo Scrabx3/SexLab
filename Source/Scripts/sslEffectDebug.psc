@@ -19,7 +19,9 @@ sslSystemConfig property Config auto
 Actor property PlayerRef auto
 
 sslBenchmark function Benchmark(int Tests = 1, int Iterations = 5000, int Loops = 10, bool UseBaseLoop = false)
-	return (Quest.GetQuest("SexLabDev") as sslBenchmark).StartBenchmark(Tests, Iterations, Loops, UseBaseLoop)
+	sslBenchmark ret = (Quest.GetQuest("SexLabDev") as sslBenchmark)
+	ret.StartBenchmark(Tests, Iterations, Loops, UseBaseLoop)
+	return ret
 endFunction
 
 event OnEffectStart(Actor TargetRef, Actor CasterRef)
