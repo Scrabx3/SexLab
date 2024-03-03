@@ -401,9 +401,6 @@ Event OnHighlightST()
 	; Error & Warning
 	elseIf Options[0] == "InstallError"
 		SetInfoText("CRITICAL ERROR: File Integrity Framework quest / files overwritten...\nUnable to resolve needed variables. Install unable continue as result.\nUsually caused by incompatible SexLab addons. Disable other SexLab addons (NOT SexLab.esm) one by one and trying again until this message goes away. Alternatively, with TES5Edit after the background loader finishes check for any mods overriding SexLab.esm's Quest records. ScocLB.esm & SexlabScocLB.esp are the most common cause of this problem.\nIf using Mod Organizer, check that no mods are overwriting any of SexLab Frameworks files. There should be no red - symbol under flags for your SexLab Framework install in Mod Organizer.")
-
-	elseIf Options[0] == "FNISWarning"
-		SetInfoText("Important FNIS Check:\nIf you're getting a '?' on any checks try scrolling in and out of 3rd person mode then checking again while still in 3rd. These '?' are just soft warnings and can usually be ignored safely.\nIf scrolling in and out doesn't work and characters stand frozen in place during animation than these are the most likely causes. Fix your FNIS install.")
 	endIf
 endEvent
 
@@ -1047,25 +1044,17 @@ function InstallMenu()
 endFunction
 
 function SystemCheckOptions()
-	String[] okOrFail = new String[3]
+	String[] okOrFail = new String[2]
 	okOrFail[0] = "<font color='#FF0000'>X</font>"
 	okOrFail[1] = "<font color='#00FF00'>ok</font>"
-	okOrFail[2] = "<font color='#0000FF'>?</font>"
 
 	AddTextOption("Skyrim Script Extender", okOrFail[Config.CheckSystemPart("SKSE") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("SexLab.dll", okOrFail[Config.CheckSystemPart("SexLabP+") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("SexLabUtil.dll", okOrFail[Config.CheckSystemPart("SexLabUtil") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("PapyrusUtil.dll", okOrFail[Config.CheckSystemPart("PapyrusUtil") as int], OPTION_FLAG_DISABLED)
-	AddTextOption("NiOverride", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("RaceMenu", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("Mfg Fix", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("FNIS - Fores New Idles in Skyrim (7.0+)", okOrFail[Config.CheckSystemPart("FNIS") as int], OPTION_FLAG_DISABLED)
-	AddTextOption("FNIS For Users Behaviors Generated", okOrFail[(Config.CheckSystemPart("FNISGenerated") as int) * 2], OPTION_FLAG_DISABLED)
-	AddTextOption("FNIS Creature Pack (7.0+)", okOrFail[(Config.CheckSystemPart("FNISCreaturePack") as int) * 2], OPTION_FLAG_DISABLED)
-	; Show soft error warning if relevant
-	if !Config.CheckSystemPart("FNISGenerated") || !Config.CheckSystemPart("FNISCreaturePack")
-		AddTextOptionST("FNISWarning", "INFO: On '?' Warning", "README")
-		SetInfoText("Important FNIS Check:\nIf you're getting a '?' on any checks try scrolling in and out of 3rd person mode then checking again while still in 3rd. These '?' are just soft warnings and can usually be ignored safely.\nIf scrolling in and out doesn't work and characters stand frozen in place during animation than these are the most likely causes. Fix your FNIS install.")
-	endIf
 endFunction
 
 ; ------------------------------------------------------- ;

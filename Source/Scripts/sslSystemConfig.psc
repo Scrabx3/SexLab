@@ -1245,10 +1245,6 @@ bool function CheckSystemPart(string CheckSystem)
 		return HasMFGFix
   elseIf CheckSystem == "FNIS"
     return FNIS.VersionCompare(7, 0, 0) >= 0
-  elseIf CheckSystem == "FNISGenerated"
-    return FNIS.IsGenerated()
-  elseIf CheckSystem == "FNISCreaturePack"
-    return FNIS.VersionCompare(7, 0, 0, true) >= 0
   endIf
   return false
 endFunction
