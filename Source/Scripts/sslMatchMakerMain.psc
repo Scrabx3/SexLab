@@ -48,7 +48,6 @@ bool Function AddActors(Actor akTarget)
     return true
   ElseIf (SexLab.ValidateActor(akTarget) < 0)
     Config.Log("[SexLab MatchMaker] - Actor " + SexLabUtil.ActorName(akTarget) + " was invalid")
-    UnregisterForUpdate()
     return false
   EndIf
   If (sceneActors.Length < 5)
@@ -69,6 +68,9 @@ bool Function AddActors(Actor akTarget)
   return false
 EndFunction
 Event OnUpdate()
+  If (sceneActors.Find(none) == 0)
+    return
+  EndIf
   TriggerSex(sceneActors)
   sceneActors = new Actor[5]
 EndEvent
