@@ -27,6 +27,10 @@ int Function GetSex()
 	return _sex
 EndFunction
 
+bool Function GetIsDead()
+	return _dead
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Orgasms                                         --- ;
 ; ------------------------------------------------------- ;
@@ -168,6 +172,7 @@ Actor Property ActorRef
 EndProperty
 
 int _sex
+bool _dead
 bool _victim
 
 int _AnimVarIsNPC
@@ -264,10 +269,22 @@ Auto State Empty
 		ForceRefTo(ProspectRef)
 		_ActorRef = ProspectRef
 		_sex = SexLabRegistry.GetSex(ProspectRef, true)
+		_dead = ProspectRef.IsDead()
 
 		TrackedEvent(TRACK_ADDED)
 		GoToState(STATE_SETUP)
 		return true
+	EndFunction
+
+	Function Clear()
+		If (_dead)
+			Actor act = GetActorReference()
+			If (act.IsEssential())
+				act.GetActorBase().SetEssential(false)
+			EndIf
+			act.KillSilent()
+		EndIf
+		Parent.Clear()
 	EndFunction
 
 	String Function GetActorName()
@@ -360,7 +377,9 @@ State Ready
 		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
 		Log(LogInfo)
 		; Position
-		If(ActorRef.GetActorValue("Paralysis") > 0)
+		If (_dead)
+			SendDefaultAnimEvent()
+		ElseIf(ActorRef.GetActorValue("Paralysis") > 0)
 			ActorRef.SetActorValue("Paralysis", 0.0)
 			SendDefaultAnimEvent()
 		EndIf
@@ -968,6 +987,9 @@ Function Initialize()
 	FullEnjoyment 	= 0
 	; Floats
 	_LastOrgasm     = 0.0
+	; Booleans
+	_dead = false
+	_victim = false
 
 	TryToClear()
 	UnregisterForAllModEvents()
