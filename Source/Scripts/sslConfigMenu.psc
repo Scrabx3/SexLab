@@ -699,10 +699,13 @@ Event OnInputOpenST()
 		; --- Matchmaker Tags
 	ElseIf Options[0] == "InputRequiredTags"
 		SetInputDialogStartText(Config.RequiredTags)
+		ForcePageReset()
 	ElseIf Options[0] == "InputExcludedTags"
 		SetInputDialogStartText(Config.ExcludedTags)
+		ForcePageReset()
 	ElseIf Options[0] == "InputOptionalTags"
 		SetInputDialogStartText(Config.OptionalTags)
+		ForcePageReset()
 
 	else
 		SetInputDialogStartText("Error Fatal: Opcion Desconocida")
