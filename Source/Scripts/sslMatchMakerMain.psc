@@ -108,16 +108,19 @@ Function TriggerSex(Actor[] akPassed)
   While (scenes.Length < 1)
     If (!sub.Length || Config.SubmissivePlayer && plp > -1 && sub.Length == 1)
       Debug.Notification("No valid animations found.")
-      Config.Log("[SexLab MatchMaker] Actors [" + Parse_Sexes_And_Races(SexLab.GetSexAll(akPassed), akActors) + "] have no valid scenes, aborting!")
+      Config.Log("[SexLab MatchMaker] Actors [" + Parse_Sexes_And_Races(SexLab.GetSexAll(akPassed), akPassed) + "] have no valid scenes, aborting!")
       return
     EndIf
     sub = PapyrusUtil.RemoveActor(sub, sub[sub.Length - 1])
     scenes = SexLabRegistry.LookupScenesA(akPassed, tags, sub, 1, none)
   EndWhile
-  Debug.Notification("Valid scenes found: " + availableScenes.Length)
-  Config.Log("[SexLab MatchMaker] - Scenes found: " + availableScenes.Length)
+  Debug.Notification("Valid scenes found: " + scenes.Length)
+  Config.Log("[SexLab MatchMaker] - Scenes found: " + scenes.Length)
 
-  SexLab.StartScene(akPassed, tags, akSub, asHook = "SSLMatchMaker")
+  If (!SexLab.StartSceneExA(akPassed, scenes, sub, asHook = "SSLMatchMaker"))
+    Debug.Notification("Failed to start scene")
+    Config.Log("[SexLab MatchMaker] Unable to start animation, abort")
+  EndIf
 EndFunction
 
 Event AnimationStarted(int aiThread, bool abHasPlayer)
