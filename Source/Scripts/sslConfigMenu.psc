@@ -4038,7 +4038,6 @@ endState
 state CleanSystem
 	event OnSelectST()
 		if ShowMessage("$SSL_WarnCleanSystem")
-			ThreadSlots.StopAll()
 			SystemAlias.SetupSystem()
 
 			ModEvent.Send(ModEvent.Create("SexLabReset"))
