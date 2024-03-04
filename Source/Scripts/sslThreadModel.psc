@@ -642,24 +642,21 @@ State Making
 			EndIf
 		EndIf
 		; Start Animation
-		If(_StartScene && Scenes.Find(_StartScene) == -1)
-			AddScene(_StartScene)
-		EndIf
-		String[] out = new String[128]
+		ShuffleScenes(Scenes, _StartScene)
+		String[] out = new String[16]
 		ObjectReference new_center = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
 		If (!new_center || out[0] == "")
 			Fatal("Failed to start Thread -- Unable to locate a center compatible with given scenes")
 			return none
 		EndIf
-		Log("Found center " + new_center + "; " + out.Find("") + "/" + Scenes.Length + " matching scenes.")
 		CenterRef = new_center
 		_ActiveScene = out[GetActiveIdx(out)]
 		If (!SexLabRegistry.SortBySceneA(Positions, submissives, _ActiveScene, true))
 			Fatal("Failed to start Thread -- Cannot sort actors to active scene")
 			return none
 		EndIf
-		Log("Starting thread with active scene: " + _ActiveScene)
 		GoToState(STATE_SETUP_M)
+		Log("Starting thread with active scene: " + _ActiveScene)
     return self as sslThreadController
 	EndFunction
 	
@@ -692,12 +689,12 @@ State Making_M
 		_InUseCoordinates[2] = _BaseCoordinates[2]
 		_InUseCoordinates[3] = _BaseCoordinates[3]
 		SortAliasesToPositions()
+		PrepareDone()
 		If (_CustomScenes.Length)
 			_ThreadTags = SexLabRegistry.GetCommonTags(_CustomScenes)
 		Else
 			_ThreadTags = SexLabRegistry.GetCommonTags(_PrimaryScenes)
 		EndIf
-		PrepareDone()
 	EndEvent
 
 	; Invoked n times by Aliases and once by StartThread, then continue to next state
@@ -781,6 +778,7 @@ ObjectReference Function FindCenter(String[] asScenes, String[] asOutScenes, flo
 ; Check if the given center has a valid offset for the given scene and update afOutScenes with the new coordinates
 bool Function UpdateBaseCoordinates(String asScene, float[] afBaseOut) native
 Function ApplySceneOffset(String asScene, float[] afBaseOut) native
+String[] Function ShuffleScenes(String[] asScenes, String[] asStart) native
 
 ; --- Legacy
 
