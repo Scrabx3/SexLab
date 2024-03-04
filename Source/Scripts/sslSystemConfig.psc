@@ -122,12 +122,12 @@ String Function ParseMMTagString() global
 	String[] negA = PapyrusUtil.StringSplit(neg, ",")
 	int i = 0
 	While (i < optA.Length)
-		req += ", " + optA[i]
+		req += ", ~" + optA[i]
 		i += 1
 	EndWhile
 	int n = 0
 	While (n < negA.Length)
-		req += ", " + negA[i]
+		req += ", -" + negA[n]
 		n += 1
 	EndWhile
 	return req
