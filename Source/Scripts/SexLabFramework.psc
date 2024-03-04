@@ -83,17 +83,25 @@ endProperty
 ; SexLabThread:   An API instance to interact with the started scene. See sslThreadController.psc for more info
 ; None:           If an error occured
 SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
-  String[] scenes = SexLabRegistry.LookupScenes(akPositions, asTags, akSubmissive, aiFurniture, akCenter)
+  return StartSceneA(akPositions, asTags, MakeActorArray(akSubmissive), akCenter, aiFurniture, asHook)
+EndFunction
+SexLabThread Function StartSceneA(Actor[] akPositions, String asTags, Actor[] akSubmissives, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+  String[] scenes = SexLabRegistry.LookupScenesA(akPositions, asTags, akSubmissives, aiFurniture, akCenter)
   If (!scenes.Length)
     Log("StartScene() - Failed to find valid animations")
     return none
   EndIf
-  return StartSceneImpl(akPositions, scenes, asTags, akSubmissive, akCenter, aiFurniture, asHook)
+  return StartSceneImpl(akPositions, scenes, asTags, akSubmissives, akCenter, aiFurniture, asHook)
 EndFunction
 
 ; Start a scene with pre-defined animations
-SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asScenes, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
-  StartSceneImpl(akPositions, asScenes, "", akSubmissive, akCenter, aiFurniture, asHook)
+SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asScenes, Actor akSubmissive = none, String asContext = "", \
+    ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+  return StartSceneExA(akPositions, asScenes, MakeActorArray(akSubmissive), asContext, akCenter, aiFurniture, asHook)
+EndFunction
+SexLabThread Function StartSceneExA(Actor[] akPositions, String[] asScenes, Actor[] akSubmissives, String asContext = "", \
+    ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+  return StartSceneImpl(akPositions, asScenes, asContext, akSubmissives, akCenter, aiFurniture, asHook)
 EndFunction
 
 ; Wrapper function for StartScene which takes Actors one-by-one instead of an array
@@ -2729,12 +2737,12 @@ sslThreadModel function NewThread(float TimeOut = 5.0)
   return ThreadSlots.PickModel(TimeOut)
 endFunction
 
-SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, String asContext, Actor akSubmissive, ObjectReference akCenter, int aiFurniture, String asHook)
+SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, String asContext, Actor[] akSubmissive, ObjectReference akCenter, int aiFurniture, String asHook)
   sslThreadModel thread = NewThread()
   If (!thread)
     Log("StartSceneImpl() - Failed to claim an available thread")
     return none
-  ElseIf (!thread.AddActors(akPositions, akSubmissive))
+  ElseIf (!thread.AddActorsA(akPositions, akSubmissive))
     Log("StartSceneImpl() - Failed to add some actors to thread")
     return none
   EndIf
@@ -2765,14 +2773,22 @@ auto state Disabled
     LogDisabled("StartScene")
     return none
   EndFunction
-  SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+  SexLabThread Function StartSceneA(Actor[] akPositions, String asTags, Actor[] akSubmissives, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+    LogDisabled("StartSceneA")
+  EndFunction
+  SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, String asContext = "", \
+      ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
     LogDisabled("StartSceneEx")
+  EndFunction
+  SexLabThread Function StartSceneExA(Actor[] akPositions, String[] asScenes, Actor[] akSubmissives, String asContext = "", \
+      ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
+    LogDisabled("StartSceneExA")
   EndFunction
   SexLabThread Function StartSceneQuick(Actor akActor1, Actor akActor2 = none, Actor akActor3 = none, Actor akActor4 = none, Actor akActor5 = none, \
                                           Actor akSubmissive = none, String asTags = "", String asHook = "")
     LogDisabled("StartSceneQuick")
   EndFunction
-  SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, String asContext, Actor akSubmissive, ObjectReference akCenter, int aiFurniture, String asHook)
+  SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, String asContext, Actor[] akSubmissive, ObjectReference akCenter, int aiFurniture, String asHook)
     LogDisabled("StartSceneImpl")
     return none
   EndFunction

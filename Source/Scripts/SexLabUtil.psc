@@ -37,9 +37,9 @@ SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSub
 	return GetAPI().StartScene(akPositions, asTags, akSubmissive, akCenter, aiFurniture, asHook)
 EndFunction
 
-SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, ObjectReference akCenter = none, \
+SexLabThread Function StartSceneEx(Actor[] akPositions, String[] asAnims, Actor akSubmissive = none, String asContext = "", ObjectReference akCenter = none, \
 																		int aiFurniture = 1, String asHook = "") global
-	return GetAPI().StartSceneEx(akPositions, asAnims, akSubmissive, akCenter, aiFurniture, asHook)
+	return GetAPI().StartSceneEx(akPositions, asAnims, akSubmissive, asContext, akCenter, aiFurniture, asHook)
 EndFunction
 
 SexLabThread Function StartSceneQuick(Actor akActor1, Actor akActor2 = none, Actor akActor3 = none, Actor akActor4 = none, Actor akActor5 = none, \

@@ -569,6 +569,17 @@ State Making
     Log("Added " + ActorList + " to thread", "AddActors()")
 		return true
 	EndFunction
+	bool Function AddActorsA(Actor[] ActorList, Actor[] akVictims)
+		int i = 0
+		While(i < ActorList.Length)
+			If(AddActor(ActorList[i], akVictims.Find(ActorList[i]) > -1) == -1)
+				return false
+			EndIf
+			i += 1
+		EndWhile
+    Log("Added " + ActorList + " to thread", "AddActorsA()")
+		return true
+	EndFunction
 
 	Function SetScenes(String[] asScenes)
 		_PrimaryScenes = SexLabRegistry.SceneExistA(asScenes)
@@ -741,6 +752,10 @@ int Function AddActor(Actor ActorRef, bool IsVictim = false, sslBaseVoice Voice 
 EndFunction
 bool Function AddActors(Actor[] ActorList, Actor VictimActor = none)
 	Log("Cannot add a list of actors to a locked thread", "AddActors()")
+	return false
+EndFunction
+bool Function AddActorsA(Actor[] akActors, Actor[] akVictims)
+	Log("Cannot add a list of actors to a locked thread", "AddActorsA()")
 	return false
 EndFunction
 Function SetScenes(String[] asScenes)
