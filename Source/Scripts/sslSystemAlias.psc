@@ -134,17 +134,13 @@ endFunction
 
 event InstallSystem()
 	ForcedOnce = true
-	; Begin installation
+	; Begin installatio
 	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Installing...")
 	; Init system
-	if SetupSystem()
-		int eid = ModEvent.Create("SexLabInstalled")
-		ModEvent.PushInt(eid, Version)
-		ModEvent.Send(eid)
-	else
-		Debug.TraceAndBox("SexLab v"+SexLabUtil.GetStringVer()+" - INSTALL ERROR, CHECK YOUR PAPYRUS LOGS!")
-		ForcedOnce = false
-	endIf
+	SetupSystem()
+	int eid = ModEvent.Create("SexLabInstalled")
+	ModEvent.PushInt(eid, Version)
+	ModEvent.Send(eid)
 endEvent
 
 ; ------------------------------------------------------- ;
@@ -270,7 +266,7 @@ endFunction
 
 function LoadLibs(bool Forced = false)
 	; Sync function Libraries - SexLabQuestFramework
-	Form SexLabQuestFramework  = Game.GetFormFromFile(0xD62, "SexLab.esm")
+	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	SexLab      = SexLabQuestFramework as SexLabFramework
 	Config      = SexLabQuestFramework as sslSystemConfig
 	ThreadLib   = SexLabQuestFramework as sslThreadLibrary
@@ -278,7 +274,7 @@ function LoadLibs(bool Forced = false)
 	ActorLib    = SexLabQuestFramework as sslActorLibrary
 	Stats       = SexLabQuestFramework as sslActorStats
 	; Sync secondary object registry - SexLabQuestRegistry
-	Form SexLabQuestRegistry   = Game.GetFormFromFile(0x664FB, "SexLab.esm")
+	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
 	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
 	VoiceSlots      = SexLabQuestRegistry as sslVoiceSlots
 endFunction

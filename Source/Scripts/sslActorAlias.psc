@@ -949,7 +949,7 @@ EndFunction
 	Functions for re/initialization
 /;
 
-; Only called once when the framework is first initialized
+; Only called on re/initialization of the owning Thread
 Function Setup()
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	_Config = SexLabQuestFramework as sslSystemConfig

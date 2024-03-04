@@ -1492,7 +1492,7 @@ EndFunction
 	Functions for re/initialization
 /;
 
-; This is only called once when the Framework is first initialized
+; Only called on framework re/initialization through ThreadSlots.psc
 Function SetTID(int id)
 	thread_id = id
 	Log(self, "Setup")
