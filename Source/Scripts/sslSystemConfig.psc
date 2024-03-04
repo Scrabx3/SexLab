@@ -106,7 +106,6 @@ float Function GetSettingFlt(String asSetting) native global
 String Function GetSettingStr(String asSetting) native global
 int Function GetSettingIntA(String asSetting, int n) native global
 float Function GetSettingFltA(String asSetting, int n) native global
-String Function GetSettingStrA(String asSetting, int n) native global
 
 Function SetSettingBool(String asSetting, bool abValue) native global
 Function SetSettingInt(String asSetting, int aiValue) native global
@@ -114,7 +113,6 @@ Function SetSettingFlt(String asSetting, float aiValue) native global
 Function SetSettingStr(String asSetting, String asValue) native global
 Function SetSettingIntA(String asSetting, int aiValue, int n) native global
 Function SetSettingFltA(String asSetting, float aiValue, int n) native global
-Function SetSettingStrA(String asSetting, String asValue, int n) native global
 
 String Function ParseMMTagString() global
 	String req = sslSystemConfig.GetSettingStr("sRequiredTags")
