@@ -377,9 +377,7 @@ State Ready
 		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
 		Log(LogInfo)
 		; Position
-		If (_dead)
-			SendDefaultAnimEvent()
-		ElseIf(ActorRef.GetActorValue("Paralysis") > 0)
+		If(!_dead && ActorRef.GetActorValue("Paralysis") > 0)
 			ActorRef.SetActorValue("Paralysis", 0.0)
 			SendDefaultAnimEvent()
 		EndIf
@@ -465,6 +463,9 @@ State Paused
 		; wait to ensure schlong mesh and AI package are updated
 		Utility.Wait(0.5)
 		LockActor()
+		If (_dead)
+			SendDefaultAnimEvent()
+		EndIf
 		_Thread.AnimationStart()
 		Utility.Wait(0.2)
 		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
