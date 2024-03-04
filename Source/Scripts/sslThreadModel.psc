@@ -778,7 +778,7 @@ ObjectReference Function FindCenter(String[] asScenes, String[] asOutScenes, flo
 ; Check if the given center has a valid offset for the given scene and update afOutScenes with the new coordinates
 bool Function UpdateBaseCoordinates(String asScene, float[] afBaseOut) native
 Function ApplySceneOffset(String asScene, float[] afBaseOut) native
-String[] Function ShuffleScenes(String[] asScenes, String[] asStart) native
+String[] Function ShuffleScenes(String[] asScenes, String asStart) native
 
 ; --- Legacy
 
