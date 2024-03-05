@@ -121,7 +121,7 @@ bool Function IsLeadIn()
 EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Position Info                                   --- ;
+; --- Time Data			                                  --- ;
 ; ------------------------------------------------------- ;
 ;/
 	Time related data

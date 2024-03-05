@@ -34,7 +34,7 @@ EndFunction
 float Function GetTime()
 	return StartedAt
 endfunction
-float Function TotalTime()
+float Function GetTimeTotal()
 	return TotalTime
 EndFunction
 
