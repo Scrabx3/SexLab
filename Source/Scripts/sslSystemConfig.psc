@@ -118,8 +118,8 @@ String Function ParseMMTagString() global
 	String req = sslSystemConfig.GetSettingStr("sRequiredTags")
 	String opt = sslSystemConfig.GetSettingStr("sOptionalTags")
 	String neg = sslSystemConfig.GetSettingStr("sExcludedTags")
-	String[] optA = PapyrusUtil.StringSplit(opt, ",")
-	String[] negA = PapyrusUtil.StringSplit(neg, ",")
+	String[] optA = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(opt, ","))
+	String[] negA = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(neg, ","))
 	int i = 0
 	While (i < optA.Length)
 		req += ", ~" + optA[i]
