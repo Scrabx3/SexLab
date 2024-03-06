@@ -22,7 +22,6 @@ import Utility
 import Math
 
 Keyword ActorTypeNPC
-Faction GenderFaction
 
 ; Titles
 string[] StatTitles
@@ -821,7 +820,6 @@ function Setup()
 	parent.Setup()
 
 	ActorTypeNPC  = Config.ActorTypeNPC
-	GenderFaction = Config.GenderFaction
 
 	StatTitles = new string[7]
 	StatTitles[0] = "$SSL_Unskilled"
@@ -914,15 +912,8 @@ function ClearCustomStats(Form FormRef)
 endFunction
 
 int function GetGender(Actor ActorRef)
-	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-	if SexLabUtil.HasRace(BaseRef.GetRace())
-		return 2 ; Creature
-	elseIf ActorRef.IsInFaction(GenderFaction)
-		return ActorRef.GetFactionRank(GenderFaction) ; Override
-	endIf
-	return BaseRef.GetSex() ; Default
+	return SexLabUtil.GetAPI().GetGender(ActorRef)
 endFunction
-
 
 ; ------------------------------------------------------- ;
 ; --- Skill Type IDs
