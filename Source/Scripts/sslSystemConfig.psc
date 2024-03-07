@@ -1528,6 +1528,12 @@ bool property Enabled hidden
   endFunction
 endProperty
 
+SexLabFramework Property SexLab
+  SexLabFramework Function Get()
+    return SexLabUtil.GetAPI()
+  EndFunction
+EndProperty
+
 Faction property AnimatingFaction Hidden
   Faction Function Get()
     return Game.GetFormFromFile(0xE50F, "SexLab.esm") as Faction

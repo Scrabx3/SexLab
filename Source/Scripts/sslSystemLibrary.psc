@@ -109,6 +109,11 @@ sslCreatureAnimationSlots property CreatureSlots hidden
 		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationSlots
 	EndFunction
 EndProperty
+sslActorStats property Stats
+	sslActorStats Function Get()
+		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorStats
+	EndFunction
+EndProperty
 
 bool property InDebugMode auto hidden
 event SetDebugMode(bool ToMode)
