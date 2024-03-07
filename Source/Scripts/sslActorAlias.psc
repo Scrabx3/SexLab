@@ -327,7 +327,6 @@ State Ready
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
 		_AnimVarbHumanoidFootIKDisable = _ActorRef.GetAnimationVariableBool("bHumanoidFootIKDisable")
 		; TODO: Code below to pathing isnt optimizedy yet !IMPORTANT
-		Stats.SeedActor(ActorRef)
 		; Delays
 		If(_sex > 2)
 			_BaseDelay = 3.0
@@ -373,9 +372,6 @@ State Ready
 				LogInfo += "_Expression[" + _Expression.Name + "] "
 			EndIf
 		EndIf
-		GetBaseEnjoyment()
-		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
-		Log(LogInfo)
 		; Position
 		If(!_dead && ActorRef.GetActorValue("Paralysis") > 0)
 			ActorRef.SetActorValue("Paralysis", 0.0)
@@ -397,6 +393,10 @@ State Ready
 		ActorRef.EvaluatePackage()
 		GoToState(STATE_PAUSED)
 		_Thread.PrepareDone()
+		; Delayed Initialization
+		GetBaseEnjoyment()
+		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
+		Log(LogInfo)
 	EndEvent
 
 	Function Clear()
@@ -764,7 +764,7 @@ State Animating
 		Utility.WaitMenuMode(0.2)
 		; Reset enjoyment build up, if using multiple orgasms
 		QuitEnjoyment += Enjoyment
-		if _sex <= 2 || sslActorStats.IsSkilled(ActorRef)
+		if _sex <= 2 || sslActorStats.IsSkilled(ActorRef)	; NOTE: Always returns true
 			if IsVictim()
 				BaseEnjoyment += ((BestRelation - 3) + PapyrusUtil.ClampInt((OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure]) as int,-6,6)) * Utility.RandomInt(5, 10)
 			else
@@ -1284,6 +1284,7 @@ int FullEnjoyment
 
 Function GetBaseEnjoyment()
 	; COMEBACK: Everything below still needs reviewing or redoing
+	; NOTE: IsSkilled() always returns true P+ V2.5+
 	if _sex <= 2 || sslActorStats.IsSkilled(ActorRef)
 		; Always use players stats for NPCS if present, so players stats mean something more
 		Actor SkilledActor = ActorRef
