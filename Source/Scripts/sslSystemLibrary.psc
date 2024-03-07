@@ -18,10 +18,6 @@ scriptname sslSystemLibrary extends Quest hidden
 ; Settings access
 sslSystemConfig property Config auto
 
-; Function libraries
-; COMEBACK: This will likely be legacy once the Stats system has been overhauled
-sslActorStats property Stats auto
-
 ; Object registeries
 sslThreadSlots property ThreadSlots auto
 sslVoiceSlots property VoiceSlots auto
@@ -41,7 +37,6 @@ function LoadLibs(bool Forced = false)
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	Config = SexLabQuestFramework as sslSystemConfig
 	ThreadSlots = SexLabQuestFramework as sslThreadSlots
-	Stats = SexLabQuestFramework as sslActorStats
 
 	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
 	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots

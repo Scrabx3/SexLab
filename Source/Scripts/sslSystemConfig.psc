@@ -21,22 +21,6 @@ ScriptName sslSystemConfig extends sslSystemLibrary
 ; --- System Resources                                --- ;
 ; ------------------------------------------------------- ;
 
-SexLabFramework property SexLab auto
-
-int function GetVersion()
-  return SexLabUtil.GetVersion()
-endFunction
-
-string function GetStringVer()
-  return SexLabUtil.GetStringVer()
-endFunction
-
-bool property Enabled hidden
-  bool function get()
-    return SexLab.Enabled
-  endFunction
-endProperty
-
 bool property DebugMode hidden
   bool function get()
     return InDebugMode
@@ -939,8 +923,6 @@ Function SetTargetActor()
   TargetRef = _CrosshairRef
   SelectedSpell.Cast(TargetRef, TargetRef)
   Debug.Notification("SexLab Target Selected: " + TargetRef.GetLeveledActorBase().GetName())
-  ; Give them stats if they need it
-  Stats.SeedActor(TargetRef)
   ; Attempt to grab control of their animation?
   sslThreadController TargetThread = ThreadSlots.GetActorController(TargetRef)
   If (TargetThread && !TargetThread.HasPlayer && TargetThread.GetStatus() == TargetThread.STATUS_INSCENE && \
@@ -1268,18 +1250,11 @@ bool function CheckSystem()
 endFunction
 
 function Reload()
-  ; DebugMode = true
   if DebugMode
     Debug.OpenUserLog("SexLabDebug")
     Debug.TraceUser("SexLabDebug", "Config Reloading...")
   endIf
-
   parent.Setup()
-  SexLab = SexLabUtil.GetAPI()
-
-  ; SetVehicle Scaling Fix
-	; NOTE: Trying new placement function that doesnt rely on SetVehicle, "fix" may become redundant
-  ; SexLabUtil.VehicleFixMode((DisableScale as int))
 
   ; Configure SFX & Voice volumes
   AudioVoice.SetVolume(VoiceVolume)
@@ -1308,28 +1283,10 @@ endFunction
 function SetDefaults()
   ; Reload config
   Reload()
-
   ; Reset data
   LoadStrapons()
-
-  if !HotkeyUp || HotkeyUp.Length != 3 || HotkeyUp.Find(none) != -1
-    HotkeyUp = new Sound[3]
-    hotkeyUp[0] = Game.GetFormFromFile(0x8AAF0, "SexLab.esm") as Sound
-    hotkeyUp[1] = Game.GetFormFromFile(0x8AAF1, "SexLab.esm") as Sound
-    hotkeyUp[2] = Game.GetFormFromFile(0x8AAF2, "SexLab.esm") as Sound
-  endIf
-  if !HotkeyDown || HotkeyDown.Length != 3 || HotkeyDown.Find(none) != -1
-    HotkeyDown = new Sound[3]
-    hotkeyDown[0] = Game.GetFormFromFile(0x8AAF3, "SexLab.esm") as Sound
-    hotkeyDown[1] = Game.GetFormFromFile(0x8AAF4, "SexLab.esm") as Sound
-    hotkeyDown[2] = Game.GetFormFromFile(0x8AAF5, "SexLab.esm") as Sound
-  endIf
-
   ; Rest some player configurations
-  if PlayerRef
-    Stats.SetSkill(PlayerRef, "Sexuality", 75)
-    VoiceSlots.ForgetVoice(PlayerRef)
-  endIf
+  VoiceSlots.ForgetVoice(PlayerRef)
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -1556,6 +1513,20 @@ endFunction
 ;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+int function GetVersion()
+  return SexLabUtil.GetVersion()
+endFunction
+
+string function GetStringVer()
+  return SexLabUtil.GetStringVer()
+endFunction
+
+bool property Enabled hidden
+  bool function get()
+    return SexLabUtil.GetAPI().Enabled
+  endFunction
+endProperty
 
 Faction property AnimatingFaction Hidden
   Faction Function Get()
