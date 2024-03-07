@@ -172,17 +172,9 @@ function CleanActorStorage()
 endFunction
 
 function ClearFromActorStorage(Form FormRef)
-	Actor ActorRef = FormRef as Actor
-	if ActorRef
-		sslActorStats._ResetStats(ActorRef)
-		Stats.ClearCustomStats(ActorRef)
-	endIf
 	UnsetStringValue(FormRef, "SexLab.SavedVoice")
 	UnsetStringValue(FormRef, "SexLab.CustomVoiceAlias")
 	UnsetFormValue(FormRef, "SexLab.CustomVoiceQuest")
- 	FormListClear(FormRef, "SexPartners")
-	FormListClear(FormRef, "WasVictimOf")
-	FormListClear(FormRef, "WasAggressorTo")
 	FormListRemove(none, "SexLab.ActorStorage", FormRef, true)
 endFunction
 
