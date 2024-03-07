@@ -129,6 +129,11 @@ String[] Function SkillNames()
 	return SkillNames
 EndFunction
 
+Function Setup()
+	; Parent.Setup() ; ... no longer needed. We only use PlayerRef here
+	PlayerRef = Game.GetPlayer()
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Manipulate Custom Stats                         --- ;
 ; ------------------------------------------------------- ;
