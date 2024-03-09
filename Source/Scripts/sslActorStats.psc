@@ -660,11 +660,11 @@ Actor[] function MostUsedPlayerSexPartners(int MaxActors = 5)
 	If (act.Length >= MaxActors)
 		return act
 	EndIf
-	int[] timesmet = Utility.IntArray(act.Length)
-	int i = 0
-	While (i < act.Length)
-		timesmet[i] = GetTimesMet(PlayerRef, act[i])
-		i += 1
+	int[] timesmet = Utility.CreateIntArray(act.Length)
+	int k = 0
+	While (k < act.Length)
+		timesmet[k] = GetTimesMet(PlayerRef, act[k])
+		k += 1
 	EndWhile
 	; Sort times met s.t. highest is at [0]
   int i = 1
@@ -673,19 +673,19 @@ Actor[] function MostUsedPlayerSexPartners(int MaxActors = 5)
     int _it = timesmet[i]
     int n = i - 1
     While(n >= 0 && _it >= timesmet[n])
-      Positions[n + 1] = Positions[n]
+      act[n + 1] = act[n]
       timesmet[n + 1] = timesmet[n]
       n -= 1
     EndWhile
-    Positions[n + 1] = it
+    act[n + 1] = it
     timesmet[n + 1] = _it
     i += 1
   EndWhile
 	Actor[] ret = PapyrusUtil.ActorArray(MaxActors)
-	int i = 0
-	While (i < ret.Length)
-		ret[i] = act[i]
-		i += 1
+	int j = 0
+	While (j < ret.Length)
+		ret[j] = act[j]
+		j += 1
 	EndWhile
 	return ret
 endFunction
