@@ -56,7 +56,7 @@ EndFunction
 
 string[] function GetAllRaceKeys(Race RaceRef = none) global
   If (!RaceRef)
-    SexLabRegistry.GetAllRaceKeys(false)
+    return SexLabRegistry.GetAllRaceKeys(false)
   EndIf
   return SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
 EndFunction
