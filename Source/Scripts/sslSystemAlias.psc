@@ -204,30 +204,12 @@ state PreloadStorage
 		; Start actor preloading
 		int PreCount = FormListCount(none, "SexLab.ActorStorage")
 		FormListRemove(none, "SexLab.ActorStorage", none, true)
-		; Check actors with saved stats
-		Actor[] Actors = sslActorStats.GetAllSkilledActors()
-		int i = Actors.Length
-		while i > 0
-			i -= 1
-			if Actors[i] && !FormListHas(none, "SexLab.ActorStorage", Actors[i])
-				sslSystemConfig.StoreActor(Actors[i])
-			endIf
-		endWhile
 		; Check string values for SexLab.SavedVoice
 		Form[] Forms = debug_AllStringObjs()
-		i = Forms.Length
+		int i = Forms.Length
 		while i > 0
 			i -= 1
 			if Forms[i] && !FormListHas(none, "SexLab.ActorStorage", Forms[i]) && HasStringValue(Forms[i], "SexLab.SavedVoice")
-				sslSystemConfig.StoreActor(Forms[i])
-			endIf
-		endWhile
-		; Check form list for partners, victims, aggressors, or legacy skill storage
-		Forms = debug_AllFormListObjs()
-		i = Forms.Length
-		while i > 0
-			i -= 1
-			if Forms[i] && !FormListHas(none, "SexLab.ActorStorage", Forms[i]) && (FormListCount(Forms[i], "SexPartners") > 0 || FormListCount(Forms[i], "WasAggressorTo") > 0 || FormListCount(Forms[i], "WasVictimOf") > 0)
 				sslSystemConfig.StoreActor(Forms[i])
 			endIf
 		endWhile
