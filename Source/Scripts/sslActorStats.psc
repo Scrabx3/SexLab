@@ -12,7 +12,8 @@ scriptname sslActorStats extends sslSystemLibrary
 ; 				- Homo 		[0; 35]
 ;					-	Bi 			[36; 65]
 ;					- Hetero	[66; 100]
-; !IMPORTANT Implementation AddPartner() funcs should shift the new partner to end of array to signify they were most recently involved with the actor
+; !IMPORTANT Implementation AddEncounter() funcs should shift the new partner to end of array to signify they were most recently involved with the actor
+;									-- Doing this with a timestamp
 ; COMEBACK: To reduce CoSave usage, might want to cut down on total stored partners for any non-player
 ; IDEA: Should the above also exclude followers?
 ; COMEBACK: Some translations are in this script, should prolly move them to MCM?
@@ -46,22 +47,33 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+; --- Default Statistics
+int Property LastUpdate_GameTime  = 0   AutoReadOnly
+int Property SecondsInScene       = 1   AutoReadOnly
+int Property XP_Anal              = 2   AutoReadOnly
+int Property XP_Vaginal           = 3   AutoReadOnly
+int Property XP_Oral              = 4   AutoReadOnly
+int Property PartnersMale         = 5   AutoReadOnly
+int Property PartnersFemale       = 6   AutoReadOnly
+int Property PartnersFuta         = 7   AutoReadOnly
+int Property PartnersCreature     = 8   AutoReadOnly
+int Property TimesOral            = 9   AutoReadOnly
+int Property TimesVaginal         = 10  AutoReadOnly
+int Property TimesAnal            = 11  AutoReadOnly
+int Property TimesMasturbated     = 12  AutoReadOnly
+int Property TimesSubmissive      = 13  AutoReadOnly
+int Property TimesDominant        = 14  AutoReadOnly
+int Property TimesTotal           = 15  AutoReadOnly
+int Property SadoMasochismus      = 16  AutoReadOnly
+int Property Sexuality            = 17  AutoReadOnly
+int Property Arousal              = 18  AutoReadOnly
+
 ; Returns an array of FormIDs of all currently tracked actors
 int[] Function GetAllTrackedActors() native global
 Function SetStatistic(Actor akActor, int id, int aiValue) native global
 int Function GetStatistic(Actor akActor, int id) native global
-Function AddPartner(Actor akActor, Actor akPartner) native global
-Function AddVictim(Actor akActor, Actor akVictim) native global
-Function AddAggressor(Actor akActor, Actor akAggressor) native global
-int[] Function GetPartners(Actor akActor) native global
-int[] Function GetVictims(Actor akActor) native global
-int[] Function GetAggressors(Actor akActor) native global
-int Function GetTimesPartners(Actor akActor, int aiFormID) native global
-int Function GetTimesVictim(Actor akActor, int aiFormID) native global
-int Function GetTimesAggressor(Actor akActor, int aiFormID) native global
-; Deletes all statistics for this actor, both default and custom ones
-Function ResetStatistics(Actor akActor) native global
 
+; --- Custom Statistics
 String[] Function GetAllCustomStatIDs(Actor akActor) native global
 bool Function HasCustomStat(Actor akActor, String asStat) native global
 Function SetCustomStatFlt(Actor akActor, String asStat, float afValue) native global
@@ -70,6 +82,31 @@ float Function GetCustomStatFlt(Actor akActor, String asStat, float afDefault = 
 String Function GetCustomStatStr(Actor akActor, String asStat, String asDefault = "") native global
 Function DeleteCustomStat(Actor akActor, String asStat) native global
 Function DeleteAllCustomStats(Actor akActor) native global
+
+; --- Encounter Statistics
+int Property ENC_Neutral 	= 0	AutoReadOnly Hidden
+int Property ENC_Victim		= 1	AutoReadOnly Hidden
+int Property ENC_Assault	= 2	AutoReadOnly Hidden
+
+; Return a list of all encounters with this actor, sorted and beginning with the least recent one
+Actor[] Function GetAllEncounters(Actor akActor) native global
+; Return an array of all actors that this actor assaulted
+Actor[] Function GetAllEncounteredVictims(Actor akActor) native global
+Actor[] Function GetAllEncounteredAssailants(Actor akActor) native global
+Actor Function GetMostRecentEncounter(Actor akActor) native global
+Function AddEncounter(Actor akActor, Actor akPartner, int aiEncounterType) native global
+float Function GetLastEncounterTime(Actor akActor, Actor akPartner) native global
+int Function GetTimesMet(Actor akActor, Actor akPartner) native global
+int Function GetTimesVictimzed(Actor akActor, Actor akAssailant) native global
+int Function GetTimesAssaulted(Actor akActor, Actor akVictim) native global
+; Returns an array [total, victim, assaults, fst] containing meeting data between the two actors
+; fst returns the index of the actor from which view the data is collected (E.g. fst = 0 => victim represents how often akActor has been victim to akPartner)
+int[] Function GetEncounterTypesCount(Actor akActor, Actor akPartner) native global
+
+
+; Deletes all statistics for this actor, default, custom and encounter related
+Function ResetStatistics(Actor akActor) native global
+
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
@@ -82,7 +119,7 @@ Function DeleteAllCustomStats(Actor akActor) native global
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; This will always print a trace stack and console log when called
+; This function makes no sense anymore as custom stat order is no longer fixed
 String[] Function GetEveryStatisticID() native global
 ; Uses old SkillNames[] ids and returns a result based on them 
 int Function GetLegacyStatistic(Actor akActor, int id) native global
@@ -127,11 +164,6 @@ String[] Function SkillNames()
 	SkillNames[19] = "AnalCount"
 	SkillNames[20] = "OralCount"
 	return SkillNames
-EndFunction
-
-Function Setup()
-	; Parent.Setup() ; ... no longer needed. We only use PlayerRef here
-	PlayerRef = Game.GetPlayer()
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -199,6 +231,15 @@ endFunction
 
 function SetStat(Actor ActorRef, string Stat, string Value)
 	SetCustomStatStr(ActorRef, Stat, Value)
+endFunction
+float function FloatAdjustBy(Actor ActorRef, string Stat, float Adjust)
+	if !HasStat(ActorRef, Stat)
+		return 0
+	endIf
+	float Value = GetStatFloat(ActorRef, Stat)
+	Value += Adjust
+	SetStat(ActorRef, Stat, (Value as string))
+	return Value
 endFunction
 int function AdjustBy(Actor ActorRef, string Stat, int Adjust)
 	if !HasStat(ActorRef, Stat)
@@ -514,7 +555,7 @@ function AddSex(Actor ActorRef, float TimeSpent = 0.0, bool WithPlayer = false, 
 	endIf
 	if WithPlayer && ActorRef != PlayerRef
 		_AdjustSkill(ActorRef, kPlayerSex, 1)
-		AddPartner(PlayerRef, ActorRef)
+		AddEncounter(PlayerRef, ActorRef, ENC_Neutral)
 	endIf
 endFunction
 
@@ -535,55 +576,36 @@ bool function HadPlayerSex(Actor ActorRef)
 endFunction
 
 Actor function LastSexPartner(Actor ActorRef)
-	int[] list = GetPartners(ActorRef)
-	int i = list.Length
-	While (i > 0)
-		i -= 1
-		Actor ret = Game.GetForm(list[i]) as Actor
-		If (ret)
-			return ret
-		EndIf
-	EndWhile
-	return none
+	return GetMostRecentEncounter(ActorRef)
 endFunction
 bool function HasHadSexTogether(Actor ActorRef1, Actor ActorRef2)
-	return GetPartners(ActorRef1).Find(ActorRef2.GetFormID())
+	return GetAllEncounters(ActorRef1).Find(ActorRef2) > -1
 endfunction
 
 Actor function LastAggressor(Actor ActorRef)
-	int[] list = GetAggressors(ActorRef)
-	int i = list.Length
-	While (i > 0)
-		i -= 1
-		Actor ret = Game.GetForm(list[i]) as Actor
-		If (ret)
-			return ret
-		EndIf
-	EndWhile
-	return none
+	Actor[] list = GetAllEncounteredAssailants(ActorRef)
+	If (!list.Length)
+		return none
+	EndIf
+	return list[list.Length - 1]
 endFunction
 bool function WasVictimOf(Actor VictimRef, Actor AggressorRef)
-	return GetAggressors(VictimRef).Find(AggressorRef.GetFormID())
+	return GetAllEncounteredAssailants(VictimRef).Find(AggressorRef) > -1
 endFunction
 
 Actor function LastVictim(Actor ActorRef)
-	int[] list = GetVictims(ActorRef)
-	int i = list.Length
-	While (i > 0)
-		i -= 1
-		Actor ret = Game.GetForm(list[i]) as Actor
-		If (ret)
-			return ret
-		EndIf
-	EndWhile
-	return none
+	Actor[] list = GetAllEncounteredVictims(ActorRef)
+	If (!list.Length)
+		return none
+	EndIf
+	return list[list.Length - 1]
 endFunction
 bool function WasAggressorTo(Actor AggressorRef, Actor VictimRef)
-	return GetVictims(AggressorRef).Find(VictimRef.GetFormID())
+	return GetAllEncounteredVictims(AggressorRef).Find(VictimRef) > -1
 endFunction
 
 Form[] function CleanActorList(Actor ActorRef, string List)
-	FormListRemove(ActorRef, List, none, true)
+	StorageUtil.FormListRemove(ActorRef, List, none, true)
 	Form[] ActorList = StorageUtil.FormListToArray(ActorRef, List)
 	if ActorList && ActorList.Length > 0
 		bool cleaned = false
@@ -616,53 +638,29 @@ Actor function LastActorInList(Actor ActorRef, string List)
 endFunction
 
 Actor function MostUsedPlayerSexPartner()
-	int[] list = GetPartners(PlayerRef)
-	int max = 0
-	int ret = 0
-	int i = 0
-	While (i < list.Length)
-		int n = GetTimesPartners(PlayerRef, list[i])
-		If (n > max)
-			max = n
-			ret = list[i]
-		EndIf
-		i += 1
-	EndWhile
-	return Game.GetForm(ret) as Actor
+	Actor[] list = GetAllEncounters(PlayerRef)
+	If (!list.Length)
+		return none
+	EndIf
+	return list[list.Length - 1]
 endFunction
 Actor function MostUsedPlayerSexPartner2()
 	return MostUsedPlayerSexPartner()	; Original code was 1:1 the same as above
 endFunction
-
-Actor[] function MostUsedPlayerSexPartners(int MaxActors = 5) ; Based on Stats.MostUsedPlayerSexPartner()
-	int[] SexPartners = GetPartners(PlayerRef)
-	Actor[] PartnerRef = PapyrusUtil.ActorArray(MaxActors)
-	int[] PartnerNum = PapyrusUtil.IntArray(MaxActors)
-	int i = SexPartners.Length
-	int r
-	int[] Num = new int[2]
-	Actor[] Ref = new Actor[2]
-
-	while i > 0
+Actor[] function MostUsedPlayerSexPartners(int MaxActors = 5)
+	Actor[] act = GetAllEncounters(PlayerRef)
+	If (act.Length >= MaxActors)
+		return act
+	EndIf
+	Actor[] ret = PapyrusUtil.ActorArray(MaxActors)
+	int i = act.Length
+	int ii = ret.Length
+	While (i > 0 && ii > 0)
 		i -= 1
-		r = 0
-		Ref[0] = Game.GetForm(SexPartners[i]) as Actor
-		If (Ref[0])
-			Num[0] = PlayerSexCount(Ref[0])
-			while r < MaxActors && Num[0] > 0
-				if Num[0] >= PartnerNum[r]
-					Ref[1] = PartnerRef[r]
-					Num[1] = PartnerNum[r]
-					PartnerRef[r] = Ref[0]
-					PartnerNum[r] = Num[0]
-					Ref[0] = Ref[1]
-					Num[0] = Num[1]
-				endIf
-				r += 1
-			endWhile
-		EndIf
-	endWhile
-	return PartnerRef
+		ii -= 1
+		ret[ii] = act[i]
+	EndWhile
+	return ret
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -682,7 +680,7 @@ function AdjustSexuality(Actor ActorRef, int Males, int Females)
 	else
 		Ratio += (Females - Males)
 	endIf
-	_SetSkill(ActorRef, kSexuality, ClampFloat(Ratio, 1.0, 100.0) as float)
+	_SetSkill(ActorRef, kSexuality, PapyrusUtil.ClampFloat(Ratio, 1.0, 100.0) as float)
 endFunction
 
 int function GetSexuality(Actor ActorRef)
@@ -812,24 +810,25 @@ function AddPartners(Actor ActorRef, Actor[] AllPositions, Actor[] Victims)
 	endIf
 	bool IsVictim = Victims.Find(ActorRef) > -1
 	bool IsAggressor = Victims.Length && !IsVictim
-	Actor[] Positions = RemoveActor(AllPositions, ActorRef)
+	Actor[] Positions = PapyrusUtil.RemoveActor(AllPositions, ActorRef)
 
 	int i = 0
 	While (i < Positions.Length)
-		AddPartner(ActorRef, Positions[i])
 		If (IsVictim && Victims.Find(Positions[i]) == -1)
-			AddAggressor(ActorRef, Positions[i])
+			AddEncounter(ActorRef, Positions[i], ENC_Victim)
 		ElseIf (IsAggressor && Victims.Find(Positions[i]) > -1)
-			AddVictim(ActorRef, Positions[i])
+			AddEncounter(ActorRef, Positions[i], ENC_Assault)
+		Else
+			AddEncounter(ActorRef, Positions[i], ENC_Neutral)
 		EndIf
 		i += 1
 	EndWhile
 EndFunction
 function TrimList(Actor ActorRef, string List, int count)
-	count = FormListCount(ActorRef, List) - count
+	count = StorageUtil.FormListCount(ActorRef, List) - count
 	while count > 0
 		count -= 1
-		FormListRemoveAt(ActorRef, List, 0)
+		StorageUtil.FormListRemoveAt(ActorRef, List, 0)
 	endwhile
 endFunction
 
@@ -1044,13 +1043,13 @@ endFunction
 ; are not used for native skills they will resort to old functionality
 
 bool function HasInt(Actor ActorRef, string Stat)
-	return HasStat(Stat)
+	return HasStat(ActorRef, Stat)
 endFunction
 bool function HasFloat(Actor ActorRef, string Stat)
-	return HasStat(Stat)
+	return HasStat(ActorRef, Stat)
 endFunction
 bool function HasStr(Actor ActorRef, string Stat)
-	return HasStat(Stat)
+	return HasStat(ActorRef, Stat)
 endFunction
 
 int function GetInt(Actor ActorRef, string Stat)
@@ -1113,7 +1112,7 @@ function AdjustFloat(Actor ActorRef, string Stat, float Amount)
 		if SkillNames().Find(stat) != -1
 			AdjustSkillFloat(ActorRef, Stat, Amount)
 		else
-			AdjustBy(ActorRef, Stat, Amount)
+			FloatAdjustBy(ActorRef, Stat, Amount)
 		endIf
 	endIf
 endfunction
