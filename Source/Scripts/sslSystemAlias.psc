@@ -72,7 +72,6 @@ event OnPlayerLoadGame()
 	ElseIf IsInstalled
 		If (Version < SexLabUtil.GetVersion())
 			; --- update code here?
-			; NOTE: If I never use this then this Version variable is unnecessary and should be removed
 			Version = SexLabUtil.GetVersion()
 		EndIf
 		Config.Reload()
