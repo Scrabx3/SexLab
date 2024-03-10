@@ -119,13 +119,14 @@ Function ResetStatistics(Actor akActor) native global
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; This function makes no sense anymore as custom stat order is no longer fixed
+; Returns every String type statistic on every actor. This function is only used for backwards compatibility only
+; The implementation is not designed with this functionality in mind, thus its costly and unreliable (stat order is not fixed)
 String[] Function GetEveryStatisticID() native global
 ; Uses old SkillNames[] ids and returns a result based on them 
-int Function GetLegacyStatistic(Actor akActor, int id) native global
+float Function GetLegacyStatistic(Actor akActor, int id) native global
 float[] Function GetAllLegycSkills(Actor akActor) native global
 ; Sets a statistic based on the value. May fail silently if the statistic is no longer supported
-Function SetLegacyStatistic(Actor akActor, int id, int afValue) native global
+Function SetLegacyStatistic(Actor akActor, int id, float afValue) native global
 
 ; Titles
 String[] Function StatTitles()
@@ -400,8 +401,6 @@ endFunction
 ; ------------------------------------------------------- ;
 ; --- Purity/Impurty Stat                             --- ;
 ; ------------------------------------------------------- ;
-
-; NOTE: Purity is no longer supported, SLP+ V2.5
 
 int function GetPure(Actor ActorRef)
 	return _GetSkill(ActorRef, kPure) as int
@@ -1059,15 +1058,6 @@ endFunction
 
 function ClearLegacyStats(Form FormRef)
 endFunction
-
-; v1.59b NOTICE:
-; SexLab native skills storage has changed to use lists for storage
-; instead of values. This allows for faster access internally and
-; significantly shrinks the amount of data StorageUtil has to store.
-
-; These functions will now reroute to their appropiate new/updated functions if
-; they are used to attempt to access the native skills. If accessing if they
-; are not used for native skills they will resort to old functionality
 
 bool function HasInt(Actor ActorRef, string Stat)
 	return HasStat(ActorRef, Stat)
