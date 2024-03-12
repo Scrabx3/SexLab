@@ -69,9 +69,9 @@ int Property Sexuality            = 17  AutoReadOnly
 int Property Arousal              = 18  AutoReadOnly
 
 ; Returns an array of FormIDs of all currently tracked actors
-int[] Function GetAllTrackedActors() native global
-Function SetStatistic(Actor akActor, int id, int aiValue) native global
-int Function GetStatistic(Actor akActor, int id) native global
+Actor[] Function GetAllTrackedActors() native global
+Function SetStatistic(Actor akActor, int id, float afValue) native global
+float Function GetStatistic(Actor akActor, int id) native global
 
 ; --- Custom Statistics
 String[] Function GetAllCustomStatIDs(Actor akActor) native global
@@ -81,10 +81,9 @@ Function SetCustomStatStr(Actor akActor, String asStat, String asValue) native g
 float Function GetCustomStatFlt(Actor akActor, String asStat, float afDefault = 0.0) native global
 String Function GetCustomStatStr(Actor akActor, String asStat, String asDefault = "") native global
 Function DeleteCustomStat(Actor akActor, String asStat) native global
-Function DeleteAllCustomStats(Actor akActor) native global
 
 ; --- Encounter Statistics
-int Property ENC_Neutral 	= 0	AutoReadOnly Hidden
+int Property ENC_Any 			= 0	AutoReadOnly Hidden
 int Property ENC_Victim		= 1	AutoReadOnly Hidden
 int Property ENC_Assault	= 2	AutoReadOnly Hidden
 
@@ -93,7 +92,7 @@ Actor[] Function GetAllEncounters(Actor akActor) native global
 ; Return an array of all actors that this actor assaulted
 Actor[] Function GetAllEncounteredVictims(Actor akActor) native global
 Actor[] Function GetAllEncounteredAssailants(Actor akActor) native global
-Actor Function GetMostRecentEncounter(Actor akActor) native global
+Actor Function GetMostRecentEncounter(Actor akActor, int aiEncounterType) native global
 Function AddEncounter(Actor akActor, Actor akPartner, int aiEncounterType) native global
 float Function GetLastEncounterTime(Actor akActor, Actor akPartner) native global
 int Function GetTimesMet(Actor akActor, Actor akPartner) native global
@@ -554,7 +553,7 @@ function AddSex(Actor ActorRef, float TimeSpent = 0.0, bool WithPlayer = false, 
 	endIf
 	if WithPlayer && ActorRef != PlayerRef
 		_AdjustSkill(ActorRef, kPlayerSex, 1)
-		AddEncounter(PlayerRef, ActorRef, ENC_Neutral)
+		AddEncounter(PlayerRef, ActorRef, ENC_Any)
 	endIf
 endFunction
 
@@ -575,29 +574,21 @@ bool function HadPlayerSex(Actor ActorRef)
 endFunction
 
 Actor function LastSexPartner(Actor ActorRef)
-	return GetMostRecentEncounter(ActorRef)
+	return GetMostRecentEncounter(ActorRef, ENC_Any)
 endFunction
 bool function HasHadSexTogether(Actor ActorRef1, Actor ActorRef2)
 	return GetAllEncounters(ActorRef1).Find(ActorRef2) > -1
 endfunction
 
 Actor function LastAggressor(Actor ActorRef)
-	Actor[] list = GetAllEncounteredAssailants(ActorRef)
-	If (!list.Length)
-		return none
-	EndIf
-	return list[list.Length - 1]
+	return GetMostRecentEncounter(ActorRef, ENC_Victim)
 endFunction
 bool function WasVictimOf(Actor VictimRef, Actor AggressorRef)
 	return GetAllEncounteredAssailants(VictimRef).Find(AggressorRef) > -1
 endFunction
 
 Actor function LastVictim(Actor ActorRef)
-	Actor[] list = GetAllEncounteredVictims(ActorRef)
-	If (!list.Length)
-		return none
-	EndIf
-	return list[list.Length - 1]
+	return GetMostRecentEncounter(ActorRef, ENC_Assault)
 endFunction
 bool function WasAggressorTo(Actor AggressorRef, Actor VictimRef)
 	return GetAllEncounteredVictims(AggressorRef).Find(VictimRef) > -1
@@ -845,7 +836,7 @@ function AddPartners(Actor ActorRef, Actor[] AllPositions, Actor[] Victims)
 		ElseIf (IsAggressor && Victims.Find(Positions[i]) > -1)
 			AddEncounter(ActorRef, Positions[i], ENC_Assault)
 		Else
-			AddEncounter(ActorRef, Positions[i], ENC_Neutral)
+			AddEncounter(ActorRef, Positions[i], ENC_Any)
 		EndIf
 		i += 1
 	EndWhile
@@ -869,14 +860,7 @@ function EmptyStats(Actor ActorRef)
 endFunction
 
 Actor[] function GetAllSkilledActors()
-	int[] list = GetAllTrackedActors()
-	Actor[] ret = PapyrusUtil.ActorArray(list.Length)
-	int i = 0
-	While (i < list.Length)
-		ret[i] = Game.GetForm(list[i]) as Actor
-		i += 1
-	EndWhile
-	return PapyrusUtil.RemoveActor(ret, none)
+	return GetAllTrackedActors()
 EndFunction
 function ClearNPCSexSkills()
 	Actor[] list = GetAllSkilledActors()
@@ -890,11 +874,7 @@ function ClearNPCSexSkills()
 EndFunction
 
 function ClearCustomStats(Form FormRef)
-	Actor act = FormRef as Actor
-	If (!act)
-		return
-	EndIf
-	DeleteAllCustomStats(act)
+	; No longer supported, dont wish to have 3rd parties delete custom stats of another
 endFunction
 
 int function GetGender(Actor ActorRef)
