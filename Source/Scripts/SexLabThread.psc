@@ -1,6 +1,6 @@
 ScriptName SexLabThread extends Quest
 {
-  API Script to directly interact with SexLab Threads
+  API Script to directly interact with individual SexLab Threads
 }
 
 ; The thread ID of the current thread
