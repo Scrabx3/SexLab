@@ -1831,7 +1831,7 @@ int function GetPlayerSkillLevel(string Skill)
   return Stats.GetSkillLevel(PlayerRef, Skill)
 endFunction
 string function GetSexualityTitle(Actor ActorRef)
-  return Stats.GetSexualityTitle(ActorRef)
+  return sslActorStats.GetSexualityTitle(ActorRef)
 endFunction
 string function GetSkillTitle(Actor ActorRef, string Skill)
   return Stats.GetSkillTitle(ActorRef, Skill)

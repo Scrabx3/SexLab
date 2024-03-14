@@ -718,7 +718,7 @@ Event OnInputAcceptST(String inputString)
 	if Options[0] == "SetStatTimeSpent"
 		if inputString as int > 0
 			Stats.SetSkill(StatRef, "TimeSpent", inputString as int)
-			SetInputOptionValueST(Stats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent")))
+			SetInputOptionValueST(sslActorStats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent")))
 		endIf
 
 	; Set Vaginal Actor Stat
@@ -2937,7 +2937,7 @@ function SexDiary()
 	AddHeaderOption("$SSL_SexualExperience")
 
 	if Config.DebugMode 
-		AddInputOptionST("SetStatTimeSpent", "$SSL_TimeSpentHavingSex", Stats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent") as int))
+		AddInputOptionST("SetStatTimeSpent", "$SSL_TimeSpentHavingSex", sslActorStats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent") as int))
 		AddInputOptionST("SetStatVaginal", "$SSL_VaginalProficiency", Stats.GetSkillTitle(StatRef, "Vaginal"))
 		AddInputOptionST("SetStatAnal", "$SSL_AnalProficiency", Stats.GetSkillTitle(StatRef, "Anal"))
 		AddInputOptionST("SetStatOral", "$SSL_OralProficiency", Stats.GetSkillTitle(StatRef, "Oral"))
@@ -2945,7 +2945,7 @@ function SexDiary()
 		AddInputOptionST("SetStatPure", "$SSL_SexualPurity", Stats.GetPureTitle(StatRef))
 		AddInputOptionST("SetStatLewd", "$SSL_SexualPerversion", Stats.GetLewdTitle(StatRef))
 	else
-		AddTextOption("$SSL_TimeSpentHavingSex", Stats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent") as int))
+		AddTextOption("$SSL_TimeSpentHavingSex", sslActorStats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent") as int))
 		AddTextOption("$SSL_VaginalProficiency", Stats.GetSkillTitle(StatRef, "Vaginal"))
 		AddTextOption("$SSL_AnalProficiency", Stats.GetSkillTitle(StatRef, "Anal"))
 		AddTextOption("$SSL_OralProficiency", Stats.GetSkillTitle(StatRef, "Oral"))
@@ -2988,7 +2988,7 @@ function SexDiary()
 	AddTextOptionST("ResetTargetStats", "$SSL_Reset{"+StatRef.GetLeveledActorBase().GetName()+"}Stats", "$SSL_ClickHere")
 
 	AddHeaderOption("$SSL_SexualStats")
-	AddTextOptionST("SetStatSexuality", "$SSL_Sexuality", Stats.GetSexualityTitle(StatRef))
+	AddTextOptionST("SetStatSexuality", "$SSL_Sexuality", sslActorStats.GetSexualityTitle(StatRef))
 
 	if Config.DebugMode 
 		AddInputOptionST("SetStatMales", "$SSL_MaleSexualPartners", Stats.GetSkill(StatRef, "Males"))
@@ -3044,7 +3044,7 @@ state SetStatSexuality
 		else
 			Stats.SetSkill(StatRef, "Sexuality", 100)
 		endIf
-		SetTextOptionValueST(Stats.GetSexualityTitle(StatRef))
+		SetTextOptionValueST(sslActorStats.GetSexualityTitle(StatRef))
 	endEvent
 endState
 
