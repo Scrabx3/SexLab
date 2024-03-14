@@ -36,11 +36,11 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 function DisableOrgasm(bool bNoOrgasm)
-	_canOrgasm = !bNoOrgasm
+	_CanOrgasm = !bNoOrgasm
 endFunction
 
 bool function IsOrgasmAllowed()
-	return _canOrgasm
+	return _CanOrgasm
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -143,7 +143,6 @@ EndFunction
 
 sslThreadModel _Thread
 sslSystemConfig _Config
-sslActorStats Stats
 
 Faction _AnimatingFaction
 Actor _PlayerRef
@@ -182,8 +181,8 @@ bool _AnimVarbHumanoidFootIKDisable
 ObjectReference _myMarker
 
 ; Orgasms
-int _orgasmCount
-bool _canOrgasm
+int _OrgasmCount
+bool _CanOrgasm
 
 ; Stripping
 int _stripData		; Strip data as provided by the animation
@@ -627,7 +626,7 @@ State Animating
 			RefreshExpression()
 		endIf
 		; Trigger orgasm
-		If(_canOrgasm && _Config.SeparateOrgasms && Strength >= 100 && _Thread.Stage < _Thread.Animation.StageCount)
+		If(_CanOrgasm && _Config.SeparateOrgasms && Strength >= 100 && _Thread.Stage < _Thread.Animation.StageCount)
 			int cmp
 			If(_sex == 0)
 				cmp = 20
@@ -635,7 +634,7 @@ State Animating
 				cmp = 30
 			EndIf
 			If(SexLabUtil.GetCurrentGameRealTimeEx() - _LastOrgasm > cmp)
-				OrgasmEffect()
+				DoOrgasm()
 			EndIf
 		EndIf
 		; Loop
@@ -678,114 +677,48 @@ State Animating
 		DoOrgasm()
 	EndEvent
 	Function DoOrgasm(bool Forced = false)
-		; TODO: Review this block below
-		int Enjoyment = GetEnjoyment()
-		if !Forced && (!_canOrgasm || _Thread.DisableOrgasms)
-			; Orgasm Disabled for actor or whole thread
-			return 
-		elseIf !Forced && Enjoyment < 1
-			; Actor have the orgasm few seconds ago or is in pain and can't orgasm
+		If (!Forced && (!_CanOrgasm || Enjoyment < 1))
+			Log("Tried to orgasm, but orgasms are disabled for this position")
 			return
-		elseIf Math.Abs(SexLabUtil.GetCurrentGameRealTimeEx() - _LastOrgasm) < 5.0
-			Log("Excessive OrgasmEffect Triggered")
+		ElseIf (Math.Abs(SexLabUtil.GetCurrentGameRealTimeEx() - _LastOrgasm) < 5.0)
+			; COMEBACK: Might want to remove this?
+			Log("DoOrgasm() has already been called within the last 5 Seconds")
 			return
-		endIf
-
-		; Check if the animation allow Orgasm. By default all the animations with a CumID>0 are type SEX and allow orgasm 
-		; But the Lesbian Animations usually don't have CumId assigned and still the orgasm should be allowed at least for Females.
-		bool CanOrgasm = Forced || (_sex == 1 && (_Thread.Animation.HasTag("Lesbian") || _Thread.Animation.Females == _Thread.Animation.PositionCount))
-		int i = _Thread.ActorCount
-		while !CanOrgasm && i > 0
-			i -= 1
-			CanOrgasm = _Thread.Animation.GetCumID(i, _Thread.Stage) > 0 || _Thread.Animation.GetCum(i) > 0
-		endWhile
-		if !CanOrgasm
-			; Orgasm Disabled for the animation
-			return
-		endIf
-
-		; Check Separate Orgasm conditions 
-		if !Forced && _Config.SeparateOrgasms
-			if Enjoyment < 100 && (_Thread.Stage < _Thread.Animation.StageCount || _orgasmCount > 0)
-				; Prevent the orgasm with low enjoyment at least the last stage be reached without orgasms
-				return
-			endIf
-			bool IsCumSource = False
-			i = _Thread.ActorCount
-			while !IsCumSource && i > 0
-				i -= 1
-				IsCumSource = _Thread.Animation.GetCumSource(i, _Thread.Stage) == Position
-			endWhile
-			if !IsCumSource
-				if _sex == 2 && !(_Thread.Animation.HasTag("Anal") || _Thread.Animation.HasTag("Vaginal") || _Thread.Animation.HasTag("Pussy") || _Thread.Animation.HasTag("Cunnilingus") || _Thread.Animation.HasTag("Fisting") || _Thread.Animation.HasTag("Handjob") || _Thread.Animation.HasTag("Blowjob") || _Thread.Animation.HasTag("Boobjob") || _Thread.Animation.HasTag("Footjob") || _Thread.Animation.HasTag("Penis"))
-					return
-				elseIf _sex == 0 && !(_Thread.Animation.HasTag("Anal") || _Thread.Animation.HasTag("Vaginal") || _Thread.Animation.HasTag("Handjob") || _Thread.Animation.HasTag("Blowjob") || _Thread.Animation.HasTag("Boobjob") || _Thread.Animation.HasTag("Footjob") || _Thread.Animation.HasTag("Penis"))
-					return
-				elseIf _sex == 1 && !(_Thread.Animation.HasTag("Anal") || _Thread.Animation.HasTag("Vaginal") || _Thread.Animation.HasTag("Pussy") || _Thread.Animation.HasTag("Cunnilingus") || _Thread.Animation.HasTag("Fisting") || _Thread.Animation.HasTag("Breast"))
-					return
-				endIf
-			endIf
-		endIf
-		UnregisterForUpdate()
-		_LastOrgasm = SexLabUtil.GetCurrentGameRealTimeEx()
-		_orgasmCount += 1
-		; Send an orgasm event hook with actor and orgasm count
-		int eid = ModEvent.Create("SexLabOrgasm")
-		ModEvent.PushForm(eid, ActorRef)
-		ModEvent.PushInt(eid, FullEnjoyment)
-		ModEvent.PushInt(eid, _orgasmCount)
-		ModEvent.Send(eid)
-		TrackedEvent("Orgasm")
-		Log(GetActorName() + ": Orgasms["+_orgasmCount+"] FullEnjoyment ["+FullEnjoyment+"] BaseEnjoyment["+BaseEnjoyment+"] Enjoyment["+Enjoyment+"]")
+		EndIf
+		; SFX
 		If(_Config.OrgasmEffects)
-			; Shake camera for player
-			If(ActorRef == _PlayerRef && _Config.ShakeStrength > 0 && Game.GetCameraState() >= 8 )
+			If (ActorRef == _PlayerRef && _Config.ShakeStrength > 0 && Game.GetCameraState() >= 8)
 				Game.ShakeCamera(none, _Config.ShakeStrength, _Config.ShakeStrength + 1.0)
 			EndIf
-			; Play SFX/Voice
 			If(!IsSilent)
 				PlayLouder(_Voice.GetSound(100, false), ActorRef, _Config.VoiceVolume)
 			EndIf
 			PlayLouder(_Config.OrgasmFX, ActorRef, _Config.SFXVolume)
 		EndIf
-		; Apply cum to female positions from male position orgasm
-		if _Thread.ActorCount > 1 && _Config.UseCum && _sex != 1 && _sex != 4
-			if _Thread.ActorCount == 2
-				_Thread.PositionAlias(1 - Position).ApplyCum()
-			else
-				while i > 0
-					i -= 1
-					if Position != i && Position < _Thread.Animation.PositionCount && _Thread.Animation.IsCumSource(Position, i, _Thread.Stage)
-						_Thread.PositionAlias(i).ApplyCum()
-					endIf
-				endWhile
-			endIf
-		endIf
-		Utility.WaitMenuMode(0.2)
-		; Reset enjoyment build up, if using multiple orgasms
-		QuitEnjoyment += Enjoyment
-		if _sex <= 2 || sslActorStats.IsSkilled(ActorRef)	; NOTE: Always returns true
-			if IsVictim()
-				BaseEnjoyment += ((BestRelation - 3) + PapyrusUtil.ClampInt((OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure]) as int,-6,6)) * Utility.RandomInt(5, 10)
-			else
-				if IsAggressor()
-					BaseEnjoyment += (-1*((BestRelation - 4) + PapyrusUtil.ClampInt(((Skills[Stats.kLewd]-Skills[Stats.kPure])-(OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure])) as int,-6,6))) * Utility.RandomInt(5, 10)
-				else
-					BaseEnjoyment += (BestRelation + PapyrusUtil.ClampInt((((Skills[Stats.kLewd]+OwnSkills[Stats.kLewd])*0.5)-((Skills[Stats.kPure]+OwnSkills[Stats.kPure])*0.5)) as int,0,6)) * Utility.RandomInt(5, 10)
-				endIf
-			endIf
-		else
-			if IsVictim()
-				BaseEnjoyment += (BestRelation - 3) * Utility.RandomInt(5, 10)
-			else
-				if IsAggressor()
-					BaseEnjoyment += (-1*(BestRelation - 4)) * Utility.RandomInt(5, 10)
-				else
-					BaseEnjoyment += (BestRelation + 3) * Utility.RandomInt(5, 10)
-				endIf
-			endIf
-		endIf
+		If (_sex != 1 && _sex != 4)	
+			; TODO: Trigger Cum FX
+			; Ideally this should invoke some function on the Thread to avoid this script accessing other sslActorAlias instances
+			; this should only apply the actual FX with this Positions underlying Ref being the source. If there is no schlong, consider failing silenently
+			; _Tread.ApplyCumFX(Source = ActorRef)
+		EndIf
+		; Events
+		int eid = ModEvent.Create("SexLabOrgasm")
+		ModEvent.PushForm(eid, ActorRef)
+		ModEvent.PushInt(eid, FullEnjoyment)
+		ModEvent.PushInt(eid, _OrgasmCount)
+		ModEvent.Send(eid)
+		TrackedEvent("Orgasm")
+		If (sslSystemConfig.GetSettingInt("iClimaxType") == _Config.CLIMAXTYPE_EXTERN)
+			; TODO: Separate Orgasm Logic, SLSO event etc
+		EndIf
+		; TODO: Update Enjoyment
+		int Enjoyment = GetEnjoyment()
+
+		; ---
 		RegisterForSingleUpdate(0.8)
+		_LastOrgasm = SexLabUtil.GetCurrentGameRealTimeEx()
+		_OrgasmCount += 1
+		Log(GetActorName() + ": Orgasms[" + _OrgasmCount + "] FullEnjoyment [" + FullEnjoyment + "] BaseEnjoyment[" + BaseEnjoyment + "] Enjoyment[" + Enjoyment + "]")
 	EndFunction
 
 	Function TryUnlock()
@@ -953,7 +886,6 @@ EndFunction
 Function Setup()
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	_Config = SexLabQuestFramework as sslSystemConfig
-	Stats = SexLabQuestFramework as sslActorStats
 
 	_Thread = GetOwningQuest() as sslThreadModel
 	_AnimatingFaction = _Config.AnimatingFaction
@@ -977,12 +909,11 @@ Function Initialize()
 	_Expressions    = sslUtility.ExpressionArray(0)
 	; Flags
 	_AllowRedress		= true
-	_canOrgasm     	= true
+	_CanOrgasm     	= true
 	ForceOpenMouth 	= false
 	; Integers
 	_PathingFlag    = 0
-	_orgasmCount 		= 0
-	BestRelation  	= 0
+	_OrgasmCount 		= 0
 	BaseEnjoyment 	= 0
 	QuitEnjoyment 	= 0
 	FullEnjoyment 	= 0
@@ -997,9 +928,6 @@ Function Initialize()
 EndFunction
 
 Event OnRequestClear(string asEventName, string asStringArg, float afDoStatistics, form akSender)
-	If (afDoStatistics)
-		DoStatistics()
-	EndIf
 	Clear()
 EndEvent
 
@@ -1011,15 +939,15 @@ EndEvent
 /;
 
 Event OnCellDetach()
-	Log("An Alias is out of range and cannot be animated anymore. Stopping _Thread...")
+	Log("An Alias is out of range and cannot be animated anymore. Stopping Thread...")
 	_Thread.EndAnimation()
 EndEvent
 Event OnUnload()
-	Log("An Alias is out of range and cannot be animated anymore. Stopping _Thread...")
+	Log("An Alias is out of range and cannot be animated anymore. Stopping Thread...")
 	_Thread.EndAnimation()
 EndEvent
 Event OnDying(Actor akKiller)
-	Log("An Alias is dying and cannot be animated anymore. Stopping _Thread...")
+	Log("An Alias is dying and cannot be animated anymore. Stopping Thread...")
 	_Thread.EndAnimation()
 EndEvent
 
@@ -1258,6 +1186,10 @@ function ClearEffects()
 	LogRedundant("ClearEffects")
 endFunction
 
+Function DoStatistics()
+	; Thread handles Position statistics based on History and Participants
+EndFunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -1274,82 +1206,16 @@ endFunction
 ; --- Enjoyment                                       --- ;
 ; ------------------------------------------------------- ;
 
-float[] Skills
-float[] OwnSkills
-
-int BestRelation
 int BaseEnjoyment
 int QuitEnjoyment
 int FullEnjoyment
 
 Function GetBaseEnjoyment()
-	; COMEBACK: Everything below still needs reviewing or redoing
-	; NOTE: IsSkilled() always returns true P+ V2.5+
-	if _sex <= 2 || sslActorStats.IsSkilled(ActorRef)
-		; Always use players stats for NPCS if present, so players stats mean something more
-		Actor SkilledActor = ActorRef
-		If(_Thread.HasPlayer && ActorRef != _PlayerRef)
-			SkilledActor = _PlayerRef
-		; If a non-creature couple, base skills off partner
-		ElseIf(_Thread.ActorCount > 1 && !_Thread.HasCreature)
-			SkilledActor = _Thread.Positions[sslUtility.IndexTravel(Position, _Thread.ActorCount)]
-		EndIf
-		; Get sex skills of partner/player
-		Skills       = Stats.GetSkillLevels(SkilledActor)
-		OwnSkills    = Stats.GetSkillLevels(ActorRef)
-		; Try to prevent orgasms on fist stage resting enjoyment
-		float FirsStageTime
-		if _Thread.LeadIn
-			FirsStageTime = _Config.StageTimerLeadIn[0]
-		elseIf _Thread.IsType[0]
-			FirsStageTime = _Config.StageTimerAggr[0]
-		else
-			FirsStageTime = _Config.StageTimer[0]
-		endIf
-		BaseEnjoyment -= Math.Abs(CalcEnjoyment(_Thread.SkillBonus, Skills, _Thread.LeadIn, _sex == 1, FirsStageTime, 1, _Thread.Animation.StageCount)) as int
-		if BaseEnjoyment < -5
-			BaseEnjoyment += 10
-		endIf
-		; Add Bonus Enjoyment
-		if IsVictim()
-			BestRelation = _Thread.GetLowestPresentRelationshipRank(ActorRef)
-			BaseEnjoyment += ((BestRelation - 3) + PapyrusUtil.ClampInt((OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure]) as int,-6,6)) * Utility.RandomInt(1, 10)
-		else
-			BestRelation = _Thread.GetHighestPresentRelationshipRank(ActorRef)
-			if IsAggressor()
-				BaseEnjoyment += (-1*((BestRelation - 4) + PapyrusUtil.ClampInt(((Skills[Stats.kLewd]-Skills[Stats.kPure])-(OwnSkills[Stats.kLewd]-OwnSkills[Stats.kPure])) as int,-6,6))) * Utility.RandomInt(1, 10)
-			else
-				BaseEnjoyment += (BestRelation + PapyrusUtil.ClampInt((((Skills[Stats.kLewd]+OwnSkills[Stats.kLewd])*0.5)-((Skills[Stats.kPure]+OwnSkills[Stats.kPure])*0.5)) as int,0,6)) * Utility.RandomInt(1, 10)
-			endIf
-		endIf
-	else
-		if IsVictim()
-			BestRelation = _Thread.GetLowestPresentRelationshipRank(ActorRef)
-			BaseEnjoyment += (BestRelation - 3) * Utility.RandomInt(1, 10)
-		else
-			BestRelation = _Thread.GetHighestPresentRelationshipRank(ActorRef)
-			if IsAggressor()
-				BaseEnjoyment += (-1*(BestRelation - 4)) * Utility.RandomInt(1, 10)
-			else
-				BaseEnjoyment += (BestRelation + 3) * Utility.RandomInt(1, 10)
-			endIf
-		endIf
-	endIf
+	; TODO: Implement
 EndFunction
 
 int function GetEnjoyment()
-	if _sex > 2 && !sslActorStats.IsSkilled(ActorRef)
-		FullEnjoyment = BaseEnjoyment + (PapyrusUtil.ClampFloat(((SexLabUtil.GetCurrentGameRealTimeEx() - _StartedAt) + 1.0) / 5.0, 0.0, 40.0) + ((_Thread.Stage as float / _Thread.Animation.StageCount as float) * 60.0)) as int
-	else
-		FullEnjoyment = BaseEnjoyment + CalcEnjoyment(_Thread.SkillBonus, Skills, _Thread.LeadIn, _sex == 1, (SexLabUtil.GetCurrentGameRealTimeEx() - _StartedAt), _Thread.Stage, _Thread.Animation.StageCount)
-		; Log("FullEnjoyment["+FullEnjoyment+"] / BaseEnjoyment["+BaseEnjoyment+"] / Enjoyment["+(FullEnjoyment - BaseEnjoyment)+"]")
-	endIf
-
-	int Enjoyment = FullEnjoyment - QuitEnjoyment
-	if Enjoyment > 0
-		return Enjoyment
-	endIf
-	return 0
+	; TODO: Implement
 endFunction
 
 int function GetPain()
@@ -1378,44 +1244,8 @@ endfunction
 ; ------------------------------------------------------- ;
 
 function ApplyCum()
-	if !ActorRef || !ActorRef.Is3DLoaded()
-		return
-	endif
-	Cell ParentCell = ActorRef.GetParentCell()
-	int CumID = _Thread.Animation.GetCumID(Position, _Thread.Stage)
-	if CumID > 0 && ParentCell && ParentCell.IsAttached() ; Error treatment for Spells out of Cell
-		_Thread.ActorLib.ApplyCum(ActorRef, CumID)
-	endIf
+	; TODO: _Tread.ApplyCumFX(Source = ActorRef)
 endFunction
-
-; ------------------------------------------------------- ;
-; ---	Statistics				                            --- ;
-; ------------------------------------------------------- ;
-
-; TODO: Completely overhaul this
-Function DoStatistics()
-	Actor VictimRef = _Thread.VictimRef
-	if IsVictim()
-		VictimRef = ActorRef
-	endIf
-	int sex_ = _sex
-	If (sex_ >= 2)
-		; translate to legacy sex
-		sex_ -= 1
-	EndIf
-	float rt = SexLabUtil.GetCurrentGameRealTimeEx()
-	sslActorStats.RecordThread(ActorRef, sex_, BestRelation, _StartedAt, rt, Utility.GetCurrentGameTime(), _Thread.HasPlayer, VictimRef, _Thread.Genders, _Thread.SkillXP)
-	Stats.AddPartners(ActorRef, _Thread.Positions, _Thread.Victims)
-	if _Thread.IsVaginal
-		Stats.AdjustSkill(ActorRef, "VaginalCount", 1)
-	endIf
-	if _Thread.IsAnal
-		Stats.AdjustSkill(ActorRef, "AnalCount", 1)
-	endIf
-	if _Thread.IsOral
-		Stats.AdjustSkill(ActorRef, "OlCount", 1)
-	endIf
-EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Misc Utility					                          --- ;
