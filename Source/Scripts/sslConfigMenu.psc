@@ -246,7 +246,6 @@ event OnConfigOpen()
 	; Player & Target info
 	PlayerName = PlayerRef.GetLeveledActorBase().GetName()
 	TargetRef = Config.TargetRef
-	EmptyStatToggle = false
 	If(TargetRef)
 		If(TargetRef.Is3DLoaded())
 			TargetName = TargetRef.GetLeveledActorBase().GetName()
@@ -3049,20 +3048,16 @@ state SetStatSexuality
 	endEvent
 endState
 
-bool EmptyStatToggle
-state ResetTargetStats
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnReset{"+StatRef.GetLeveledActorBase().GetName()+"}Stats")
-			EmptyStatToggle = !EmptyStatToggle
-			if EmptyStatToggle || StatRef == PlayerRef
-				Stats.EmptyStats(StatRef)
-			else
-				Stats.ResetStats(StatRef)
-			endIf
-			ForcePageReset()
-		endIf
-	endEvent
-endState
+State ResetTargetStats
+	Event OnSelectST()
+		String name = StatRef.GetLeveledActorBase().GetName()
+		If (!ShowMessage("$SSL_WarnReset{" + name + "}Stats"))
+			return
+		EndIf
+		SexLabStatistics.ResetStatistics(StatRef)
+		ForcePageReset()
+	EndEvent
+EndState
 
 ; ------------------------------------------------------- ;
 ; --- Timers & Stripping                              --- ;

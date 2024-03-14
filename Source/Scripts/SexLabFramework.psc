@@ -2164,7 +2164,6 @@ sslSystemConfig property Config Auto
 ; Function libraries
 sslActorLibrary property ActorLib Auto
 sslThreadLibrary property ThreadLib Auto
-sslActorStats property Stats Auto
 
 ; Object registries
 sslThreadSlots property ThreadSlots Auto
@@ -2178,7 +2177,6 @@ function Setup()
 	ThreadLib = SexLabQuestFramework as sslThreadLibrary
 	ThreadSlots = SexLabQuestFramework as sslThreadSlots
 	ActorLib = SexLabQuestFramework as sslActorLibrary
-	Stats = SexLabQuestFramework as sslActorStats
 	; Reset secondary object registry - SexLabQuestRegistry
 	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
 	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
@@ -2295,6 +2293,11 @@ EndProperty
 sslObjectFactory property Factory Hidden
   sslObjectFactory Function Get()
     return Game.GetFormFromFile(0x78818, "SexLab.esm") as sslObjectFactory
+  EndFunction
+EndProperty
+sslActorStats Property Stats
+  sslActorStats Function Get()
+	  return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorStats
   EndFunction
 EndProperty
 
