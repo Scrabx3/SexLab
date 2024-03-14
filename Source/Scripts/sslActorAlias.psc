@@ -567,6 +567,8 @@ Form[] Function StripByData(int aiStripData, int[] aiDefaults, int[] aiOverwrite
 	And the "Playing" state, in this state actors are assumed in the animation and have voice logic and all applied to them
 /;
 
+float Property UpdateInterval = 0.25 AutoReadOnly
+
 float _LoopDelay
 float _LoopExpressionDelay
 float _RefreshExpressionDelay
@@ -584,9 +586,9 @@ State Animating
 		EndIf
 		_VoiceDelay -= Utility.RandomFloat(0.1, 0.3)
 		if _VoiceDelay < 0.8
-			_VoiceDelay = 0.8 ; Can't have delay shorter than animation update loop
+			_VoiceDelay = 0.8 ; Can't have delay shorter than animation update loop (COMEBACK: why?)
 		endIf
-		RegisterForSingleUpdate(_VoiceDelay)
+		RegisterForSingleUpdate(UpdateInterval)
 	EndFunction
 
 	Function SetStrapon(Form ToStrapon)
@@ -601,6 +603,9 @@ State Animating
 			return
 		EndIf
 		; TODO: Review this block below
+		; Probalby also want to give these variables more readable names
+		; The function plays sound, updates and refreshes expression and enjoyment
+		; Probably should changes this to reduce and compare timers to 0?
 		int Strength = CalcReaction()
 		if _LoopDelay >= _VoiceDelay && (_Config.LipsFixedValue || Strength > 10)
 			_LoopDelay = 0.0
@@ -625,23 +630,26 @@ State Animating
 		if _RefreshExpressionDelay > 8.0
 			RefreshExpression()
 		endIf
-		; Trigger orgasm
-		If(_CanOrgasm && _Config.SeparateOrgasms && Strength >= 100 && _Thread.Stage < _Thread.Animation.StageCount)
-			int cmp
-			If(_sex == 0)
-				cmp = 20
-			ElseIf(_sex == 3)
-				cmp = 30
-			EndIf
-			If(SexLabUtil.GetCurrentGameRealTimeEx() - _LastOrgasm > cmp)
-				DoOrgasm()
-			EndIf
+		; TODO: Update Enjoyment/Trigger Orgasms
+		If (IsSeparateOrgasm())
+			; (The below code belongs to default SL Separate Orgasm Logic)
+			; If(_CanOrgasm && Strength >= 100 && _Thread.Stage < _Thread.Animation.StageCount)
+			; 	int cmp
+			; 	If(_sex == 0)
+			; 		cmp = 20
+			; 	ElseIf(_sex == 3)
+			; 		cmp = 30
+			; 	EndIf
+			; 	If(SexLabUtil.GetCurrentGameRealTimeEx() - _LastOrgasm > cmp)
+			; 		DoOrgasm()
+			; 	EndIf
+			; EndIf
 		EndIf
 		; Loop
-		_LoopDelay += (_VoiceDelay * 0.35)
-		_LoopExpressionDelay += (_VoiceDelay * 0.35)
-		_RefreshExpressionDelay += (_VoiceDelay * 0.35)
-		RegisterForSingleUpdate(_VoiceDelay * 0.35)
+		_LoopDelay += UpdateInterval
+		_LoopExpressionDelay += UpdateInterval
+		_RefreshExpressionDelay += UpdateInterval
+		RegisterForSingleUpdate(UpdateInterval)
 	EndEvent
 
 	Function TryRefreshExpression()
@@ -708,14 +716,14 @@ State Animating
 		ModEvent.PushInt(eid, _OrgasmCount)
 		ModEvent.Send(eid)
 		TrackedEvent("Orgasm")
-		If (sslSystemConfig.GetSettingInt("iClimaxType") == _Config.CLIMAXTYPE_EXTERN)
+		If (IsSeparateOrgasm())
 			; TODO: Separate Orgasm Logic, SLSO event etc
 		EndIf
 		; TODO: Update Enjoyment
 		int Enjoyment = GetEnjoyment()
 
 		; ---
-		RegisterForSingleUpdate(0.8)
+		RegisterForSingleUpdate(UpdateInterval)
 		_LastOrgasm = SexLabUtil.GetCurrentGameRealTimeEx()
 		_OrgasmCount += 1
 		Log(GetActorName() + ": Orgasms[" + _OrgasmCount + "] FullEnjoyment [" + FullEnjoyment + "] BaseEnjoyment[" + BaseEnjoyment + "] Enjoyment[" + Enjoyment + "]")
@@ -825,6 +833,10 @@ function TrackedEvent(string EventName)
 	sslThreadLibrary.SendTrackingEvents(ActorRef, EventName, _Thread.tid)
 endFunction
 
+bool Function IsSeparateOrgasm()
+	return sslSystemConfig.GetSettingInt("iClimaxType") == _Config.CLIMAXTYPE_EXTERN
+EndFunction
+
 Function ResolveStrapon(bool force = false)
 	Error("Called from invalid state", "ResolveStrapon()")
 EndFunction
@@ -915,7 +927,6 @@ Function Initialize()
 	_PathingFlag    = 0
 	_OrgasmCount 		= 0
 	BaseEnjoyment 	= 0
-	QuitEnjoyment 	= 0
 	FullEnjoyment 	= 0
 	; Floats
 	_LastOrgasm     = 0.0
@@ -1099,6 +1110,10 @@ endEvent
 bool function NeedsOrgasm()
 	return GetEnjoyment() >= 100 && FullEnjoyment >= 100
 endFunction
+function AdjustEnjoyment(int AdjustBy)
+	BaseEnjoyment += AdjustBy
+endfunction
+
 
 function RegisterEvents()
 endFunction
@@ -1206,38 +1221,33 @@ EndFunction
 ; --- Enjoyment                                       --- ;
 ; ------------------------------------------------------- ;
 
+; NOTE: There is also "NeedsOrgasm()" and "AdjustEnjoyment()" which is no longer used but depends on the values here
+
 int BaseEnjoyment
-int QuitEnjoyment
 int FullEnjoyment
 
 Function GetBaseEnjoyment()
 	; TODO: Implement
+	BaseEnjoyment = 0
 EndFunction
 
 int function GetEnjoyment()
 	; TODO: Implement
+	return 0
 endFunction
 
 int function GetPain()
-	GetEnjoyment()
-	if FullEnjoyment < 0
-		return Math.Abs(FullEnjoyment) as int
-	endIf
-	return 0	
+	; TODO: Implement
+	return 0
 endFunction
 
 int function CalcReaction()
-	int Strength = GetEnjoyment()
-	; Check if the actor is in pain or too excited to care about pain
-	if FullEnjoyment < 0 && Strength < Math.Abs(FullEnjoyment)
-		Strength = FullEnjoyment
-	endIf
-	return PapyrusUtil.ClampInt(Math.Abs(Strength) as int, 0, 100)
+	; TODO: Implement
+	; This function is intended to represent the excitement of an actor
+	; It controls how "loud" an actor moans, how strong the expression is and
+	; when they orgasm (using default SL separate orgasm logic, CalcReaction() > 100 => Orgasm)
+	return 0
 endFunction
-
-function AdjustEnjoyment(int AdjustBy)
-	BaseEnjoyment += AdjustBy
-endfunction
 
 ; ------------------------------------------------------- ;
 ; --- Data Accessors                                  --- ;
