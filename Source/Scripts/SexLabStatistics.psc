@@ -35,7 +35,7 @@ int Property Sexuality_Bi     = 2 AutoReadOnly
 
 ; The sexuality stat returns a value between 0 and 100, use this to lookup the mapping
 int Function GetSexuality(Actor akActor) native global
-int Function MapSexuality(int aiSexualityStat) native global
+int Function MapSexuality(float aiSexualityStat) native global
 
 ; --- Custom Statistics
 
