@@ -241,17 +241,7 @@ endfunction
 /;
 
 bool Function IsConsent()
-	If (!HasContext("Aggressive"))
-		return true
-	EndIf
-	int i = 0
-	While(i < Positions.Length)
-		If(ActorAlias[i].IsVictim())
-			return false
-		EndIf
-		i += 1
-	EndWhile
-	return true
+	return !HasContext("Aggressive")
 EndFunction
 
 Function SetConsent(bool abIsConsent)
