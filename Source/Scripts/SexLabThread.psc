@@ -150,6 +150,12 @@ EndFunction
 Actor[] Function GetPositions()
 EndFunction
 
+; Retrive the sex of this position as used by the thread
+int Function GetNthPositionSex(int n)
+EndFunction
+int[] Function GetPositionSexes()
+EndFunction
+
 ; --- Submission
 
 ; Return if the given actor is a submissive or not
