@@ -54,9 +54,11 @@ bool Function HasCustomStat(Actor akActor, String asStat) native global
 Function DeleteCustomStat(Actor akActor, String asStat) native global
 
 ; --- Encounter Statistics
-int Property ENC_Any 			= 0	AutoReadOnly Hidden
-int Property ENC_Victim		= 1	AutoReadOnly Hidden
-int Property ENC_Assault	= 2	AutoReadOnly Hidden
+int Property ENC_Any 			  = 0	AutoReadOnly Hidden
+int Property ENC_Victim		  = 1	AutoReadOnly Hidden
+int Property ENC_Assault	  = 2	AutoReadOnly Hidden
+int Property ENC_Submissive	= 3	AutoReadOnly Hidden
+int Property ENC_Dominant	  = 4	AutoReadOnly Hidden
 
 ; Return a list of all encounters with this actor, sorted and beginning with the least recent one
 Actor[] Function GetAllEncounters(Actor akActor) native global
@@ -71,6 +73,8 @@ float Function GetLastEncounterTime(Actor akActor, Actor akPartner) native globa
 int Function GetTimesMet(Actor akActor, Actor akPartner) native global
 int Function GetTimesVictimzed(Actor akActor, Actor akAssailant) native global
 int Function GetTimesAssaulted(Actor akActor, Actor akVictim) native global
+int Function GetTimesSubmissive(Actor akActor, Actor akPartner) native global
+int Function GetTimesDominant(Actor akActor, Actor akPartner) native global
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
