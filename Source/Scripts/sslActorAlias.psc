@@ -267,8 +267,8 @@ Auto State Empty
 	bool Function SetActor(Actor ProspectRef)
 		ForceRefTo(ProspectRef)
 		_ActorRef = ProspectRef
-		_sex = SexLabRegistry.GetSex(ProspectRef, true)
 		_dead = ProspectRef.IsDead()
+		_sex = SexLabRegistry.GetSex(ProspectRef, true)
 
 		TrackedEvent(TRACK_ADDED)
 		GoToState(STATE_SETUP)
@@ -276,12 +276,15 @@ Auto State Empty
 	EndFunction
 
 	Function Clear()
+		; Use direct access here as to not update an outdated actor instance
+		Actor underlying = GetReference() as Actor
 		If (_dead)
-			Actor act = GetActorReference()
-			If (act.IsEssential())
-				act.GetActorBase().SetEssential(false)
+			If (underlying.IsEssential())
+				underlying.GetActorBase().SetEssential(false)
 			EndIf
-			act.KillSilent()
+			underlying.KillSilent()
+		Else
+			_Thread.RequestStatisticUpdate(underlying, _StartedAt)
 		EndIf
 		Parent.Clear()
 	EndFunction
@@ -910,29 +913,31 @@ EndFunction
 ; Initialize will clear the alias and reset all of the data accordingly
 Function Initialize()
 	; Forms
-	_ActorRef 			= none
-	_HadStrapon 		= none
-	_Strapon 				= none
+	_ActorRef 	= none
+	_HadStrapon = none
+	_Strapon 		= none
 	; Voice
 	_Voice 					= none
 	_IsForcedSilent = false
 	; _Expression
-	_Expression     = none
-	_Expressions    = sslUtility.ExpressionArray(0)
+	_Expression 	= none
+	_Expressions	= sslUtility.ExpressionArray(0)
 	; Flags
 	_AllowRedress		= true
-	_CanOrgasm     	= true
-	ForceOpenMouth 	= false
+	_CanOrgasm    	= true
+	ForceOpenMouth	= false
 	; Integers
-	_PathingFlag    = 0
-	_OrgasmCount 		= 0
-	BaseEnjoyment 	= 0
-	FullEnjoyment 	= 0
+	_sex = -1
+	_PathingFlag 	= 0
+	_OrgasmCount 	= 0
+	BaseEnjoyment	= 0
+	FullEnjoyment	= 0
 	; Floats
-	_LastOrgasm     = 0.0
+	_LastOrgasm = 0.0
+	_StartedAt	= 0.0
 	; Booleans
-	_dead = false
 	_victim = false
+	_dead 	= false
 
 	TryToClear()
 	UnregisterForAllModEvents()
