@@ -80,7 +80,7 @@ endProperty
 ; aiFurniture:    Furniture preference. Must be one of the following: 0 - Disable; 1 - Allow; 2 - Prefer
 ; asHook:         A callback string to receive callback events. See 'Hooks' section below for details
 ; --- Return:
-; SexLabThread:   An API instance to interact with the started scene. See sslThreadController.psc for more info
+; SexLabThread:   An API instance to interact with the started scene. See SexLabThread.psc for more info
 ; None:           If an error occured
 SexLabThread Function StartScene(Actor[] akPositions, String asTags, Actor akSubmissive = none, ObjectReference akCenter = none, int aiFurniture = 1, String asHook = "")
   return StartSceneA(akPositions, asTags, MakeActorArray(akSubmissive), akCenter, aiFurniture, asHook)
@@ -216,6 +216,11 @@ EndFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
+; If this actor is currently being animated by a SexLab Thread
+bool function IsActorActive(Actor ActorRef)
+  return ActorRef.IsInFaction(AnimatingFaction)
+endFunction
+
 ; Return this actors sex
 ; Mapping: Male = 0 | Female = 1 | Futa = 2 | CrtMale = 3 | CrtFemale = 4
 int Function GetSex(Actor akActor)
@@ -297,16 +302,6 @@ bool function IsValidActor(Actor ActorRef)
   return ActorLib.ValidateActor(ActorRef) == 1
 endFunction
 
-;/* IsActorActive
-* * Checks if the given actor is active in any SexLab animation
-* * 
-* * @param: ActorRef, the actor to check for activity in a SexLab Animation.
-* * @return: True if the actor is being animated by SexLab, and False if it is not.
-*/;
-bool function IsActorActive(Actor ActorRef)
-  return ActorRef.IsInFaction(AnimatingFaction)
-endFunction
-
 ;/* ForbidActor
 * * Makes an actor to be never allowed to engage in SexLab Animations.
 * * @param: ActorRef, the actor to forbid from SexLab use.
@@ -332,131 +327,6 @@ endFunction
 */;
 bool function IsForbidden(Actor ActorRef)
   return ActorLib.IsForbidden(ActorRef)
-endFunction
-
-;/* FindAvailableActor
-* * Searches within a given area for a SexLab valid actor
-* * 
-* * @param: ObjectReference CenterRef - The object to use as the center point in the search. 
-* * @param: float Radius [OPTIONAL] - The distance from the center point to search.
-* * @param: int FindGender [OPTIONAL] - The desired gender id to look for, -1 for any, 0 for male, 1 for female.
-* * @param: Actor IgnoreRef1/2/3/4 [OPTIONAL] - An actor you know for certain you do not want returned by this function.
-* * @return: Actor - A valid actor found, if any. None if no valid actor found.
-*/;
-Actor function FindAvailableActor(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none)
-  return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4)
-endFunction
-
-;/* FindAvailableActorByFaction
-* * Searches within a given area for a SexLab valid actor with or without the specified faction
-* * 
-* * @param: Faction FactionRef - The faction that will be checked on the actor search. 
-* * @param: ObjectReference CenterRef - The object to use as the center point in the search. 
-* * @param: float Radius [OPTIONAL] - The distance from the center point to search.
-* * @param: int FindGender [OPTIONAL] - The desired gender id to look for, -1 for any, 0 for male, 1 for female.
-* * @param: Actor IgnoreRef1/2/3/4 [OPTIONAL] - An actor you know for certain you do not want returned by this function.
-* * @param: bool HasFaction [OPTIONAL true by default] - If False the returned actor won't be part of the given faction, if True the returned actor most be part of the given faction.
-* * @return: Actor - A valid actor found, if any. None if no valid actor found.
-*/;
-Actor function FindAvailableActorByFaction(Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True)
-  return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction)
-endFunction
-
-;/* FindAvailableActorWornForm
-* * Searches within a given area for a SexLab valid actor with or without the specified faction
-* * 
-* * @param: int slotMask - The slotMask that will be checked on the actor search. 
-* * @param: ObjectReference CenterRef - The object to use as the center point in the search. 
-* * @param: float Radius [OPTIONAL] - The distance from the center point to search.
-* * @param: int FindGender [OPTIONAL] - The desired gender id to look for, -1 for any, 0 for male, 1 for female.
-* * @param: Actor IgnoreRef1/2/3/4 [OPTIONAL] - An actor you know for certain you do not want returned by this function.
-* * @param: bool AvoidNoStripKeyword [OPTIONAL true by default] - If False the search won't check the equipped slotMask is treated as "NoStrip" (naked), if True the equipped slotMask treated as "NoStrip" (naked) will be considered unequipped.
-* * @param: bool HasFaction [OPTIONAL true by default] - If False the returned actor won't have the given slotMask unequipped or empty, if True the returned actor most have the given slotMask equipped.
-* * @return: Actor - A valid actor found, if any. None if no valid actor found.
-*/;
-Actor function FindAvailableActorWornForm(int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True)
-  return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm)
-endFunction
-
-;/* FindAvailableCreature
-* * Searches within a given area for a SexLab valid creature
-* * 
-* * @param: string RaceKey - The SexLab RaceKey to find a creature whose race belongs to
-* * @param: ObjectReference CenterRef - The object to use as the center point in the search. 
-* * @param: float Radius [OPTIONAL] - The distance from the center point to search.
-* * @param: int FindGender [OPTIONAL] - The desired gender id to look for, 2 for male/no gender, 3 for female.
-* * @param: Actor IgnoreRef1/2/3/4 [OPTIONAL] - A creature you know for certain you do not want returned by this function.
-* * @return: Actor - A valid creature found, if any. Returns none if no valid creature found.
-**/;
-Actor function FindAvailableCreature(string RaceKey, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = 2, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none)
-  return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, RaceKey)
-endFunction
-
-;/* FindAvailableCreatureByFaction
-* * Searches within a given area for a SexLab valid creature with or without the specified faction
-* * 
-* * @param: string RaceKey - The SexLab RaceKey to find a creature whose race belongs to
-* * @param: Faction FactionRef - The faction that most have or don't have the creature searched. 
-* * @param: ObjectReference CenterRef - The object to use as the center point in the search. 
-* * @param: float Radius [OPTIONAL] - The distance from the center point to search.
-* * @param: int FindGender [OPTIONAL] - The desired gender id to look for, -1 for any, 0 for male, 1 for female.
-* * @param: Actor IgnoreRef1/2/3/4 [OPTIONAL] - A creature you know for certain you do not want returned by this function.
-* * @param: bool HasFaction [OPTIONAL true by default] - If False the returned creature won't be part of the given faction, if True the returned creature most be part of the given faction.
-* * @return: Actor - A valid creature found, if any. None if no valid creature found.
-*/;
-Actor function FindAvailableCreatureByFaction(string RaceKey, Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True)
-  return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction, RaceKey)
-endFunction
-
-;/* FindAvailableCreatureWornForm
-* * Searches within a given area for a SexLab valid creature with or without the specified faction
-* * 
-* * @param: string RaceKey - The SexLab RaceKey to find a creature whose race belongs to
-* * @param: int slotMask - The slotMask that will be checked on the creature search. 
-* * @param: ObjectReference CenterRef - The object to use as the center point in the search. 
-* * @param: float Radius [OPTIONAL] - The distance from the center point to search.
-* * @param: int FindGender [OPTIONAL] - The desired gender id to look for, -1 for any, 0 for male, 1 for female.
-* * @param: Actor IgnoreRef1/2/3/4 [OPTIONAL] - A creature you know for certain you do not want returned by this function.
-* * @param: bool AvoidNoStripKeyword [OPTIONAL true by default] - If False the search won't check the equipped slotMask is treated as "NoStrip" (naked), if True the equipped slotMask treated as "NoStrip" (naked) will be considered unequipped.
-* * @param: bool HasFaction [OPTIONAL true by default] - If False the returned creature won't have the given slotMask unequipped or empty, if True the returned creature most have the given slotMask equipped.
-* * @return: Actor - A valid creature found, if any. None if no valid creature found.
-*/;
-Actor function FindAvailableCreatureWornForm(string RaceKey, int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True)
-  return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm, RaceKey)
-endFunction
-
-;/* FindAvailablePartners
-* * Searches within a given area for multiple SexLab valid actors
-* * 
-* * @param: Actor[] Positions - A list of actors, where at least one is specified (the other items can be set to None)
-* * @param: int TotalActors - The desired total number of actors you want in the return array.
-* * @param: int Males [OPTIONAL] - From the TotalActors amount, you want at least this many males.
-* * @param: int Females [OPTIONAL] - From the TotalActors amount, you want at least this many females.
-* * @param: float Radius [OPTIONAL] - The distance from the center point to search.
-* * @return: Actor[] - A list of valid actors, the length of the list is the same as the Positions parameter, then number of valid actors can be less than this value.
-*/;
-Actor[] function FindAvailablePartners(Actor[] Positions, int TotalActors, int Males = -1, int Females = -1, float Radius = 10000.0)
-  return ThreadLib.FindAvailablePartners(Positions, TotalActors, Males, Females, Radius)
-endFunction
-
-; Sort a list of actors strictly by gender, putting humans (male or female) first, and creatures last
-; Note that order in SexLab Scenes will **not** follow the same ordering
-; --- Return:
-; The array is modified directly and then returned again { assert(return == Positions) }
-Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
-  return ThreadLib.SortActors(Positions, FemaleFirst)
-endFunction
-
-; Sort a list of actors based on the passed scene. The order of the resulting array is unspecified
-; --- Parameters:
-; asSceneID:      The id of the scene to sort by
-; akPositions:    The actors that should be sorted
-; akSubmissives:  (Optional) A list of actors which are interpreted submissives during the ordering If the passed in actors are less/more than 
-;                   the expected amount of victims, the first listed actors of the array will be implied as submissives instead
-; --- Return:
-; A new array with the sorted positions, or an empty array if the animation is incompatible with the passed in actors
-Actor[] function SortActorsByScene(String asSceneID, Actor[] akPositions, Actor[] akSubmissives)
-  return ThreadLib.SortActorsByAnimationImpl(asSceneID, akPositions, akSubmissives)
 endFunction
 
 ;/* AddCum
@@ -606,13 +476,6 @@ EndFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
-;#  ^^^                                                   END ACTOR FUNCTIONS                                                       ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
 ;#                                                       BEGIN BED FUNCTIONS                                                            #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -717,13 +580,6 @@ endFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
-;#  ^^^                                                       END BED FUNCTIONS                                                       ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
 ;#                                                        BEGIN TRACKING FUNCTIONS                                                         #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -816,32 +672,6 @@ function UntrackFaction(Faction FactionRef, string Callback)
   ThreadLib.UntrackFaction(FactionRef, Callback)
 endFunction
 
-;/* SendTrackedEvent
-* * Sends a custom tracked event for an actor that is tracked, if they have any associated callbacks themselves or belong to a tracked factions.
-* * The actual event name that is sent is the <callback defined to track the actor>_<hook name>, and you have to RegisterForModEvents with this name to being able to receive them.
-* * 
-* * @param: Actor ActorRef - The actor you want to send a custom tracked event for.
-* * @param: string Hook - The event type you want to send, used in place of the default Added, Start, End, Orgasm hook types as "<Hook>_<Callback>"
-* * @param: int id [OPTIONAL] - An id number to send with your custom tracked event. This is normally the associated animation thread id number, but can be anything you want.
-* * 
-* * EXAMPLE:
-* * Actor myActor = ...                                                                     <-- get you actor in some way
-* * SexLab.TrackActor(myActor, "MyCallBackName")                                            <-- Track the actor for "MyCallBackName"
-* * RegisterForModEvents("MyCallBackName_ThisIsATest", "WeReceivedTheCustomEvent")          <-- Register for events "MyCallBackName_ThisIsATest"
-* * 
-* * SexLab.SendTrackedEvent(myActor, "ThisIsATest", 123)                                    <-- Send a specific event "ThisIsATest"
-* * 
-* * 
-* * Event WeReceivedTheCustomEvent(Form FormRef, int tid)
-* *   Debug.MessageBox("The Actor "+(FormRef as Actor).GetDisplayname()+" just received the event ThisIsATest and the value is " + tid)
-* *   ; The message displayed will be "The Actor <xxx> just received the event ThisIsATest and the value is 123"
-* * EndEvent   
-* * 
-*/;
-function SendTrackedEvent(Actor ActorRef, string Hook, int id = -1)
-  ThreadLib.SendTrackedEvent(ActorRef, Hook, id)
-endFunction
-
 ;/* IsActorTracked
 * * Checks if a given actor will receive any tracked events. Will always return TRUE if used on the player, due to the built in "PlayerTrack" callback.
 * * 
@@ -851,12 +681,6 @@ endFunction
 bool function IsActorTracked(Actor ActorRef)
   return ThreadLib.IsActorTracked(ActorRef)
 endFunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#  ^^^                                                     END TRACKING FUNCTIONS                                                    ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -1207,47 +1031,19 @@ endfunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
-;#  ^^^                                                    END EXPRESSION FUNCTIONS                                                   ^^^  #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
 ;#                                                         START UTILITY FUNCTIONS                                                         #
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* MakeActorArray
-* * Creates an array of actors with the specified actor objects.
-* * Deprecated this script, use it directly from SexLabUtil instead.
-* * 
-* * @param: Actor Actor1, one actor to add in the array (can be unspefified and so ignored)
-* * @param: Actor Actor2, one actor to add in the array (can be unspefified and so ignored)
-* * @param: Actor Actor3, one actor to add in the array (can be unspefified and so ignored)
-* * @param: Actor Actor4, one actor to add in the array (can be unspefified and so ignored)
-* * @param: Actor Actor5, one actor to add in the array (can be unspefified and so ignored)
-* * @return: an Actor[] of the size of the non null actors with the specified actors inside.
-*/;
-Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none)
+; Create an actor array only containing the argument actors that are *not* none
+Actor[] Function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none)
   return SexLabUtil.MakeActorArray(Actor1, Actor2, Actor3, Actor4, Actor5)
-endFunction
+EndFunction
 
-;/* ParseTime
-* * Utility function that converts an amount of seconds in a string representation with the format HH:MM:SS
-* *
-* * @param: int time, the number of seconds to convert in the string format
-* * @return: a string with the amount of seconds converted in the HH:MM:SS format. If the amount of seconds is zero or negative, then the result is "--:--:--"
-*/;
-string function ParseTime(int time)
+; Format a given amount of seconds into HH:MM:SS format
+String Function ParseTime(int time)
   return sslActorStats.ParseTime(time)
-endFunction
-
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-;#                                                                                                                                         #
-;#                                                          END UTILITY FUNCTIONS                                                          #
-;#                                                                                                                                         #
-;#-----------------------------------------------------------------------------------------------------------------------------------------#
-
+EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------------------------------------------------------------------- ;
@@ -1605,6 +1401,37 @@ function UnequipStrapon(Actor ActorRef)
 endFunction
 bool function CheckBardAudience(Actor ActorRef, bool RemoveFromAudience = true)
   return Config.CheckBardAudience(ActorRef, RemoveFromAudience)
+endFunction
+Actor[] function SortActors(Actor[] Positions, bool FemaleFirst = true)
+  return ThreadLib.SortActors(Positions, FemaleFirst)
+endFunction
+Actor[] function SortActorsByScene(String asSceneID, Actor[] akPositions, Actor[] akSubmissives)
+  return ThreadLib.SortActorsByAnimationImpl(asSceneID, akPositions, akSubmissives)
+endFunction
+Actor function FindAvailableActor(ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none)
+  return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4)
+endFunction
+Actor function FindAvailableActorByFaction(Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True)
+  return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction)
+endFunction
+Actor function FindAvailableActorWornForm(int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True)
+  return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm)
+endFunction
+Actor function FindAvailableCreature(string RaceKey, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = 2, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none)
+  return ThreadLib.FindAvailableActor(CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, RaceKey)
+endFunction
+Actor function FindAvailableCreatureByFaction(string RaceKey, Faction FactionRef, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool HasFaction = True)
+  return ThreadLib.FindAvailableActorInFaction(FactionRef, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, HasFaction, RaceKey)
+endFunction
+Actor function FindAvailableCreatureWornForm(string RaceKey, int slotMask, ObjectReference CenterRef, float Radius = 5000.0, int FindGender = -1, Actor IgnoreRef1 = none, Actor IgnoreRef2 = none, Actor IgnoreRef3 = none, Actor IgnoreRef4 = none, bool AvoidNoStripKeyword = True, bool HasWornForm = True)
+  return ThreadLib.FindAvailableActorWornForm(slotMask, CenterRef, Radius, FindGender, IgnoreRef1, IgnoreRef2, IgnoreRef3, IgnoreRef4, AvoidNoStripKeyword, HasWornForm, RaceKey)
+endFunction
+Actor[] function FindAvailablePartners(Actor[] Positions, int TotalActors, int Males = -1, int Females = -1, float Radius = 10000.0)
+  return ThreadLib.FindAvailablePartners(Positions, TotalActors, Males, Females, Radius)
+endFunction
+
+function SendTrackedEvent(Actor ActorRef, string Hook, int id = -1)
+  ThreadLib.SendTrackedEvent(ActorRef, Hook, id)
 endFunction
 
 ; --- Old Threading API
