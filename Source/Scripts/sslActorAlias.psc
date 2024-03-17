@@ -975,7 +975,7 @@ EndEvent
 /;
 
 function Log(string msg, string src = "")
-	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] " + src + " - " + msg
+	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] State" + GetState() + "] " + src + " - " + msg
 	Debug.Trace("SEXLAB - " + msg)
 	if _Config.DebugMode
 		SexLabUtil.PrintConsole(msg)
@@ -984,7 +984,7 @@ function Log(string msg, string src = "")
 endFunction
 
 Function Error(String msg, string src = "")
-	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] - ERROR - " + src + " - " + msg
+	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] State" + GetState() + "] - ERROR - " + src + " - " + msg
 	Debug.TraceStack("SEXLAB - " + msg)
 	SexLabUtil.PrintConsole(msg)
 	if _Config.DebugMode
@@ -994,7 +994,7 @@ EndFunction
 
 Function LogRedundant(String asFunction)
 	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.\n\nPlease report this to Scrab with a Papyrus Log attached")
-	Debug.TraceStack("Invoking Legacy Content Function " + asFunction)
+	Debug.TraceStack("Invoking Legacy Function " + asFunction)
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -1170,6 +1170,10 @@ bool function PregnancyRisk()
 	return _Thread.PregnancyRisk(_ActorRef)
 endFunction
 
+Function DoStatistics()
+	; Thread handles Position statistics based on History and Participants
+EndFunction
+
 ; Below functions are all strictly redundant
 ; Their functionality is either unnecessary or has absorbed into some other function directly
 ; Most of these functions had a specific functionality to operate on the underlying actor, allowing them to be invoked illegally
@@ -1205,10 +1209,6 @@ endEvent
 function ClearEffects()
 	LogRedundant("ClearEffects")
 endFunction
-
-Function DoStatistics()
-	; Thread handles Position statistics based on History and Participants
-EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
