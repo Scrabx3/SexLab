@@ -63,7 +63,6 @@ endFunction
 
 function ApplyPhase(Actor ActorRef, int Phase, int Gender)
 	if Phase <= Phases[Gender]
-	;	TransitPresetFloats(ActorRef, GetCurrentMFG(ActorRef), GenderPhase(Phase, Gender)) 
 		ApplyPresetFloats(ActorRef, GenderPhase(Phase, Gender))
 	endIf
 endFunction
@@ -74,7 +73,7 @@ endFunction
 
 float[] function SelectPhase(int Strength, int Gender)
 	return GenderPhase(PickPhase(Strength, Gender), Gender)
-endFunction
+endFunction 
 
 ; ------------------------------------------------------- ;
 ; --- Global Utilities                                --- ;
@@ -87,78 +86,38 @@ float function GetPhoneme(Actor ActorRef, int id) global native
 float function GetExpression(Actor ActorRef, bool getId) global native
 
 function ClearPhoneme(Actor ActorRef) global
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
-	int i
-	if HasMFG
-		while i <= 15
-			MfgConsoleFunc.SetPhonemeModifier(ActorRef, 0, i, 0)
-			i += 1
-		endWhile
-	else
-		while i <= 15
-			ActorRef.SetExpressionPhoneme(i, 0.0)
-			i += 1
-		endWhile
-	endIf
+	sslExpression_util.resetPhonemesSmooth(ActorRef)
 endFunction
 function ClearModifier(Actor ActorRef) global
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
-	int i
-
-	if HasMFG
-		while i <= 13
-			MfgConsoleFunc.SetPhonemeModifier(ActorRef, 1, i, 0)
-			i += 1
-		endWhile
-	else
-		while i <= 13
-			ActorRef.SetExpressionModifier(i, 0.0)
-			i += 1
-		endWhile
-	endIf
+	sslExpression_util.resetModifiersSmooth(ActorRef)
 endFunction
 
 function OpenMouth(Actor ActorRef) global
-;	ClearPhoneme(ActorRef)
-;	if SexLabUtil.GetConfig().HasMFGFix
-;		MfgConsoleFunc.SetPhonemeModifier(ActorRef, 0, 1, SexLabUtil.GetConfig().OpenMouthSize) 
-;	else
-;		ActorRef.SetExpressionPhoneme(1, (SexLabUtil.GetConfig().OpenMouthSize as float / 100.0))
-;	endIf
 	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
 	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
 	int OpenMouthSize = SexLabUtil.GetConfig().OpenMouthSize
 	float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
 	Int i = 0
 	Int s = 0
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
 	while i < Phonemes.length
 		if (GetPhoneme(ActorRef, i) != Phonemes[i])
-			if HasMFG
-				MfgConsoleFunc.SetPhonemeModifier(ActorRef, 0, i, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
-			else
-				ActorRef.SetExpressionPhoneme(i, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100) as float / 100.0)
-			endIf
+			sslExpression_util.SmoothSetModifier(ActorRef,0,PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
 		endIf
 		if Phonemes[i] >= Phonemes[s] ; seems to be required to prevet issues
 			s = i
 		endIf
 		i += 1
 	endWhile
-	if HasMFG
-		MfgConsoleFunc.SetPhonemeModifier(ActorRef, 0, s, (Phonemes[s] * 100.0) as int) ; Oldrim
-	else
-		ActorRef.SetExpressionPhoneme(s, Phonemes[s]) ; is supouse to be / 100.0 already thanks SetIndex function
-	endIf
+	sslExpression_util.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int) ; Oldrim
 	if (GetExpression(ActorRef, true) as int == OpenMouthExpression || GetExpression(ActorRef, false) != OpenMouthSize as float / 100.0)
-		ActorRef.SetExpressionOverride(OpenMouthExpression, OpenMouthSize)
+		sslExpression_util.SmoothSetExpression(ActorRef,OpenMouthExpression, OpenMouthSize, GetExpression(ActorRef,true) as Int)
 	endIf
 	Utility.WaitMenuMode(0.1)
 endFunction
 
 function CloseMouth(Actor ActorRef) global
 	ClearPhoneme(ActorRef)
-	ActorRef.SetExpressionOverride(7, 50)
+	sslExpression_util.SmoothSetExpression(ActorRef,7,70, GetExpression(ActorRef,true) as Int)
 	Utility.WaitMenuMode(0.1)
 endFunction
 
@@ -166,7 +125,6 @@ bool function IsMouthOpen(Actor ActorRef) global
 	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
 	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
 	float MinMouthSize = (SexLabUtil.GetConfig().OpenMouthSize * 0.01) - 0.1
-;	return GetPhoneme(ActorRef, 1) >= MinMouthSize && (GetExpression(ActorRef, true) as Int == OpenMouthExpression && GetExpression(ActorRef, false) >= MinMouthSize)
 	if GetExpression(ActorRef, true) as Int == OpenMouthExpression && GetExpression(ActorRef, false) >= MinMouthSize
 		return true
 	endIf
@@ -182,13 +140,7 @@ bool function IsMouthOpen(Actor ActorRef) global
 endFunction
 
 function ClearMFG(Actor ActorRef) global
-	ActorRef.ClearExpressionOverride()
-	if SexLabUtil.GetConfig().HasMFGFix
-		MfgConsoleFunc.SetPhonemeModifier(ActorRef, -1, 0, 0)
-	else
-		ClearPhoneme(ActorRef)
-		ClearModifier(ActorRef)
-	endIf
+	sslExpression_util.resetMFGSmooth(ActorRef)
 endFunction
 
 function TransitPresetFloats(Actor ActorRef, float[] FromPreset, float[] ToPreset, float Speed = 1.0, float Time = 1.0) global 
@@ -223,55 +175,15 @@ function ApplyPresetFloats(Actor ActorRef, float[] Preset) global
 	if !ActorRef || Preset.Length < 32
 		return
 	endIf
-
-	int i
-	int p
-	int m
-	; MFG
-	bool IsMouthOpen = IsMouthOpen(ActorRef)
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
-	; Set Phoneme
-	if IsMouthOpen
-		i = 16 ; escape the Phoneme to prevent override the MouthOpen
-	else
-		int s
-		while p <= 15
-			if GetPhoneme(ActorRef, p) != Preset[i]
-				if HasMFG
-					MfgConsoleFunc.SetPhonemeModifier(ActorRef, 0, p, (Preset[i] * 100.0) as int) ; Oldrim
-				else
-					ActorRef.SetExpressionPhoneme(p, Preset[i]) ; is supouse to be / 100.0 already thanks SetIndex function
-				endIf
-			endIf
-			if Preset[p] >= Preset[s] ; seems to be required to prevet issues
-				s = p
-			endIf
-			i += 1
-			p += 1
-		endWhile
-		if HasMFG
-			MfgConsoleFunc.SetPhonemeModifier(ActorRef, 0, s, (Preset[s] * 100.0) as int) ; Oldrim
-		else
-			ActorRef.SetExpressionPhoneme(s, Preset[s]) ; is supouse to be / 100.0 already thanks SetIndex function
+	bool bMouthOpen = IsMouthOpen(ActorRef)
+	float currExpr = GetExpression(ActorRef, true)
+	int currValue = PapyrusUtil.ClampInt((GetExpression(ActorRef, false)) as int, 0, 100)
+	if !bMouthOpen
+		if currExpr != Preset[30]
+			sslExpression_util.SmoothSetExpression(ActorRef, currExpr as int, 0, currValue)
 		endIf
-		
 	endIf
-	; Set Modifers
-	while m <= 13
-		if GetModifier(ActorRef, m) != Preset[i]
-			if HasMFG
-				MfgConsoleFunc.SetPhonemeModifier(ActorRef, 1, m, (Preset[i] * 100.0) as int) ; Oldrim
-			else
-				ActorRef.SetExpressionModifier(m, Preset[i]) ; is supouse to be / 100.0 already thanks SetIndex function
-			endIf
-		endIf
-		i += 1
-		m += 1
-	endWhile
-	; Set expression
-	if (GetExpression(ActorRef, true) == Preset[30] || GetExpression(ActorRef, false) != Preset[31]) && !IsMouthOpen
-		ActorRef.SetExpressionOverride(Preset[30] as int, (Preset[31] * 100.0) as int)
-	endIf
+	sslExpression_util.ApplyExpressionPreset(ActorRef, Preset, bMouthOpen)
 endFunction
 
 
@@ -730,12 +642,3 @@ endFunction
 function ApplyPreset(Actor ActorRef, int[] Preset) global
 	ApplyPresetFloats(ActorRef, ToFloatArray(Preset))
 endFunction
-
-; ------------------------------------------------------- ;
-; --- REFACTOR DEPRECATION                            --- ;
-; ------------------------------------------------------- ;
-
-; int[] function GetPhase(int Phase, int Gender)
-; endFunction
-; function SetPhase(int Phase, int Gender, int[] Preset)
-; endFunction
