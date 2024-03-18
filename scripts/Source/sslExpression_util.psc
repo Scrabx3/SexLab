@@ -20,7 +20,6 @@ Scriptname sslExpression_util Hidden
 Function SmoothSetModifier(Actor act, Int mod, Int str_dest, float strModifier = 1.0) global
 	str_dest = (str_dest * strModifier) as Int
 	mod = PapyrusUtil.ClampInt(mod, 0, 13)
-	str_dest = (str_dest * strModifier) as Int
 	MfgConsoleFuncExt.SetModifier(act,mod,str_dest, 1)
 EndFunction
 ;Aah 0    BigAah 1
