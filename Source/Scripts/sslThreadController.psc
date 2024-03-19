@@ -91,11 +91,7 @@ Event OnKeyDown(int KeyCode)
 	ElseIf(hotkey == kMoveScene)
 		MoveScene()
 	ElseIf(hotkey == kEndAnimation)
-		If(Config.BackwardsPressed())
-			Config.ThreadSlots.StopAll()
-		Else
-			EndAnimation()
-		EndIf
+		EndAnimation()
 	EndIf
 	_SkipHotkeyEvents = false
 EndEvent

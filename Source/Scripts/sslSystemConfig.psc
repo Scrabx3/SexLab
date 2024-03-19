@@ -903,8 +903,6 @@ Event OnKeyDown(int keyCode)
     Else
       SetTargetActor()
     EndIf
-  ElseIf (keyCode == EndAnimation && BackwardsPressed())
-    ThreadSlots.StopAll()
   EndIf
 EndEvent
 
