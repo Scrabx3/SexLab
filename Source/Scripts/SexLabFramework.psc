@@ -1176,16 +1176,6 @@ sslThreadController[] property Threads hidden
 endProperty
 
 ;/* DEPRECATED! */;
-bool function IsImpure(Actor ActorRef)
-  return Stats.IsLewd(ActorRef)
-endFunction
-
-;/* DEPRECATED! */;
-int function GetPlayerStatLevel(string Skill)
-  return Stats.GetSkillLevel(PlayerRef, Skill)
-endFunction
-
-;/* DEPRECATED! */;
 int function StartSex(Actor[] Positions, sslBaseAnimation[] Anims, Actor Victim = none, ObjectReference CenterOn = none, bool AllowBed = true, string Hook = "")
   sslThreadModel thread = NewThread()
   If (!thread)
@@ -1582,6 +1572,9 @@ endFunction
 int function AdjustBy(string Name, int AdjustBy)
   return Stats.AdjustBy(PlayerRef, Name, AdjustBy)
 endFunction
+bool function IsImpure(Actor ActorRef)
+  return Stats.IsLewd(ActorRef)
+endFunction
 float function AdjustPurity(Actor ActorRef, float amount)
   return Stats.AdjustPurity(ActorRef, amount)
 endFunction
@@ -1647,6 +1640,9 @@ int function CalcSexuality(bool IsFemale, int males, int females)
 endFunction
 int function CalcLevel(float total, float curve = 0.65)
   return sslActorStats.CalcLevel(total, curve)
+endFunction
+int function GetPlayerStatLevel(string Skill)
+  return Stats.GetSkillLevel(PlayerRef, Skill)
 endFunction
 string function GetPlayerSexualityTitle()
   return sslActorStats.GetSexualityTitle(PlayerRef)
@@ -2122,7 +2118,7 @@ sslObjectFactory property Factory Hidden
     return Game.GetFormFromFile(0x78818, "SexLab.esm") as sslObjectFactory
   EndFunction
 EndProperty
-sslActorStats Property Stats
+sslActorStats Property Stats Hidden
   sslActorStats Function Get()
 	  return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorStats
   EndFunction

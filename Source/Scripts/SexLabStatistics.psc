@@ -10,8 +10,8 @@ Actor[] Function GetAllTrackedUniqueActorsSorted() native global
 
 int Property LastUpdate_GameTime  = 0   AutoReadOnly
 int Property SecondsInScene       = 1   AutoReadOnly
-int Property XP_Anal              = 2   AutoReadOnly
-int Property XP_Vaginal           = 3   AutoReadOnly
+int Property XP_Vaginal           = 2   AutoReadOnly
+int Property XP_Anal              = 3   AutoReadOnly
 int Property XP_Oral              = 4   AutoReadOnly
 int Property PartnersMale         = 5   AutoReadOnly
 int Property PartnersFemale       = 6   AutoReadOnly
@@ -24,9 +24,8 @@ int Property TimesMasturbated     = 12  AutoReadOnly
 int Property TimesSubmissive      = 13  AutoReadOnly
 int Property TimesDominant        = 14  AutoReadOnly
 int Property TimesTotal           = 15  AutoReadOnly
-int Property SadoMasochismus      = 16  AutoReadOnly
-int Property Sexuality            = 17  AutoReadOnly
-int Property Arousal              = 18  AutoReadOnly
+int Property Sexuality            = 16  AutoReadOnly
+int Property Arousal              = 17  AutoReadOnly
 
 ; Obtain a statistic value, the id must be one of the above
 float Function GetStatistic(Actor akActor, int id) native global

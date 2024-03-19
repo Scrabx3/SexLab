@@ -3,59 +3,6 @@ scriptname sslActorStats extends sslSystemLibrary
 	Internal Scripts for Statistics access and manipulation
 }
 
-; TODO: RecordThread() is still functional
-; TODO: Statistics Script is still used throughout the framework and should be updated to the new API
-; TODO: Some legacy funcs might still be relevant after converting the remaining frame to the new API
-; COMEBACK: To reduce CoSave usage, might want to cut down on total stored partners for any non-player
-; IDEA: Should the above also exclude followers?
-; COMEBACK: Some translations are in this script, should prolly move them to MCM?
-
-String Function ParseDate(float afGameTime) global
-  String ret
-  int day = GameDay.GetValueInt()
-  If(day == 1)
-    ret = "1st of "
-  ElseIf(day == 2)
-    ret = "2nd of "
-  ElseIf(day == 3)
-    ret = "3rd of "
-  Else
-    ret = day + "th of "
-  EndIf
-  int month = GameMonth.GetValueInt() + 1
-  If(month == 1)
-    ret += "Morning Star "
-  ElseIf(month == 2)
-    ret += "Sun's Dawn "
-  ElseIf(month == 3)
-    ret += "First Seed "
-  ElseIf(month == 4)
-    ret += "Rain's Hand "
-  ElseIf(month == 5)
-    ret += "Second Seed "
-  ElseIf(month == 6)
-    ret += "Mid Year "
-  ElseIf(month == 7)
-    ret += "Sun's Height "
-  ElseIf(month == 8)
-    ret += "Last Seed "
-  ElseIf(month == 9)
-    ret += "Hearthfire "
-  ElseIf(month == 10)
-    ret += "Frost Fall "
-  ElseIf(month == 11)
-    ret += "Sun's Dusk "
-  ElseIf(month == 12)
-    ret += "Evening Star "
-  EndIf
-  ret += "4E " + GameYear.GetValueInt() + " / "
-  int hour = GameHour.GetValueInt()
-  ret += hour + ":"
-  float minute = (GameHour.Value - hour)
-  ret += (minute * 60) as int
-  return ret
-EndFunction
-
 String Function ParseTime(int time) global
 	If time < 0
 		return "--:--:--"
@@ -90,36 +37,6 @@ endFunction
 int function CalcLevel(float Total, float Curve = 0.85) global
 	return CalcLevelFloat(Total, Curve) as int
 endFunction
-
-; COMEBACK: Prbly want to move this into MCM Menu
-String Function GetSexualityTitle(Actor ActorRef) global
-	int sexuality = SexLabStatistics.GetSexuality(ActorRef)
-	If (sexuality == 0)
-		return "$SSL_Heterosexual"
-	ElseIf (sexuality == 1)
-		If (SexLabRegistry.GetSex(ActorRef, true) == 0)
-			return "$SSL_Gay"
-		Else
-			return "$SSL_Lesbian"
-		EndIf
-	Else
-		return "$SSL_Bisexual"
-	EndIf
-EndFunction
-
-String[] Function StatTitles()
-	String[] StatTitles = new String[7]
-	StatTitles[0] = "$SSL_Unskilled"
-	StatTitles[1] = "$SSL_Novice"
-	StatTitles[2] = "$SSL_Apprentice"
-	StatTitles[3] = "$SSL_Journeyman"
-	StatTitles[4] = "$SSL_Expert"
-	StatTitles[5] = "$SSL_Master"
-	StatTitles[6] = "$SSL_GrandMaster"
-	return StatTitles
-EndFunction
-
-; TODO: Skill Level funcs to use new API (will need proper remake)
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
@@ -167,6 +84,14 @@ String[] Function SkillNames()
 	return SkillNames
 EndFunction
 
+String Function GetSexualityTitle(Actor ActorRef) global
+	return sslConfigMenu.GetSexualityTitle(ActorRef)
+EndFunction
+
+String[] Function StatTitles() global
+	return sslConfigMenu.StatTitles()
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Manipulate Custom Stats                         --- ;
 ; ------------------------------------------------------- ;
@@ -183,13 +108,13 @@ endFunction
 
 int function RegisterStat(string Stat, string Value, string Prepend = "", string Append = "")
 	If (FindStat(Stat) == -1)
-		SexLabStatistics.SetCustomStatStr(PlayerRef, Stat, Value)
-		SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Default." + Stat, Value)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), Stat, Value)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Default." + Stat, Value)
 		If (Prepend)
-			SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Prepend." + Stat, Value)
+			SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Prepend." + Stat, Value)
 		EndIf
 		If (Append)
-			SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Append." + Stat, Value)		
+			SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Append." + Stat, Value)		
 		EndIf
 	EndIf
 	return FindStat(Stat)
@@ -200,25 +125,25 @@ function Alter(string Name, string NewName = "", string Value = "", string Prepe
 		return
 	EndIf
 	If (NewName != "")
-		String v = SexLabStatistics.GetCustomStatStr(PlayerRef, Name)
-		String d = SexLabStatistics.GetCustomStatStr(PlayerRef, "Custom.Default." + Name)
-		String p = SexLabStatistics.GetCustomStatStr(PlayerRef, "Custom.Prepend." + Name)
-		String a = SexLabStatistics.GetCustomStatStr(PlayerRef, "Custom.Append." + Name)
-		SexLabStatistics.DeleteCustomStat(PlayerRef, Name)
-		SexLabStatistics.SetCustomStatStr(PlayerRef, NewName, v)
-		SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Default." + NewName, d)
-		SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Prepend." + NewName, p)
-		SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Append." + NewName, a)
+		String v = SexLabStatistics.GetCustomStatStr(Game.GetPlayer(), Name)
+		String d = SexLabStatistics.GetCustomStatStr(Game.GetPlayer(), "Custom.Default." + Name)
+		String p = SexLabStatistics.GetCustomStatStr(Game.GetPlayer(), "Custom.Prepend." + Name)
+		String a = SexLabStatistics.GetCustomStatStr(Game.GetPlayer(), "Custom.Append." + Name)
+		SexLabStatistics.DeleteCustomStat(Game.GetPlayer(), Name)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), NewName, v)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Default." + NewName, d)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Prepend." + NewName, p)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Append." + NewName, a)
 		Name = NewName
 	EndIf
 	if Value != ""
-		SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Default." + Name, Value)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Default." + Name, Value)
 	endIf
 	if Prepend != ""
-		SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Prepend." + Name, Prepend)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Prepend." + Name, Prepend)
 	endIf
 	if Append != ""
-		SexLabStatistics.SetCustomStatStr(PlayerRef, "Custom.Append." + Name, Append)
+		SexLabStatistics.SetCustomStatStr(Game.GetPlayer(), "Custom.Append." + Name, Append)
 	endIf
 endFunction
 
@@ -273,13 +198,13 @@ int function GetStatInt(Actor ActorRef, string Stat)
 endFunction
 
 string function GetStatDefault(string Stat)
-	return SexLabStatistics.GetCustomStatStr(PlayerRef, "Custom.Default." + Stat)
+	return SexLabStatistics.GetCustomStatStr(Game.GetPlayer(), "Custom.Default." + Stat)
 endFunction
 string function GetStatPrepend(string Stat)
-	return SexLabStatistics.GetCustomStatStr(PlayerRef, "Custom.Prepend." + Stat)
+	return SexLabStatistics.GetCustomStatStr(Game.GetPlayer(), "Custom.Prepend." + Stat)
 endFunction
 string function GetStatAppend(string Stat)
-	return SexLabStatistics.GetCustomStatStr(PlayerRef, "Custom.Append." + Stat)
+	return SexLabStatistics.GetCustomStatStr(Game.GetPlayer(), "Custom.Append." + Stat)
 endFunction
 string function GetStatFull(Actor ActorRef, string Stat)
 	return GetStatPrepend(Stat) + GetStat(ActorRef, Stat) + GetStatAppend(Stat)
@@ -531,7 +456,7 @@ function AddSex(Actor ActorRef, float TimeSpent = 0.0, bool WithPlayer = false, 
 		_AdjustSkill(ActorRef, kFemales, Females)
 		_AdjustSkill(ActorRef, kCreatures, Creatures)
 		_AdjustSkill(ActorRef, kSexCount, 1)
-		if ActorRef != PlayerRef
+		if ActorRef != Game.GetPlayer()
 			if !IsAggressive
 				AdjustSexuality(ActorRef, Males * 2, Females * 2)
 			else
@@ -541,9 +466,9 @@ function AddSex(Actor ActorRef, float TimeSpent = 0.0, bool WithPlayer = false, 
 	else
 		_AdjustSkill(ActorRef, kMasturbation, 1)
 	endIf
-	if WithPlayer && ActorRef != PlayerRef
+	if WithPlayer && ActorRef != Game.GetPlayer()
 		_AdjustSkill(ActorRef, kPlayerSex, 1)
-		SexLabStatistics.AddEncounter(PlayerRef, ActorRef, 0)
+		SexLabStatistics.AddEncounter(Game.GetPlayer(), ActorRef, 0)
 	endIf
 endFunction
 
@@ -618,12 +543,12 @@ Actor function LastActorInList(Actor ActorRef, string List)
 endFunction
 
 Actor function MostUsedPlayerSexPartner()
-	Actor[] list = SexLabStatistics.GetAllEncounters(PlayerRef)
+	Actor[] list = SexLabStatistics.GetAllEncounters(Game.GetPlayer())
 	Actor ret = none
 	int max = 0
 	int i = 0
 	While (i < list.Length)
-		int met = SexLabStatistics.GetTimesMet(PlayerRef, list[i])
+		int met = SexLabStatistics.GetTimesMet(Game.GetPlayer(), list[i])
 		If (met > max)
 			max = met
 			ret = list[i]
@@ -636,14 +561,14 @@ Actor function MostUsedPlayerSexPartner2()
 	return MostUsedPlayerSexPartner()	; Original code was 1:1 the same as above
 endFunction
 Actor[] function MostUsedPlayerSexPartners(int MaxActors = 5)
-	Actor[] act = SexLabStatistics.GetAllEncounters(PlayerRef)
+	Actor[] act = SexLabStatistics.GetAllEncounters(Game.GetPlayer())
 	If (act.Length >= MaxActors)
 		return act
 	EndIf
 	int[] timesmet = Utility.CreateIntArray(act.Length)
 	int k = 0
 	While (k < act.Length)
-		timesmet[k] = SexLabStatistics.GetTimesMet(PlayerRef, act[k])
+		timesmet[k] = SexLabStatistics.GetTimesMet(Game.GetPlayer(), act[k])
 		k += 1
 	EndWhile
 	; Sort times met s.t. highest is at [0]
@@ -839,7 +764,7 @@ function ClearNPCSexSkills()
 	Actor[] list = GetAllSkilledActors()
 	int i = 0
 	While (i < list.Length)
-		If (list[i] != PlayerRef)
+		If (list[i] != Game.GetPlayer())
 			SexLabStatistics.ResetStatistics(list[i])
 		EndIf
 		i += 1
@@ -1095,7 +1020,6 @@ state Testing
 	function Tester()
 		while locked
 			utility.wait(0.5)
-			Log("ActorStats Locked...")
 		endWhile
 		locked = true
 
