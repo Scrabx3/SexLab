@@ -10,6 +10,52 @@ scriptname sslActorStats extends sslSystemLibrary
 ; IDEA: Should the above also exclude followers?
 ; COMEBACK: Some translations are in this script, should prolly move them to MCM?
 
+String Function ParseDate(float afGameTime) global
+  String ret
+  int day = GameDay.GetValueInt()
+  If(day == 1)
+    ret = "1st of "
+  ElseIf(day == 2)
+    ret = "2nd of "
+  ElseIf(day == 3)
+    ret = "3rd of "
+  Else
+    ret = day + "th of "
+  EndIf
+  int month = GameMonth.GetValueInt() + 1
+  If(month == 1)
+    ret += "Morning Star "
+  ElseIf(month == 2)
+    ret += "Sun's Dawn "
+  ElseIf(month == 3)
+    ret += "First Seed "
+  ElseIf(month == 4)
+    ret += "Rain's Hand "
+  ElseIf(month == 5)
+    ret += "Second Seed "
+  ElseIf(month == 6)
+    ret += "Mid Year "
+  ElseIf(month == 7)
+    ret += "Sun's Height "
+  ElseIf(month == 8)
+    ret += "Last Seed "
+  ElseIf(month == 9)
+    ret += "Hearthfire "
+  ElseIf(month == 10)
+    ret += "Frost Fall "
+  ElseIf(month == 11)
+    ret += "Sun's Dusk "
+  ElseIf(month == 12)
+    ret += "Evening Star "
+  EndIf
+  ret += "4E " + GameYear.GetValueInt() + " / "
+  int hour = GameHour.GetValueInt()
+  ret += hour + ":"
+  float minute = (GameHour.Value - hour)
+  ret += (minute * 60) as int
+  return ret
+EndFunction
+
 String Function ParseTime(int time) global
 	If time < 0
 		return "--:--:--"
