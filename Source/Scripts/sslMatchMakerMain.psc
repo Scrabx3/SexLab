@@ -4,6 +4,7 @@ Scriptname sslMatchMakerMain extends Quest
 SexLabFramework property SexLab auto
 sslSystemConfig property Config auto
 Actor property PlayerRef auto
+float _StartCall
 
 String Function GetSexString(int sexIndex)
   If sexIndex == 0
@@ -117,17 +118,24 @@ Function TriggerSex(Actor[] akPassed)
   Debug.Notification("Valid scenes found: " + scenes.Length)
   Config.Log("[SexLab MatchMaker] - Scenes found: " + scenes.Length)
 
+  _StartCall = Utility.GetCurrentRealTime()
   If (!SexLab.StartSceneExA(akPassed, scenes, sub, asHook = "SSLMatchMaker"))
+    float retTime = Utility.GetCurrentRealTime()
+    Config.Log("[SexLab MatchMaker] Unable to start animation, abort after " + (retTime - _StartCall))
     Debug.Notification("Failed to start scene")
-    Config.Log("[SexLab MatchMaker] Unable to start animation, abort")
+  Else
+    float retTime = Utility.GetCurrentRealTime()
+    Config.Log("[SexLab MatchMaker] Successfully started animation after " + (retTime - _StartCall))
   EndIf
 EndFunction
 
 Event AnimationStarted(int aiThread, bool abHasPlayer)
+  float retTime = Utility.GetCurrentRealTime()
   UnregisterForUpdate()
   SexLabThread thread = SexLab.GetThread(aiThread)
   Debug.Notification("Scene started: " + SexLabRegistry.GetSceneName(thread.GetActiveScene()))
   Config.Log("[SexLab MatchMaker] - ###### START LOGGING SCENE DATA #####")
+  Config.Log("[SexLab MatchMaker] - Startup time: " + (retTime - _StartCall))
   Config.Log("[SexLab MatchMaker] - Current thread id: " + thread.GetThreadID())
   Config.Log("[SexLab MatchMaker] - Current active stage: " + thread.GetActiveStage())
   Config.Log("[SexLab MatchMaker] - Current active scene: " + thread.GetActiveScene())

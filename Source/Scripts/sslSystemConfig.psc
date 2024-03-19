@@ -261,14 +261,6 @@ bool property UndressAnimation hidden
     SetSettingBool("bUndressAnimation", aSet)
   EndFunction
 EndProperty
-bool property Benchmark hidden
-	bool Function Get()
-		return GetSettingBool("bBenchmark")
-	EndFunction
-	Function Set(bool aSet)
-	  SetSettingBool("bBenchmark", aSet)
-	EndFunction
-EndProperty
 bool property SubmissivePlayer hidden
   bool Function Get()
 	return GetSettingBool("bSubmissivePlayer")

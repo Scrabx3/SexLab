@@ -3041,7 +3041,6 @@ function RebuildClean()
 	endIf
 	AddHeaderOption("$SSL_Maintenance")
 	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
-	AddToggleOptionST("Benchmark", "$SSL_Benchmark", Config.Benchmark)
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")			; This can stay
 	AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")		; This should go
 	AddTextOptionST("ResetAnimationRegistry","$SSL_ResetAnimationRegistry", "$SSL_ClickHere")		; TODO: Update, as it only syncs with legacy API
@@ -3052,14 +3051,11 @@ function RebuildClean()
 	AddHeaderOption("$SSL_AvailableStrapons")
 	AddTextOptionST("RebuildStraponList","$SSL_RebuildStraponList", "$SSL_ClickHere")
 	int i = Config.Strapons.Length
-	while i
+	While i
 		i -= 1
-		string Name = Config.Strapons[i].GetName()
-		if Name == "strapon"
-			Name = "Aeon/Horker"
-		endIf
+		String Name = Config.Strapons[i].GetName()
 		AddTextOptionST("Strapon_" + i, Name, "$SSL_Remove")
-	endWhile
+	EndWhile
 
 	SetCursorPosition(1)
 	AddHeaderOption("Registry Info")
@@ -3797,15 +3793,6 @@ state DebugMode
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoDebugMode")
-	endEvent
-endState
-state Benchmark
-	event OnSelectST()
-		Config.Benchmark = !Config.Benchmark
-		SetToggleOptionValueST(Config.Benchmark)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoBenchmark")
 	endEvent
 endState
 state CleanSystem
