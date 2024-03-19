@@ -1,10 +1,5 @@
 Scriptname sslExpression_util Hidden
 
-String Function GetSLSmoothVersionString() global
-    Return "3.0.1"
-EndFunction
-
-
 ;mfg modifier
 ;BlinkL 0
 ;BlinkR 1
@@ -22,15 +17,10 @@ EndFunction
 ;SquintR 13
 ;for changing 2 values at the same time (e.g. eyes squint)
 ;set -1 to mod2 if not needed 
-Function SmoothSetModifier(Actor act, Int mod1, Int mod2, Int str_dest, float strModifier = 1.0) global
-	str_dest = (str_dest * strModifier) as Int
+Function SmoothSetModifier(Actor act, Int mod1, Int str_dest, float strModifier = 1.0) global
 	mod1 = PapyrusUtil.ClampInt(mod1, 0, 13)
-	mod2 = PapyrusUtil.ClampInt(mod1, -1, 13)
 	str_dest = (str_dest * strModifier) as Int
 	MfgConsoleFuncExt.SetModifier(act,mod1,str_dest, 1)
-	if mod2!= -1
-		MfgConsoleFuncExt.SetModifier(act,mod2,str_dest, 1)
-	endif
 EndFunction
 ;Aah 0    BigAah 1
 ;BMP 2    ChjSh 3

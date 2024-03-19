@@ -124,7 +124,7 @@ function OpenMouth(Actor ActorRef) global
 	while i < Phonemes.length
 		if (GetPhoneme(ActorRef, i) != Phonemes[i])
 			if HasMFG
-				SmoothSetModifier(ActorRef,0,-1,PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
+				SmoothSetModifier(ActorRef,0,PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
 			else
 				ActorRef.SetExpressionPhoneme(i, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100) as float / 100.0)
 			endif
