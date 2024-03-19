@@ -250,23 +250,23 @@ int function GetSkill(Actor ActorRef, string Skill)
 	return GetSkillFloat(ActorRef, Skill) as int
 endFunction
 float function GetSkillFloat(Actor ActorRef, string Skill)
-	return _GetSkill(ActorRef, SkillNames().Find(Skill))
+	return GetLegacyStatistic(ActorRef, SkillNames().Find(Skill))
 endFunction
 
-function _SetSkill(Actor ActorRef, int Stat, float Value) global
-	SetLegacyStatistic(ActorRef, Stat, Value as int)
+function _SetSkil(Actor ActorRef, int Stat, float Value) global
+	SetLegacyStatistic(ActorRef, Stat, Value)
 EndFunction
 function SetSkill(Actor ActorRef, string Skill, int Amount)
-	_SetSkill(ActorRef, SkillNames().Find(Skill), Amount as float)
+	SetLegacyStatistic(ActorRef, SkillNames().Find(Skill), Amount as float)
 endFunction
 function SetSkillFloat(Actor ActorRef, string Skill, float Amount)
-	_SetSkill(ActorRef, SkillNames().Find(Skill), Amount)
+	SetLegacyStatistic(ActorRef, SkillNames().Find(Skill), Amount)
 endFunction
 
 float function _AdjustSkill(Actor ActorRef, int Stat, float By) global
-	float v = _GetSkill(ActorRef, Stat)
+	float v = GetLegacyStatistic(ActorRef, Stat)
 	v += By
-	_SetSkill(ActorRef, Stat, v)
+	SetLegacyStatistic(ActorRef, Stat, v)
 	return v
 EndFunction
 function AdjustSkill(Actor ActorRef, string Skill, int Amount)
@@ -317,7 +317,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 int function GetPure(Actor ActorRef)
-	return _GetSkill(ActorRef, kPure) as int
+	return GetLegacyStatistic(ActorRef, kPure) as int
 endFunction
 
 int function GetPureLevel(Actor ActorRef)
@@ -345,7 +345,7 @@ string function GetPureTitle(Actor ActorRef)
 endFunction
 
 int function GetLewd(Actor ActorRef)
-	return _GetSkill(ActorRef, kLewd) as int
+	return GetLegacyStatistic(ActorRef, kLewd) as int
 endFunction
 
 int function GetLewdLevel(Actor ActorRef)
@@ -444,8 +444,8 @@ endFunction
 
 function AddSex(Actor ActorRef, float TimeSpent = 0.0, bool WithPlayer = false, bool IsAggressive = false, int Males = 0, int Females = 0, int Creatures = 0)
 	_AdjustSkill(ActorRef, kTimeSpent, TimeSpent)
-	_SetSkill(ActorRef, kLastGameTime, Utility.GetCurrentGameTime())
-	_SetSkill(ActorRef, kLastRealTime, SexLabUtil.GetCurrentGameRealTime())
+	SetLegacyStatistic(ActorRef, kLastGameTime, Utility.GetCurrentGameTime())
+	SetLegacyStatistic(ActorRef, kLastRealTime, SexLabUtil.GetCurrentGameRealTime())
 
 	int ActorCount = (Males + Females + Creatures)
 	if ActorCount > 1
@@ -473,19 +473,19 @@ function AddSex(Actor ActorRef, float TimeSpent = 0.0, bool WithPlayer = false, 
 endFunction
 
 int function SexCount(Actor ActorRef)
-	return _GetSkill(ActorRef, kSexCount) as int
+	return GetLegacyStatistic(ActorRef, kSexCount) as int
 endFunction
 
 bool function HadSex(Actor ActorRef)
-	return _GetSkill(ActorRef, kSexCount) >= 1.0
+	return GetLegacyStatistic(ActorRef, kSexCount) >= 1.0
 endFunction
 
 int function PlayerSexCount(Actor ActorRef)
-	return _GetSkill(ActorRef, kPlayerSex) as int
+	return GetLegacyStatistic(ActorRef, kPlayerSex) as int
 endFunction
 
 bool function HadPlayerSex(Actor ActorRef)
-	return _GetSkill(ActorRef, kPlayerSex) >= 1.0
+	return GetLegacyStatistic(ActorRef, kPlayerSex) >= 1.0
 endFunction
 
 Actor function LastSexPartner(Actor ActorRef)
@@ -601,7 +601,7 @@ endFunction
 
 function AdjustSexuality(Actor ActorRef, int Males, int Females)
 	bool IsFemale = GetGender(ActorRef) == 1
-	float Ratio = _GetSkill(ActorRef, kSexuality)
+	float Ratio = GetLegacyStatistic(ActorRef, kSexuality)
 	if Ratio == 0.0
 		Ratio = 80.0
 	endIf
@@ -610,24 +610,24 @@ function AdjustSexuality(Actor ActorRef, int Males, int Females)
 	else
 		Ratio += (Females - Males)
 	endIf
-	_SetSkill(ActorRef, kSexuality, PapyrusUtil.ClampFloat(Ratio, 1.0, 100.0) as float)
+	SetLegacyStatistic(ActorRef, kSexuality, PapyrusUtil.ClampFloat(Ratio, 1.0, 100.0) as float)
 endFunction
 
 int function GetSexuality(Actor ActorRef)
-	return _GetSkill(ActorRef, kSexuality) as int
+	return GetLegacyStatistic(ActorRef, kSexuality) as int
 endFunction
 
 bool function IsStraight(Actor ActorRef)
-	return _GetSkill(ActorRef, kSexuality) >= 65.0
+	return GetLegacyStatistic(ActorRef, kSexuality) >= 65.0
 endFunction
 
 bool function IsBisexual(Actor ActorRef)
-	float ratio = _GetSkill(ActorRef, kSexuality)
+	float ratio = GetLegacyStatistic(ActorRef, kSexuality)
 	return ratio < 65.0 && ratio > 35.0
 endFunction
 
 bool function IsGay(Actor ActorRef)
-	return _GetSkill(ActorRef, kSexuality) <= 35.0
+	return GetLegacyStatistic(ActorRef, kSexuality) <= 35.0
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -636,7 +636,7 @@ endFunction
 
 ; Last sex - Game time1 - float days
 float function LastSexGameTime(Actor ActorRef)
-	return _GetSkill(ActorRef, kLastGameTime)
+	return GetLegacyStatistic(ActorRef, kLastGameTime)
 endFunction
 
 float function DaysSinceLastSex(Actor ActorRef)
@@ -661,7 +661,7 @@ endFunction
 
 ; Last sex - Real Time - float seconds
 float function LastSexRealTime(Actor ActorRef)
-	return _GetSkill(ActorRef, kLastRealTime)
+	return GetLegacyStatistic(ActorRef, kLastRealTime)
 endFunction
 
 float function SecondsSinceLastSexRealTime(Actor ActorRef)
@@ -965,14 +965,14 @@ endFunction
 
 function SetInt(Actor ActorRef, string Stat, int Value)
 	if SkillNames().Find(Stat) != -1
-		_SetSkill(ActorRef, SkillNames().Find(Stat), value as int)
+		SetLegacyStatistic(ActorRef, SkillNames().Find(Stat), value as int)
 	else
 		SetStat(ActorRef, Stat, Value)
 	endIf
 endFunction
 function SetFloat(Actor ActorRef, string Stat, float Value)
 	if SkillNames().Find(Stat) != -1
-		_SetSkill(ActorRef, SkillNames().Find(Stat), 0.0)
+		SetLegacyStatistic(ActorRef, SkillNames().Find(Stat), 0.0)
 	else
 		SetStat(ActorRef, Stat, Value)
 	endIf
@@ -982,11 +982,11 @@ function SetStr(Actor ActorRef, string Stat, string Value)
 endFunction
 
 function ClearInt(Actor ActorRef, string Stat)
-	_SetSkill(ActorRef, SkillNames().Find(Stat), 0.0)
+	SetLegacyStatistic(ActorRef, SkillNames().Find(Stat), 0.0)
 	ClearStat(ActorRef, Stat)
 endFunction
 function ClearFloat(Actor ActorRef, string Stat)
-	_SetSkill(ActorRef, SkillNames().Find(Stat), 0.0)
+	SetLegacyStatistic(ActorRef, SkillNames().Find(Stat), 0.0)
 	ClearStat(ActorRef, Stat)
 endFunction
 function ClearStr(Actor ActorRef, string Stat)

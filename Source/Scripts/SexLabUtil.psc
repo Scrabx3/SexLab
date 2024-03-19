@@ -73,9 +73,9 @@ function VehicleFixMode(int mode) global native
 
 int function IntMinMaxValue(int[] searchArray, bool findHighestValue = true) global native
 int function IntMinMaxIndex(int[] searchArray, bool findHighestValue = true) global native
-
 float function FloatMinMaxValue(float[] searchArray, bool findHighestValue = true) global native
 int function FloatMinMaxIndex(float[] searchArray, bool findHighestValue = true) global native
+Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none) global native
 
 float function GetCurrentGameRealTime() global native
 ; Non native of the above ^ since 1.5 has no access to it
@@ -229,12 +229,6 @@ ObjectReference function ObjectIfElse(bool isTrue, ObjectReference returnTrue, O
 	return returnFalse
 EndFunction
 ReferenceAlias function AliasIfElse(bool isTrue, ReferenceAlias returnTrue, ReferenceAlias returnFalse = none) global
-	If (isTrue)
-		return returnTrue
-	EndIf
-	return returnFalse
-EndFunction
-Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none) global
 	If (isTrue)
 		return returnTrue
 	EndIf
