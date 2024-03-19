@@ -635,35 +635,35 @@ Event OnMenuAcceptST(int aiIndex)
 EndEvent
 
 Event OnInputOpenST()
-	String[] Options = MapOptions()
+	String[] options = PapyrusUtil.StringSplit(GetState(), "_")
 	; --- Matchmaker Tags
-	If Options[0] == "InputRequiredTags"
+	If (options[0] == "InputRequiredTags")
 		SetInputDialogStartText(Config.RequiredTags)
 		ForcePageReset()
-	ElseIf Options[0] == "InputExcludedTags"
+	ElseIf (options[0] == "InputExcludedTags")
 		SetInputDialogStartText(Config.ExcludedTags)
 		ForcePageReset()
-	ElseIf Options[0] == "InputOptionalTags"
+	ElseIf (options[0] == "InputOptionalTags")
 		SetInputDialogStartText(Config.OptionalTags)
 		ForcePageReset()
 	Else
-		SetInputDialogStartText("Error: Invalid Option ID " + Options)
+		SetInputDialogStartText("Error: Invalid Option ID " + options)
 	EndIf
 EndEvent
 
 Event OnInputAcceptST(String inputString)
-	string[] Options = MapOptions()
+	String[] options = PapyrusUtil.StringSplit(GetState(), "_")
 	; --- Matchmaker Tags
-	If Options[0] == "InputRequiredTags"
+	If (options[0] == "InputRequiredTags")
 		Config.RequiredTags = inputString
 		SetInputOptionValueST(Config.RequiredTags)
-	elseIf Options[0] == "InputExcludedTags"
+	ElseIf (options[0] == "InputExcludedTags")
 		Config.ExcludedTags = inputString
 		SetInputOptionValueST(Config.ExcludedTags)
-	elseIf Options[0] == "InputOptionalTags"
+	ElseIf (options[0] == "InputOptionalTags")
 		Config.OptionalTags = inputString
 		SetInputOptionValueST(Config.OptionalTags)
-	endIf
+	EndIf
 EndEvent
 
 event OnSelectST()
