@@ -3,8 +3,10 @@ ScriptName SexLabStatistics Hidden
   Global Script for Statistics Access
 }
 
-; Returns an array of FormIDs of all currently tracked actors
+; Returns an array of Actors containing of all currently tracked actors
 Actor[] Function GetAllTrackedActors() native global
+; Same as above, but the list is trimmed of any non-unique actors and lexicographically sorted on their display name
+Actor[] Function GetAllTrackedUniqueActorsSorted() native global
 
 int Property LastUpdate_GameTime  = 0   AutoReadOnly
 int Property SecondsInScene       = 1   AutoReadOnly
