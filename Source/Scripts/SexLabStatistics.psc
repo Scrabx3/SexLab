@@ -90,5 +90,6 @@ int Function GetTimesDominant(Actor akActor, Actor akPartner) native global
 
 String[] Function GetAllCustomStatIDs(Actor akActor) native global
 Function SetStatistic(Actor akActor, int id, float afValue) native global
+Function SetSexuality(Actor akActor, int mapping) native global
 Function AddEncounter(Actor akActor, Actor akPartner, int aiEncounterType) native global
 Function ResetStatistics(Actor akActor) native global
