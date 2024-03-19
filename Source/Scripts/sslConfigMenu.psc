@@ -41,7 +41,7 @@ string TargetName
 string PlayerName
 
 ; ------------------------------------------------------- ;
-; --- Configuration Events                            --- ;
+; --- Conmfig Init				                            --- ;
 ; ------------------------------------------------------- ;
 
 int Function GetVersion()
@@ -177,64 +177,6 @@ Event OnConfigInit()
 	EndIf
 EndEvent
 
-; ------------------------------------------------------- ;
-; --- Create MCM Pages                                --- ;
-; ------------------------------------------------------- ;
-
-Event OnPageReset(string page)
-	if !SystemAlias.IsInstalled
-		UnloadCustomContent()
-		InstallMenu()
-	elseIf ShowAnimationEditor
-		AnimationEditor()
-	elseif page != ""
-		UnloadCustomContent()
-		if page == "$SSL_AnimationSettings"
-			AnimationSettings()
-		elseIf page == "$SSL_SoundSettings"
-			SoundSettings()
-		elseIf page == "$SSL_PlayerHotkeys"
-			PlayerHotkeys()
-		elseIf page == "$SSL_TimersStripping"
-			TimersStripping()
-		elseIf page == "$SSL_StripEditor"
-			StripEditor()
-		elseIf page == "$SSL_ToggleAnimations"
-			ToggleAnimations()
-		elseIf page == "$SSL_MatchMaker"
-			MatchMaker()
-		elseIf page == "$SSL_AnimationEditor"
-			AnimationEditor()
-		elseIf page == "$SSL_ExpressionEditor"
-			ExpressionEditor()
-		elseIf page == "$SSL_SexDiary" || page == "$SSL_SexJournal"
-			SexDiary()
-		elseIf page == "$SSL_RebuildClean"
-			RebuildClean()
-		endIf
-	else
-		if (Config.GetThreadControlled() || ThreadSlots.FindActorController(PlayerRef) != -1)
-			AnimationEditor()
-			PreventOverwrite = true
-		else
-			LoadCustomContent("SexLab/logo.dds", 184, 31)
-		endIf
-	endIf
-endEvent
-
-bool ShowAnimationEditor = false
-event OnPageSelected(String a_eventName, String a_strArg, Float a_numArg, Form a_sender)
-	if ShowAnimationEditor && (a_numArg as int) != Pages.Find("$SSL_ToggleAnimations")
-		ShowAnimationEditor = false
-	elseIf EditOpenMouth && (a_numArg as int) != Pages.Find("$SSL_ExpressionEditor")
-		EditOpenMouth = false
-	endIf
-endEvent
-
-; ------------------------------------------------------- ;
-; --- Config Setup                                    --- ;
-; ------------------------------------------------------- ;
-
 event OnConfigOpen()
 	If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
 		Pages[0] = "$SSL_SexJournal"
@@ -292,6 +234,188 @@ Event OnConfigClose()
 		EndIf
 	EndIf
 endEvent
+
+; ------------------------------------------------------- ;
+; --- Config Pages						                        --- ;
+; ------------------------------------------------------- ;
+
+Event OnPageReset(string page)
+	if !SystemAlias.IsInstalled
+		UnloadCustomContent()
+		InstallMenu()
+	elseIf ShowAnimationEditor
+		AnimationEditor()
+	elseif page != ""
+		UnloadCustomContent()
+		if page == "$SSL_AnimationSettings"
+			AnimationSettings()
+		elseIf page == "$SSL_SoundSettings"
+			SoundSettings()
+		elseIf page == "$SSL_PlayerHotkeys"
+			PlayerHotkeys()
+		elseIf page == "$SSL_TimersStripping"
+			TimersStripping()
+		elseIf page == "$SSL_StripEditor"
+			StripEditor()
+		elseIf page == "$SSL_ToggleAnimations"
+			ToggleAnimations()
+		elseIf page == "$SSL_MatchMaker"
+			MatchMaker()
+		elseIf page == "$SSL_AnimationEditor"
+			AnimationEditor()
+		elseIf page == "$SSL_ExpressionEditor"
+			ExpressionEditor()
+		elseIf page == "$SSL_SexDiary" || page == "$SSL_SexJournal"
+			SexDiary()
+		elseIf page == "$SSL_RebuildClean"
+			RebuildClean()
+		endIf
+	else
+		if (Config.GetThreadControlled() || ThreadSlots.FindActorController(PlayerRef) != -1)
+			AnimationEditor()
+			PreventOverwrite = true
+		else
+			LoadCustomContent("SexLab/logo.dds", 184, 31)
+		endIf
+	endIf
+endEvent
+
+bool ShowAnimationEditor = false
+event OnPageSelected(String a_eventName, String a_strArg, Float a_numArg, Form a_sender)
+	if ShowAnimationEditor && (a_numArg as int) != Pages.Find("$SSL_ToggleAnimations")
+		ShowAnimationEditor = false
+	elseIf EditOpenMouth && (a_numArg as int) != Pages.Find("$SSL_ExpressionEditor")
+		EditOpenMouth = false
+	endIf
+endEvent
+
+; ------------------------------------------------------- ;
+; --- Sex Diary/Journal Editor                        --- ;
+; ------------------------------------------------------- ;
+
+Actor[] _trackedActors
+String[] _trackedNames
+int _trackedIndex
+
+String Function GetSexualityTitle(Actor ActorRef) global
+	int sexuality = SexLabStatistics.GetSexuality(ActorRef)
+	If (sexuality == 0)
+		return "$SSL_Heterosexual"
+	ElseIf (sexuality == 1)
+		If (SexLabRegistry.GetSex(ActorRef, true) == 0)
+			return "$SSL_Gay"
+		Else
+			return "$SSL_Lesbian"
+		EndIf
+	Else
+		return "$SSL_Bisexual"
+	EndIf
+EndFunction
+
+String[] Function StatTitles() global
+	String[] StatTitles = new String[7]
+	StatTitles[0] = "$SSL_Unskilled"
+	StatTitles[1] = "$SSL_Novice"
+	StatTitles[2] = "$SSL_Apprentice"
+	StatTitles[3] = "$SSL_Journeyman"
+	StatTitles[4] = "$SSL_Expert"
+	StatTitles[5] = "$SSL_Master"
+	StatTitles[6] = "$SSL_GrandMaster"
+	return StatTitles
+EndFunction
+
+Function SexDiary()
+	SetCursorFillMode(LEFT_TO_RIGHT)
+	If (!_trackedActors.Length)
+		; Initialized every time the Config Menu is opened
+		_trackedActors = new Actor[1]
+		_trackedNames = new String[1]
+		_trackedActors[0] = PlayerRef
+		_trackedNames[0] = PlayerRef.GetActorBase().GetName()
+	EndIf
+	If (_trackedIndex >= _trackedActors.Length)
+		_trackedIndex = 0
+	EndIf
+	Actor it = _trackedActors[_trackedIndex]
+	AddMenuOptionST("StatSelectingMenu", "$SSL_StatSelectingMenu", _trackedNames[_trackedIndex])
+	AddTextOptionST("ResetTargetStats", "$SSL_Reset{" + _trackedNames[_trackedIndex] + "}Stats", "$SSL_ClickHere")
+	AddHeaderOption("$SSL_Statistics")
+	AddEmptyOption()
+
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	AddTextOption("$SSL_LastTimeInScene", Utility.GameTimeToString(SexLabStatistics.GetStatistic(it, 0)))
+	AddTextOption("$SSL_TimeInScenes", sslActorStats.ParseTime(SexLabStatistics.GetStatistic(it, 1) as int))
+	String[] xp_titles = StatTitles()
+	int i = 2
+	While (i < 5)		; XP Statistics
+		float value = SexLabStatistics.GetStatistic(it, i)
+		int lv = PapyrusUtil.ClampInt(sslActorStats.CalcLevel(value), 0, xp_titles.Length - 1)
+		AddTextOption("$SSL_Statistic_" + i, xp_titles[lv])
+		i += 1
+	EndWhile
+	While (i < 9)		; Partner Statistics
+		AddTextOption("$SSL_Statistic_" + i, SexLabStatistics.GetStatistic(it, i) as int)
+		i += 1
+	EndWhile
+	SetCursorPosition(5)
+	AddTextOptionST("StatChangeSexuality", "$SSL_Sexuality", GetSexualityTitle(it))
+	While (i < 16)	; "Times" Statistics
+		AddTextOption("$SSL_Statistic_" + i, SexLabStatistics.GetStatistic(it, i) as int)
+		i += 1
+	EndWhile
+EndFunction
+
+State StatSelectingMenu
+	Event OnMenuOpenST()
+		SetMenuDialogStartIndex(_trackedIndex)
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_trackedNames)
+	EndEvent
+	Event OnMenuAcceptST(Int aiIndex)
+		_trackedIndex = aiIndex
+		SetMenuOptionValueST(_trackedNames[_trackedIndex])
+		ForcePageReset()
+	EndEvent
+	Event OnDefaultST()
+		_trackedIndex = 0
+		SetMenuOptionValueST(_trackedNames[_trackedIndex])
+		ForcePageReset()
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_StatSelectingMenuHighlight")
+	EndEvent
+EndState
+
+State ResetTargetStats
+	Event OnSelectST()
+		If (!ShowMessage("$SSL_WarnReset{" + _trackedNames[_trackedIndex] + "}Stats"))
+			return
+		EndIf
+		SexLabStatistics.ResetStatistics(_trackedActors[_trackedIndex])
+		ForcePageReset()
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_ResetStatHighlight")
+	EndEvent
+EndState
+
+State StatChangeSexuality
+	Event OnSelectST()
+		Actor it = _trackedActors[_trackedIndex]
+		int sex = SexLabStatistics.GetSexuality(it)
+		If (sex == 0)	; Hetero -> Homo
+			sslActorStats.SetLegacyStatistic(it, Stats.kSexuality, 25)
+		ElseIf (sex == 1)	; Homo -> Bi
+			sslActorStats.SetLegacyStatistic(it, Stats.kSexuality, 50)
+		Else	; Bi -> Hetero
+			sslActorStats.SetLegacyStatistic(it, Stats.kSexuality, 75)
+		EndIf
+		ForcePageReset()
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_SexualityHighlight")
+	EndEvent
+EndState
 
 ; ------------------------------------------------------- ;
 ; --- Object Pagination                               --- ;
@@ -2745,114 +2869,6 @@ state MoodAmountMale
 		SetSliderOptionValueST(50)
 	endEvent
 endState
-
-; ------------------------------------------------------- ;
-; --- Sex Diary/Journal Editor                        --- ;
-; ------------------------------------------------------- ;
-
-Actor[] _trackedActors
-String[] _trackedNames
-int _trackedIndex
-
-String Function GetSexualityTitle(Actor ActorRef) global
-	int sexuality = SexLabStatistics.GetSexuality(ActorRef)
-	If (sexuality == 0)
-		return "$SSL_Heterosexual"
-	ElseIf (sexuality == 1)
-		If (SexLabRegistry.GetSex(ActorRef, true) == 0)
-			return "$SSL_Gay"
-		Else
-			return "$SSL_Lesbian"
-		EndIf
-	Else
-		return "$SSL_Bisexual"
-	EndIf
-EndFunction
-
-String[] Function StatTitles() global
-	String[] StatTitles = new String[7]
-	StatTitles[0] = "$SSL_Unskilled"
-	StatTitles[1] = "$SSL_Novice"
-	StatTitles[2] = "$SSL_Apprentice"
-	StatTitles[3] = "$SSL_Journeyman"
-	StatTitles[4] = "$SSL_Expert"
-	StatTitles[5] = "$SSL_Master"
-	StatTitles[6] = "$SSL_GrandMaster"
-	return StatTitles
-EndFunction
-
-Function SexDiary()
-	SetCursorFillMode(LEFT_TO_RIGHT)
-	If (!_trackedActors.Length)
-		; Initialized every time the Config Menu is opened
-		_trackedActors = new Actor[1]
-		_trackedActors[0] = PlayerRef
-	EndIf
-	If (_trackedIndex >= _trackedActors.Length)
-		_trackedIndex = 0
-	EndIf
-	Actor it = _trackedActors[_trackedIndex]
-	AddMenuOptionST("statselectingmenu", "$SSL_StatSelectingMenu", _trackedNames[_trackedIndex])
-	AddTextOptionST("ResetTargetStats", "$SSL_Reset{" + _trackedNames[_trackedIndex] + "}Stats", "$SSL_ClickHere")
-	AddHeaderOption("$SSL_Statistics")
-	AddEmptyOption()
-
-	SetCursorFillMode(TOP_TO_BOTTOM)
-	AddTextOption("$SSL_LastTimeInScene", Utility.GameTimeToString(SexLabStatistics.GetStatistic(it, 0)))
-	AddTextOption("$SSL_TimeSpentHavingSex", sslActorStats.ParseTime(SexLabStatistics.GetStatistic(it, 1) as int))
-	String[] xp_titles = StatTitles()
-	int i = 2
-	While (i < 5)		; XP Statistics
-		float value = SexLabStatistics.GetStatistic(it, i)
-		int lv = PapyrusUtil.ClampInt(sslActorStats.CalcLevel(value), 0, xp_titles.Length - 1)
-		AddTextOption("$SSL_Statistic_" + i, xp_titles[lv])
-		i += 1
-	EndWhile
-	While (i < 9)		; Partner Statistics
-		AddTextOption("$SSL_Statistic_" + i, SexLabStatistics.GetStatistic(it, i) as int)
-		i += 1
-	EndWhile
-	SetCursorPosition(5)
-	AddTextOption("$SSL_Sexuality", GetSexualityTitle(it))
-	While (i < 16)	; "Times" Statistics
-		AddTextOption("$SSL_Statistic_" + i, SexLabStatistics.GetStatistic(it, i) as int)
-		i += 1
-	EndWhile
-EndFunction
-
-State statselectingmenu
-	Event OnMenuOpenST()
-		SetMenuDialogStartIndex(_trackedIndex)
-		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(_trackedNames)
-	EndEvent
-	Event OnMenuAcceptST(Int aiIndex)
-		_trackedIndex = aiIndex
-		SetMenuOptionValueST(_trackedNames[_trackedIndex])
-		ForcePageReset()
-	EndEvent
-	Event OnDefaultST()
-		_trackedIndex = 0
-		SetMenuOptionValueST(_trackedNames[_trackedIndex])
-		ForcePageReset()
-	EndEvent
-	Event OnHighlightST()
-		SetInfoText("$SSL_StatSelectingMenuHighlight")
-	EndEvent
-EndState
-
-State ResetTargetStats
-	Event OnSelectST()
-		If (!ShowMessage("$SSL_WarnReset{" + _trackedNames[_trackedIndex] + "}Stats"))
-			return
-		EndIf
-		SexLabStatistics.ResetStatistics(_trackedActors[_trackedIndex])
-		ForcePageReset()
-	EndEvent
-	Event OnHighlightST()
-		SetInfoText("$SSL_ResetStatHighlight")
-	EndEvent
-EndState
 
 ; ------------------------------------------------------- ;
 ; --- Timers & Stripping                              --- ;
