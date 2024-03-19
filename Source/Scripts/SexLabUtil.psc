@@ -8,24 +8,23 @@ ScriptName SexLabUtil Hidden
 ; ------------------------------------------------------- ;
 
 int function GetVersion() global
-	return 20000
+	return 25000
 endFunction
 
 string function GetStringVer() global
-	return "2.0 P+"
-endFunction
-
-bool function SexLabIsActive() global
-	return GetAPI() != none
-endFunction
-
-bool function SexLabIsReady() global
-	SexLabFramework SexLab = GetAPI()
-	return SexLab != none && SexLab.Enabled
+	return "2.5 P+"
 endFunction
 
 SexLabFramework function GetAPI() global
 	return Game.GetFormFromFile(0xD62, "SexLab.esm") as SexLabFramework
+endFunction
+
+bool function SexLabIsActive() global
+	return GetAPI().IsRunning
+endFunction
+
+bool function SexLabIsReady() global
+	return GetAPI().Enabled
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -46,34 +45,6 @@ SexLabThread Function StartSceneQuick(Actor akActor1, Actor akActor2 = none, Act
                                         Actor akSubmissive = none, String asTags = "", String asHook = "") global
 	return GetAPI().StartSceneQuick(akActor1, akActor2, akActor3, akActor4, akActor5, akSubmissive, asTags, asHook)
 EndFunction
-
-; ------------------------------------------------------- ;
-; --- Common Utilities                                --- ;
-; ------------------------------------------------------- ;
-
-string function ActorName(Actor ActorRef) global
-	return ActorRef.GetLeveledActorBase().GetName()
-endFunction
-
-int Function GetSex(Actor akActor) global
-	return SexLabRegistry.GetSex(akActor, false)
-EndFunction
-
-bool function IsActorActive(Actor ActorRef) global
-	return ActorRef.IsInFaction(GetConfig().AnimatingFaction)
-endFunction
-
-bool function IsValidActor(Actor ActorRef) global
-	return GetAPI().IsValidActor(ActorRef)
-endFunction
-
-bool function HasCreature(Actor ActorRef) global
-	return sslCreatureAnimationSlots.HasCreatureType(ActorRef)
-endFunction
-
-bool function HasRace(Race RaceRef) global
-	return sslCreatureAnimationSlots.HasRaceType(RaceRef)
-endFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
@@ -100,16 +71,6 @@ string function RemoveSubString(string InputString, string RemoveString) global 
 function PrintConsole(string output) global native
 function VehicleFixMode(int mode) global native
 
-; Inline true/false return - pseudo papyrus ternary
-float function FloatIfElse(bool isTrue, float returnTrue, float returnFalse = 0.0) global native
-int function IntIfElse(bool isTrue, int returnTrue, int returnFalse = 0) global native
-string function StringIfElse(bool isTrue, string returnTrue, string returnFalse = "") global native
-Form function FormIfElse(bool isTrue, Form returnTrue, Form returnFalse = none) global native
-Actor function ActorIfElse(bool isTrue, Actor returnTrue, Actor returnFalse = none) global native
-ObjectReference function ObjectIfElse(bool isTrue, ObjectReference returnTrue, ObjectReference returnFalse = none) global native
-ReferenceAlias function AliasIfElse(bool isTrue, ReferenceAlias returnTrue, ReferenceAlias returnFalse = none) global native
-Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none) global native
-
 int function IntMinMaxValue(int[] searchArray, bool findHighestValue = true) global native
 int function IntMinMaxIndex(int[] searchArray, bool findHighestValue = true) global native
 
@@ -117,7 +78,6 @@ float function FloatMinMaxValue(float[] searchArray, bool findHighestValue = tru
 int function FloatMinMaxIndex(float[] searchArray, bool findHighestValue = true) global native
 
 float function GetCurrentGameRealTime() global native
-
 ; Non native of the above ^ since 1.5 has no access to it
 float function GetCurrentGameRealTimeEx() global
 	If (SKSE.GetVersionMinor() >= 2)
@@ -135,25 +95,6 @@ float function GetCurrentGameRealTimeEx() global
 	endIf
 	return (Utility.GetCurrentGameTime() / fTimeScale) * 86400.0
 EndFunction
-
-float function GetCurrentGameTimeHours() global
-	return Utility.GetCurrentGameTime() * 24.0
-endFunction
-
-float function GetCurrentGameTimeMinutes() global
-	return Utility.GetCurrentGameTime() * 1440.0
-endFunction
-
-float function GetCurrentGameTimeSeconds() global
-	return Utility.GetCurrentGameTime() * 86400.0
-endFunction
-
-function Wait(float seconds) global
-	float timer = Utility.GetCurrentRealTime() + seconds
-	while Utility.GetCurrentRealTime() < timer
-		Utility.Wait(0.50)
-	endWhile
-endFunction
 
 function Log(string msg, string source, string type = "NOTICE", string display = "trace", bool minimal = true) global
 	if StringUtil.Find(display, "trace") != -1
@@ -192,12 +133,6 @@ function DebugLog(string Log, string Type = "NOTICE", bool DebugMode = false) gl
 	endIf
 endFunction
 
-float function Timer(float Timestamp, string Log) global
-	float i = Utility.GetCurrentRealTime()
-	DebugLog(Log, "["+(i - Timestamp)+"]", true)
-	return i
-endFunction
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
@@ -231,6 +166,104 @@ sslThreadController function QuickStart(actor a1, actor a2 = none, actor a3 = no
 		return none
 	endIf
 	return SexLab.QuickStart(a1, a2, a3, a4, a5, victim, hook, animationTags)
+endFunction
+
+string function ActorName(Actor ActorRef) global
+	return ActorRef.GetLeveledActorBase().GetName()
+endFunction
+
+int Function GetSex(Actor akActor) global
+	return SexLabRegistry.GetSex(akActor, false)
+EndFunction
+
+bool function IsActorActive(Actor ActorRef) global
+	return ActorRef.IsInFaction(GetConfig().AnimatingFaction)
+endFunction
+
+bool function IsValidActor(Actor ActorRef) global
+	return GetAPI().IsValidActor(ActorRef)
+endFunction
+
+bool function HasCreature(Actor ActorRef) global
+	return sslCreatureAnimationSlots.HasCreatureType(ActorRef)
+endFunction
+
+bool function HasRace(Race RaceRef) global
+	return sslCreatureAnimationSlots.HasRaceType(RaceRef)
+endFunction
+
+float function FloatIfElse(bool isTrue, float returnTrue, float returnFalse = 0.0) global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+int function IntIfElse(bool isTrue, int returnTrue, int returnFalse = 0) global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+string function StringIfElse(bool isTrue, string returnTrue, string returnFalse = "") global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+Form function FormIfElse(bool isTrue, Form returnTrue, Form returnFalse = none) global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+Actor function ActorIfElse(bool isTrue, Actor returnTrue, Actor returnFalse = none) global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+ObjectReference function ObjectIfElse(bool isTrue, ObjectReference returnTrue, ObjectReference returnFalse = none) global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+ReferenceAlias function AliasIfElse(bool isTrue, ReferenceAlias returnTrue, ReferenceAlias returnFalse = none) global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none) global
+	If (isTrue)
+		return returnTrue
+	EndIf
+	return returnFalse
+EndFunction
+
+float function GetCurrentGameTimeHours() global
+	return Utility.GetCurrentGameTime() * 24.0
+endFunction
+
+float function GetCurrentGameTimeMinutes() global
+	return Utility.GetCurrentGameTime() * 1440.0
+endFunction
+
+float function GetCurrentGameTimeSeconds() global
+	return Utility.GetCurrentGameTime() * 86400.0
+endFunction
+
+function Wait(float seconds) global
+	float timer = Utility.GetCurrentRealTime() + seconds
+	while Utility.GetCurrentRealTime() < timer
+		Utility.Wait(0.50)
+	endWhile
+endFunction
+
+float function Timer(float Timestamp, string Log) global
+	float i = Utility.GetCurrentRealTime()
+	DebugLog(Log, "["+(i - Timestamp)+"]", true)
+	return i
 endFunction
 
 int function GetGender(Actor ActorRef) global
