@@ -1592,6 +1592,319 @@ Function Fatal(string msg, string src = "", bool halt = true)
 	EndIf
 EndFunction
 
+; TODO: move functions to proper section, if needed - SLICK implementation as block for now
+; ------------------------------------------------------- ;
+; --- Relation & Penetration                          --- ;
+; ------------------------------------------------------- ;
+
+; TODO: fill out new properties in CK
+;required for relations function
+AssociationType Property SpouseAssocation Auto
+Faction Property PlayerMarriedFaction Auto
+Faction Property PlayerHousecarlFaction Auto
+
+string Function GetStageLabel(string _scene_, int StageNum) global
+;function introduced temporarily from patched AnimStageLabel script
+	If SexLabRegistry.IsSceneTag(_scene_, StageNum+"LI")
+		return "LI"	;LeadIn, no penetration
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"SB")
+		return "SB" ;SlowBlowjob, oral
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"FB")
+		return "FB" ;FastBlowjob, oral
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"SV")
+		return "SV" ;SlowVaginal
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"FV")
+		return "FV" ;FastVaginal
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"SA")
+		return "SA" ;SlowAnal
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"FA")
+		return "FA" ;FastAnal
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"SR")
+		return "SR" ;SpitRoast, oral + vag/anal
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"DP")
+		return "DP" ;DoublePenetration
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"TP")
+		return "TP" ;TriplePenetration
+	ElseIf SexLabRegistry.IsSceneTag(_scene_, StageNum+"EN")
+		return "EN" ;EndStage
+	Else
+		return "" ;scene not stage-labelled
+	EndIf
+EndFunction
+
+int Function GetPenetrationType()
+; TODO: implement by or based on SFX system
+;probable mapping: 0=NoPen | 1=Oral | 2=Vaginal | 3=Anal | 4=DoubleOV | 5=DoubleOA | 6=DoubleVA | 7=Triple
+
+	;<<<temporary implementation below>>>
+	int PenType = -1
+	string StageLabel = GetStageLabel(_ActiveScene, _StageHistory.Length)
+
+	If StageLabel == ""
+		return GetPenetrationTypeFallback()
+	EndIf
+
+	string PreviousStageLabel = GetStageLabel(_ActiveScene, _StageHistory.Length - 1)
+	If StageLabel == "EN"
+		StageLabel = PreviousStageLabel
+	EndIf
+
+	If StageLabel == "LI"
+		PenType = 0
+	ElseIf StageLabel == "SB" || StageLabel == "FB"
+		PenType = 1
+	ElseIf StageLabel == "SV" || StageLabel == "FV"
+		PenType = 2
+	ElseIf StageLabel == "SA" || StageLabel == "FA"
+		PenType = 3
+	ElseIf StageLabel == "SR"
+		If IsVaginal() && !IsAnal()
+			PenType = 4
+		ElseIf IsAnal() && !IsVaginal()
+			PenType = 5
+		Else
+			PenType = Utility.RandomInt(4, 5)
+		EndIf
+	ElseIf StageLabel == "DP"
+		PenType = 6
+	ElseIf StageLabel == "TP"
+		PenType = 7
+	EndIf
+
+	return PenType
+EndFunction
+
+int Function GetPenetrationTypeFallback()
+	;temporarily introduced; to recheck scene tags if animation has not been stage-labelled yet
+	int PenType = -1
+	If (HasSceneTag("LeadIn") || IsLeadIn()) || (!IsOral() && !IsVaginal() && !IsAnal())
+		PenType = 0
+	ElseIf IsOral() && !IsVaginal() && !IsAnal()
+		PenType = 1
+	ElseIf IsVaginal() && !IsOral() && !IsAnal()
+		PenType = 2
+	ElseIf IsAnal() && !IsOral() && !IsVaginal()
+		PenType = 3
+	ElseIf IsOral() && (IsVaginal() || IsAnal())
+		If IsVaginal() && !IsAnal()
+			PenType = 4
+		ElseIf IsAnal() && !IsVaginal()
+			PenType = 5
+		Else
+			PenType = Utility.RandomInt(4, 5)
+		EndIf
+	ElseIf HasSceneTag("DoublePenetration")
+		PenType = 6
+	ElseIf HasSceneTag("TriplePenetration")
+		PenType = 7
+	EndIf
+	return PenType
+EndFunction
+
+float Function GetPenetrationVelocity()
+; TODO: implement by or based on SFX system
+
+	;<<<temporary implementation below>>>
+	float PenVelocity = 0.0
+	string StageLabel = GetStageLabel(_ActiveScene, _StageHistory.Length)
+	string PreviousStageLabel = GetStageLabel(_ActiveScene, _StageHistory.Length - 1)
+	If StageLabel == "EN"
+		StageLabel = PreviousStageLabel
+	EndIf
+	
+	If StageLabel == "SB" || StageLabel == "SV" || StageLabel == "SA"
+		PenVelocity = Utility.RandomFloat(0, 30)
+	ElseIf StageLabel == "FB" || StageLabel == "FV" || StageLabel == "FA"
+		PenVelocity = Utility.RandomFloat(30, 60)
+	ElseIf StageLabel == "SR" || StageLabel == "DP" || StageLabel == "TP" || (StageLabel == "" && !HasSceneTag("LeadIn") && !IsLeadIn() && (IsOral() || IsVaginal() || IsAnal()))
+		If !IsConsent()
+			PenVelocity = Utility.RandomFloat(30, 60)
+		Else
+			PenVelocity = Utility.RandomFloat(0, 30)
+		EndIf
+	EndIf
+
+	return PenVelocity
+EndFunction
+
+float Function GetPenetrationTime()
+; TODO: implement by or based on SFX system
+;will calculate the time (from thread runtime) that the penetration type has stayed the same (or maybe rely on stage?)
+
+	;<<< temporary implementation inside ActorAlias portion >>>
+EndFunction
+
+int Function GetActorPenInfo(Actor ActorRef, int PenType)
+;function to-be-implemented by or based on SFX system
+;primarily helpful in not relying much on positions-related code in alias script
+;probable mapping: 0=NonParticipant | 1=Receiver | 2=Giver
+
+	;<<<temporary implementation below>>>
+	int ActorPenInfo = 0
+	int gender = ActorAlias(ActorRef).GetSex()
+
+	If PenType > 0
+		If !IsConsent()
+			If !SameSexThread()
+				If (IsVictim(ActorRef) && !HasSceneTag("FemDom")) || (!IsVictim(ActorRef) && HasSceneTag("FemDom"))
+					ActorPenInfo = 1
+				ElseIf (!IsVictim(ActorRef) && !HasSceneTag("FemDom")) || (IsVictim(ActorRef) && HasSceneTag("FemDom"))
+					ActorPenInfo = 2
+				EndIf
+			Else
+				If IsVictim(ActorRef)
+					ActorPenInfo = 1
+				ElseIf !IsVictim(ActorRef)
+					ActorPenInfo = 2
+				EndIf
+			EndIf
+		Else
+			If !SameSexThread()
+				If gender == 1 || gender == 4
+					ActorPenInfo = 1
+				ElseIf gender == 0 || gender == 3
+					ActorPenInfo = 2
+				ElseIf gender == 2
+					If HasSceneTag("Anubs") && HasSceneTag("MF")
+						ActorPenInfo = Utility.RandomInt(1, 2)
+					Else
+						ActorPenInfo = 2
+					EndIf
+				EndIf
+			Else
+				If GetPosition(ActorRef) == 1
+					ActorPenInfo = 1
+				Else
+					ActorPenInfo = 2
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+	return ActorPenInfo
+EndFunction
+
+bool Function SameSexThread()
+	;still needed for determining sexuality of scene
+	bool SameSexThread = False
+	int MaleCount = ActorLib.CountMale(Positions)
+	int FemCount = ActorLib.CountFemale(Positions)
+	int FutaCount = ActorLib.CountFuta(Positions)
+	int CrtMaleCount = ActorLib.CountCrtMale(Positions)
+	int CrtFemaleCount = ActorLib.CountCrtFemale(Positions)
+	If (MaleCount + CrtMaleCount == Positions.Length) || (FemCount + CrtFemaleCount == Positions.Length) || (FutaCount == Positions.Length)
+		SameSexThread = True
+	EndIf
+	return SameSexThread
+EndFunction
+
+bool Function CrtMaleHugePP()
+	bool HugePP = False
+	If ActorLib.CountCrtMale(Positions) > 0
+		int CreMalePos = -1
+		int i = -1
+		while i < Positions.Length
+			if Positions[i] != None
+				int gender = GetNthPositionSex(i)
+				if gender == 3
+					CreMalePos = i
+				endIf
+			endIf
+		endWhile
+		If CreMalePos > -1
+			string CreRacekey = SexlabRegistry.GetRaceKey(Positions[CreMalePos])
+			If CreRacekey ==  "Bear" || CreRacekey ==  "Chaurus" || CreRacekey ==  "ChaurusHunter" || CreRacekey ==  "ChaurusReaper" || CreRacekey ==  "Dragon" || CreRacekey ==  "DwarvenCenturion" || CreRacekey ==  "FrostAtronach" || CreRacekey ==  "Gargoyle" || CreRacekey ==  "Giant" || CreRacekey ==  "GiantSpider" || CreRacekey ==  "Horse" || CreRacekey ==  "LargeSpider" || CreRacekey ==  "Lurker" || CreRacekey ==  "Mammoth" || CreRacekey ==  "Netch" || CreRacekey ==  "Sabrecat" || CreRacekey ==  "Troll" || CreRacekey ==  "Werewolf"
+				HugePP = True
+			EndIf
+		EndIf
+	EndIf
+	return HugePP
+EndFunction
+
+int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
+	;mapping: Stranger=-2~0 | POI=1~8 | Lover=9~16 | Spouse=19~26 | LoverSpouse=27~34
+	;w_agg=-2 | w_vic=-1 | <<stranger=0>>
+	;W_agg=1 | w_vic=2 | <<poi=3>> | w_dom=4 | w_sub=5 | w_hc=6 | w_dom_hc=7 | w_sub_hc=8
+	;W_agg=9 | w_vic=10 | <<lover=11>> | w_dom=12 | w_sub=13 | w_hc=14 | w_dom_hc=15 | w_sub_hc=16
+	;W_agg=19 | w_vic=20 | <<spouse=21>> | w_dom=22 | w_sub=23 | w_hc=24 | w_dom_hc=25 | w_sub_hc=26
+	;W_agg=27 | w_vic=28 | <<spouse+lover=29>> | w_dom=30 | w_sub=31 | w_hc=32 | w_dom_hc=33 | w_sub_hc=34
+	int BaseRelation = 0
+	int ContextRelation = 0
+	int Relation = 0
+	bool WithSpouse = False
+	bool WithLover = False
+	bool WithPOI = False ; person of interest
+	bool HasHousecarl = False
+	bool SubDom = False
+
+	If ActorRef == PlayerRef
+		If TargetRef.IsInFaction(PlayerMarriedFaction)
+			WithSpouse = True
+			BaseRelation = 21
+		EndIf
+		If TargetRef.IsInFaction(PlayerHousecarlFaction)
+			HasHousecarl = True
+			ContextRelation += 3
+		EndIf
+	Else
+		If ActorRef.HasAssociation(SpouseAssocation, TargetRef)
+			WithSpouse = True
+			BaseRelation = 21
+		EndIf
+		If ActorRef.IsInFaction(PlayerHousecarlFaction)
+			HasHousecarl = True
+			ContextRelation += 3
+		EndIf
+	EndIf
+	If !WithSpouse && ActorRef.GetRelationshipRank(TargetRef) >= 4
+		WithLover = True
+		BaseRelation = 11
+	ElseIf !WithLover && !WithSpouse && (ActorRef.GetRelationshipRank(TargetRef) >= 1) && (SexLabStatistics.GetTimesMet(ActorRef, TargetRef) >= 3)
+		WithPOI = True
+		BaseRelation = 3
+	EndIf
+	If !IsConsent()
+		If WithSpouse || WithLover || WithPOI
+			If (HasSceneTag("Asphyxiation") || HasSceneTag("Dominant") || HasSceneTag("Spanking")) && !HasSceneTag("Forced")
+				SubDom = True
+			EndIf
+		EndIf
+		;treating HasHousecarl different here cuz Lydia should just take it like a true nord woman; jk it complicates the returned values
+		If !IsVictim(ActorRef) && !SubDom && !HasHousecarl ;with victim
+			ContextRelation -= 1
+		ElseIf IsVictim(ActorRef) && !SubDom && !HasHousecarl ;with aggressor
+			ContextRelation -= 2
+		ElseIf !IsVictim(ActorRef) && SubDom ;with sub
+			ContextRelation += 2
+		ElseIf IsVictim(ActorRef) && SubDom ;with dom
+			ContextRelation += 1
+		EndIf
+	EndIf
+	Relation = BaseRelation + ContextRelation
+	return Relation
+EndFunction
+
+int Function GetBestRelationForScene(Actor ActorRef)
+	if Positions.Length <= 1
+		If(ActorRef == Positions[0])
+			return 0
+		Else
+			return GetRelationForScene(ActorRef, Positions[0])
+		EndIf
+	endIf
+	int ret = -2 ; lowest possible
+	int i = Positions.Length
+	while i > 0 && ret < 34
+		i -= 1
+		if Positions[i] != ActorRef
+			int relation = GetRelationForScene(ActorRef, Positions[i])
+			if relation > ret
+				ret = relation
+			endIf
+		endIf
+	endWhile
+	return ret
+EndFunction
+
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
