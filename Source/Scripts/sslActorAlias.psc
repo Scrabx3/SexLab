@@ -286,10 +286,6 @@ endProperty
 float _StartedAt
 float _LastOrgasm
 
-; preferences
-int _sexuality
-float _sm
-
 ; enjoyment
 _EnjoymentDelay
 
@@ -311,7 +307,6 @@ Auto State Empty
 		_dead = ProspectRef.IsDead()
 
 		_sexuality = SexLabStatistics.GetSexuality(_ActorRef)
-		_sm = SexLabStatistics.GetStatistic(_ActorRef, SexLabStatistics.SadoMasochismus)
 
 		TrackedEvent(TRACK_ADDED)
 		GoToState(STATE_SETUP)
@@ -955,7 +950,7 @@ Function Initialize()
 	; Forms
 	_ActorRef       = none
 	_HadStrapon     = none
-	_Strapo         = none
+	_Strapon        = none
 	; Voice
 	_Voice          = none
 	_IsForcedSilent = false
@@ -971,7 +966,6 @@ Function Initialize()
 	_OrgasmCount    = 0
 	BaseEnjoyment   = 0
 	FullEnjoyment   = 0
-	_sexuality      = -1
 	; Floats
 	_LastOrgasm     = 0.0
 	_sm             = 0.0
@@ -1281,7 +1275,7 @@ float BestRelation
 float VaginalXP
 float AnalXP
 int _sexuality
-int Sexuality
+int SexualityStat
 bool SameSexThread
 bool CrtMaleHugePP
 ;define effective variables
@@ -1305,6 +1299,7 @@ bool _PenEnded
 ; gets called by Initialize()
 Function ResetEnjoymentVariables()
 	;base variables
+	_sexuality      = 0
 	BasePain = 0.0
 	BaseEnj = 0.0
 	ArousalStat = 0.0
@@ -1335,14 +1330,14 @@ EndFunction
 
 ; gets called by OnDoPrepare()
 Function UpdateBaseEnjoymentCalculations()
-	ArousalStat = SexlabStatistics.GetStatistic(_ActorRef, SexlabStatistics.Sexuality)
+	ArousalStat = SexlabStatistics.GetStatistic(_ActorRef, SexlabStatistics.Arousal)
 	_sexuality = SexlabStatistics.GetSexuality(_ActorRef)
 	SexualityStat = SexlabStatistics.MapSexuality(_sexuality)
 	SameSexThread = _Thread.SameSexThread()
 	CrtMaleHugePP = _Thread.CrtMaleHugePP()
 	BestRelation  = _Thread.GetBestRelationForScene(_ActorRef) as float
-	VaginalXP = SexlabStatistics.GetStatistic(_ActorRef as Actor, SexlabStatistics.XP_Vaginal)
-	AnalXP = SexlabStatistics.GetStatistic(_ActorRef as Actor, SexlabStatistics.XP_Anal)
+	VaginalXP = SexlabStatistics.GetStatistic(_ActorRef, SexlabStatistics.XP_Vaginal)
+	AnalXP = SexlabStatistics.GetStatistic(_ActorRef, SexlabStatistics.XP_Anal)
 	BasePain = CalcBasePain()
 	BaseEnj = CalcBaseEnjoyment(ArousalStat, BasePain)
 	BaseEnjoyment = BaseEnj as int
@@ -1557,7 +1552,7 @@ float Function CalcBaseEnjoyment(float _ArousalStat, float _BasePain)
 		BaseEnj += _ArousalStat
 	EndIf
 
-	If (Sexuality == 0 && SameSexThread) || (Sexuality == 1 && !SameSexThread)
+	If (SexualityStat == 0 && SameSexThread) || (SexualityStat == 1 && !SameSexThread)
 		BaseEnj -= 30
 	EndIf
 
