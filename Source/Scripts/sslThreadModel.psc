@@ -63,6 +63,23 @@ Actor[] Function GetPositions()
 	return PapyrusUtil.RemoveActor(Positions, none)
 EndFunction
 
+int Function GetNthPositionSex(int n)
+	If (n < 0 || n >= Positions.Length)
+		return 0
+	EndIf
+	return ActorAlias[n].GetSex()
+EndFunction
+
+int[] Function GetPositionSexes()
+	int[] ret = Utility.CreateIntArray(Positions.Length)
+	int i = 0
+	While (i < ret.Length)
+		ret[i] = ActorAlias[i].GetSex()
+		i += 1
+	EndWhile
+	return ret
+EndFunction
+
 Function SetCustomStrip(Actor akActor, int aiSlots, bool abWeapon, bool abApplyNow)
 	sslActorAlias it = ActorAlias(akActor)
 	If (!it)

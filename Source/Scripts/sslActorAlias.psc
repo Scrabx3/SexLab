@@ -57,7 +57,7 @@ int function CalcReaction()
 	; This function is intended to represent the excitement of an actor
 	; It controls how "loud" an actor moans, how strong the expression is and
 	; when they orgasm (using default SL separate orgasm logic, CalcReaction() > 100 => Orgasm)
-	return (EffectiveArousal / 2) as int
+	return EffectiveArousal as int
 endFunction
 
 ;static enjoyment based on context and psychological factors (other than pain)
@@ -254,6 +254,9 @@ float _BaseDelay
 float _VoiceDelay
 float _ExpressionDelay
 
+; Enjoyment
+float _EnjoymentDelay
+
 bool property IsSilent hidden
 	bool function get()
 		return !_Voice || _IsForcedSilent || OpenMouth
@@ -285,9 +288,6 @@ endProperty
 ; Time
 float _StartedAt
 float _LastOrgasm
-
-; enjoyment
-_EnjoymentDelay
 
 ; ------------------------------------------------------- ;
 ; --- Alias IDLE                                      --- ;
@@ -644,6 +644,12 @@ State Animating
 		If(_Thread.GetStatus() != _Thread.STATUS_INSCENE)
 			return
 		EndIf
+		; TODO: Update Enjoyment/Trigger Orgasms
+		If _LoopEnjoymentDelay >= _EnjoymentDelay ; && IsSeparateOrgasm()
+			_LoopEnjoymentDelay = 0
+			UpdateEffectiveEnjoymentCalculations() ;call this before CalcReaction()
+		EndIf
+
 		; TODO: Review this block below
 		; Probalby also want to give these variables more readable names
 		; The function plays sound, updates and refreshes expression and enjoyment
@@ -672,11 +678,6 @@ State Animating
 		if _RefreshExpressionDelay > 8.0
 			RefreshExpression()
 		endIf
-		; TODO: Update Enjoyment/Trigger Orgasms
-		If _LoopEnjoymentDelay >= _EnjoymentDelay ; && IsSeparateOrgasm()
-			_LoopEnjoymentDelay = 0
-			UpdateEffectiveCalculations()
-		EndIf
 		; Loop
 		_LoopDelay += UpdateInterval
 		_LoopExpressionDelay += UpdateInterval
@@ -719,7 +720,7 @@ State Animating
 	EndEvent
 
 	Function DoOrgasm(bool Forced = false)
-		If (_hasOrgasm || !Forced && (!_CanOrgasm || Enjoyment < 1))
+		If (_hasOrgasm || !Forced && (!_CanOrgasm || FullEnjoyment < 1))
 			Log("Tried to orgasm, but orgasms are disabled for this position")
 			return
 		EndIf
@@ -764,7 +765,7 @@ State Animating
 		_LastOrgasm = SexLabUtil.GetCurrentGameRealTimeEx()
 		_OrgasmCount += 1
 		_hasOrgasm = false
-		Log(GetActorName() + ": Orgasms[" + _OrgasmCount + "] FullEnjoyment [" + FullEnjoyment + "] BaseEnjoyment[" + BaseEnjoyment + "] Enjoyment[" + Enjoyment + "]")
+		Log(GetActorName() + ": Orgasms[" + _OrgasmCount + "] FullEnjoyment [" + FullEnjoyment + "] BaseEnjoyment[" + BaseEnjoyment + "] Enjoyment[" + FullEnjoyment + "]")
 	EndFunction
 
 	Function TryUnlock()
@@ -872,7 +873,7 @@ function TrackedEvent(string EventName)
 endFunction
 
 bool Function IsSeparateOrgasm()
-	return _Config.GetSettingInt("iClimaxType") == _Config.CLIMAXTYPE_EXTERN
+	return sslSystemConfig.GetSettingInt("iClimaxType") == _Config.CLIMAXTYPE_EXTERN
 EndFunction
 
 Function ResolveStrapon(bool force = false)
@@ -960,6 +961,7 @@ Function Initialize()
 	; Flags
 	_AllowRedress   = true
 	_CanOrgasm      = true
+	_hasOrgasm      = false
 	ForceOpenMouth  = false
 	; Integers
 	_PathingFlag    = 0
@@ -968,11 +970,9 @@ Function Initialize()
 	FullEnjoyment   = 0
 	; Floats
 	_LastOrgasm     = 0.0
-	_sm             = 0.0
 	; Booleans
-	_hasOrgasm = false
-	_dead = false
-	_victim = false
+	_dead           = false
+	_victim         = false
 	; Enjoyment
 	ResetEnjoymentVariables()
 
@@ -1330,14 +1330,14 @@ EndFunction
 
 ; gets called by OnDoPrepare()
 Function UpdateBaseEnjoymentCalculations()
-	ArousalStat = SexlabStatistics.GetStatistic(_ActorRef, SexlabStatistics.Arousal)
+	ArousalStat = SexlabStatistics.GetStatistic(_ActorRef, 18)
 	_sexuality = SexlabStatistics.GetSexuality(_ActorRef)
 	SexualityStat = SexlabStatistics.MapSexuality(_sexuality)
 	SameSexThread = _Thread.SameSexThread()
 	CrtMaleHugePP = _Thread.CrtMaleHugePP()
 	BestRelation  = _Thread.GetBestRelationForScene(_ActorRef) as float
-	VaginalXP = SexlabStatistics.GetStatistic(_ActorRef, SexlabStatistics.XP_Vaginal)
-	AnalXP = SexlabStatistics.GetStatistic(_ActorRef, SexlabStatistics.XP_Anal)
+	VaginalXP = SexlabStatistics.GetStatistic(_ActorRef, 3)
+	AnalXP = SexlabStatistics.GetStatistic(_ActorRef, 2)
 	BasePain = CalcBasePain()
 	BaseEnj = CalcBaseEnjoyment(ArousalStat, BasePain)
 	BaseEnjoyment = BaseEnj as int
