@@ -241,17 +241,7 @@ endfunction
 /;
 
 bool Function IsConsent()
-	If (!HasContext("Aggressive"))
-		return true
-	EndIf
-	int i = 0
-	While(i < Positions.Length)
-		If(ActorAlias[i].IsVictim())
-			return false
-		EndIf
-		i += 1
-	EndWhile
-	return true
+	return !HasContext("Aggressive")
 EndFunction
 
 Function SetConsent(bool abIsConsent)
@@ -810,7 +800,7 @@ ObjectReference Function FindCenter(String[] asScenes, String[] asOutScenes, flo
 ; Check if the given center has a valid offset for the given scene and update afOutScenes with the new coordinates
 bool Function UpdateBaseCoordinates(String asScene, float[] afBaseOut) native
 Function ApplySceneOffset(String asScene, float[] afBaseOut) native
-String[] Function ShuffleScenes(String[] asScenes, String asStart) native
+Function ShuffleScenes(String[] asScenes, String asStart) native
 
 ; --- Legacy
 
@@ -938,9 +928,8 @@ State Animating
 			_InUseCoordinates[1] = _BaseCoordinates[1]
 			_InUseCoordinates[2] = _BaseCoordinates[2]
 			_InUseCoordinates[3] = _BaseCoordinates[3]
+			AddExperience(Positions, _ActiveScene, _StageHistory)
 		EndIf
-		RecordSkills()
-		SetBonuses()
 		UnregisterForUpdate()
 		SortAliasesToPositions()
 		_ActiveScene = asNewScene
@@ -1169,6 +1158,8 @@ State Animating
 			int w = akNewPositions.Find(Positions[i])
 			If(w == -1)
 				ActorAlias[i].Initialize()
+				UpdateEncounters(Positions[i])
+				Positions[i] = none
 			EndIf
 			i += 1
 		EndWhile
@@ -1185,6 +1176,7 @@ State Animating
 			n += 1
 		EndWhile
 		; Validate Animations or get new
+		Positions = akNewPositions
 		Actor[] sub = GetSubmissives()
 		If (!SexLabRegistry.ValidateSceneA(_ActiveScene, Positions, "", sub))
 			ClearForcedScenes()
@@ -1217,7 +1209,6 @@ State Animating
 		LeadIn = false
 		UnregisterForUpdate()
 		SendThreadEvent("LeadInEnd")
-		SkillXP[0] = SkillXP[0] + (TotalTime / 10.0)
 		If (!ResetScene(Scenes[Utility.RandomInt(0, Scenes.Length - 1)]))
 			EndAnimation()
 		EndIf
@@ -1342,7 +1333,7 @@ State Ending
 		If(IsObjectiveDisplayed(0))
 			SetObjectiveDisplayed(0, False)
 		EndIf
-		RecordSkills()
+		UpdateAllEncounters()
 		SendModEvent("SSL_CLEAR_Thread" + tid, "", 1.0)
 		SendThreadEvent("AnimationEnding")
 		SendThreadEvent("AnimationEnd")
@@ -1488,6 +1479,55 @@ Function SortAliasesToPositions()
 EndFunction
 
 ; ------------------------------------------------------- ;
+; --- Statistics	                                    --- ;
+; ------------------------------------------------------- ;
+;/
+	Statistics related functions
+/;
+
+; Called at the end of an active scene, shortly before its swapped or the thread ends
+Function AddExperience(Actor[] akPositions, String asActiveStage, String[] asStageHistory) native
+; Only call this once per actor, before positions are cleared. Only updates actors own statistics (no encounter updates)
+Function UpdateStatistics(Actor akActor, Actor[] akPositions,  String asActiveScene, String[] asPlayedStages, float afTimeInThread) native
+Function RequestStatisticUpdate(Actor akPosition, float afRegisteredAt)	; Called when one of the positions is cleared
+	float timeregistered = SexLabUtil.GetCurrentGameRealTimeEx() - afRegisteredAt
+	UpdateStatistics(akPosition, Positions, _ActiveScene, _StageHistory, timeregistered)
+EndFunction
+
+; int Property ENC_Any 			  = 0	AutoReadOnly Hidden
+; int Property ENC_Victim		  = 1	AutoReadOnly Hidden
+; int Property ENC_Assault	  = 2	AutoReadOnly Hidden
+; int Property ENC_Submissive	= 3	AutoReadOnly Hidden
+; int Property ENC_Dominant	  = 4	AutoReadOnly Hidden
+
+Function UpdateEncounters(Actor akActor, int i = 0)
+	int consent = 2 * IsConsent() as int
+	bool submissive = ActorAlias(akActor).IsVictim()
+	While (i < Positions.Length)
+		If (Positions[i] != akActor)
+			bool subB = ActorAlias[i].IsVictim()
+			int type
+			If (subB == submissive)
+				type = 0
+			ElseIf (submissive)
+				type = 1 + consent
+			Else
+				type = 2 + consent
+			EndIf
+			SexLabStatistics.AddEncounter(akActor, Positions[i], type)
+		EndIf
+		i += 1
+	EndWhile
+EndFunction
+Function UpdateAllEncounters()
+	int i = 0
+	While (i < Positions.Length)
+		UpdateEncounters(Positions[i], i + 1)
+		i += 1
+	EndWhile
+EndFunction
+
+; ------------------------------------------------------- ;
 ; --- Thread Hooks & Events                           --- ;
 ; ------------------------------------------------------- ;
 ;/
@@ -1563,10 +1603,6 @@ Function Initialize()
 	_ThreadTags = Utility.CreateStringArray(0)
 	_ContextTags = Utility.CreateStringArray(0)
 	_Hooks = Utility.CreateStringArray(0)
-	; NOTE: Below are unreviewed (legacy) variables
-	SkillBonus = new float[6]
-	SkillXP = new float[6]
-	SkillTime = 0.0
 	; Enter thread selection pool
 	GoToState("Unlocked")
 EndFunction
@@ -2637,6 +2673,26 @@ bool Function PregnancyRisk(Actor ActorRef, bool AllowFemaleCum = false, bool Al
 	return CanBeImpregnated(ActorRef, true, AllowFemaleCum, AllowCreatureCum)
 EndFunction
 
+float[] Property SkillBonus Hidden
+	{[0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd}
+	float[] Function Get()
+		float[] ret = new float[6]
+		return ret
+	EndFunction
+EndProperty
+float[] Property SkillXP hidden
+	{[0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd}
+	float[] Function Get()
+		float[] ret = new float[6]
+		return ret
+	EndFunction
+EndProperty
+Function SetBonuses()
+EndFunction
+Function RecordSkills()
+	AddExperience(Positions, _ActiveScene, _StageHistory)
+endfunction
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -2652,54 +2708,4 @@ EndFunction
 ; Enjoyment/Pain
 int Function GetPain(Actor ActorRef)
 	return ActorAlias(ActorRef).GetPain()
-EndFunction
-
-; ------------------------------------------------------- ;
-; --- Skill System			                              --- ;
-; ------------------------------------------------------- ;
-
-float[] Property SkillBonus auto hidden ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
-float[] Property SkillXP auto hidden    ; [0] Foreplay, [1] Vaginal, [2] Anal, [3] Oral, [4] Pure, [5] Lewd
-float SkillTime
-
-Function RecordSkills()
-	float TimeNow = SexLabUtil.GetCurrentGameRealTimeEx()
-	float xp = ((TimeNow - SkillTime) / 8.0)
-	if xp >= 0.5
-		if IsType[1]
-			SkillXP[1] = SkillXP[1] + xp
-		endIf
-		if IsType[2]
-			SkillXP[2] = SkillXP[2] + xp
-		endIf
-		if IsType[3]
-			SkillXP[3] = SkillXP[3] + xp
-		endIf
-		if IsType[4]
-			SkillXP[4] = SkillXP[4] + xp
-		endIf
-		if IsType[5]
-			SkillXP[5] = SkillXP[5] + xp
-		endIf
-	endIf
-	SkillTime = TimeNow
-endfunction
-
-Function SetBonuses()
-	SkillBonus[0] = SkillXP[0]
-	if IsType[1]
-		SkillBonus[1] = SkillXP[1]
-	endIf
-	if IsType[2]
-		SkillBonus[2] = SkillXP[2]
-	endIf
-	if IsType[3]
-		SkillBonus[3] = SkillXP[3]
-	endIf
-	if IsType[4]
-		SkillBonus[4] = SkillXP[4]
-	endIf
-	if IsType[5]
-		SkillBonus[5] = SkillXP[5]
-	endIf
 EndFunction
