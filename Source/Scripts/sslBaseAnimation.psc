@@ -110,6 +110,11 @@ bool property GenderedCreatures
 	EndFunction
 EndProperty
 
+Function LogRedundant() global
+	Debug.Messagebox("Invoked Legacy Function, see Papyrus Log for more information")
+  Debug.TraceStack("SEXLAB - Unsupported Legacy Function called")
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Array Indexers                                  --- ;
 ; ------------------------------------------------------- ;
@@ -298,12 +303,16 @@ float[] function GetRawOffsets(int Position, int Stage)
 	return RawOffsets(Output, Position, Stage)
 endFunction
 
-float[] function _GetStageAdjustments(string Registrar, string AdjustKey, int Stage) global native
+float[] function _GetStageAdjustments(string Registrar, string AdjustKey, int Stage) global
+  LogRedundant()
+EndFunction
 float[] function GetPositionAdjustments(string AdjustKey, int Position, int Stage)
 	return SexLabRegistry.GetOffset(PROXY_ID, GetStageBounded(Stage), Position)
 endFunction
 
-float[] function _GetAllAdjustments(string Registrar, string AdjustKey) global native
+float[] function _GetAllAdjustments(string Registrar, string AdjustKey) global
+  LogRedundant()
+EndFunction
 float[] function GetAllAdjustments(string AdjustKey)
 	String[] path = SexLabRegistry.GetPathMax(PROXY_ID, "")
 	int count = SexLabRegistry.GetActorCount(PROXY_ID)
@@ -325,7 +334,9 @@ float[] function GetAllAdjustments(string AdjustKey)
 	return ret
 endFunction
 
-bool function _HasAdjustments(string Registrar, string AdjustKey, int Stage) global native
+bool function _HasAdjustments(string Registrar, string AdjustKey, int Stage) global
+  LogRedundant()
+EndFunction
 bool function HasAdjustments(string AdjustKey, int Stage)
 	float[] offsets = GetAllAdjustments(AdjustKey)
 	int i = 0
@@ -338,7 +349,9 @@ bool function HasAdjustments(string AdjustKey, int Stage)
 	return false
 endFunction
 
-function _PositionOffsets(string Registrar, string AdjustKey, string LastKey, int Stage, float[] RawOffsets) global native
+function _PositionOffsets(string Registrar, string AdjustKey, string LastKey, int Stage, float[] RawOffsets) global
+  LogRedundant()
+EndFunction
 float[] function PositionOffsets(float[] Output, string AdjustKey, int Position, int Stage, int BedTypeID = 0)
 	String stage_ = GetStageBounded(Stage)
 	float[] offsets = SexLabRegistry.GetOffset(PROXY_ID, stage_, Position)
@@ -374,17 +387,23 @@ endFunction
 ; --- Adjustments                                     --- ;
 ; ------------------------------------------------------- ;
 
-function _SetAdjustment(string Registrar, string AdjustKey, int Stage, int Slot, float Adjustment) global native
+function _SetAdjustment(string Registrar, string AdjustKey, int Stage, int Slot, float Adjustment) global
+  LogRedundant()
+EndFunction
 function SetAdjustment(string AdjustKey, int Position, int Stage, int Slot, float Adjustment)
 	SexLabRegistry.UpdateOffset(PROXY_ID, GetStageBounded(Stage), Position, Adjustment, Slot)
 endFunction
 
-float function _GetAdjustment(string Registrar, string AdjustKey, int Stage, int nth) global native
+float function _GetAdjustment(string Registrar, string AdjustKey, int Stage, int nth) global
+  LogRedundant()
+EndFunction
 float function GetAdjustment(string AdjustKey, int Position, int Stage, int Slot)
 	return SexLabRegistry.GetOffset(PROXY_ID, GetStageBounded(Stage), Position)[Slot]
 endFunction
 
-float function _UpdateAdjustment(string Registrar, string AdjustKey, int Stage, int nth, float by) global native
+float function _UpdateAdjustment(string Registrar, string AdjustKey, int Stage, int nth, float by) global
+  LogRedundant()
+EndFunction
 function UpdateAdjustment(string AdjustKey, int Position, int Stage, int Slot, float AdjustBy)
 	float v = GetAdjustment(AdjustKey, Position, Stage, Slot)
 	SetAdjustment(AdjustKey, Position, Stage, Slot, v + AdjustBy)
@@ -424,12 +443,16 @@ function AdjustSchlong(string AdjustKey, int Position, int Stage, int AdjustBy)
 	SexLabRegistry.SetSchlongAngle(PROXY_ID, Stage, Position, v + AdjustBy)
 endFunction
 
-function _ClearAdjustments(string Registrar, string AdjustKey) global native
+function _ClearAdjustments(string Registrar, string AdjustKey) global
+  LogRedundant()
+EndFunction
 function RestoreOffsets(string AdjustKey)
 	
 endFunction
 
-bool function _CopyAdjustments(string Registrar, string AdjustKey, float[] Array) global native
+bool function _CopyAdjustments(string Registrar, string AdjustKey, float[] Array) global
+  LogRedundant()
+EndFunction
 function CopyAdjustmentsFrom(string AdjustKey, string CopyKey, int Position)
 endFunction
 
@@ -445,7 +468,9 @@ float[] function GetEmptyAdjustments(int Position)
 	return Utility.CreateFloatArray(GetMaxDepth() * 4)
 endFunction
 
-string[] function _GetAdjustKeys(string Registrar) global native
+string[] function _GetAdjustKeys(string Registrar) global
+  LogRedundant()
+EndFunction
 string[] function GetAdjustKeys()
 	return Utility.CreateStringArray(0)
 endFunction
@@ -491,7 +516,9 @@ bool function UseStrapon(int Position, int Stage)
 endFunction
 
 ; Runtime evaluated
-int function _GetSchlong(string Registrar, string AdjustKey, string LastKey, int Stage) global native
+int function _GetSchlong(string Registrar, string AdjustKey, string LastKey, int Stage) global
+  LogRedundant()
+EndFunction
 int function GetSchlong(string AdjustKey, int Position, int Stage)
 	return 0
 endFunction

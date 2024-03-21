@@ -383,10 +383,10 @@ State Ready
 			ObjectReference pathto = akPathTo as ObjectReference
 			float distance = ActorRef.GetDistance(pathto)
 			If(distance > 256.0 && distance <= 6144.0)
-				float t = SexLabUtil.GetCurrentGameRealTimeEx() + 15.0
+				float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
 				ActorRef.SetFactionRank(_AnimatingFaction, 2)
 				ActorRef.EvaluatePackage()
-				While (ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTimeEx() < t)
+				While (ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
 					Utility.Wait(0.045)
 				EndWhile
 			EndIf
@@ -460,7 +460,7 @@ State Paused
 			ResolveStrapon()
 			ActorRef.QueueNiNodeUpdate()
 		EndIf
-		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
+		_StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		_LastOrgasm = _StartedAt
 		; wait to ensure schlong mesh and AI package are updated
 		Utility.Wait(0.5)
@@ -643,7 +643,7 @@ State Animating
 			; 	ElseIf(_sex == 3)
 			; 		cmp = 30
 			; 	EndIf
-			; 	If(SexLabUtil.GetCurrentGameRealTimeEx() - _LastOrgasm > cmp)
+			; 	If(SexLabUtil.GetCurrentGameRealTime() - _LastOrgasm > cmp)
 			; 		DoOrgasm()
 			; 	EndIf
 			; EndIf
@@ -691,7 +691,7 @@ State Animating
 		If (!Forced && (!_CanOrgasm || Enjoyment < 1))
 			Log("Tried to orgasm, but orgasms are disabled for this position")
 			return
-		ElseIf (Math.Abs(SexLabUtil.GetCurrentGameRealTimeEx() - _LastOrgasm) < 5.0)
+		ElseIf (Math.Abs(SexLabUtil.GetCurrentGameRealTime() - _LastOrgasm) < 5.0)
 			; COMEBACK: Might want to remove this?
 			Log("DoOrgasm() has already been called within the last 5 Seconds")
 			return
@@ -727,7 +727,7 @@ State Animating
 
 		; ---
 		RegisterForSingleUpdate(UpdateInterval)
-		_LastOrgasm = SexLabUtil.GetCurrentGameRealTimeEx()
+		_LastOrgasm = SexLabUtil.GetCurrentGameRealTime()
 		_OrgasmCount += 1
 		Log(GetActorName() + ": Orgasms[" + _OrgasmCount + "] FullEnjoyment [" + FullEnjoyment + "] BaseEnjoyment[" + BaseEnjoyment + "] Enjoyment[" + Enjoyment + "]")
 	EndFunction
@@ -993,7 +993,7 @@ Function Error(String msg, string src = "")
 EndFunction
 
 Function LogRedundant(String asFunction)
-	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.\n\nPlease report this to Scrab with a Papyrus Log attached")
+	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
 	Debug.TraceStack("Invoking Legacy Function " + asFunction)
 EndFunction
 
@@ -1008,9 +1008,18 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global native
-bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global native
-int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, bool IsFemaleActor, float Timer, int OnStage, int MaxStage) global native
+function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global
+	Debug.MessageBox("[SEXLAB]\n'OffsetCoords' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
+	Debug.TraceStack("Invoking Legacy Function OffsetCoords")
+EndFunction
+bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global
+	Debug.MessageBox("[SEXLAB]\n'IsInPosition' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
+	Debug.TraceStack("Invoking Legacy Function IsInPosition")
+EndFunction
+int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, bool IsFemaleActor, float Timer, int OnStage, int MaxStage) global
+	Debug.MessageBox("[SEXLAB]\n'CalcEnjoyment' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
+	Debug.TraceStack("Invoking Legacy Function CalcEnjoyment")
+EndFunction
 
 int Property Position
 	int Function Get()

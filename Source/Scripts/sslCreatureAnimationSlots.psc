@@ -61,16 +61,8 @@ string[] function GetAllRaceKeys(Race RaceRef = none) global
   return SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
 EndFunction
 
-string[] function GetAllRaceIDs(string RaceKey) global
-  Debug.MessageBox("The function \"GetAllRaceIDs\" in sslCreatureAnimation is no longer supported in SLP+ 2.0+")
-  String[] ret = new String[1]
-  return ret
-EndFunction
-Race[] function GetAllRaces(string RaceKey) global
-  Debug.MessageBox("The function \"GetAllRaces\" in sslCreatureAnimation is no longer supported in SLP+ 2.0+")
-  Race[] ret = new Race[1]
-  return ret
-EndFunction
+string[] function GetAllRaceIDs(string RaceKey) global native
+Race[] function GetAllRaces(string RaceKey) global native
 
 ; ------------------------------------------------------- ;
 ; --- Lookup creature aniamtions                      --- ;

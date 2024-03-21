@@ -482,7 +482,7 @@ EndProperty
 float Property StartedAt Auto Hidden
 float Property TotalTime Hidden
 	float Function get()
-		return SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt
+		return SexLabUtil.GetCurrentGameRealTime() - StartedAt
 	EndFunction
 EndProperty
 
@@ -887,7 +887,7 @@ State Animating
 		_SFXTimer = Config.SFXDelay
 		_animationSyncCount = 0;
 		SendModEvent("SSL_READY_Thread" + tid)
-		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
+		StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		AnimationStart()
 		RegisterSFX(Positions)
 	EndEvent
@@ -1490,7 +1490,7 @@ Function AddExperience(Actor[] akPositions, String asActiveStage, String[] asSta
 ; Only call this once per actor, before positions are cleared. Only updates actors own statistics (no encounter updates)
 Function UpdateStatistics(Actor akActor, Actor[] akPositions,  String asActiveScene, String[] asPlayedStages, float afTimeInThread) native
 Function RequestStatisticUpdate(Actor akPosition, float afRegisteredAt)	; Called when one of the positions is cleared
-	float timeregistered = SexLabUtil.GetCurrentGameRealTimeEx() - afRegisteredAt
+	float timeregistered = SexLabUtil.GetCurrentGameRealTime() - afRegisteredAt
 	UpdateStatistics(akPosition, Positions, _ActiveScene, _StageHistory, timeregistered)
 EndFunction
 
@@ -2149,7 +2149,7 @@ EndProperty
 float[] Property RealTime Hidden
 	float[] Function Get()
 		float[] ret = new float[1]
-		ret[0] = SexLabUtil.GetCurrentGameRealTimeEx()
+		ret[0] = SexLabUtil.GetCurrentGameRealTime()
 		return ret
 	EndFunction
 	Function Set(float[] aSet)

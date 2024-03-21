@@ -1075,8 +1075,16 @@ function SwapToProfile(int Profile)
   SetAdjustmentProfile("../SexLab/AnimationProfile_"+Profile+".json")
 endFunction
 
-bool function SetAdjustmentProfile(string ProfileName) global native
-bool function SaveAdjustmentProfile() global native
+bool function SetAdjustmentProfile(string ProfileName) global
+  String msg = "Adjustment Profiles are no longer supported"
+  Debug.MessageBox(msg)
+  Debug.TraceStack(msg)
+EndFunction
+bool function SaveAdjustmentProfile() global
+  String msg = "Adjustment Profiles are no longer supported"
+  Debug.MessageBox(msg)
+  Debug.TraceStack(msg)
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- 3rd party compatibility                         --- ;

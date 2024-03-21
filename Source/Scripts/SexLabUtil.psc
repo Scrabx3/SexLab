@@ -65,36 +65,10 @@ endFunction
 ; --- Developer Utilities                             --- ;
 ; ------------------------------------------------------- ;
 
-int function GetPluginVersion() global native
 bool function HasKeywordSub(form ObjRef, string LookFor) global native
-string function RemoveSubString(string InputString, string RemoveString) global native
 function PrintConsole(string output) global native
-function VehicleFixMode(int mode) global native
-
-int function IntMinMaxValue(int[] searchArray, bool findHighestValue = true) global native
-int function IntMinMaxIndex(int[] searchArray, bool findHighestValue = true) global native
-float function FloatMinMaxValue(float[] searchArray, bool findHighestValue = true) global native
-int function FloatMinMaxIndex(float[] searchArray, bool findHighestValue = true) global native
 Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none) global native
-
 float function GetCurrentGameRealTime() global native
-; Non native of the above ^ since 1.5 has no access to it
-float function GetCurrentGameRealTimeEx() global
-	If (SKSE.GetVersionMinor() >= 2)
-		return GetCurrentGameRealTime()
-	EndIf
-	Form TimeScale = Game.GetFormFromFile(0x3A, "Skyrim.esm")
-	float fTimeScale
-	if TimeScale
-		fTimeScale = (TimeScale as GlobalVariable).GetValue()
-		if fTimeScale < 1
-			fTimeScale = 1.0
-		endIf
-	else
-		fTimeScale = 20.0 ; Skyrim default TimeScale
-	endIf
-	return (Utility.GetCurrentGameTime() / fTimeScale) * 86400.0
-EndFunction
 
 function Log(string msg, string source, string type = "NOTICE", string display = "trace", bool minimal = true) global
 	if StringUtil.Find(display, "trace") != -1
@@ -192,6 +166,12 @@ bool function HasRace(Race RaceRef) global
 	return sslCreatureAnimationSlots.HasRaceType(RaceRef)
 endFunction
 
+function VehicleFixMode(int mode) global
+	; No longer used
+	; This function used disable the player scale beig forced to 1.0 upon entering vehicle
+	; Player should rely on RaceMenu scaling instead
+EndFunction
+
 float function FloatIfElse(bool isTrue, float returnTrue, float returnFalse = 0.0) global
 	If (isTrue)
 		return returnTrue
@@ -234,6 +214,13 @@ ReferenceAlias function AliasIfElse(bool isTrue, ReferenceAlias returnTrue, Refe
 	EndIf
 	return returnFalse
 EndFunction
+
+string function RemoveSubString(string InputString, string RemoveString) global native
+int function GetPluginVersion() global native
+int function IntMinMaxValue(int[] searchArray, bool findHighestValue = true) global native
+int function IntMinMaxIndex(int[] searchArray, bool findHighestValue = true) global native
+float function FloatMinMaxValue(float[] searchArray, bool findHighestValue = true) global native
+int function FloatMinMaxIndex(float[] searchArray, bool findHighestValue = true) global native
 
 float function GetCurrentGameTimeHours() global
 	return Utility.GetCurrentGameTime() * 24.0

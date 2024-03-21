@@ -718,7 +718,11 @@ endFunction
 ; --- System Use                                      --- ;
 ; ------------------------------------------------------- ;
 
-function RecordThread(Actor ActorRef, int Gender, int HadRelation, float StartedAt, float RealTime, float GameTime, bool WithPlayer, Actor VictimRef, int[] Genders, float[] SkillXP) global native
+function RecordThread(Actor ActorRef, int Gender, int HadRelation, float StartedAt, float RealTime, float GameTime, bool WithPlayer, Actor VictimRef, int[] Genders, float[] SkillXP) global
+  String msg = "Invalid call to internal legacy function \"Record Thread\""
+  Debug.MessageBox(msg)
+  Debug.TraceStack(msg)
+EndFunction
 function AddPartners(Actor ActorRef, Actor[] AllPositions, Actor[] Victims)
 	if !ActorRef || AllPositions.Length < 2 || AllPositions.Find(none) != -1
 		return ; No Positions
