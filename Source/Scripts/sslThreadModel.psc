@@ -1761,20 +1761,33 @@ float Function GetPenetrationVelocity()
 	float PenVelocity = 0.0
 	string StageLabel = GetStageLabel(_ActiveScene, _StageHistory.Length)
 	string PreviousStageLabel = GetStageLabel(_ActiveScene, _StageHistory.Length - 1)
+	bool SlowPen = False
+	bool FastPen = False
 	If StageLabel == "EN"
 		StageLabel = PreviousStageLabel
 	EndIf
 	
 	If StageLabel == "SB" || StageLabel == "SV" || StageLabel == "SA"
-		PenVelocity = Utility.RandomFloat(0, 30)
+		SlowPen = True
 	ElseIf StageLabel == "FB" || StageLabel == "FV" || StageLabel == "FA"
-		PenVelocity = Utility.RandomFloat(30, 60)
+		FastPen = True
 	ElseIf StageLabel == "SR" || StageLabel == "DP" || StageLabel == "TP" || (StageLabel == "" && !HasSceneTag("LeadIn") && !IsLeadIn() && (IsOral() || IsVaginal() || IsAnal()))
 		If !IsConsent()
-			PenVelocity = Utility.RandomFloat(30, 60)
+			FastPen = True
 		Else
-			PenVelocity = Utility.RandomFloat(0, 30)
+			SlowPen = True
 		EndIf
+	EndIf
+
+	If SlowPen
+		PenVelocity = TotalTime * 0.5
+	ElseIf FastPen
+		PenVelocity = TotalTime * 1
+	EndIf
+	If (SlowPen && PenVelocity > 60)
+		PenVelocity == 60
+	ElseIf (FastPen && PenVelocity > 30)
+		PenVelocity == 30
 	EndIf
 
 	return PenVelocity
@@ -1795,6 +1808,11 @@ int Function GetActorPenInfo(Actor ActorRef, int PenType)
 	;<<<temporary implementation below>>>
 	int ActorPenInfo = 0
 	int gender = ActorAlias(ActorRef).GetSex()
+	bool FemOnly = False
+
+	If (ActorLib.CountFemale(Positions) + ActorLib.CountCrtFemale(Positions)) == Positions.Length
+		FemOnly = True
+	EndIf
 
 	If PenType > 0
 		If !IsConsent()
@@ -1805,10 +1823,12 @@ int Function GetActorPenInfo(Actor ActorRef, int PenType)
 					ActorPenInfo = 2
 				EndIf
 			Else
-				If IsVictim(ActorRef)
-					ActorPenInfo = 1
-				ElseIf !IsVictim(ActorRef)
-					ActorPenInfo = 2
+				If !FemOnly
+					If IsVictim(ActorRef)
+						ActorPenInfo = 1
+					ElseIf !IsVictim(ActorRef)
+						ActorPenInfo = 2
+					EndIf
 				EndIf
 			EndIf
 		Else
@@ -1825,10 +1845,12 @@ int Function GetActorPenInfo(Actor ActorRef, int PenType)
 					EndIf
 				EndIf
 			Else
-				If GetPosition(ActorRef) == 1
-					ActorPenInfo = 1
-				Else
-					ActorPenInfo = 2
+				If !FemOnly
+					If GetPosition(ActorRef) == 0
+						ActorPenInfo = 1
+					Else
+						ActorPenInfo = 2
+					EndIf
 				EndIf
 			EndIf
 		EndIf
@@ -1844,7 +1866,7 @@ bool Function SameSexThread()
 	int FutaCount = ActorLib.CountFuta(Positions)
 	int CrtMaleCount = ActorLib.CountCrtMale(Positions)
 	int CrtFemaleCount = ActorLib.CountCrtFemale(Positions)
-	If (MaleCount + CrtMaleCount == Positions.Length) || (FemCount + CrtFemaleCount == Positions.Length) || (FutaCount == Positions.Length)
+	If (Positions.Length != 1 && ((MaleCount + CrtMaleCount == Positions.Length) || (FemCount + CrtFemaleCount == Positions.Length) || (FutaCount == Positions.Length)))
 		SameSexThread = True
 	EndIf
 	return SameSexThread
