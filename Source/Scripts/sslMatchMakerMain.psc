@@ -105,28 +105,18 @@ Function TriggerSex(Actor[] akPassed)
   sub = PapyrusUtil.RemoveActor(sub, none)
 
   String tags = sslSystemConfig.ParseMMTagString()
-  String[] scenes = SexLabRegistry.LookupScenesA(akPassed, tags, sub, 1, none)
-  While (scenes.Length < 1)
+  _StartCall = Utility.GetCurrentRealTime()
+  While (!SexLab.StartSceneA(akPassed, tags, sub, asHook = "SSLMatchMaker"))
     If (!sub.Length || Config.SubmissivePlayer && plp > -1 && sub.Length == 1)
-      Debug.Notification("No valid animations found.")
-      Config.Log("[SexLab MatchMaker] Actors [" + Parse_Sexes_And_Races(SexLab.GetSexAll(akPassed), akPassed) + "] have no valid scenes, aborting!")
+      Debug.Notification("Failed to start scene")
+      String actorinfo = Parse_Sexes_And_Races(SexLab.GetSexAll(akPassed), akPassed)
+      Config.Log("[SexLab MatchMaker] Unable to start Scene for Actors [" + actorinfo + "] / Tags " + tags + "; Aborting after " + (retTime - _StartCall))
       return
     EndIf
     sub = PapyrusUtil.RemoveActor(sub, sub[sub.Length - 1])
-    scenes = SexLabRegistry.LookupScenesA(akPassed, tags, sub, 1, none)
   EndWhile
-  Debug.Notification("Valid scenes found: " + scenes.Length)
-  Config.Log("[SexLab MatchMaker] - Scenes found: " + scenes.Length)
-
-  _StartCall = Utility.GetCurrentRealTime()
-  If (!SexLab.StartSceneExA(akPassed, scenes, sub, asHook = "SSLMatchMaker"))
-    float retTime = Utility.GetCurrentRealTime()
-    Config.Log("[SexLab MatchMaker] Unable to start animation, abort after " + (retTime - _StartCall))
-    Debug.Notification("Failed to start scene")
-  Else
-    float retTime = Utility.GetCurrentRealTime()
-    Config.Log("[SexLab MatchMaker] Successfully started animation after " + (retTime - _StartCall))
-  EndIf
+  float retTime = Utility.GetCurrentRealTime()
+  Config.Log("[SexLab MatchMaker] Successfully started animation after " + (retTime - _StartCall))
 EndFunction
 
 Event AnimationStarted(int aiThread, bool abHasPlayer)
