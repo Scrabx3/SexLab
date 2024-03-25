@@ -1497,9 +1497,9 @@ float Function CalcEnjoymentFactor()
 		EnjFactor -= 0.5
 	EndIf
 	;context
-	If _victim && ConsentSubStatus > 1
+	If !_Thread.IsConsent() && _victim
 		EnjFactor -= 0.5
-	ElseIf !_victim && ConsentSubStatus > 1
+	ElseIf !_Thread.IsConsent() && !_victim
 		EnjFactor += 0.5
 	EndIf
 	;relation
