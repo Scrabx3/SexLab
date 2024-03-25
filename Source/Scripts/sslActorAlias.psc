@@ -258,6 +258,7 @@ float _ExpressionDelay
 
 ; Enjoyment
 float _EnjoymentDelay
+float _EnjRaise
 
 bool property IsSilent hidden
 	bool function get()
@@ -1497,9 +1498,9 @@ float Function CalcEnjoymentFactor()
 		EnjFactor -= 0.5
 	EndIf
 	;context
-	If !_Thread.IsConsent() && _victim
+	If _victim && ConsentSubStatus > 1
 		EnjFactor -= 0.5
-	ElseIf !_Thread.IsConsent() && !_victim
+	ElseIf !_victim && ConsentSubStatus > 1
 		EnjFactor += 0.5
 	EndIf
 	;relation
