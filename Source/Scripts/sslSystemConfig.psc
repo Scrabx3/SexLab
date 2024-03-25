@@ -14,9 +14,6 @@ ScriptName sslSystemConfig extends sslSystemLibrary
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; // TODO: Add a 3rd person mod detection when determining FNIS sensitive variables.
-; // Disable it when no longer relevant.
-
 ; ------------------------------------------------------- ;
 ; --- System Resources                                --- ;
 ; ------------------------------------------------------- ;
@@ -67,9 +64,7 @@ Sound[] property HotkeyDown auto
 
 Message property CleanSystemFinish auto
 Message property CheckSKSE auto
-Message property CheckFNIS auto
 Message property CheckSkyrim auto
-Message property CheckSexLabUtil auto
 Message property CheckPapyrusUtil auto
 Message property CheckSkyUI auto
 Message property TakeThreadControl auto
@@ -1213,8 +1208,6 @@ bool function CheckSystemPart(string CheckSystem)
     return Quest.GetQuest("SKI_ConfigManagerInstance") != none
   elseIf CheckSystem == "SexLabP+"
     return SKSE.GetPluginVersion("SexLab") > -1
-  elseIf CheckSystem == "SexLabUtil"
-    return SexLabUtil.GetPluginVersion() >= 16300
   elseIf CheckSystem == "PapyrusUtil"
     return PapyrusUtil.GetVersion() >= 39
   elseIf CheckSystem == "NiOverride"
@@ -1236,9 +1229,6 @@ bool function CheckSystem()
     return false
   elseIf !CheckSystemPart("SkyUI")
     CheckSkyUI.Show(5.2)
-    return false
-  elseIf !CheckSystemPart("SexLabUtil")
-    CheckSexLabUtil.Show()
     return false
   elseIf !CheckSystemPart("PapyrusUtil")
     CheckPapyrusUtil.Show(4.4)
@@ -1531,6 +1521,18 @@ SexLabFramework Property SexLab
     return SexLabUtil.GetAPI()
   EndFunction
 EndProperty
+
+Message property CheckFNIS Hidden
+  Message Function Get()
+    return Game.GetFormFromFile(0x70C38, "SexLab.esm") as Message
+  EndFunction
+EndProperty
+Message property CheckSexLabUtil Hidden
+  Message Function Get()
+    return Game.GetFormFromFile(0x7D380, "SexLab.esm") as Message
+  EndFunction
+EndProperty
+
 
 Faction property AnimatingFaction Hidden
   Faction Function Get()
@@ -2025,7 +2027,8 @@ function InitThreadHooks()
 endFunction
 
 bool Function HasCreatureInstall()
-  return FNIS.GetMajor(true) > 0
+  Log("Function HasCreatureInstall() is redundant and always returns true to avoid a FNIS Compile Dependency")
+  return true
 EndFunction
 
 function ReloadData()

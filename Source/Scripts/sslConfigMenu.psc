@@ -173,7 +173,10 @@ Event OnConfigInit()
 
 	If (SKSE.GetVersionMinor() < 2)
 		Config.DisableScale = true
-		Debug.MessageBox("[SexLab]\nYou seem to be using a pre-historic version of Skyrim and scaling has thus been disabled to prevent crashes.\nYou lost your right to complain about misalignments and if you still do I'll turn you into a rabbit.\n~~Scrab, that lost a neverending battle against the stubborness of their discord userbase and thus eventually succumbed for being simply too nice a person\n02.03.2024")
+		Debug.MessageBox("[SexLab]\nYou are using an outdated version of Skyrim and scaling has thus been disabled to prevent crashes.")
+	EndIf
+	If (SKSE.GetPluginVersion("SexLabUtil") > -1)
+		Debug.MessageBox("[SexLab]\nYou seem to have installed SexLabUtil.dll, this plugin is no longer used by SLP+ and may cause problems if kept installed.\nDelete or hide it in your mod manager to ensure SexLab works corretly.")
 	EndIf
 EndEvent
 
@@ -1003,7 +1006,6 @@ function SystemCheckOptions()
 
 	AddTextOption("Skyrim Script Extender", okOrFail[Config.CheckSystemPart("SKSE") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("SexLab.dll", okOrFail[Config.CheckSystemPart("SexLabP+") as int], OPTION_FLAG_DISABLED)
-	AddTextOption("SexLabUtil.dll", okOrFail[Config.CheckSystemPart("SexLabUtil") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("PapyrusUtil.dll", okOrFail[Config.CheckSystemPart("PapyrusUtil") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("RaceMenu", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("Mfg Fix", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
