@@ -740,7 +740,7 @@ State Animating
 
 		; check conditions
 		If (_EnjRaise < 0.03 && FullEnjoyment > 90 && FullEnjoyment < 100)
-			; TODO: edging
+			; TODO: edging - let enjoyment raise faster and faster
 		ElseIf (FullEnjoyment > 100 && _EnjRaise < 0.03)
 			; TODO: ruined orgasm
 		EndIf
@@ -1317,7 +1317,7 @@ int _sexuality
 int SexualityStat
 bool SameSexThread
 bool CrtMaleHugePP
-int ConsentSubStatus
+int _ConsentSubStatus
 float BestRelation
 float ContextPain
 float EnjFactor
@@ -1348,7 +1348,7 @@ Function ResetEnjoymentVariables()
 	SexualityStat = -1
 	SameSexThread = False
 	CrtMaleHugePP = False
-	ConsentSubStatus = 0
+	_ConsentSubStatus = 0
 	BestRelation = 0.0
 	ContextPain = 0.0
 	EnjFactor = 0.0
@@ -1380,7 +1380,7 @@ Function UpdateBaseEnjoymentCalculations()
 	SexualityStat = SexlabStatistics.MapSexuality(_sexuality)
 	SameSexThread = _Thread.SameSexThread()
 	CrtMaleHugePP = _Thread.CrtMaleHugePP()
-	ConsentSubStatus = _Thread.GetConsentSubStatus()
+	_ConsentSubStatus = _Thread.GetConsentSubStatus()
 	BestRelation  = _Thread.GetBestRelationForScene(_ActorRef) as float
 	ContextPain = CalcContextPain()
 	EnjFactor = CalcEnjoymentFactor()
@@ -1416,7 +1416,7 @@ EndFunction
 
 float Function CalcContextPain()
     ContextPain = 0
-    If ConsentSubStatus && _victim
+    If _ConsentSubStatus && _victim
 		If _Thread.HasSceneTag("Spanking")
 			ContextPain += 3
 		EndIf
@@ -1437,7 +1437,7 @@ float Function CalcContextPain()
 		ElseIf _Thread.HasSceneTag("Gore")
 			ContextPain = 35
 		EndIf
-		If ConsentSubStatus == 2 ;subdom
+		If _ConsentSubStatus == 2 ;subdom
 			ContextPain -= (BestRelation * ContextPain * 0.03)
 		EndIf
     EndIf
@@ -1498,9 +1498,9 @@ float Function CalcEnjoymentFactor()
 		EnjFactor -= 0.5
 	EndIf
 	;context
-	If _victim && ConsentSubStatus > 1
+	If _victim && _ConsentSubStatus > 1
 		EnjFactor -= 0.5
-	ElseIf !_victim && ConsentSubStatus > 1
+	ElseIf !_victim && _ConsentSubStatus > 1
 		EnjFactor += 0.5
 	EndIf
 	;relation
@@ -1551,9 +1551,9 @@ float Function CalcEffectiveEnjoyment()
 EndFunction
 
 Function DebugBaseCalcVariables()
-	Log("[SLICK Base] IsVictim: " + IsVictim() + ", Sexuality: " + SexualityStat + ", SameSexThread: " + SameSexThread + ", CrtMaleHugePP: " + CrtMaleHugePP + ", ConsentSubStatus: " + ConsentSubStatus + ", BestRelation: " + BestRelation as int + ", ArousalStat: " + ArousalStat as int + ", AnalXp: " + AnalXP as int + ", VaginalXP: " + VaginalXP as int + ", ContextPain: " + ContextPain as int + ", EnjFactor: " + EnjFactor)
+	Log("[SLICK Base] IsVictim: " + IsVictim() + ", Sexuality: " + SexualityStat + ", SameSexThread: " + SameSexThread + ", CrtMaleHugePP: " + CrtMaleHugePP + ", ConsentSubStatus: " + _ConsentSubStatus + ", BestRelation: " + BestRelation as int + ", ArousalStat: " + ArousalStat as int + ", AnalXp: " + AnalXP as int + ", VaginalXP: " + VaginalXP as int + ", ContextPain: " + ContextPain as int + ", EnjFactor: " + EnjFactor)
 	
-	MiscUtil.PrintConsole("[SLICK Base] Actor: " + _ActorRef.GetLeveledActorBase().GetName() + ", IsVictim: " + IsVictim() + ", Sexuality: " + SexualityStat + ", SameSexThread: " + SameSexThread + ", CrtMaleHugePP: " + CrtMaleHugePP + ", ConsentSubStatus: " + ConsentSubStatus + ", BestRelation: " + BestRelation as int + ", ArousalStat: " + ArousalStat as int + ", AnalXp: " + AnalXP as int + ", VaginalXP: " + VaginalXP as int + ", ContextPain: " + ContextPain as int + ", EnjFactor: " + EnjFactor)
+	MiscUtil.PrintConsole("[SLICK Base] Actor: " + _ActorRef.GetLeveledActorBase().GetName() + ", IsVictim: " + IsVictim() + ", Sexuality: " + SexualityStat + ", SameSexThread: " + SameSexThread + ", CrtMaleHugePP: " + CrtMaleHugePP + ", ConsentSubStatus: " + _ConsentSubStatus + ", BestRelation: " + BestRelation as int + ", ArousalStat: " + ArousalStat as int + ", AnalXp: " + AnalXP as int + ", VaginalXP: " + VaginalXP as int + ", ContextPain: " + ContextPain as int + ", EnjFactor: " + EnjFactor)
 EndFunction
 
 Function DebugEffectiveCalcVariables()

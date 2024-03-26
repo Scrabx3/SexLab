@@ -287,6 +287,16 @@ bool Function IsAggressor(Actor ActorRef)
 	return agr && agr.IsAggressor()
 EndFunction
 
+; 0 consensual without submissive-flagged actor (usual scenes)
+; 1 non-consensual without submissive-flagged actor (non-cons cons)
+; 2 consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
+; 3 non-consensual with submissive-flagged actor (non-cons vic-agg)
+Int Property ConsentSubStatus Hidden
+	Int function get()
+		return _ConsentSubStatus
+	EndFunction
+EndProperty
+
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
 ; ------------------------------------------------------- ;
@@ -492,6 +502,8 @@ bool Property LeadIn auto hidden
 String[] _ThreadTags
 String[] _ContextTags
 String[] _Hooks
+
+Int _ConsentSubStatus
 
 ; ------------------------------------------------------- ;
 ; --- Thread IDLE                                     --- ;
@@ -707,6 +719,7 @@ State Making_M
 		_InUseCoordinates[2] = _BaseCoordinates[2]
 		_InUseCoordinates[3] = _BaseCoordinates[3]
 		SortAliasesToPositions()
+		GetConsentSubStatus()
 		PrepareDone()
 		If (_CustomScenes.Length)
 			_ThreadTags = SexLabRegistry.GetCommonTags(_CustomScenes)
@@ -1932,7 +1945,7 @@ bool Function CrtMaleHugePP()
 EndFunction
 
 int Function GetConsentSubStatus()
-	int ConsentSubStatus = -1
+	_ConsentSubStatus = -1
 	string[] agg_tags = new string [6]
 	agg_tags[0] = "Forced"
 	agg_tags[1] = "Humiliation"
@@ -1951,19 +1964,19 @@ int Function GetConsentSubStatus()
 
 	If GetSubmissives().Length == 0
 		If IsConsent()
-			ConsentSubStatus = 0 ;consensual without submissive-flagged actor (usual scenes)
+			_ConsentSubStatus = 0 ;consensual without submissive-flagged actor (usual scenes)
 		Else
-			ConsentSubStatus = 1 ;non-consensual without submissive-flagged actor (non-cons cons)
+			_ConsentSubStatus = 1 ;non-consensual without submissive-flagged actor (non-cons cons)
 		EndIf
 	Else
 		If IsConsent()
-			ConsentSubStatus = 2 ;consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
+			_ConsentSubStatus = 2 ;consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
 		Else
-			ConsentSubStatus = 3 ;non-consensual with submissive-flagged actor (non-cons vic-agg)
+			_ConsentSubStatus = 3 ;non-consensual with submissive-flagged actor (non-cons vic-agg)
 		EndIf
 	EndIf
 
-	return ConsentSubStatus
+	return _ConsentSubStatus
 EndFunction
 
 int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
@@ -1979,7 +1992,6 @@ int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
 	bool WithSpouse = False
 	bool WithLover = False
 	bool WithPOI = False ;person of interest
-	int _ConsentSubStatus = GetConsentSubStatus()
 	
 	If ActorRef == PlayerRef
 		If TargetRef.IsInFaction(PlayerMarriedFaction)
