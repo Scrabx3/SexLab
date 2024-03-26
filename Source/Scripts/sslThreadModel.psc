@@ -287,15 +287,9 @@ bool Function IsAggressor(Actor ActorRef)
 	return agr && agr.IsAggressor()
 EndFunction
 
-; 0 consensual without submissive-flagged actor (usual scenes)
-; 1 non-consensual without submissive-flagged actor (non-cons cons)
-; 2 consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
-; 3 non-consensual with submissive-flagged actor (non-cons vic-agg)
-Int Property ConsentSubStatus Hidden
-	Int function get()
-		return _ConsentSubStatus
-	EndFunction
-EndProperty
+Int Function GetConsentSubStatus()
+	return _ConsentSubStatus
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
@@ -419,6 +413,10 @@ String Property STATE_SETUP_M	= "Making_M" AutoReadOnly
 String Property STATE_PLAYING = "Animating" AutoReadOnly
 String Property STATE_END 		= "Ending" AutoReadOnly
 
+Int Property CONSENT_CONNONSUB = 0 AutoReadOnly Hidden
+Int Property CONSENT_NONCONNONSUB = 1 AutoReadOnly Hidden
+Int Property CONSENT_CONSUB = 2 AutoReadOnly Hidden
+Int Property CONSENT_NONCONSUB = 3 AutoReadOnly Hidden
 ; ------------------------------------------------------- ;
 ; --- Thread Status                                   --- ;
 ; ------------------------------------------------------- ;
@@ -719,7 +717,7 @@ State Making_M
 		_InUseCoordinates[2] = _BaseCoordinates[2]
 		_InUseCoordinates[3] = _BaseCoordinates[3]
 		SortAliasesToPositions()
-		GetConsentSubStatus()
+		IdentifyConsentSubStatus()
 		PrepareDone()
 		If (_CustomScenes.Length)
 			_ThreadTags = SexLabRegistry.GetCommonTags(_CustomScenes)
@@ -1944,7 +1942,7 @@ bool Function CrtMaleHugePP()
 	return HugePP
 EndFunction
 
-int Function GetConsentSubStatus()
+int Function IdentifyConsentSubStatus()
 	_ConsentSubStatus = -1
 	string[] agg_tags = new string [6]
 	agg_tags[0] = "Forced"
@@ -1964,15 +1962,15 @@ int Function GetConsentSubStatus()
 
 	If GetSubmissives().Length == 0
 		If IsConsent()
-			_ConsentSubStatus = 0 ;consensual without submissive-flagged actor (usual scenes)
+			_ConsentSubStatus = CONSENT_CONNONSUB ;consensual without submissive-flagged actor (usual scenes)
 		Else
-			_ConsentSubStatus = 1 ;non-consensual without submissive-flagged actor (non-cons cons)
+			_ConsentSubStatus = CONSENT_NONCONNONSUB ;non-consensual without submissive-flagged actor (non-cons cons)
 		EndIf
 	Else
 		If IsConsent()
-			_ConsentSubStatus = 2 ;consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
+			_ConsentSubStatus = CONSENT_CONSUB ;consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
 		Else
-			_ConsentSubStatus = 3 ;non-consensual with submissive-flagged actor (non-cons vic-agg)
+			_ConsentSubStatus = CONSENT_NONCONSUB ;non-consensual with submissive-flagged actor (non-cons vic-agg)
 		EndIf
 	EndIf
 
