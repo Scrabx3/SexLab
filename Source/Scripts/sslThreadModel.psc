@@ -1850,49 +1850,50 @@ EndFunction
 float Function GetPenetrationFactor(int PenType, int ActorPenInfo)
 ;a multiplcation factor for calculating strength of penetration-based effects;max return 2.7
 	float PenFactor = 0.0
-	float oral_giving = Utility.RandomFloat(0.35, 0.45)
-	float oral_receiving = Utility.RandomFloat(0.6, 0.7)
-	float vaginal_giving = Utility.RandomFloat(0.85, 1.0)
-	float vaginal_receiving = Utility.RandomFloat(0.9, 1.1)
-	float anal_giving = Utility.RandomFloat(0.8, 0.95)
-	float anal_receiving = Utility.RandomFloat(0.95, 1.15)
+	;TODO: support other penetration types and adjust
+	float aOral = Utility.RandomFloat(0.35, 0.45)
+	float pOral = Utility.RandomFloat(0.6, 0.7)
+	float aVaginal = Utility.RandomFloat(0.85, 1.0)
+	float pVaginal = Utility.RandomFloat(0.9, 1.1)
+	float aAnal = Utility.RandomFloat(0.8, 0.95)
+	float pAnal = Utility.RandomFloat(0.95, 1.15)
 	
 	If ActorPenInfo > 0
 		If PenType == 1
-			PenFactor = oral_receiving
+			PenFactor = pOral
 			If ActorPenInfo == 2
-				PenFactor = oral_giving
+				PenFactor = aOral
 			EndIf
 		ElseIf PenType == 2
-			PenFactor = vaginal_receiving
+			PenFactor = pVaginal
 			If ActorPenInfo == 2
-				PenFactor = vaginal_giving
+				PenFactor = aVaginal
 			EndIf
 		ElseIf PenType == 3
-			PenFactor = anal_receiving
+			PenFactor = pAnal
 			If ActorPenInfo == 2
-				PenFactor = anal_giving
+				PenFactor = aAnal
 			EndIf
 		;TODO: improve conditions for ActorPenInfo == 2
 		ElseIf PenType == 4
-			PenFactor = oral_giving + vaginal_receiving
+			PenFactor = aOral + pVaginal
 			If ActorPenInfo == 2
-				PenFactor = Utility.RandomFloat(oral_receiving, vaginal_giving);(oral_receiving || vaginal_giving) 
+				PenFactor = Utility.RandomFloat(pOral, aVaginal);(pOral || aVaginal) 
 			EndIf
 		ElseIf PenType == 5
-			PenFactor = oral_giving + anal_receiving
+			PenFactor = aOral + pAnal
 			If ActorPenInfo == 2
-				PenFactor = Utility.RandomFloat(oral_receiving, anal_giving);(oral_receiving || anal_giving)
+				PenFactor = Utility.RandomFloat(pOral, aAnal);(pOral || aAnal)
 			EndIf
 		ElseIf PenType == 6
-			PenFactor = vaginal_receiving + anal_receiving
+			PenFactor = pVaginal + pAnal
 			If ActorPenInfo == 2
-				PenFactor = Utility.RandomFloat(anal_giving, vaginal_giving);(vaginal_giving || anal_giving)
+				PenFactor = Utility.RandomFloat(aAnal, aVaginal);(aVaginal || aAnal)
 			EndIf
 		ElseIf PenType == 7
-			PenFactor = oral_giving + vaginal_receiving + anal_receiving
+			PenFactor = aOral + pVaginal + pAnal
 			If ActorPenInfo == 2
-				PenFactor = Utility.RandomFloat(oral_receiving, vaginal_receiving);(oral_receiving || vaginal_giving || anal_giving)
+				PenFactor = Utility.RandomFloat(pOral, pVaginal);(pOral || aVaginal || aAnal)
 			EndIf
 		EndIf
 	EndIf
@@ -1938,40 +1939,25 @@ EndFunction
 
 int Function IdentifyConsentSubStatus()
 	int _ConsentSubStatus = -1
-	string[] agg_tags = new string [6]
-	agg_tags[0] = "Forced"
-	agg_tags[1] = "Humiliation"
-	agg_tags[2] = "Ryona"
-	agg_tags[3] = "Amputee"
-	agg_tags[4] = "Gore"
-	agg_tags[5] = "Dead"
-	string[] sub_tags = new string [3]
-	sub_tags[0] = "Dominant"
-	sub_tags[1] = "Spanking"
-	sub_tags[2] = "Asphyxiation"
-
-	If (SexlabRegistry.IsSceneTagA(_ActiveScene, sub_tags) && !SexlabRegistry.IsSceneTagA(_ActiveScene, agg_tags))
-		SetConsent(True)
-	EndIf
 
 	If GetSubmissives().Length == 0
 		If IsConsent()
-			_ConsentSubStatus = CONSENT_CONNONSUB ;consensual without submissive-flagged actor (usual scenes)
+			_ConsentSubStatus = CONSENT_CONNONSUB
 		Else
-			_ConsentSubStatus = CONSENT_NONCONNONSUB ;non-consensual without submissive-flagged actor (non-cons cons)
+			_ConsentSubStatus = CONSENT_NONCONNONSUB
 		EndIf
 	Else
 		If IsConsent()
-			_ConsentSubStatus = CONSENT_CONSUB ;consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
+			_ConsentSubStatus = CONSENT_CONSUB
 		Else
-			_ConsentSubStatus = CONSENT_NONCONSUB ;non-consensual with submissive-flagged actor (non-cons vic-agg)
+			_ConsentSubStatus = CONSENT_NONCONSUB
 		EndIf
 	EndIf
 
 	return _ConsentSubStatus
 EndFunction
 
-int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
+int Function GetRelationForScene(Actor ActorRef, Actor TargetRef, int ConSubStatus)
 	;mapping: Stranger=-2~0 | POI=1~5 | Lover=6~10 | Spouse=11~15 | LoverSpouse=16~20
 	;w_agg=-2 | w_vic=-1 | <<stranger=0>>
 	;W_agg=1 | w_vic=2 | <<poi=3>> | w_dom=4 | w_sub=5
@@ -2004,8 +1990,8 @@ int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
 		BaseRelation = 3
 	EndIf
 
-	If IdentifyConsentSubStatus() > 1
-		If (WithSpouse || WithLover || WithPOI)
+	If ConSubStatus != CONSENT_CONNONSUB
+		If (ConSubStatus == CONSENT_CONSUB) || (WithSpouse || WithLover || WithPOI)
 			If IsVictim(ActorRef) ;with dom
 				ContextRelation = 1
 			ElseIf IsVictim(TargetRef) ;with sub
@@ -2023,22 +2009,22 @@ int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
 	return Relation
 EndFunction
 
-int Function GetBestRelationForScene(Actor ActorRef)
+int Function GetBestRelationForScene(Actor ActorRef, int ConSubStatus)
 	if Positions.Length <= 1
 		return 0
 	elseif Positions.Length == 2
 		if(ActorRef == Positions[0])
-			return GetRelationForScene(ActorRef, Positions[1])
+			return GetRelationForScene(ActorRef, Positions[1], ConSubStatus)
 		else
-			return GetRelationForScene(ActorRef, Positions[0])
+			return GetRelationForScene(ActorRef, Positions[0], ConSubStatus)
 		endif
 	endIf
 	int ret = -2 ; lowest possible
 	int i = Positions.Length
-	while i > 0 && ret < 34
+	while i > 0 && ret < 20
 		i -= 1
 		if Positions[i] != ActorRef
-			int relation = GetRelationForScene(ActorRef, Positions[i])
+			int relation = GetRelationForScene(ActorRef, Positions[i], ConSubStatus)
 			if relation >= 0 ;ensrures that lowest value is retuned for agg/vic scenes
 				ret = relation
 			endIf
