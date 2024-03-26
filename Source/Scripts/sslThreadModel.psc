@@ -287,10 +287,6 @@ bool Function IsAggressor(Actor ActorRef)
 	return agr && agr.IsAggressor()
 EndFunction
 
-Int Function GetConsentSubStatus()
-	return _ConsentSubStatus
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
 ; ------------------------------------------------------- ;
@@ -500,8 +496,6 @@ bool Property LeadIn auto hidden
 String[] _ThreadTags
 String[] _ContextTags
 String[] _Hooks
-
-Int _ConsentSubStatus
 
 ; ------------------------------------------------------- ;
 ; --- Thread IDLE                                     --- ;
@@ -1943,7 +1937,7 @@ bool Function CrtMaleHugePP()
 EndFunction
 
 int Function IdentifyConsentSubStatus()
-	_ConsentSubStatus = -1
+	int _ConsentSubStatus = -1
 	string[] agg_tags = new string [6]
 	agg_tags[0] = "Forced"
 	agg_tags[1] = "Humiliation"
@@ -2010,7 +2004,7 @@ int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
 		BaseRelation = 3
 	EndIf
 
-	If _ConsentSubStatus > 1
+	If IdentifyConsentSubStatus() > 1
 		If (WithSpouse || WithLover || WithPOI)
 			If IsVictim(ActorRef) ;with dom
 				ContextRelation = 1
