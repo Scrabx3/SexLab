@@ -1654,7 +1654,6 @@ EndFunction
 ;required for relations function
 AssociationType Property SpouseAssocation Auto
 Faction Property PlayerMarriedFaction Auto
-Faction Property PlayerHousecarlFaction Auto
 
 string Function GetStageLabel(string _scene_, int StageNum) global
 ;function introduced temporarily from patched AnimStageLabel script
@@ -1793,13 +1792,6 @@ float Function GetPenetrationVelocity()
 	return PenVelocity
 EndFunction
 
-float Function GetPenetrationTime()
-; TODO: implement by or based on SFX system
-;will calculate the time (from thread runtime) that the penetration type has stayed the same (or maybe rely on stage?)
-
-	;<<< temporary implementation inside ActorAlias portion >>>
-EndFunction
-
 int Function GetActorPenInfo(Actor ActorRef, int PenType)
 ;function to-be-implemented by or based on SFX system
 ;primarily helpful in not relying much on positions-related code in alias script
@@ -1810,10 +1802,6 @@ int Function GetActorPenInfo(Actor ActorRef, int PenType)
 	int gender = ActorAlias(ActorRef).GetSex()
 	bool FemOnly = False
 
-	If (ActorLib.CountFemale(Positions) + ActorLib.CountCrtFemale(Positions)) == Positions.Length
-		FemOnly = True
-	EndIf
-
 	If PenType > 0
 		If !IsConsent()
 			If !SameSexThread()
@@ -1823,12 +1811,10 @@ int Function GetActorPenInfo(Actor ActorRef, int PenType)
 					ActorPenInfo = 2
 				EndIf
 			Else
-				If !FemOnly
-					If IsVictim(ActorRef)
-						ActorPenInfo = 1
-					ElseIf !IsVictim(ActorRef)
-						ActorPenInfo = 2
-					EndIf
+				If IsVictim(ActorRef)
+					ActorPenInfo = 1
+				ElseIf !IsVictim(ActorRef)
+					ActorPenInfo = 2
 				EndIf
 			EndIf
 		Else
@@ -1845,17 +1831,67 @@ int Function GetActorPenInfo(Actor ActorRef, int PenType)
 					EndIf
 				EndIf
 			Else
-				If !FemOnly
-					If GetPosition(ActorRef) == 0
-						ActorPenInfo = 1
-					Else
-						ActorPenInfo = 2
-					EndIf
+				If GetPosition(ActorRef) == 0
+					ActorPenInfo = 1
+				Else
+					ActorPenInfo = 2
 				EndIf
 			EndIf
 		EndIf
 	EndIf
 	return ActorPenInfo
+EndFunction
+
+float Function GetPenetrationFactor(int PenType, int ActorPenInfo)
+;a multiplcation factor for calculating strength of penetration-based effects;max return 2.7
+	float PenFactor = 0.0
+	float oral_giving = Utility.RandomFloat(0.35, 0.45)
+	float oral_receiving = Utility.RandomFloat(0.6, 0.7)
+	float vaginal_giving = Utility.RandomFloat(0.85, 1.0)
+	float vaginal_receiving = Utility.RandomFloat(0.9, 1.1)
+	float anal_giving = Utility.RandomFloat(0.8, 0.95)
+	float anal_receiving = Utility.RandomFloat(0.95, 1.15)
+	
+	If ActorPenInfo > 0
+		If PenType == 1
+			PenFactor = oral_receiving
+			If ActorPenInfo == 2
+				PenFactor = oral_giving
+			EndIf
+		ElseIf PenType == 2
+			PenFactor = vaginal_receiving
+			If ActorPenInfo == 2
+				PenFactor = vaginal_giving
+			EndIf
+		ElseIf PenType == 3
+			PenFactor = anal_receiving
+			If ActorPenInfo == 2
+				PenFactor = anal_giving
+			EndIf
+		;TODO: improve conditions for ActorPenInfo == 2
+		ElseIf PenType == 4
+			PenFactor = oral_giving + vaginal_receiving
+			If ActorPenInfo == 2
+				PenFactor = Utility.RandomFloat(oral_receiving, vaginal_giving);(oral_receiving || vaginal_giving) 
+			EndIf
+		ElseIf PenType == 5
+			PenFactor = oral_giving + anal_receiving
+			If ActorPenInfo == 2
+				PenFactor = Utility.RandomFloat(oral_receiving, anal_giving);(oral_receiving || anal_giving)
+			EndIf
+		ElseIf PenType == 6
+			PenFactor = vaginal_receiving + anal_receiving
+			If ActorPenInfo == 2
+				PenFactor = Utility.RandomFloat(anal_giving, vaginal_giving);(vaginal_giving || anal_giving)
+			EndIf
+		ElseIf PenType == 7
+			PenFactor = oral_giving + vaginal_receiving + anal_receiving
+			If ActorPenInfo == 2
+				PenFactor = Utility.RandomFloat(oral_receiving, vaginal_receiving);(oral_receiving || vaginal_giving || anal_giving)
+			EndIf
+		EndIf
+	EndIf
+	return PenFactor
 EndFunction
 
 bool Function SameSexThread()
@@ -1895,63 +1931,88 @@ bool Function CrtMaleHugePP()
 	return HugePP
 EndFunction
 
+int Function GetConsentSubStatus()
+	int ConsentSubStatus = -1
+	string[] agg_tags = new string [6]
+	agg_tags[0] = "Forced"
+	agg_tags[1] = "Humiliation"
+	agg_tags[2] = "Ryona"
+	agg_tags[3] = "Amputee"
+	agg_tags[4] = "Gore"
+	agg_tags[5] = "Dead"
+	string[] sub_tags = new string [3]
+	sub_tags[0] = "Dominant"
+	sub_tags[1] = "Spanking"
+	sub_tags[2] = "Asphyxiation"
+
+	If (SexlabRegistry.IsSceneTagA(_ActiveScene, sub_tags) && !SexlabRegistry.IsSceneTagA(_ActiveScene, agg_tags))
+		SetConsent(True)
+	EndIf
+
+	If GetSubmissives().Length == 0
+		If IsConsent()
+			ConsentSubStatus = 0 ;consensual without submissive-flagged actor (usual scenes)
+		Else
+			ConsentSubStatus = 1 ;non-consensual without submissive-flagged actor (non-cons cons)
+		EndIf
+	Else
+		If IsConsent()
+			ConsentSubStatus = 2 ;consensual with submissive-flagged actor (cons sub-dom || cons non-cons)
+		Else
+			ConsentSubStatus = 3 ;non-consensual with submissive-flagged actor (non-cons vic-agg)
+		EndIf
+	EndIf
+
+	return ConsentSubStatus
+EndFunction
+
 int Function GetRelationForScene(Actor ActorRef, Actor TargetRef)
-	;mapping: Stranger=-2~0 | POI=1~8 | Lover=9~16 | Spouse=19~26 | LoverSpouse=27~34
+	;mapping: Stranger=-2~0 | POI=1~5 | Lover=6~10 | Spouse=11~15 | LoverSpouse=16~20
 	;w_agg=-2 | w_vic=-1 | <<stranger=0>>
-	;W_agg=1 | w_vic=2 | <<poi=3>> | w_dom=4 | w_sub=5 | w_hc=6 | w_dom_hc=7 | w_sub_hc=8
-	;W_agg=9 | w_vic=10 | <<lover=11>> | w_dom=12 | w_sub=13 | w_hc=14 | w_dom_hc=15 | w_sub_hc=16
-	;W_agg=19 | w_vic=20 | <<spouse=21>> | w_dom=22 | w_sub=23 | w_hc=24 | w_dom_hc=25 | w_sub_hc=26
-	;W_agg=27 | w_vic=28 | <<spouse+lover=29>> | w_dom=30 | w_sub=31 | w_hc=32 | w_dom_hc=33 | w_sub_hc=34
+	;W_agg=1 | w_vic=2 | <<poi=3>> | w_dom=4 | w_sub=5
+	;W_agg=6 | w_vic=7 | <<lover=8>> | w_dom=9 | w_sub=10
+	;W_agg=11 | w_vic=12 | <<spouse=13>> | w_dom=14 | w_sub=15
+	;W_agg=16 | w_vic=17 | <<spouse+lover=18>> | w_dom=19 | w_sub=20
 	int BaseRelation = 0
 	int ContextRelation = 0
 	int Relation = 0
 	bool WithSpouse = False
 	bool WithLover = False
-	bool WithPOI = False ; person of interest
-	bool HasHousecarl = False
-	bool SubDom = False
-
+	bool WithPOI = False ;person of interest
+	int _ConsentSubStatus = GetConsentSubStatus()
+	
 	If ActorRef == PlayerRef
 		If TargetRef.IsInFaction(PlayerMarriedFaction)
 			WithSpouse = True
-			BaseRelation = 21
-		EndIf
-		If TargetRef.IsInFaction(PlayerHousecarlFaction)
-			HasHousecarl = True
-			ContextRelation += 3
+			BaseRelation = 13
 		EndIf
 	Else
 		If ActorRef.HasAssociation(SpouseAssocation, TargetRef)
 			WithSpouse = True
-			BaseRelation = 21
-		EndIf
-		If ActorRef.IsInFaction(PlayerHousecarlFaction)
-			HasHousecarl = True
-			ContextRelation += 3
+			BaseRelation = 13
 		EndIf
 	EndIf
 	If !WithSpouse && ActorRef.GetRelationshipRank(TargetRef) >= 4
 		WithLover = True
-		BaseRelation = 11
+		BaseRelation = 8
 	ElseIf !WithLover && !WithSpouse && (ActorRef.GetRelationshipRank(TargetRef) >= 1) && (SexLabStatistics.GetTimesMet(ActorRef, TargetRef) >= 3)
 		WithPOI = True
 		BaseRelation = 3
 	EndIf
-	If !IsConsent()
-		If WithSpouse || WithLover || WithPOI
-			If (HasSceneTag("Asphyxiation") || HasSceneTag("Dominant") || HasSceneTag("Spanking")) && !HasSceneTag("Forced")
-				SubDom = True
+
+	If _ConsentSubStatus > 1
+		If (WithSpouse || WithLover || WithPOI)
+			If IsVictim(ActorRef) ;with dom
+				ContextRelation = 1
+			ElseIf IsVictim(TargetRef) ;with sub
+				ContextRelation = 2
 			EndIf
-		EndIf
-		;treating HasHousecarl different here cuz Lydia should just take it like a true nord woman; jk it complicates the returned values
-		If !IsVictim(ActorRef) && !SubDom && !HasHousecarl ;with victim
-			ContextRelation -= 1
-		ElseIf IsVictim(ActorRef) && !SubDom && !HasHousecarl ;with aggressor
-			ContextRelation -= 2
-		ElseIf !IsVictim(ActorRef) && SubDom ;with sub
-			ContextRelation += 2
-		ElseIf IsVictim(ActorRef) && SubDom ;with dom
-			ContextRelation += 1
+		Else
+			If IsVictim(ActorRef) ;with aggressor
+				ContextRelation = -2
+			ElseIf IsVictim(TargetRef) ;with victim
+				ContextRelation = -1
+			EndIf
 		EndIf
 	EndIf
 	Relation = BaseRelation + ContextRelation
@@ -1960,11 +2021,13 @@ EndFunction
 
 int Function GetBestRelationForScene(Actor ActorRef)
 	if Positions.Length <= 1
-		If(ActorRef == Positions[0])
-			return 0
-		Else
+		return 0
+	elseif Positions.Length == 2
+		if(ActorRef == Positions[0])
+			return GetRelationForScene(ActorRef, Positions[1])
+		else
 			return GetRelationForScene(ActorRef, Positions[0])
-		EndIf
+		endif
 	endIf
 	int ret = -2 ; lowest possible
 	int i = Positions.Length
@@ -1972,7 +2035,7 @@ int Function GetBestRelationForScene(Actor ActorRef)
 		i -= 1
 		if Positions[i] != ActorRef
 			int relation = GetRelationForScene(ActorRef, Positions[i])
-			if relation > ret
+			if relation >= 0 ;ensrures that lowest value is retuned for agg/vic scenes
 				ret = relation
 			endIf
 		endIf

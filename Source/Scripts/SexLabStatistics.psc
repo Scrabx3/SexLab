@@ -3,13 +3,15 @@ ScriptName SexLabStatistics Hidden
   Global Script for Statistics Access
 }
 
-; Returns an array of FormIDs of all currently tracked actors
+; Returns an array of Actors containing of all currently tracked actors
 Actor[] Function GetAllTrackedActors() native global
+; Same as above, but the list is trimmed of any non-unique actors and lexicographically sorted on their display name
+Actor[] Function GetAllTrackedUniqueActorsSorted() native global
 
 int Property LastUpdate_GameTime  = 0   AutoReadOnly
 int Property SecondsInScene       = 1   AutoReadOnly
-int Property XP_Anal              = 2   AutoReadOnly
-int Property XP_Vaginal           = 3   AutoReadOnly
+int Property XP_Vaginal           = 2   AutoReadOnly
+int Property XP_Anal              = 3   AutoReadOnly
 int Property XP_Oral              = 4   AutoReadOnly
 int Property PartnersMale         = 5   AutoReadOnly
 int Property PartnersFemale       = 6   AutoReadOnly
@@ -22,9 +24,8 @@ int Property TimesMasturbated     = 12  AutoReadOnly
 int Property TimesSubmissive      = 13  AutoReadOnly
 int Property TimesDominant        = 14  AutoReadOnly
 int Property TimesTotal           = 15  AutoReadOnly
-int Property SadoMasochismus      = 16  AutoReadOnly
-int Property Sexuality            = 17  AutoReadOnly
-int Property Arousal              = 18  AutoReadOnly
+int Property Sexuality            = 16  AutoReadOnly
+int Property Arousal              = 17  AutoReadOnly
 
 ; Obtain a statistic value, the id must be one of the above
 float Function GetStatistic(Actor akActor, int id) native global
@@ -54,9 +55,11 @@ bool Function HasCustomStat(Actor akActor, String asStat) native global
 Function DeleteCustomStat(Actor akActor, String asStat) native global
 
 ; --- Encounter Statistics
-int Property ENC_Any 			= 0	AutoReadOnly Hidden
-int Property ENC_Victim		= 1	AutoReadOnly Hidden
-int Property ENC_Assault	= 2	AutoReadOnly Hidden
+int Property ENC_Any 			  = 0	AutoReadOnly Hidden
+int Property ENC_Victim		  = 1	AutoReadOnly Hidden
+int Property ENC_Assault	  = 2	AutoReadOnly Hidden
+int Property ENC_Submissive	= 3	AutoReadOnly Hidden
+int Property ENC_Dominant	  = 4	AutoReadOnly Hidden
 
 ; Return a list of all encounters with this actor, sorted and beginning with the least recent one
 Actor[] Function GetAllEncounters(Actor akActor) native global
@@ -71,6 +74,8 @@ float Function GetLastEncounterTime(Actor akActor, Actor akPartner) native globa
 int Function GetTimesMet(Actor akActor, Actor akPartner) native global
 int Function GetTimesVictimzed(Actor akActor, Actor akAssailant) native global
 int Function GetTimesAssaulted(Actor akActor, Actor akVictim) native global
+int Function GetTimesSubmissive(Actor akActor, Actor akPartner) native global
+int Function GetTimesDominant(Actor akActor, Actor akPartner) native global
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
@@ -85,5 +90,6 @@ int Function GetTimesAssaulted(Actor akActor, Actor akVictim) native global
 
 String[] Function GetAllCustomStatIDs(Actor akActor) native global
 Function SetStatistic(Actor akActor, int id, float afValue) native global
+Function SetSexuality(Actor akActor, int mapping) native global
 Function AddEncounter(Actor akActor, Actor akPartner, int aiEncounterType) native global
 Function ResetStatistics(Actor akActor) native global
