@@ -1429,6 +1429,7 @@ Function RecheckConSubStatus()
 		BestRelation  = _Thread.GetBestRelationForScene(_ActorRef, ConsentSubStatus) as float
 		ContextPain = CalcContextPain()
 		EnjFactor = CalcEnjoymentFactor()
+		ConsentSubStatus = _ConsentSubStatus
 	EndIf
 EndFunction
 
@@ -1508,7 +1509,7 @@ float Function CalcEnjoymentFactor()
 	ElseIf ArousalStat > 100
 		ArousalStat = 100
 	EndIf
-	EnjFactor = (1 + (ArousalStat / 50))
+	EnjFactor = (0.5 + (ArousalStat / 50))
 	;sexuality
 	If (SexualityStat == 0 && !SameSexThread) || (SexualityStat == 1 && SameSexThread) || (SexualityStat == 2)
 		EnjFactor += 0.5
