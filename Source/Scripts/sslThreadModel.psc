@@ -1079,6 +1079,8 @@ State Animating
 			If (_StageTimer <= 0)
 				; IDEA: Randomize branching..?
 				GoToStage(_StageHistory.Length + 1)
+				; TODO: avoid last stage if GetOrgasmCount() for dom is 0 and enj < 80
+				; perpetutate 2nd last stage or use ChangeAnimation() instead, and skip to 2nd/3rd stage
 				return
 			EndIf
 		EndIf
@@ -1776,7 +1778,7 @@ float Function GetPenetrationVelocity()
 	ElseIf StageLabel == "FB" || StageLabel == "FV" || StageLabel == "FA"
 		FastPen = True
 	ElseIf StageLabel == "SR" || StageLabel == "DP" || StageLabel == "TP" || (StageLabel == "" && !HasSceneTag("LeadIn") && !IsLeadIn() && (IsOral() || IsVaginal() || IsAnal()))
-		If !IsConsent()
+		If !IsConsent() || GetSubmissives().Length > 0
 			FastPen = True
 		Else
 			SlowPen = True
@@ -1958,12 +1960,12 @@ int Function IdentifyConsentSubStatus()
 EndFunction
 
 int Function GetRelationForScene(Actor ActorRef, Actor TargetRef, int ConSubStatus)
-	;mapping: Stranger=-2~0 | POI=1~5 | Lover=6~10 | Spouse=11~15 | LoverSpouse=16~20
-	;w_agg=-2 | w_vic=-1 | <<stranger=0>>
-	;W_agg=1 | w_vic=2 | <<poi=3>> | w_dom=4 | w_sub=5
-	;W_agg=6 | w_vic=7 | <<lover=8>> | w_dom=9 | w_sub=10
-	;W_agg=11 | w_vic=12 | <<spouse=13>> | w_dom=14 | w_sub=15
-	;W_agg=16 | w_vic=17 | <<spouse+lover=18>> | w_dom=19 | w_sub=20
+	;mapping: Stranger=-2~2 | POI=31~7 | Lover=8~12 | Spouse=13~17 | LoverSpouse=18~22
+	;w_agg=-2 | w_vic=-1 | <<stranger=0>> | w_dom=1 | w_sub=2
+	;W_agg=3 | w_vic=4 | <<poi=5>> | w_dom=6 | w_sub=7
+	;W_agg=8 | w_vic=9 | <<lover=10>> | w_dom=11 | w_sub=12
+	;W_agg=13 | w_vic=14 | <<spouse=15>> | w_dom=16 | w_sub=17
+	;W_agg=18 | w_vic=19 | <<spouse+lover=20>> | w_dom=21 | w_sub=22
 	int BaseRelation = 0
 	int ContextRelation = 0
 	int Relation = 0
@@ -1974,37 +1976,36 @@ int Function GetRelationForScene(Actor ActorRef, Actor TargetRef, int ConSubStat
 	If ActorRef == PlayerRef
 		If TargetRef.IsInFaction(PlayerMarriedFaction)
 			WithSpouse = True
-			BaseRelation = 13
+			BaseRelation = 15
 		EndIf
 	Else
 		If ActorRef.HasAssociation(SpouseAssocation, TargetRef)
 			WithSpouse = True
-			BaseRelation = 13
+			BaseRelation = 15
 		EndIf
 	EndIf
 	If !WithSpouse && ActorRef.GetRelationshipRank(TargetRef) >= 4
 		WithLover = True
-		BaseRelation = 8
+		BaseRelation = 10
 	ElseIf !WithLover && !WithSpouse && (ActorRef.GetRelationshipRank(TargetRef) >= 1) && (SexLabStatistics.GetTimesMet(ActorRef, TargetRef) >= 3)
 		WithPOI = True
-		BaseRelation = 3
+		BaseRelation = 5
 	EndIf
 
-	If ConSubStatus != CONSENT_CONNONSUB
-		If (ConSubStatus == CONSENT_CONSUB) || (WithSpouse || WithLover || WithPOI)
-			If IsVictim(ActorRef) ;with dom
-				ContextRelation = 1
-			ElseIf IsVictim(TargetRef) ;with sub
-				ContextRelation = 2
-			EndIf
-		Else
-			If IsVictim(ActorRef) ;with aggressor
-				ContextRelation = -2
-			ElseIf IsVictim(TargetRef) ;with victim
-				ContextRelation = -1
-			EndIf
+	If ConSubStatus == CONSENT_CONSUB
+		If IsVictim(ActorRef) ;with dom
+			ContextRelation = 1
+		ElseIf IsVictim(TargetRef) ;with sub
+			ContextRelation = 2
+		EndIf
+	Else
+		If IsVictim(ActorRef) ;with aggressor
+			ContextRelation = -2
+		ElseIf IsVictim(TargetRef) ;with victim
+			ContextRelation = -1
 		EndIf
 	EndIf
+
 	Relation = BaseRelation + ContextRelation
 	return Relation
 EndFunction
@@ -2021,7 +2022,7 @@ int Function GetBestRelationForScene(Actor ActorRef, int ConSubStatus)
 	endIf
 	int ret = -2 ; lowest possible
 	int i = Positions.Length
-	while i > 0 && ret < 20
+	while i > 0 && ret < 22
 		i -= 1
 		if Positions[i] != ActorRef
 			int relation = GetRelationForScene(ActorRef, Positions[i], ConSubStatus)
@@ -2033,6 +2034,13 @@ int Function GetBestRelationForScene(Actor ActorRef, int ConSubStatus)
 	return ret
 EndFunction
 
+int Function GetOrgasmCount(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return 0
+	EndIf
+	return ref.GetOrgasmCount()
+EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
