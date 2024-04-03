@@ -394,7 +394,9 @@ State Ready
 		ActorRef.SetFactionRank(_AnimatingFaction, 1)
 		ActorRef.EvaluatePackage()
 		GoToState(STATE_PAUSED)
-		_Thread.PrepareDone()
+		If (asStringArg != "skip")
+			_Thread.PrepareDone()
+		EndIf
 		; Delayed Initialization
 		GetBaseEnjoyment()
 		LogInfo += "BaseEnjoyment["+BaseEnjoyment+"]"
