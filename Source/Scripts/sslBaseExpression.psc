@@ -1,8 +1,5 @@
 scriptname sslBaseExpression extends sslBaseObject
 
-;import PapyrusUtil
-import sslExpression_util
-
 ; Gender Types
 int property Male       = 0 autoreadonly
 int property Female     = 1 autoreadonly
@@ -135,13 +132,13 @@ function OpenMouth(Actor ActorRef) global
 		i += 1
 	endWhile
 	if HasMFG
-		sslExpression_util.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int) ; Oldrim
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int) ; Oldrim
 	else
 		ActorRef.SetExpressionPhoneme(s, Phonemes[s]) ; is supouse to be / 100.0 already thanks SetIndex function
 	endIf
 	if (GetExpression(ActorRef, true) as int == OpenMouthExpression || GetExpression(ActorRef, false) != OpenMouthSize as float / 100.0)
 		if HasMFG
-			sslExpression_util.SmoothSetExpression(ActorRef, OpenMouthExpression, OpenMouthSize)
+			sslExpressionUtil.SmoothSetExpression(ActorRef, OpenMouthExpression, OpenMouthSize)
 		Else
 			ActorRef.SetExpressionOverride(OpenMouthExpression, OpenMouthSize)
 		endif
@@ -152,7 +149,7 @@ endFunction
 function CloseMouth(Actor ActorRef) global
 	ClearPhoneme(ActorRef)
 	if SexLabUtil.GetConfig().HasMFGFix
-		sslExpression_util.SmoothSetExpression(ActorRef,7,70)
+		sslExpressionUtil.SmoothSetExpression(ActorRef,7,70)
 	Else
 		ActorRef.SetExpressionOverride(7, 50)
 	endif
@@ -180,7 +177,7 @@ endFunction
 
 function ClearMFG(Actor ActorRef) global
 	if SexLabUtil.GetConfig().HasMFGFix
-		sslExpression_util.resetMFGSmooth(ActorRef)
+		sslExpressionUtil.resetMFGSmooth(ActorRef)
 	else
 		ActorRef.ClearExpressionOverride()
 		ClearPhoneme(ActorRef)

@@ -83,7 +83,7 @@ function MoveLipsEx(Actor ActorRef, Sound SoundRef = none, float Strength = 1.0,
 ;		TransitDown(ActorRef, (SavedP * 100) as int, MinP)
 ;	endIf
 	if UseMFG
-		sslExpression_util.SmoothSetPhoneme(ActorRef, p, MinP)
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, p, MinP)
 	else
 		ActorRef.SetExpressionPhoneme(p, (MinP as float)*0.01)
 	endIf
@@ -94,7 +94,7 @@ function MoveLipsEx(Actor ActorRef, Sound SoundRef = none, float Strength = 1.0,
 	endIf
 ;	TransitUp(ActorRef, MinP, MaxP)
 	if UseMFG
-		sslExpression_util.SmoothSetPhoneme(ActorRef, p, MaxP)
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, p, MaxP)
 	else
 		ActorRef.SetExpressionPhoneme(p, (MaxP as float)*0.01)
 	endIf
@@ -108,7 +108,7 @@ function MoveLipsEx(Actor ActorRef, Sound SoundRef = none, float Strength = 1.0,
 ;	endIf
 ;	Utility.Wait(0.1)
 	if UseMFG
-		sslExpression_util.SmoothSetPhoneme(ActorRef, 0, p, (SavedP*100) as int)
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, 0, p, (SavedP*100) as int)
 	else
 		ActorRef.SetExpressionPhoneme(p, SavedP as float)
 	endIf
@@ -191,9 +191,9 @@ function TransitUp(Actor ActorRef, int from, int to) global
 	int value = from
 	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
 	if HasMFG
-		sslExpression_util.SmoothSetPhoneme(ActorRef, 1, from) ; OLDRIM
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, 1, from) ; OLDRIM
 		Utility.Wait(0.5)
-		sslExpression_util.SmoothSetPhoneme(ActorRef, 1, to) ; OLDRIM
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, 1, to) ; OLDRIM
 	else
 		ActorRef.SetExpressionPhoneme(1, (from as float / 100.0))
 		Utility.Wait(0.1)
@@ -214,9 +214,9 @@ function TransitDown(Actor ActorRef, int from, int to) global
 	int value = from
 	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
 	if HasMFG
-		sslExpression_util.SmoothSetPhoneme(ActorRef, 1, from) ; OLDRIM
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, 1, from) ; OLDRIM
 		Utility.Wait(0.5)
-		sslExpression_util.SmoothSetPhoneme(ActorRef, 1, to) ; OLDRIM
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, 1, to) ; OLDRIM
 	else
 		ActorRef.SetExpressionPhoneme(1, (from as float / 100.0)) ; SKYRIM SE
 		Utility.Wait(0.1)
