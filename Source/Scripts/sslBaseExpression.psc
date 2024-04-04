@@ -88,7 +88,7 @@ function ClearPhoneme(Actor ActorRef) global
 	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
 	int p
 	if HasMFG
-		resetPhonemesSmooth(ActorRef)
+		sslExpressionUtil.resetPhonemesSmooth(ActorRef)
 	else
 		while p <= 15
 			ActorRef.SetExpressionPhoneme(p, 0.0)
@@ -100,14 +100,13 @@ function ClearModifier(Actor ActorRef) global
 	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
 	int i
 	if HasMFG
-		resetModifiersSmooth(ActorRef)
+		sslExpressionUtil.resetModifiersSmooth(ActorRef)
 	else
 		while i <= 13
 			ActorRef.SetExpressionModifier(i, 0.0)
 			i += 1
 		endWhile
 	endIf
-	
 endFunction
 
 function OpenMouth(Actor ActorRef) global
@@ -121,7 +120,7 @@ function OpenMouth(Actor ActorRef) global
 	while i < Phonemes.length
 		if (GetPhoneme(ActorRef, i) != Phonemes[i])
 			if HasMFG
-				SmoothSetModifier(ActorRef,0,PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
+				sslExpressionUtil.SmoothSetModifier(ActorRef,0,PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
 			else
 				ActorRef.SetExpressionPhoneme(i, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100) as float / 100.0)
 			endif
@@ -183,7 +182,6 @@ function ClearMFG(Actor ActorRef) global
 		ClearPhoneme(ActorRef)
 		ClearModifier(ActorRef)
 	endIf
-	
 endFunction
 
 function TransitPresetFloats(Actor ActorRef, float[] FromPreset, float[] ToPreset, float Speed = 1.0, float Time = 1.0) global 
@@ -224,11 +222,11 @@ function ApplyPresetFloats(Actor ActorRef, float[] Preset) global
 	int currValue = PapyrusUtil.ClampInt((GetExpression(ActorRef, false)) as int, 0, 100)
 	if !bMouthOpen
 		if currExpr != Preset[30]
-			SmoothSetExpression(ActorRef, currExpr as int, 0, currValue)
+			sslExpressionUtil.SmoothSetExpression(ActorRef, currExpr as int, 0, currValue)
 		endIf
 	endIf
 	if SexLabUtil.GetConfig().HasMFGFix
-		ApplyExpressionPreset(ActorRef, Preset, bMouthOpen)
+		sslExpressionUtil.ApplyExpressionPreset(ActorRef, Preset, bMouthOpen)
 	else
 		ApplyPresetFloatsLegacy(ActorRef, Preset, bMouthOpen)
 	endIf
@@ -727,12 +725,3 @@ endFunction
 function ApplyPreset(Actor ActorRef, int[] Preset) global
 	ApplyPresetFloats(ActorRef, ToFloatArray(Preset))
 endFunction
-
-; ------------------------------------------------------- ;
-; --- REFACTOR DEPRECATION                            --- ;
-; ------------------------------------------------------- ;
-
-; int[] function GetPhase(int Phase, int Gender)
-; endFunction
-; function SetPhase(int Phase, int Gender, int[] Preset)
-; endFunction
