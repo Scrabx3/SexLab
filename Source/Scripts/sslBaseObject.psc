@@ -57,7 +57,22 @@ EndFunction
 ; --- Tagging System                                  --- ;
 ; ------------------------------------------------------- ;
 
-string[] Tags
+String[] _Tags
+string[] Property Tags Hidden
+	String[] Function Get()
+		return _GetTags()
+	EndFunction
+	Function Set(String[] asSet)
+		_SetTags(asSet)
+	EndFunction
+EndProperty
+String[] Function _GetTags()
+	return _Tags
+EndFunction
+Function _SetTags(String[] asSet)
+	_Tags = asSet
+EndFunction
+
 string[] function GetTags()
 	return PapyrusUtil.ClearEmpty(Tags)
 endFunction
