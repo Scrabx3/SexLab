@@ -853,7 +853,7 @@ Function ClearLeadAnimations()
 	ClearLeadInScenes()
 EndFunction
 Function SetStartingAnimation(sslBaseAnimation FirstAnimation)
-	SetStartingScene(FirstAnimation.PROXY_ID)
+	SetStartingScene(FirstAnimation.Registry)
 EndFunction
 Function DisableBedUse(bool disabling = true)
 	SetFurnitureStatus((!disabling) as int)
@@ -1974,7 +1974,7 @@ Function AddAnimation(sslBaseAnimation AddAnimation, bool ForceTo = false)
 	If(!AddAnimation)
 		return
 	EndIf
-	AddScene(AddAnimation.PROXY_ID)
+	AddScene(AddAnimation.Registry)
 EndFunction
 Function SetAnimation(int aid = -1)
 	if aid < 0 || aid >= Animations.Length
@@ -1983,7 +1983,7 @@ Function SetAnimation(int aid = -1)
 	SetAnimationImpl(Animations[aid])
 EndFunction
 Function SetAnimationImpl(sslBaseAnimation akAnimation)
-	ResetScene(akAnimation.PROXY_ID)
+	ResetScene(akAnimation.Registry)
 EndFunction
 
 bool function AddTag(string Tag)

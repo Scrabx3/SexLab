@@ -112,8 +112,8 @@ sslBaseAnimation[] Function FilterCreatureGenders(sslBaseAnimation[] Anims, int 
     int p_count = Anims[i].ActorCount()
     int n = 0
     While (n < p_count)
-      bool male = SexLabRegistry.GetIsMaleCreaturePositon(Anims[i].PROXY_ID, n)
-      bool female = SexLabRegistry.GetIsFemaleCreaturePositon(Anims[i].PROXY_ID, n)
+      bool male = SexLabRegistry.GetIsMaleCreaturePositon(Anims[i].Registry, n)
+      bool female = SexLabRegistry.GetIsFemaleCreaturePositon(Anims[i].Registry, n)
       If (male && female)
         count[2] = count[2] + 1
       ElseIf(female)

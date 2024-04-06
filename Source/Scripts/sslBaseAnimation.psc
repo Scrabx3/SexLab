@@ -13,7 +13,7 @@ String[] Function AsSceneIDs(sslBaseAnimation[] akAnimations) global
 	String[] ret = Utility.CreateStringArray(akAnimations.Length)
 	int i = 0
 	While (i < akAnimations.Length)
-		String id = akAnimations[i].PROXY_ID
+		String id = akAnimations[i].Registry
 		If (id && SexLabRegistry.SceneExists(id))
 			ret[i] = id
 		EndIf
@@ -23,7 +23,7 @@ String[] Function AsSceneIDs(sslBaseAnimation[] akAnimations) global
 EndFunction
 
 String Function GetSceneID()
-	return PROXY_ID
+	return Registry
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -37,51 +37,34 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-String Property PROXY_ID Auto Hidden
-
 bool Function _GetEnabled()
-	return SexLabRegistry.SceneExists(PROXY_ID) && SexLabRegistry.IsSceneEnabled(PROXY_ID)
+	return SexLabRegistry.SceneExists(Registry) && SexLabRegistry.IsSceneEnabled(Registry)
 EndFunction
 Function _SetEnabled(bool aSet)
-	If (!SexLabRegistry.SceneExists(PROXY_ID))
+	If (!SexLabRegistry.SceneExists(Registry))
 		return
 	EndIf
-	SexLabRegistry.SetSceneEnabled(PROXY_ID, aSet)
+	SexLabRegistry.SetSceneEnabled(Registry, aSet)
 EndFunction
 
 String Function _GetName()
-	If (!SexLabRegistry.SceneExists(PROXY_ID))
+	If (!SexLabRegistry.SceneExists(Registry))
 		return ""
 	EndIf
-	return SexLabRegistry.GetSceneName(PROXY_ID)
+	return SexLabRegistry.GetSceneName(Registry)
 EndFunction
 
-String Function _GetRegistryID()
-	return PROXY_ID
+String[] Function _GetTags()
+	return SexLabRegistry.GetSceneTags(Registry)
 EndFunction
-
-string[] function GetTags()
-	return SexLabRegistry.GetSceneTags(PROXY_ID)
-endFunction
-bool Function HasTag(string Tag)
-	return Tag && GetTags().Find(Tag) != -1
-EndFunction
-bool function AddTag(string Tag)
-	return false
-endFunction
-bool function RemoveTag(string Tag)
-	return false
-endFunction
-function AddTags(string[] TagList)
-endFunction
 
 int Function GetMaxDepth()
-	return SexLabRegistry.GetPathMax(PROXY_ID, "").Length
+	return SexLabRegistry.GetPathMax(Registry, "").Length
 EndFunction
 
 ; Get the stage represented by some depth, or the max depth stage if aiDepth is greater than max depth
 String Function GetStageBounded(int aiDepth)
-	String[] maxpath = SexLabRegistry.GetPathMax(PROXY_ID, "")
+	String[] maxpath = SexLabRegistry.GetPathMax(Registry, "")
 	If (maxpath.Length >= aiDepth)
 		return maxpath[maxpath.Length - 1]
 	EndIf
@@ -101,7 +84,7 @@ EndFunction
 
 bool property GenderedCreatures
 	bool Function Get()
-		If (!PROXY_ID)
+		If (!Registry)
 			return false
 		EndIf
 		return GetGendersA()[3] > 0
@@ -153,8 +136,8 @@ string[] function FetchPosition(int Position)
 	string[] ret = Utility.CreateStringArray(depth)
 	int i = 0
 	While(i < ret.Length)
-		ret[i] = SexLabRegistry.GetAnimationEvent(PROXY_ID, node, Position)
-		node = SexLabRegistry.BranchTo(PROXY_ID, node, 0)
+		ret[i] = SexLabRegistry.GetAnimationEvent(Registry, node, Position)
+		node = SexLabRegistry.BranchTo(Registry, node, 0)
 		i += 1
 	EndWhile
 	return ret
@@ -166,7 +149,7 @@ string[] function FetchStage(int Stage)
 		Log("Unknown Stage, '"+Stage+"' given", "FetchStage")
 		return none
 	endif
-	return SexlabRegistry.GetAnimationEventA(PROXY_ID, Stage)
+	return SexlabRegistry.GetAnimationEventA(Registry, Stage)
 endFunction
 
 function GetAnimEvents(string[] AnimEvents, int Stage)
@@ -175,7 +158,7 @@ function GetAnimEvents(string[] AnimEvents, int Stage)
 		Log("Invalid Call(" + AnimEvents + ", " + Stage + "/" + depth + ")", "GetAnimEvents")
 		return
 	endif
-	String[] anims = SexlabRegistry.GetAnimationEventA(PROXY_ID, Stage)
+	String[] anims = SexlabRegistry.GetAnimationEventA(Registry, Stage)
 	int i = 0
 	while i < anims.Length
 		AnimEvents[i] = anims[i]
@@ -185,7 +168,7 @@ endFunction
 
 string function FetchPositionStage(int Position, int Stage)
 	String GetStageBounded = GetStageBounded(Stage)
-	return SexLabRegistry.GetAnimationEvent(PROXY_ID, Stage, Position)
+	return SexLabRegistry.GetAnimationEvent(Registry, Stage, Position)
 endFunction
 
 function SetPositionStage(int Position, int Stage, string AnimationEvent)
@@ -201,7 +184,7 @@ endFunction
 
 float function GetTimer(int Stage)
 	String stage_ = GetStageBounded(Stage)
-	return SexLabRegistry.GetFixedLength(PROXY_ID, stage_)
+	return SexLabRegistry.GetFixedLength(Registry, stage_)
 endFunction
 
 function SetStageTimer(int Stage, float Timer)
@@ -212,11 +195,11 @@ float function GetTimersRunTime(float[] StageTimers)
 		return -1.0
 	endIf
 	float seconds = 0.0
-	String stage = SexLabRegistry.GetStartAnimation(PROXY_ID)
+	String stage = SexLabRegistry.GetStartAnimation(Registry)
 	int depth = GetMaxDepth()
 	int i = 0
 	While(i < depth)
-		float time = SexLabRegistry.GetFixedLength(PROXY_ID, stage)
+		float time = SexLabRegistry.GetFixedLength(Registry, stage)
 		If (time)
 			seconds += time
 		ElseIf (i > StageTimers.Length - 1)
@@ -307,22 +290,22 @@ float[] function _GetStageAdjustments(string Registrar, string AdjustKey, int St
   LogRedundant()
 EndFunction
 float[] function GetPositionAdjustments(string AdjustKey, int Position, int Stage)
-	return SexLabRegistry.GetOffset(PROXY_ID, GetStageBounded(Stage), Position)
+	return SexLabRegistry.GetOffset(Registry, GetStageBounded(Stage), Position)
 endFunction
 
 float[] function _GetAllAdjustments(string Registrar, string AdjustKey) global
   LogRedundant()
 EndFunction
 float[] function GetAllAdjustments(string AdjustKey)
-	String[] path = SexLabRegistry.GetPathMax(PROXY_ID, "")
-	int count = SexLabRegistry.GetActorCount(PROXY_ID)
+	String[] path = SexLabRegistry.GetPathMax(Registry, "")
+	int count = SexLabRegistry.GetActorCount(Registry)
 	float[] ret = Utility.CreateFloatArray(path.Length * count * 4)
 	int i = 0
 	While (i < path.Length)
 		int base = i * count
 		int n = 0
 		While (n < count)
-			float[] offsets = SexLabRegistry.GetOffset(PROXY_ID, path[i], n)
+			float[] offsets = SexLabRegistry.GetOffset(Registry, path[i], n)
 			ret[base + 0] = offsets[0]
 			ret[base + 1] = offsets[1]
 			ret[base + 2] = offsets[2]
@@ -354,7 +337,7 @@ function _PositionOffsets(string Registrar, string AdjustKey, string LastKey, in
 EndFunction
 float[] function PositionOffsets(float[] Output, string AdjustKey, int Position, int Stage, int BedTypeID = 0)
 	String stage_ = GetStageBounded(Stage)
-	float[] offsets = SexLabRegistry.GetOffset(PROXY_ID, stage_, Position)
+	float[] offsets = SexLabRegistry.GetOffset(Registry, stage_, Position)
 	If (Output.Length == 4)
 		Output[0] = offsets[0]
 		Output[1] = offsets[1]
@@ -366,7 +349,7 @@ endFunction
 
 float[] function RawOffsets(float[] Output, int Position, int Stage)
 	String stage_ = GetStageBounded(Stage)
-	float[] offsets = SexLabRegistry.GetOffsetRaw(PROXY_ID, stage_, Position)
+	float[] offsets = SexLabRegistry.GetOffsetRaw(Registry, stage_, Position)
 	If (Output.Length == 4)
 		Output[0] = offsets[0]
 		Output[1] = offsets[1]
@@ -391,14 +374,14 @@ function _SetAdjustment(string Registrar, string AdjustKey, int Stage, int Slot,
   LogRedundant()
 EndFunction
 function SetAdjustment(string AdjustKey, int Position, int Stage, int Slot, float Adjustment)
-	SexLabRegistry.UpdateOffset(PROXY_ID, GetStageBounded(Stage), Position, Adjustment, Slot)
+	SexLabRegistry.UpdateOffset(Registry, GetStageBounded(Stage), Position, Adjustment, Slot)
 endFunction
 
 float function _GetAdjustment(string Registrar, string AdjustKey, int Stage, int nth) global
   LogRedundant()
 EndFunction
 float function GetAdjustment(string AdjustKey, int Position, int Stage, int Slot)
-	return SexLabRegistry.GetOffset(PROXY_ID, GetStageBounded(Stage), Position)[Slot]
+	return SexLabRegistry.GetOffset(Registry, GetStageBounded(Stage), Position)[Slot]
 endFunction
 
 float function _UpdateAdjustment(string Registrar, string AdjustKey, int Stage, int nth, float by) global
@@ -439,8 +422,8 @@ function AdjustUpward(string AdjustKey, int Position, int Stage, float AdjustBy,
 	endIf
 endFunction
 function AdjustSchlong(string AdjustKey, int Position, int Stage, int AdjustBy)
-	int v = SexLabRegistry.GetSchlongAngle(PROXY_ID, Stage, Position)
-	SexLabRegistry.SetSchlongAngle(PROXY_ID, Stage, Position, v + AdjustBy)
+	int v = SexLabRegistry.GetSchlongAngle(Registry, Stage, Position)
+	SexLabRegistry.SetSchlongAngle(Registry, Stage, Position, v + AdjustBy)
 endFunction
 
 function _ClearAdjustments(string Registrar, string AdjustKey) global
@@ -547,7 +530,7 @@ int function GetCum(int Position)
 endFunction
 
 int function ActorCount()
-	return SexLabRegistry.GetActorCount(PROXY_ID)
+	return SexLabRegistry.GetActorCount(Registry)
 endFunction
 
 int function StageCount()
@@ -568,27 +551,27 @@ EndFunction
 
 int function GetGender(int Position)
 	If(CreaturePosition(Position))
-		If(SexLabRegistry.GetIsFemaleCreaturePositon(PROXY_ID, Position) && !SexLabRegistry.GetIsMaleCreaturePositon(PROXY_ID, Position))
+		If(SexLabRegistry.GetIsFemaleCreaturePositon(Registry, Position) && !SexLabRegistry.GetIsMaleCreaturePositon(Registry, Position))
 			return 3
 		Else
 			return 2
 		EndIf
-	ElseIf(FemalePosition(Position) || SexLabRegistry.GetIsFutaPositon(PROXY_ID, Position))
+	ElseIf(FemalePosition(Position) || SexLabRegistry.GetIsFutaPositon(Registry, Position))
 		return 1
 	EndIf
 	return 0
 endFunction
 
 bool function MalePosition(int Position)
-	return SexLabRegistry.GetIsMalePosition(PROXY_ID, Position)
+	return SexLabRegistry.GetIsMalePosition(Registry, Position)
 endFunction
 
 bool function FemalePosition(int Position)
-	return SexLabRegistry.GetIsFemalePosition(PROXY_ID, Position)
+	return SexLabRegistry.GetIsFemalePosition(Registry, Position)
 endFunction
 
 bool function CreaturePosition(int Position)
-	return SexLabRegistry.GetRaceIDPosition(PROXY_ID, Position) > 0
+	return SexLabRegistry.GetRaceIDPosition(Registry, Position) > 0
 endFunction
 
 bool function MatchGender(int Gender, int Position)
@@ -654,7 +637,7 @@ endFunction
 
 ; Is the given position this racekey
 bool function IsPositionRace(int Position, string RaceKey)
-	return SexLabRegistry.GetRaceKeyPosition(PROXY_ID, Position) == RaceKey
+	return SexLabRegistry.GetRaceKeyPosition(Registry, Position) == RaceKey
 endFunction
 
 ; Does the given position have any of the given racekeys
@@ -675,7 +658,7 @@ string[] function GetRaceTypes()
 	string[] ret = Utility.CreateStringArray(count)
 	int i = 0
 	While(i < count)
-		String racekey = SexLabRegistry.GetRaceKeyPosition(PROXY_ID, i)
+		String racekey = SexLabRegistry.GetRaceKeyPosition(Registry, i)
 		If (racekey == "humans")
 			ret[i] = ""
 		Else

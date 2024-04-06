@@ -120,10 +120,10 @@ EndFunction
 
 Actor[] Function SortActorsByAnimationImpl(String asSceneID, Actor[] akPositions, Actor[] akVictims) native
 Actor[] function SortActorsByAnimation(actor[] Positions, sslBaseAnimation Animation = none)
-  If (!Animation || !Animation.PROXY_ID)
+  If (!Animation || !Animation.Registry)
     return SortActors(Positions)
   EndIf
-  return SortActorsByAnimationImpl(Animation.PROXY_ID, Positions, PapyrusUtil.ActorArray(0))
+  return SortActorsByAnimationImpl(Animation.Registry, Positions, PapyrusUtil.ActorArray(0))
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -143,7 +143,7 @@ Actor[] function FindAnimationPartners(sslBaseAnimation Animation, ObjectReferen
   includes[1] = IncludedRef2
   includes[2] = IncludedRef3
   includes[3] = IncludedRef4
-  return FindAnimationPartnersImpl(Animation.PROXY_ID, CenterRef, Radius, PapyrusUtil.RemoveActor(includes, none))
+  return FindAnimationPartnersImpl(Animation.Registry, CenterRef, Radius, PapyrusUtil.RemoveActor(includes, none))
 endFunction
 
 ; ------------------------------------------------------- ;
