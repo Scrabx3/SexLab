@@ -13,11 +13,6 @@ sslBaseExpression[] property Expressions hidden
 	endFunction
 endProperty
 
-
-; Libraries
-sslSystemConfig property Config auto
-Actor property PlayerRef auto
-
 ; ------------------------------------------------------- ;
 ; --- Expression Filtering                            --- ;
 ; ------------------------------------------------------- ;
@@ -229,7 +224,7 @@ endFunction
 
 function RegisterSlots()
 	; Register default Expressions
-	(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionDefaults).LoadExpressions()
+	; (Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionDefaults).LoadExpressions()
 	; Send mod event for 3rd party Expressions
 	ModEvent.Send(ModEvent.Create("SexLabSlotExpressions"))
 	Debug.Notification("$SSL_NotifyExpressionInstall")
@@ -320,6 +315,49 @@ function Setup()
 	GoToState("")
 endFunction
 
+state Locked
+	function Setup()
+	endFunction
+endState
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+
+
+
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+Actor property PlayerRef
+	Actor Function Get()
+		return Game.GetPlayer()
+	EndFunction
+EndProperty
+
+sslSystemConfig property Config
+	sslSystemConfig Function Get()
+		return SexLabutil.GetConfig()
+	EndFunction
+EndProperty
+
 function Log(string msg)
 	if Config.DebugMode
 		MiscUtil.PrintConsole(msg)
@@ -327,11 +365,6 @@ function Log(string msg)
 	Debug.Trace("SEXLAB - "+msg)
 endFunction
 
-state Locked
-	function Setup()
-	endFunction
-endState
-
 bool function TestSlots()
-	return true;Slotted > 0 && Registry.Length == 100 && Slots1.Length == 100 && Slots1.Find(none) > 0 && Registry.Find("") > 0
+	return true
 endFunction
