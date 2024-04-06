@@ -426,10 +426,6 @@ Function _SetTags(String[] asSet)
 	SetExpressionTags(Registry, asSet)
 EndFunction
 
-Function ReplaceProxy(String asNewProxy)
-	Parent._SetRegistryID(asNewProxy)
-EndFunction
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;

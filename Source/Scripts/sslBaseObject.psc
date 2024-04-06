@@ -118,10 +118,6 @@ endFunction
 
 sslSystemConfig Property Config Auto Hidden
 
-string function Key(string type = "")
-	return Registry+"."+type
-endFunction
-
 function Log(string Log, string Type = "NOTICE")
 	Log = Type+" "+Registry+" - "+Log
 	if Config.DebugMode
@@ -130,31 +126,11 @@ function Log(string Log, string Type = "NOTICE")
 	Debug.Trace("SEXLAB - "+Log)
 endFunction
 
-bool bSaved = false
-bool Property Saved hidden
-	bool function get()
-		return bSaved
-	endFunction
-endProperty
-function Save(int id = -1)
-	bSaved = true
-	SlotID = id
-	; Trim tags
-	int i = Tags.Find("")
-	if i != -1
-		Tags = Utility.ResizeStringArray(Tags, (i + 1))
-	endIf
-endFunction
-
 function Initialize()
-	if !Config
-		Config = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
-	endIf
+	Config 	 = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
 	Name     = ""
 	Registry = ""
-	SlotID   = -1
 	Enabled  = false
-	bSaved   = false
 	Tags     = Utility.CreateStringArray(0)
 endFunction
 
@@ -169,7 +145,23 @@ endFunction
 ;																																											;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--*-*-*-*-*-*-*-*-*-*-*-*-*-**-*-*-*-*-*-*	;
 
-int Property SlotID Auto Hidden
+int Property SlotID Hidden
+	int Function Get()
+		return -1
+	EndFunction
+EndProperty
+
+bool Property Saved hidden
+	bool function get()
+		return true
+	endFunction
+endProperty
+function Save(int id = -1)
+endFunction
+
+string function Key(string type = "")
+	return Registry+"."+type
+endFunction
 
 string[] function GetRawTags()
 	return GetTags()

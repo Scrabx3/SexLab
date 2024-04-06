@@ -235,49 +235,24 @@ endFunction
 ; ------------------------------------------------------- ;
 ; --- SoundFX                                         --- ;
 ; ------------------------------------------------------- ;
-
-;/ NOTE:
+;/
 	Sound FX are runtime evaluated and no longer statically available
 	Leaving this here for reference until the new system is done
 /;
 
-; Form[] StageSoundFX
 Sound property SoundFX hidden
 	Sound function get()
-		; if StageSoundFX[0]
-		; 	return StageSoundFX[0] as Sound
-		; endIf
 		return none
 	endFunction
 	function set(Sound var)
-		; if var
-		; 	StageSoundFX[0] = var as Form
-		; else
-		; 	StageSoundFX[0] = none
-		; endIf
 	endFunction
 endProperty
 
 Sound function GetSoundFX(int Stage)
-	; if Stage < 1 || Stage > StageSoundFX.Length
-	; 	return StageSoundFX[0] as Sound
-	; endIf
-	; return StageSoundFX[(Stage - 1)] as Sound
 	return none
 endFunction
 
 function SetStageSoundFX(int stage, Sound StageFX)
-	; ; Validate stage
-	; if stage > Stages || stage < 1
-	; 	Log("Unknown animation stage, '"+stage+"' given.", "SetStageSound")
-	; 	return
-	; endIf
-	; ; Initialize fx array if needed
-	; if StageSoundFX.Length != Stages
-	; 	StageSoundFX = PapyrusUtil.ResizeFormArray(StageSoundFX, Stages, SoundFX)
-	; endIf
-	; ; Set Stage fx
-	; StageSoundFX[(stage - 1)] = StageFX
 endFunction
 
 ; ------------------------------------------------------- ;
