@@ -384,7 +384,7 @@ endFunction
 String[] Function GetExpressionTags(String asID) native global
 Function SetExpressionTags(String asID, String[] asNewTags) native global
 bool Function GetEnabled(String asID) native global
-bool Function SetEnabled(String asID) native global
+Function SetEnabled(String asID, bool abEnabled) native global
 Function RenameExpression(String asID, String asNewID) native global
 int[] Function GetLevelCounts(String asID) native global
 float[] Function GetValues(String asID, bool abFemale, int aiLevel) native global
@@ -417,7 +417,7 @@ bool Function _GetEnabled()
 	return GetEnabled(Registry)
 EndFunction
 Function _SetEnabled(bool abEnabled)
-	SetEnabled(abEnabled)
+	SetEnabled(Registry, abEnabled)
 EndFunction
 String[] Function _GetTags()
 	return GetExpressionTags(Registry)
