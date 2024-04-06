@@ -1323,21 +1323,6 @@ sslBaseAnimation function MakeAnimationRegistered(string Token)
 endFunction
 
 ;/* DEPRECATED! */;
-bool function HasAnimationObject(string Token)
-  return Factory.HasAnimation(Token)
-endFunction
-
-;/* DEPRECATED! */;
-bool function ReleaseAnimationObject(string Token)
-  return Factory.ReleaseAnimation(Token)
-endFunction
-
-;/* DEPRECATED! */;
-int function ReleaseOwnerAnimations(Form Owner)
-  return Factory.ReleaseOwnerAnimations(Owner)
-endFunction
-
-;/* DEPRECATED! */;
 bool function RemoveRegisteredAnimation(string Registrar)
   return AnimSlots.UnregisterAnimation(Registrar)
 endFunction
@@ -1729,6 +1714,73 @@ bool function HadSex(Actor ActorRef)
   return Stats.HadSex(ActorRef)
 endFunction
 
+; --- Legacy Factory Functions
+; ALL OF THESE FUNCTIONS RETURN DEFAULT VALUES, THEIR IMPLEMENTATION HAS BEEN REMOVED
+
+sslBaseVoice function NewVoiceObject(string Token, Form Owner)
+  return Factory.NewVoice(Token, Owner)
+endFunction
+sslBaseExpression function NewExpressionObject(string Token, Form Owner)
+  return Factory.NewExpression(Token, Owner)
+endFunction
+sslBaseVoice function GetSetVoiceObject(string Token, string Callback, Form Owner)
+  return Factory.GetSetVoice(Token, Callback, Owner)
+endFunction
+sslBaseExpression function GetSetExpressionObject(string Token, string Callback, Form Owner)
+  return Factory.GetSetExpression(Token, Callback, Owner)
+endFunction
+sslBaseVoice function NewVoiceObjectCopy(string Token, sslBaseVoice CopyFrom, Form Owner)
+  return Factory.NewVoiceCopy(Token, CopyFrom, Owner)
+endFunction
+sslBaseExpression function NewExpressionObjectCopy(string Token, sslBaseExpression CopyFrom, Form Owner)
+  return Factory.NewExpressionCopy(Token, CopyFrom, Owner)
+endFunction
+sslBaseVoice function GetVoiceObject(string Token)
+  return Factory.GetVoice(Token)
+endFunction
+sslBaseExpression function GetExpressionObject(string Token)
+  return Factory.GetExpression(Token)
+endFunction
+sslBaseVoice[] function GetOwnerVoices(Form Owner)
+  return Factory.GetOwnerVoices(Owner)
+endFunction
+sslBaseExpression[] function GetOwnerExpressions(Form Owner)
+  return Factory.GetOwnerExpressions(Owner)
+endFunction
+bool function HasVoiceObject(string Token)
+  return Factory.HasVoice(Token)
+endFunction
+bool function HasExpressionObject(string Token)
+  return Factory.HasExpression(Token)
+endFunction
+bool function ReleaseVoiceObject(string Token)
+  return Factory.ReleaseVoice(Token)
+endFunction
+bool function ReleaseExpressionObject(string Token)
+  return Factory.ReleaseExpression(Token)
+endFunction
+int function ReleaseOwnerVoices(Form Owner)
+  return Factory.ReleaseOwnerVoices(Owner)
+endFunction
+int function ReleaseOwnerExpressions(Form Owner)
+  return Factory.ReleaseOwnerExpressions(Owner)
+endFunction
+sslBaseVoice function MakeVoiceRegistered(string Token)
+  return Factory.MakeVoiceRegistered(Token)
+endFunction
+sslBaseExpression function MakeExpressionRegistered(string Token)
+  return Factory.MakeExpressionRegistered(Token)
+endFunction
+bool function HasAnimationObject(string Token)
+  return Factory.HasAnimation(Token)
+endFunction
+bool function ReleaseAnimationObject(string Token)
+  return Factory.ReleaseAnimation(Token)
+endFunction
+int function ReleaseOwnerAnimations(Form Owner)
+  return Factory.ReleaseOwnerAnimations(Owner)
+endFunction
+
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;# ^^^                                            END DEPRECATED FUNCTIONS - DO NOT USE THEM                                           ^^^ #
@@ -1763,186 +1815,6 @@ endFunction
 */;
 sslBaseExpression function RegisterExpression(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
   return ExpressionSlots.RegisterExpression(Registrar, CallbackForm, CallbackAlias)
-endFunction
-
-;/* NewVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function NewVoiceObject(string Token, Form Owner)
-  return Factory.NewVoice(Token, Owner)
-endFunction
-
-;/* NewExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function NewExpressionObject(string Token, Form Owner)
-  return Factory.NewExpression(Token, Owner)
-endFunction
-
-;/* GetSetVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function GetSetVoiceObject(string Token, string Callback, Form Owner)
-  return Factory.GetSetVoice(Token, Callback, Owner)
-endFunction
-
-;/* GetSetExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function GetSetExpressionObject(string Token, string Callback, Form Owner)
-  return Factory.GetSetExpression(Token, Callback, Owner)
-endFunction
-
-;/* NewVoiceObjectCopy
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function NewVoiceObjectCopy(string Token, sslBaseVoice CopyFrom, Form Owner)
-  return Factory.NewVoiceCopy(Token, CopyFrom, Owner)
-endFunction
-
-;/* NewExpressionObjectCopy
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function NewExpressionObjectCopy(string Token, sslBaseExpression CopyFrom, Form Owner)
-  return Factory.NewExpressionCopy(Token, CopyFrom, Owner)
-endFunction
-
-;/* GetVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function GetVoiceObject(string Token)
-  return Factory.GetVoice(Token)
-endFunction
-
-;/* GetExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function GetExpressionObject(string Token)
-  return Factory.GetExpression(Token)
-endFunction
-
-;/* GetOwnerVoices
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice[] function GetOwnerVoices(Form Owner)
-  return Factory.GetOwnerVoices(Owner)
-endFunction
-
-;/* GetOwnerExpressions
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression[] function GetOwnerExpressions(Form Owner)
-  return Factory.GetOwnerExpressions(Owner)
-endFunction
-
-;/* HasVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function HasVoiceObject(string Token)
-  return Factory.HasVoice(Token)
-endFunction
-
-;/* HasExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function HasExpressionObject(string Token)
-  return Factory.HasExpression(Token)
-endFunction
-
-;/* ReleaseVoiceObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function ReleaseVoiceObject(string Token)
-  return Factory.ReleaseVoice(Token)
-endFunction
-
-;/* ReleaseExpressionObject
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-bool function ReleaseExpressionObject(string Token)
-  return Factory.ReleaseExpression(Token)
-endFunction
-
-;/* ReleaseOwnerVoices
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-int function ReleaseOwnerVoices(Form Owner)
-  return Factory.ReleaseOwnerVoices(Owner)
-endFunction
-
-;/* ReleaseOwnerExpressions
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-int function ReleaseOwnerExpressions(Form Owner)
-  return Factory.ReleaseOwnerExpressions(Owner)
-endFunction
-
-;/* MakeVoiceRegistered
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseVoice function MakeVoiceRegistered(string Token)
-  return Factory.MakeVoiceRegistered(Token)
-endFunction
-
-;/* MakeExpressionRegistered
-* * TODO
-* * 
-* * @param: 
-* * @return: 
-*/;
-sslBaseExpression function MakeExpressionRegistered(string Token)
-  return Factory.MakeExpressionRegistered(Token)
 endFunction
 
 ;/* RemoveRegisteredVoice
