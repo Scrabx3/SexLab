@@ -1,6 +1,27 @@
 scriptname sslExpressionFactory extends Quest hidden
+{
+	Legacy Script to register new expression objects into SL
+	The functionality has been made redundant with SLP+ as you can now create expressions by
+		creating a .yaml file in Data\SKSE\SexLab\Expressions and setting the specific data there
+	Runtime generation is still allowed and can be done through the MCM
+}
 
-sslExpressionSlots property Slots auto hidden
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslExpressionSlots property Slots hidden
+	sslExpressionSlots Function Get()
+		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
+	EndFunction
+EndProperty
 
 ; Gender Types
 int property Male = 0 autoreadonly hidden
@@ -17,7 +38,6 @@ int property Expression = 30 autoreadonly hidden
 
 ; Prepare the factory for use
 function PrepareFactory()
-	Slots = Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
 endFunction
 
 ; Send callback event to start registration
@@ -47,5 +67,4 @@ sslBaseExpression function Create(int id)
 endFunction
 
 function Initialize()
-	PrepareFactory()
 endfunction
