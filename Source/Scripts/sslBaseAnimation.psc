@@ -57,6 +57,14 @@ EndFunction
 String[] Function _GetTags()
 	return SexLabRegistry.GetSceneTags(Registry)
 EndFunction
+Function _SetTags(String[] asSet)
+EndFunction
+bool function AddTag(string Tag)
+	return false
+endFunction
+bool function RemoveTag(string Tag)
+	return false
+endFunction
 
 int Function GetMaxDepth()
 	return SexLabRegistry.GetPathMax(Registry, "").Length
