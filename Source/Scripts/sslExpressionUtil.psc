@@ -1,4 +1,4 @@
-Scriptname sslExpression_util Hidden
+Scriptname sslExpressionUtil Hidden
 
 ;mfg modifier
 ;BlinkL 0

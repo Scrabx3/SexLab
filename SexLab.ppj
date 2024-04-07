@@ -27,6 +27,7 @@
         <Import>@MO2\ConsoleUtilSSE\Source\Scripts</Import>
         <Import>@MO2\JContainers SE\source\scripts</Import>
         <Import>@MO2\UIExtensions\Source\Scripts</Import>
+        <Import>@MO2\MfgFix NG\Source\Scripts</Import>
         <Import>@MO2\Mfg Fix\Source\Scripts</Import>
         <!-- Base Game -->
         <!-- <Import>F:\Modlists\ADT NG\Game Root\Data\Source\Scripts</Import> -->

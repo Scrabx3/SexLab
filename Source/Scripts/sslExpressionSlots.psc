@@ -1,17 +1,91 @@
 scriptname sslExpressionSlots extends Quest
+{
+	Script for handling Expression logic
+}
 
-import PapyrusUtil
-import StorageUtil
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; Expression storage
-Alias[] Objects
-string[] Registry
-int property Slotted auto hidden
+String[] Function GetAllProfileIDs() native global
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+String[] Property Registry
+	String[] Function Get()
+		return GetRegistrySnapShot()
+	EndFunction
+EndProperty
+int property Slotted hidden
+	int Function Get()
+		return GetRegistrySnapShot().Length
+	EndFunction
+EndProperty
 sslBaseExpression[] property Expressions hidden
 	sslBaseExpression[] function get()
 		return GetSlots(1)
 	endFunction
 endProperty
+
+String[] Function GetRegistrySnapShot()
+	Alias[] aliases = GetAliases()
+	String[] ret = Utility.CreateStringArray(aliases.Length)
+	int i = 0
+	int ii = 0
+	While (i < aliases.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && it.Registered)
+			ret[ii] = it.Name
+			ii += 1
+		EndIf
+		i += 1
+	EndWhile
+	return PapyrusUtil.ClearEmpty(ret)
+EndFunction
+
+Function SyncBackend()
+	Alias[] aliases = GetAliases()
+	String[] profiles = GetAllProfileIDs()
+	int i = 0
+	int ii = 0
+	While (i < aliases.Length && ii < profiles.Length)
+		sslBaseExpression expr = aliases[i] as sslBaseExpression
+		If (expr)
+			expr.Initialize()
+			expr.Registry = profiles[ii]
+			ii += 1
+		EndIf
+		i += 1
+	EndWhile
+EndFunction
+
+Actor property PlayerRef
+	Actor Function Get()
+		return Game.GetPlayer()
+	EndFunction
+EndProperty
+
+sslSystemConfig property Config
+	sslSystemConfig Function Get()
+		return SexLabutil.GetConfig()
+	EndFunction
+EndProperty
 
 ; ------------------------------------------------------- ;
 ; --- Expression Filtering                            --- ;
@@ -22,15 +96,11 @@ sslBaseExpression function PickExpression(Actor ActorRef, Actor VictimRef = none
 endFunction
 
 sslBaseExpression function PickByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
-	string Tag
-	if IsVictim
-		Tag = "Victim"
-	elseIf IsAggressor
-		Tag = "Aggressor"
-	else
-		Tag = "Normal"
-	endIf
-	return RandomByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
+	sslBaseExpression[] ret = GetByStatus(ActorRef, IsVictim, IsAggressor)
+	If (!ret.Length)
+		return none
+	EndIf
+	return ret[Utility.RandomInt(0, ret.length)]
 endFunction
 
 sslBaseExpression[] function GetByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
@@ -46,34 +116,48 @@ sslBaseExpression[] function GetByStatus(Actor ActorRef, bool IsVictim = false, 
 endFunction
 
 sslBaseExpression function RandomByTag(string Tag, bool ForFemale = true)
-	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	int i = Slotted
-	while i
-		i -= 1
-		sslBaseExpression Slot = Objects[i] as sslBaseExpression
-		Valid[i] = Slot.Enabled && Slot.HasTag(Tag) && ((ForFemale && Slot.PhasesFemale > 0) || (!ForFemale && Slot.PhasesMale > 0))
-	endWhile
-	return SelectRandom(Valid)
+	sslBaseExpression[] ret = GetByTag(Tag, ForFemale)
+	If (!ret.Length)
+		return none
+	EndIf
+	return ret[Utility.RandomInt(0, ret.length)]
 endFunction
 
 sslBaseExpression[] function GetByTag(string Tag, bool ForFemale = true)
+	SyncBackend()
 	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	int i = Slotted
-	while i
-		i -= 1
-		sslBaseExpression Slot = Objects[i] as sslBaseExpression
-		Valid[i] = Slot.Enabled && Slot.HasTag(Tag) && ((ForFemale && Slot.PhasesFemale > 0) || (!ForFemale && Slot.PhasesMale > 0))
-	endWhile
+	Alias[] aliases = GetAliases()
+	int i = 0
+	int ii = 0
+	While (i < aliases.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && it.Registered)
+			Valid[ii] = it.Enabled && it.HasTag(Tag) && ((ForFemale && it.PhasesFemale > 0) || (!ForFemale && it.PhasesMale > 0))
+			ii += 1
+		EndIf
+		i += 1
+	EndWhile
 	return GetList(Valid)
 endFunction
 
 sslBaseExpression function SelectRandom(bool[] Valid)
-	int i = Utility.RandomInt(0, (Slotted - 1))
-	int Slot = Valid.Find(true, i)
+	int n = Utility.RandomInt(0, (Slotted - 1))
+	int Slot = Valid.Find(true, n)
 	if Slot == -1
-		Slot = Valid.RFind(true, i)
+		Slot = Valid.RFind(true, n)
 	endIf
-	return GetbySlot(Slot)
+	Alias[] aliases = GetAliases()
+	int i = 0
+	While (i < aliases.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (slot == 0)
+			return it
+		Else
+			Slot -= 1
+		EndIf
+		i += 1
+	EndWhile
+	return none
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -82,38 +166,21 @@ endFunction
 
 sslBaseExpression[] function GetList(bool[] Valid)
 	sslBaseExpression[] Output
-	if Valid && Valid.Length > 0 && Valid.Find(true) != -1
-		int n = Valid.Find(true)
-		int i = CountBool(Valid, true)
-		; Trim over 100 to random selection
-		if i > 100
-			int end = Valid.RFind(true) - 1
-			while i > 100
-				int rand = Valid.Find(true, Utility.RandomInt(n, end))
-				if rand != -1 && Valid[rand]
-					Valid[rand] = false
-					i -= 1
-				endIf
-				if i == 101 ; To be sure only 100 stay
-					i = CountBool(Valid, true)
-					n = Valid.Find(true)
-					end = Valid.RFind(true) - 1
-				endIf
-			endWhile
-		endIf
-		; Get list
-		Output = sslUtility.ExpressionArray(i)
-		while n != -1 && i > 0
-			i -= 1
-			Output[i] = Objects[n] as sslBaseExpression
-			n += 1
-			if n < Slotted
-				n = Valid.Find(true, n)
-			else
-				n = -1
-			endIf
-		endWhile
-	endIf
+	If (Valid.Length <= 0 || Valid.Find(true) == -1)
+		return Output
+	EndIf
+	Output = sslUtility.ExpressionArray(PapyrusUtil.CountBool(Valid, true))
+	Alias[] aliases = GetAliases()
+	int i = 0
+	int ii = 0
+	While (i < aliases.Length && ii < Output.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && it.Registered && Valid[ii])
+			Output[ii] = it
+			ii += 1
+		EndIf
+		i += 1
+	EndWhile
 	return Output
 endFunction
 
@@ -126,10 +193,7 @@ string[] function GetNames(sslBaseExpression[] SlotList)
 			Names[i] = SlotList[i].Name
 		endIf
 	endWhile
-	if Names.Find("") != -1
-		Names = PapyrusUtil.RemoveString(Names, "")
-	endIf
-	return Names
+	return PapyrusUtil.ClearEmpty(Names)
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -137,8 +201,8 @@ endFunction
 ; ------------------------------------------------------- ;
 
 sslBaseExpression function GetBySlot(int index)
-	if index >= 0 && index < Slotted
-		return Objects[index] as sslBaseExpression
+	if index < 0 || index > Slotted
+		return GetNthAlias(index) as sslBaseExpression
 	endIf
 	return none
 endFunction
@@ -148,21 +212,23 @@ bool function IsRegistered(string Registrar)
 endFunction
 
 int function FindByRegistrar(string Registrar)
-	if Registrar != ""
-		return Registry.Find(Registrar)
-	endIf
+	If (Registrar == "")
+		return -1
+	EndIf
+	Alias[] aliases = GetAliases()
+	int i = 0
+	While (i < aliases.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && it.Registry == Registrar)
+			return i
+		EndIf
+		i += 1
+	EndWhile
 	return -1
 endFunction
 
 int function FindByName(string FindName)
-	int i = Slotted
-	while i
-		i -= 1
-		if GetBySlot(i).Name == FindName
-			return i
-		endIf
-	endWhile
-	return -1
+	return FindByRegistrar(FindName)
 endFunction
 
 sslBaseExpression function GetByName(string FindName)
@@ -178,7 +244,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 int function PageCount(int perpage = 125)
-	return ((Slotted as float / perpage as float) as int) + 1
+	return Math.Ceiling(Slotted as float / perpage as float)
 endFunction
 
 int function FindPage(string Registrar, int perpage = 125)
@@ -207,14 +273,17 @@ sslBaseExpression[] function GetSlots(int page = 1, int perpage = 125)
 		n = page * perpage
 		PageSlots = sslUtility.ExpressionArray(perpage)
 	endIf
-	int i = PageSlots.Length
-	while i
-		i -= 1
-		n -= 1
-		if Objects[n]
-			PageSlots[i] = Objects[n] as sslBaseExpression
-		endIf
-	endWhile
+	Alias[] aliases = GetAliases()
+	int i = 0
+	int ii = 0
+	While (i < aliases.Length && ii < PageSlots.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && it.Registered)
+			PageSlots[ii] = it
+			ii += 1
+		EndIf
+		i += 1
+	EndWhile
 	return PageSlots
 endFunction
 
@@ -222,81 +291,60 @@ endFunction
 ; --- Object Registration                                 ;
 ; ------------------------------------------------------- ;
 
-function RegisterSlots()
-	; Register default Expressions
-	; (Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionDefaults).LoadExpressions()
-	; Send mod event for 3rd party Expressions
-	ModEvent.Send(ModEvent.Create("SexLabSlotExpressions"))
-	Debug.Notification("$SSL_NotifyExpressionInstall")
-endFunction
+int Function FindEmpty()
+	Alias[] aliases = GetAliases()
+	int i = 0
+	While (i < aliases.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && !it.Registered)
+			return i
+		EndIf
+		i += 1
+	EndWhile
+	return -1
+EndFunction
 
-bool RegisterLock
+bool RegisterLock = false
 int function Register(string Registrar)
-	if Registrar == "" || Registry.Find(Registrar) != -1 || Slotted >= 375
+	SyncBackend()
+	if Registrar == "" || Registry.Find(Registrar) != -1
 		return -1
 	endIf
-
-	; Thread lock registration
-	float failsafe = Utility.GetCurrentRealTime() + 6.0
-	while RegisterLock && failsafe < Utility.GetCurrentRealTime()
+	while RegisterLock
 		Utility.WaitMenuMode(0.5)
-		Log("Register("+Registrar+") - Lock wait...")
 	endWhile
 	RegisterLock = true
-
-	int i = Slotted
-	Slotted += 1
-	if i >= Registry.Length
-		int n = Registry.Length + 32
-		if n > 375
-			n = 375
-		endIf
-		Config.Log("Resizing expression registry slots: "+Registry.Length+" -> "+n, "Register")
-		Registry = Utility.ResizeStringArray(Registry, n)
-		Objects  = Utility.ResizeAliasArray(Objects, n, GetNthAlias(0))
-		while n
-			n -= 1
-			if Registry[n] == ""
-				Objects[n] = none
-			endIf
-		endWhile
-		i = Registry.Find("")
-	endIf
-	Registry[i] = Registrar
-	Objects[i]  = GetNthAlias(i)
-
-	; Release lock
+	int ret = FindEmpty()
+	If (ret > -1)
+		sslBaseExpression expr = GetNthAlias(ret) as sslBaseExpression
+		expr.Initialize()
+		expr.Registry = Registrar
+	EndIf
 	RegisterLock = false
-	return i
+	return ret
 endFunction
 
 sslBaseExpression function RegisterExpression(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
-	; Return existing Expression
-	if FindByRegistrar(Registrar) != -1
-		return GetbyRegistrar(Registrar)
-	endIf
-	; Get free Expression slot
-	int id = Register(Registrar)
-	sslBaseExpression Slot = GetBySlot(id)
-	if id != -1 && Slot != none
-		Slot.Initialize()
-		Slot.Registry = Registrar
-		Slot.Enabled  = true
-		sslObjectFactory.SendCallback(Registrar, id, CallbackForm, CallbackAlias)
-	endIf
-	return Slot
+	SyncBackend()
+	Alias[] aliases = GetAliases()
+	int i = 0
+	While (i < aliases.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && it.Registry == Registrar)
+			sslObjectFactory.SendCallback(Registrar, i, CallbackForm, CallbackAlias)
+			return it
+		EndIf
+		i += 1
+	EndWhile
+	int where = Register(Registrar)
+	If (where == -1)
+		return none
+	EndIf
+	sslObjectFactory.SendCallback(Registrar, where, CallbackForm, CallbackAlias)
+	return GetNthAlias(where) as sslBaseExpression
 endFunction
 
-bool function UnregisterExpression(string Registrar)
-	if Registrar != "" && Registry.Find(Registrar) != -1
-		int Slot = Registry.Find(Registrar)
-		(Objects[Slot] as sslBaseExpression).Initialize()
-		Objects[Slot] = none
-		Registry[Slot] = ""
-		Config.Log("Expression["+Slot+"] "+Registrar, "UnregisterExpression()")
-		return true	
-	endIf
-	return false
+function RegisterSlots()
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -304,67 +352,19 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Setup()
-	GoToState("Locked")
-	; Init slots
-	Slotted  = 0	
-	Registry = new string[32]
-	Objects  = new Alias[32]
-	; Init defaults
-	RegisterLock = false
-	RegisterSlots()
-	GoToState("")
 endFunction
 
-state Locked
-	function Setup()
-	endFunction
-endState
+bool function UnregisterExpression(string Registrar)
+	return false
+endFunction
 
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
-;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
-;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
-;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
-;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
-;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-
-
-
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
-;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
-;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
-;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
-;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
-;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-Actor property PlayerRef
-	Actor Function Get()
-		return Game.GetPlayer()
-	EndFunction
-EndProperty
-
-sslSystemConfig property Config
-	sslSystemConfig Function Get()
-		return SexLabutil.GetConfig()
-	EndFunction
-EndProperty
+bool function TestSlots()
+	return true
+endFunction
 
 function Log(string msg)
 	if Config.DebugMode
 		MiscUtil.PrintConsole(msg)
 	endIf
 	Debug.Trace("SEXLAB - "+msg)
-endFunction
-
-bool function TestSlots()
-	return true
 endFunction

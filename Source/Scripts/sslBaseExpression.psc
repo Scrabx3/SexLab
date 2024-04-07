@@ -407,7 +407,9 @@ int property PhasesFemale hidden
 endProperty
 
 Function _SetRegistryID(String asSet)
-	RenameExpression(Registry, asSet)
+	If (asSet != "" && Registry != "")
+		RenameExpression(Registry, asSet)
+	EndIf
 	Parent._SetRegistryID(asSet)
 EndFunction
 String Function _GetName()
@@ -417,13 +419,17 @@ bool Function _GetEnabled()
 	return GetEnabled(Registry)
 EndFunction
 Function _SetEnabled(bool abEnabled)
-	SetEnabled(Registry, abEnabled)
+	If (Registry != "")
+		SetEnabled(Registry, abEnabled)
+	EndIf
 EndFunction
 String[] Function _GetTags()
 	return GetExpressionTags(Registry)
 EndFunction
 Function _SetTags(String[] asSet)
-	SetExpressionTags(Registry, asSet)
+	If (Registry != "")
+		SetExpressionTags(Registry, asSet)
+	EndIf
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
