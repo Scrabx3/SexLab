@@ -264,23 +264,25 @@ sslBaseExpression[] function GetSlots(int page = 1, int perpage = 125)
 	if page > PageCount(perpage) || page < 1
 		return sslUtility.ExpressionArray(0)
 	endIf
-	int n
 	sslBaseExpression[] PageSlots
 	if page == PageCount(perpage)
-		n = Slotted
 		PageSlots = sslUtility.ExpressionArray((Slotted - ((page - 1) * perpage)))
 	else
-		n = page * perpage
 		PageSlots = sslUtility.ExpressionArray(perpage)
 	endIf
 	Alias[] aliases = GetAliases()
 	int i = 0
 	int ii = 0
+	int skipuntil = (page - 1) * perpage
 	While (i < aliases.Length && ii < PageSlots.Length)
 		sslBaseExpression it = aliases[i] as sslBaseExpression
 		If (it && it.Registered)
-			PageSlots[ii] = it
-			ii += 1
+			If (skipuntil == 0)
+				PageSlots[ii] = it
+				ii += 1
+			Else
+				skipuntil -= 1
+			EndIf
 		EndIf
 		i += 1
 	EndWhile
