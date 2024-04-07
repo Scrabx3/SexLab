@@ -364,8 +364,8 @@ State Ready
 				EndIf
 			EndIf
 			LogInfo += "Strapon[" + _Strapon + "] "
-			if !_Expression && _Config.UseExpressions
-				_Expressions = _Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim(), _Thread.IsType[0] && !IsVictim())
+			if !_Expression && _Config.UseExpressions	; TODO: Global accessors
+				_Expressions = _Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim(), IsAggressor())
 				if _Expressions && _Expressions.Length > 0
 					_Expression = _Expressions[Utility.RandomInt(0, (_Expressions.Length - 1))]
 				endIf

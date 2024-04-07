@@ -1286,7 +1286,6 @@ function ExportSettings()
   ; Export object registry
   ExportAnimations()
   ExportCreatures()
-  ExportExpressions()
   ExportVoices()
 endFunction
 
@@ -1294,7 +1293,6 @@ function ImportSettings()
   ; Import object registry
   ImportAnimations()
   ImportCreatures()
-  ImportExpressions()
   ImportVoices()
 
   ; Reload settings with imported values
@@ -1411,22 +1409,6 @@ function ImportCreatures()
     if args.Length == 2 && CreatureSlots.FindByRegistrar(args[0]) != -1
       CreatureSlots.GetbyRegistrar(args[0]).Enabled = (args[1] as int) as bool
     endIf
-  endWhile
-endFunction
-
-; Expressions
-function ExportExpressions()
-  int i = ExpressionSlots.Slotted
-  while i
-    i -= 1
-    ExpressionSlots.GetBySlot(i).ExportJson()
-  endWhile
-endfunction
-function ImportExpressions()
-  int i = ExpressionSlots.Slotted
-  while i
-    i -= 1
-    ExpressionSlots.GetBySlot(i).ImportJson()
   endWhile
 endFunction
 
@@ -1889,6 +1871,16 @@ float[] property BedOffset hidden
     return ret
   EndFunction
 EndProperty
+
+; ------------------------------------------------------- ;
+; --- Export/Import to JSON                           --- ;
+; ------------------------------------------------------- ;
+
+; Expressions
+function ExportExpressions()
+endfunction
+function ImportExpressions()
+endFunction
 
 ; ------------------------------------------------------- ;
 ; --- MCM Settings                                    --- ;

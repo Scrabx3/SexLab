@@ -32,7 +32,6 @@ sslThreadSlots Property ThreadSlots Auto
 sslAnimationSlots Property AnimSlots Auto
 sslCreatureAnimationSlots Property CreatureSlots Auto
 sslVoiceSlots Property VoiceSlots Auto
-sslExpressionSlots Property ExpressionSlots Auto
 
 ; Common Data
 Actor TargetRef
@@ -3908,6 +3907,12 @@ sslActorStats Property Stats Hidden
   sslActorStats Function Get()
 	  return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorStats
   EndFunction
+EndProperty
+
+sslExpressionSlots Property ExpressionSlots Hidden
+	sslExpressionSlots Function Get()
+		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
+	EndFunction
 EndProperty
 
 function Troubleshoot()

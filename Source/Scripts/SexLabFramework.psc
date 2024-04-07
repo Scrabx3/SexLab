@@ -827,152 +827,6 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* PickExpression
-* * Selects a random expression that fits the provided criteria. A slightly different method of having the expression compared to PickExpressionByStatus.
-* * 
-* * @param: Actor ActorRef - The actor who will be using this expression.
-* * @param: Actor VictimRef - The actor considered a victim in an aggressive scene.
-* * @return: sslBaseExpression - A randomly selected expression object among any that meet the needed criteria.
-*/;
-sslBaseExpression function PickExpression(Actor ActorRef, Actor VictimRef = none)
-  return ExpressionSlots.PickByStatus(ActorRef, (VictimRef && VictimRef == ActorRef), (VictimRef && VictimRef != ActorRef))
-endFunction
-
-;/* PickExpressionByStatus
-* * Selects a random expression that fits the provided criteria.
-* * 
-* * @param: Actor ActorRef - The actor who will be using this expression and the following conditions apply to.
-* * @param: bool IsVictim - Set to TRUE if the actor is considered the victim in an aggressive scene.
-* * @param: bool IsAggressor - Set to TRUE if the actor is considered the aggressor in an aggressive scene.
-* * @return: sslBaseExpression - A randomly selected expression object among any that meet the needed criteria.
-*/;
-sslBaseExpression function PickExpressionByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
-  return ExpressionSlots.PickByStatus(ActorRef, IsVictim, IsAggressor)
-endFunction
-
-;/* GetExpressionsByStatus
-* * Selects a random expression that fits the provided criteria.
-* * 
-* * @param: Actor ActorRef - The actor who will be using this expression and the following conditions apply to.
-* * @param: bool IsVictim - Set to TRUE if the actor is considered the victim in an aggressive scene.
-* * @param: bool IsAggressor - Set to TRUE if the actor is considered the aggressor in an aggressive scene.
-* * @return: sslBaseExpression[] - An array of expressions that meet the needed criteria.
-*/;
-sslBaseExpression[] function GetExpressionsByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
-  return ExpressionSlots.GetByStatus(ActorRef, IsVictim, IsAggressor)
-endFunction
-
-;/* PickExpressionByTag
-* * Selects a single expression from based on a single tag.
-* * 
-* * @param: Actor ActorRef - The actor who will be using this expression and the following conditions apply to.
-* * @param: string Tags - A single expression tag to use as the filter when picking randomly. Warning, it is not possible to use a comma separated list of tags.
-* * @return: sslBaseExpression - A randomly selected expression object among any that have the provided tag.
-*/;
-sslBaseExpression function PickExpressionsByTag(Actor ActorRef, string Tag)
-  sslBaseExpression[] Found =  ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
-  if Found && Found.Length > 0
-    return Found[(Utility.RandomInt(0, (Found.Length - 1)))]
-  endIf
-  return none
-endFunction
-
-;/* GetExpressionsByTag
-* * Selects a single expression from based on a single tag.
-* * 
-* * @param: Actor ActorRef - The actor who will be using this expression and the following conditions apply to.
-* * @param: string Tags - A single expression tag to use as the filter when picking randomly. Warning, it is not possible to use a comma separated list of tags.
-* * @return: sslBaseExpression[] - An array of expressions that have the provided tag.
-*/;
-sslBaseExpression[] function GetExpressionsByTag(Actor ActorRef, string Tag)
-  return ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
-endFunction
-
-;/* GetExpressionByName
-* * Get a single expression object by name. Ignores if a user has the expression enabled or not.
-* * 
-* * @param: string FindName - The name of an expression object as seen in the SexLab MCM.
-* * @return: sslBaseExpression - The expression object whose name matches, if found.
-*/;
-sslBaseExpression function GetExpressionByName(string findName)
-  return ExpressionSlots.GetByName(findName)
-endFunction
-
-;/* FindExpressionByName
-* * Find the registration slot number that an expression currently occupies.
-* * 
-* * @param: string FindName - The name of an expression as seen in the SexLab MCM.
-* * @return: int - The registration slot number for the expression.
-*/;
-int function FindExpressionByName(string findName)
-  return ExpressionSlots.FindByName(findName)
-endFunction
-
-;/* GetExpressionBySlot
-* * @RETURNS a expression object by it's registration slot number.
-* * 
-* * @param: int slot - The slot number of the expression object.
-* * @return: sslBaseExpression - The expression object that currently occupies that slot, NONE if nothing occupies it.
-*/;
-sslBaseExpression function GetExpressionBySlot(int slot)
-  return ExpressionSlots.GetBySlot(slot)
-endFunction
-
-;/* OpenMouth
-* * Opens an actors mouth.
-* * Mirrored function of a global in sslBaseExpressions. Is advised to use, in your scripts, the global one instead of this one.
-* * Example:
-* * SexLab.OpenMouth(myActor)
-* *   is equivalent, but less performat (because there is an extra call) compared to
-* * sslBaseExpression.OpenMouth(myActor)
-* * 
-* * @param: Actor ActorRef - The actors whose mouth should open.
-*/;
-function OpenMouth(Actor ActorRef)
-  if ActorRef
-    int i
-    while i < ThreadSlots.Threads.Length
-      int ActorSlot = Threads[i].FindSlot(ActorRef)
-      if ActorSlot != -1
-        Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = True
-      endIf
-      i += 1
-    endwhile
-    sslBaseExpression.OpenMouth(ActorRef)
-  endIf
-endFunction
-
-;/* CloseMouth
-* * Closes an actors mouth.
-* * Mirrored function of a global in sslBaseExpressions. Is advised to use, in your scripts, the global one instead of this one.
-* *
-* * @param: Actor ActorRef - The actors whose mouth should open.
-*/;
-function CloseMouth(Actor ActorRef)
-  if ActorRef
-    int i
-    while i < ThreadSlots.Threads.Length
-      int ActorSlot = Threads[i].FindSlot(ActorRef)
-      if ActorSlot != -1
-        Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = False
-      endIf
-      i += 1
-    endwhile
-    sslBaseExpression.CloseMouth(ActorRef)
-  endIf
-endFunction
-
-;/* IsMouthOpen
-* * Checks if an actor's mouth is currently considered open or not.
-* * Mirrored function of a global in sslBaseExpressions. Is advised to use, in your scripts, the global one instead of this one.
-* *
-* * @param: Actor ActorRef - The actors whose may or may not currently be open.
-* * @return: bool - TRUE if the actors mouth appears to be in an open state.
-*/;
-bool function IsMouthOpen(Actor ActorRef)
-  return sslBaseExpression.IsMouthOpen(ActorRef)
-endFunction
-
 ;/* GetCurrentMFG
 * * Get an array with the mood, phonemes, and modifiers currently applied to the actor.
 * * Mirrored function of a global in sslBaseExpressions. Is advised to use, in your scripts, the global one instead of this one.
@@ -1781,6 +1635,66 @@ int function ReleaseOwnerAnimations(Form Owner)
   return Factory.ReleaseOwnerAnimations(Owner)
 endFunction
 
+; --- Legacy Expression Functions
+
+sslBaseExpression function PickExpression(Actor ActorRef, Actor VictimRef = none)
+  return ExpressionSlots.PickByStatus(ActorRef, (VictimRef && VictimRef == ActorRef), (VictimRef && VictimRef != ActorRef))
+endFunction
+sslBaseExpression function PickExpressionByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
+  return ExpressionSlots.PickByStatus(ActorRef, IsVictim, IsAggressor)
+endFunction
+sslBaseExpression[] function GetExpressionsByStatus(Actor ActorRef, bool IsVictim = false, bool IsAggressor = false)
+  return ExpressionSlots.GetByStatus(ActorRef, IsVictim, IsAggressor)
+endFunction
+sslBaseExpression function PickExpressionsByTag(Actor ActorRef, string Tag)
+  sslBaseExpression[] Found =  ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
+  if Found && Found.Length > 0
+    return Found[(Utility.RandomInt(0, (Found.Length - 1)))]
+  endIf
+  return none
+endFunction
+sslBaseExpression[] function GetExpressionsByTag(Actor ActorRef, string Tag)
+  return ExpressionSlots.GetByTag(Tag, ActorRef.GetLeveledActorBase().GetSex() == 1)
+endFunction
+sslBaseExpression function GetExpressionByName(string findName)
+  return ExpressionSlots.GetByName(findName)
+endFunction
+int function FindExpressionByName(string findName)
+  return ExpressionSlots.FindByName(findName)
+endFunction
+sslBaseExpression function GetExpressionBySlot(int slot)
+  return ExpressionSlots.GetBySlot(slot)
+endFunction
+function OpenMouth(Actor ActorRef)
+  if ActorRef
+    int i
+    while i < ThreadSlots.Threads.Length
+      int ActorSlot = Threads[i].FindSlot(ActorRef)
+      if ActorSlot != -1
+        Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = True
+      endIf
+      i += 1
+    endwhile
+    sslBaseExpression.OpenMouth(ActorRef)
+  endIf
+endFunction
+function CloseMouth(Actor ActorRef)
+  if ActorRef
+    int i
+    while i < ThreadSlots.Threads.Length
+      int ActorSlot = Threads[i].FindSlot(ActorRef)
+      if ActorSlot != -1
+        Threads[i].ActorAlias[ActorSlot].ForceOpenMouth = False
+      endIf
+      i += 1
+    endwhile
+    sslBaseExpression.CloseMouth(ActorRef)
+  endIf
+endFunction
+bool function IsMouthOpen(Actor ActorRef)
+  return sslBaseExpression.IsMouthOpen(ActorRef)
+endFunction
+
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;# ^^^                                            END DEPRECATED FUNCTIONS - DO NOT USE THEM                                           ^^^ #
@@ -1863,7 +1777,6 @@ sslThreadLibrary property ThreadLib Auto
 ; Object registries
 sslThreadSlots property ThreadSlots Auto
 sslVoiceSlots property VoiceSlots Auto
-sslExpressionSlots property ExpressionSlots Auto
 
 function Setup()
 	; Reset function Libraries - SexLabQuestFramework
@@ -1874,7 +1787,6 @@ function Setup()
 	ActorLib = SexLabQuestFramework as sslActorLibrary
 	; Reset secondary object registry - SexLabQuestRegistry
 	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
 	VoiceSlots = SexLabQuestRegistry as sslVoiceSlots
 
   Log(self + " - Loaded SexLabFramework")
@@ -1995,6 +1907,12 @@ sslActorStats Property Stats Hidden
 	  return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorStats
   EndFunction
 EndProperty
+sslExpressionSlots property ExpressionSlots Hidden
+  sslExpressionSlots Function Get()
+    return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
+  EndFunction
+EndProperty
+
 
 event OnInit()
   ; p+ 2.0: Setup is exclusively handled by sslSystemAlias
