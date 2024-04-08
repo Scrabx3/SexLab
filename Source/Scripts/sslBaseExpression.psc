@@ -1,4 +1,182 @@
 scriptname sslBaseExpression extends sslBaseObject
+{
+	Access Script for Expression related logic
+	Expression logic is not considered part of the public API, if you want to create a custom expression 
+	profile, consider creating an Expression.yml file instead and listing all of your values there
+}
+
+String[] Function GetExpressionTags(String asID) native global
+Function SetExpressionTags(String asID, String[] asNewTags) native global
+bool Function GetEnabled(String asID) native global
+Function SetEnabled(String asID, bool abEnabled) native global
+Function RenameExpression(String asID, String asNewID) native global
+int[] Function GetLevelCounts(String asID) native global
+float[] Function GetValues(String asID, bool abFemale, int aiLevel) native global
+Function SetValues(String asID, bool abFemale, int aiLevel, float[] afValues) native global
+
+float function GetModifier(Actor ActorRef, int id) global native
+float function GetPhoneme(Actor ActorRef, int id) global native
+float function GetExpression(Actor ActorRef, bool getId) global native
+
+; Apply Expression on Actor at given strength
+; Actor must be NPC (Human RaceID)
+; afStrength must be in [0; 100]
+Function ApplyExpression(String asExpression, Actor akActor, float afStrength) global
+	int sex = SexLabRegistry.GetSex(akActor, false)
+	float lvMax = GetLevelCounts(asExpression)[(sex == 1) as int]
+	int lvl = ((afStrength * lvMax) / 100.0) as int
+	float[] values = GetValues(asExpression, sex != 0, lvl)
+	ApplyPresetFloats(akActor, values)
+EndFunction
+
+function ClearPhoneme(Actor ActorRef) global
+	sslExpressionUtil.resetPhonemesSmooth(ActorRef)
+endFunction
+function ClearModifier(Actor ActorRef) global
+	sslExpressionUtil.resetModifiersSmooth(ActorRef)
+endFunction
+function ClearMFG(Actor ActorRef) global
+	sslExpressionUtil.resetMFGSmooth(ActorRef)
+endFunction
+
+function OpenMouth(Actor ActorRef) global
+	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
+	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
+	int OpenMouthSize = SexLabUtil.GetConfig().OpenMouthSize
+	float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
+	Int i = 0
+	Int s = 0
+	while i < Phonemes.length
+		if (GetPhoneme(ActorRef, i) != Phonemes[i])
+			sslExpressionUtil.SmoothSetModifier(ActorRef, 0, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
+		endIf
+		if Phonemes[i] >= Phonemes[s] ; seems to be required to prevet issues
+			s = i
+		endIf
+		i += 1
+	endWhile
+	sslExpressionUtil.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int)
+	if (GetExpression(ActorRef, true) as int == OpenMouthExpression || GetExpression(ActorRef, false) != OpenMouthSize as float / 100.0)
+		sslExpressionUtil.SmoothSetExpression(ActorRef, OpenMouthExpression, OpenMouthSize)
+	endIf
+endFunction
+
+function CloseMouth(Actor ActorRef) global
+	ClearPhoneme(ActorRef)
+	sslExpressionUtil.SmoothSetExpression(ActorRef,7,70)
+endFunction
+
+bool function IsMouthOpen(Actor ActorRef) global
+	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
+	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
+	float MinMouthSize = (SexLabUtil.GetConfig().OpenMouthSize * 0.01) - 0.1
+	if GetExpression(ActorRef, true) as Int == OpenMouthExpression && GetExpression(ActorRef, false) >= MinMouthSize
+		return true
+	endIf
+	float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
+	Int i = 0
+	while i < Phonemes.length
+		if (GetPhoneme(ActorRef, i) < (MinMouthSize * Phonemes[i]))
+			return false
+		endIf
+		i += 1
+	endWhile
+	return true
+endFunction
+
+float[] function GetCurrentMFG(Actor ActorRef) global
+	float[] Preset = new float[32]
+	int i
+	int p
+	while p <= 15
+		Preset[i] = GetPhoneme(ActorRef, p) ; 0.0 - 1.0
+		i += 1
+		p += 1
+	endWhile
+	int m
+	while m <= 13
+		Preset[i] = GetModifier(ActorRef, m) ; 0.0 - 1.0
+		i += 1
+		m += 1
+	endWhile
+	Preset[30] = GetExpression(ActorRef, true)  ; 0 - 16
+	Preset[31] = GetExpression(ActorRef, false) ; 0.0 - 1.0
+	return Preset
+endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+int[] property PhaseCounts hidden
+	int[] function get()
+		return GetLevelCounts(Registry)
+	endFunction
+endProperty
+int property PhasesMale hidden
+	int function get()
+		return PhaseCounts[Male]
+	endFunction
+endProperty
+int property PhasesFemale hidden
+	int function get()
+		return PhaseCounts[Female]
+	endFunction
+endProperty
+
+Function _SetRegistryID(String asSet)
+	If (asSet != "")
+		RenameExpression(Registry, asSet)
+	EndIf
+	Parent._SetRegistryID(asSet)
+EndFunction
+String Function _GetName()
+	return Registry
+EndFunction
+bool Function _GetEnabled()
+	return GetEnabled(Registry)
+EndFunction
+Function _SetEnabled(bool abEnabled)
+	If (Registry != "")
+		SetEnabled(Registry, abEnabled)
+	EndIf
+EndFunction
+String[] Function _GetTags()
+	return GetExpressionTags(Registry)
+EndFunction
+Function _SetTags(String[] asSet)
+	If (Registry != "")
+		SetExpressionTags(Registry, asSet)
+	EndIf
+EndFunction
+
+function ApplyPresetFloats(Actor ActorRef, float[] Preset) global
+	bool bMouthOpen = IsMouthOpen(ActorRef)
+	float currExpr = GetExpression(ActorRef, true)
+	float currValue = GetExpression(ActorRef, false)
+	If (!bMouthOpen && currExpr != Preset[30])
+		sslExpressionUtil.SmoothSetExpression(ActorRef, currExpr as int, 0, currValue)
+	endIf
+	sslExpressionUtil.ApplyExpressionPreset(ActorRef, Preset, bMouthOpen)
+endFunction
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 ; Gender Types
 int property Male       = 0 autoreadonly
@@ -40,109 +218,6 @@ endFunction
 ; --- Global Utilities                                --- ;
 ; ------------------------------------------------------- ;
 
-float function GetModifier(Actor ActorRef, int id) global native
-float function GetPhoneme(Actor ActorRef, int id) global native
-float function GetExpression(Actor ActorRef, bool getId) global native
-
-function ClearPhoneme(Actor ActorRef) global
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
-	if HasMFG
-		sslExpressionUtil.resetPhonemesSmooth(ActorRef)
-	else
-		int p = 0
-		while p <= 15
-			ActorRef.SetExpressionPhoneme(p, 0.0)
-			p += 1
-		endWhile
-	endIf
-endFunction
-function ClearModifier(Actor ActorRef) global
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
-	if HasMFG
-		sslExpressionUtil.resetModifiersSmooth(ActorRef)
-	else
-		int i
-		while i <= 13
-			ActorRef.SetExpressionModifier(i, 0.0)
-			i += 1
-		endWhile
-	endIf
-endFunction
-
-function OpenMouth(Actor ActorRef) global
-	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
-	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
-	int OpenMouthSize = SexLabUtil.GetConfig().OpenMouthSize
-	float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
-	Int i = 0
-	Int s = 0
-	while i < Phonemes.length
-		if (GetPhoneme(ActorRef, i) != Phonemes[i])
-			if HasMFG
-				sslExpressionUtil.SmoothSetModifier(ActorRef,0,PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
-			else
-				ActorRef.SetExpressionPhoneme(i, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100) as float / 100.0)
-			endif
-		endIf
-		if Phonemes[i] >= Phonemes[s] ; seems to be required to prevet issues
-			s = i
-		endIf
-		i += 1
-	endWhile
-	if HasMFG
-		sslExpressionUtil.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int) ; Oldrim
-	else
-		ActorRef.SetExpressionPhoneme(s, Phonemes[s]) ; is supouse to be / 100.0 already thanks SetIndex function
-	endIf
-	if (GetExpression(ActorRef, true) as int == OpenMouthExpression || GetExpression(ActorRef, false) != OpenMouthSize as float / 100.0)
-		if HasMFG
-			sslExpressionUtil.SmoothSetExpression(ActorRef, OpenMouthExpression, OpenMouthSize)
-		Else
-			ActorRef.SetExpressionOverride(OpenMouthExpression, OpenMouthSize)
-		endif
-	endIf
-	Utility.WaitMenuMode(0.1)
-endFunction
-
-function CloseMouth(Actor ActorRef) global
-	ClearPhoneme(ActorRef)
-	if SexLabUtil.GetConfig().HasMFGFix
-		sslExpressionUtil.SmoothSetExpression(ActorRef,7,70)
-	Else
-		ActorRef.SetExpressionOverride(7, 50)
-	endif
-	Utility.WaitMenuMode(0.1)
-endFunction
-
-bool function IsMouthOpen(Actor ActorRef) global
-	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
-	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
-	float MinMouthSize = (SexLabUtil.GetConfig().OpenMouthSize * 0.01) - 0.1
-	if GetExpression(ActorRef, true) as Int == OpenMouthExpression && GetExpression(ActorRef, false) >= MinMouthSize
-		return true
-	endIf
-	float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
-	Int i = 0
-	while i < Phonemes.length
-		if (GetPhoneme(ActorRef, i) < (MinMouthSize * Phonemes[i]))
-			return false
-		endIf
-		i += 1
-	endWhile
-	return true
-endFunction
-
-function ClearMFG(Actor ActorRef) global
-	if SexLabUtil.GetConfig().HasMFGFix
-		sslExpressionUtil.resetMFGSmooth(ActorRef)
-	else
-		ActorRef.ClearExpressionOverride()
-		ClearPhoneme(ActorRef)
-		ClearModifier(ActorRef)
-	endIf
-endFunction
-
 function TransitPresetFloats(Actor ActorRef, float[] FromPreset, float[] ToPreset, float Speed = 1.0, float Time = 1.0) global 
 	if !ActorRef || FromPreset.Length < 32 || ToPreset.Length < 32
 		return
@@ -169,27 +244,6 @@ function TransitPresetFloats(Actor ActorRef, float[] FromPreset, float[] ToPrese
 		p += 1
 	endWhile
 	ApplyPresetFloats(ActorRef, ToPreset)
-endFunction
-
-function ApplyPresetFloats(Actor ActorRef, float[] Preset) global 
-	if !ActorRef || Preset.Length < 32
-		return
-	endIf
-	bool HasMFG = SexLabUtil.GetConfig().HasMFGFix
-	bool bMouthOpen = IsMouthOpen(ActorRef)
-	float currExpr = GetExpression(ActorRef, true)
-	int currValue = PapyrusUtil.ClampInt((GetExpression(ActorRef, false)) as int, 0, 100)
-	if !bMouthOpen
-		if currExpr != Preset[30]
-			sslExpressionUtil.SmoothSetExpression(ActorRef, currExpr as int, 0, currValue)
-		endIf
-	endIf
-	if SexLabUtil.GetConfig().HasMFGFix
-		sslExpressionUtil.ApplyExpressionPreset(ActorRef, Preset, bMouthOpen)
-	else
-		ApplyPresetFloatsLegacy(ActorRef, Preset, bMouthOpen)
-	endIf
-	
 endFunction
 
 function ApplyPresetFloatsLegacy(Actor ActorRef, float[] Preset, bool IsMouthOpen) global 
@@ -227,29 +281,6 @@ function ApplyPresetFloatsLegacy(Actor ActorRef, float[] Preset, bool IsMouthOpe
 		i += 1
 		m += 1
 	endWhile
-endFunction
-
-float[] function GetCurrentMFG(Actor ActorRef) global
-	float[] Preset = new float[32]
-	int i
-	; Get Phoneme
-	int p
-	while p <= 15
-		Preset[i] = GetPhoneme(ActorRef, p) ; 0.0 - 1.0
-		i += 1
-		p += 1
-	endWhile
-	; Get Modifers
-	int m
-	while m <= 13
-		Preset[i] = GetModifier(ActorRef, m) ; 0.0 - 1.0
-		i += 1
-		m += 1
-	endWhile
-	; Get Exression/Mood type and value
-	Preset[30] = GetExpression(ActorRef, true)  ; 0 - 16
-	Preset[31] = GetExpression(ActorRef, false) ; 0.0 - 1.0
-	return Preset
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -369,79 +400,6 @@ endFunction
 int function GetIndex(int Phase, int Gender, int Mode, int id)
 	return (GetValues(Registry, Phase, Gender)[Mode + id] * 100.0) as int
 endFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
-;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
-;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
-;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
-;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
-;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-String[] Function GetExpressionTags(String asID) native global
-Function SetExpressionTags(String asID, String[] asNewTags) native global
-bool Function GetEnabled(String asID) native global
-Function SetEnabled(String asID, bool abEnabled) native global
-Function RenameExpression(String asID, String asNewID) native global
-int[] Function GetLevelCounts(String asID) native global
-float[] Function GetValues(String asID, bool abFemale, int aiLevel) native global
-Function SetValues(String asID, bool abFemale, int aiLevel, float[] afValues) native global
-
-int[] property PhaseCounts hidden
-	int[] function get()
-		return GetLevelCounts(Registry)
-	endFunction
-endProperty
-int property PhasesMale hidden
-	int function get()
-		return PhaseCounts[Male]
-	endFunction
-endProperty
-int property PhasesFemale hidden
-	int function get()
-		return PhaseCounts[Female]
-	endFunction
-endProperty
-
-Function _SetRegistryID(String asSet)
-	If (asSet != "")
-		RenameExpression(Registry, asSet)
-	EndIf
-	Parent._SetRegistryID(asSet)
-EndFunction
-String Function _GetName()
-	return Registry
-EndFunction
-bool Function _GetEnabled()
-	return GetEnabled(Registry)
-EndFunction
-Function _SetEnabled(bool abEnabled)
-	If (Registry != "")
-		SetEnabled(Registry, abEnabled)
-	EndIf
-EndFunction
-String[] Function _GetTags()
-	return GetExpressionTags(Registry)
-EndFunction
-Function _SetTags(String[] asSet)
-	If (Registry != "")
-		SetExpressionTags(Registry, asSet)
-	EndIf
-EndFunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
-;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
-;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
-;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
-;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
-;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 int property MoodIDs = 16 autoreadonly
 

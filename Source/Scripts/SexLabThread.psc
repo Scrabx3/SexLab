@@ -244,9 +244,9 @@ EndFunction
 ; --- Expressions
 
 ; Update the given actors expression
-Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
+Function SetActorExpression(Actor akActor, String asExpression)
 EndFunction
-sslBaseExpression Function GetExpression(Actor ActorRef)
+String Function GetActorExpression(Actor akActor)
 EndFunction
 
 ; --- Orgasms

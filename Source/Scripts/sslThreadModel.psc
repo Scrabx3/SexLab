@@ -135,20 +135,20 @@ sslBaseVoice Function GetVoice(Actor ActorRef)
 EndFunction
 
 ; Expressions
-Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
-	sslActorAlias ref = ActorAlias(ActorRef)
-	If (!ref)
-		return
-	EndIf
-	ref.SetExpression(Expression)
-EndFunction
-
-sslBaseExpression Function GetExpression(Actor ActorRef)
-	sslActorAlias ref = ActorAlias(ActorRef)
+String Function GetActorExpression(Actor akActor)
+	sslActorAlias ref = ActorAlias(akActor)
 	If (!ref)
 		return none
 	EndIf
-	return ref.GetExpression()
+	return ref.GetActorExpression()
+EndFunction
+
+Function SetActorExpression(Actor akActor, String asExpression)
+	sslActorAlias ref = ActorAlias(akActor)
+	If (!ref)
+		return
+	EndIf
+	ref.SetActorExpression(asExpression)
 EndFunction
 
 ; Orgasms
@@ -1984,6 +1984,21 @@ Function SetAnimation(int aid = -1)
 EndFunction
 Function SetAnimationImpl(sslBaseAnimation akAnimation)
 	ResetScene(akAnimation.Registry)
+EndFunction
+
+Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return
+	EndIf
+	ref.SetExpression(Expression)
+EndFunction
+sslBaseExpression Function GetExpression(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.GetExpression()
 EndFunction
 
 bool function AddTag(string Tag)

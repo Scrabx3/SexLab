@@ -14,7 +14,13 @@ scriptname sslExpressionSlots extends Quest
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
+int Property STATUS_NONE 				= 0 AutoReadOnly Hidden
+int Property STATUS_SUBMISSIVE 	= 1 AutoReadOnly Hidden
+int Property STATUS_DOMINANT		= 2 AutoReadOnly Hidden
+
 String[] Function GetAllProfileIDs() native global
+String[] Function GetExpressionsByStatus(Actor akActor, int aiVictimStatus) native global
+String[] Function GetExpressionsByTags(Actor akActor, String asTags) native global
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
