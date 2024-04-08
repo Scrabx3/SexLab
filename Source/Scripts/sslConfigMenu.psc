@@ -1049,7 +1049,6 @@ function AnimationSettings()
 	; AddToggleOptionST("AllowFemaleFemaleCum","$SSL_AllowFemaleFemaleCum", Config.AllowFFCum, SexLabUtil.IntIfElse((!Config.UseCum), OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
 
 	SetCursorPosition(1)
-	; AddMenuOptionST("AnimationProfile", "$SSL_AnimationProfile", "Profile #"+Config.AnimProfile)
 	AddHeaderOption("$SSL_Creatures")
 	AddToggleOptionST("AllowCreatures","$SSL_AllowCreatures", Config.AllowCreatures)
 	AddToggleOptionST("UseCreatureGender","$SSL_UseCreatureGender", Config.UseCreatureGender)
@@ -1074,31 +1073,6 @@ function AnimationSettings()
 	; AddToggleOptionST("BedRemoveStanding","$SSL_BedRemoveStanding", Config.BedRemoveStanding)
 endFunction
 
-state AnimationProfile
-	event OnMenuOpenST()
-		string[] Profiles = new string[5]
-		Profiles[0] = "AnimationProfile_1.json"
-		Profiles[1] = "AnimationProfile_2.json"
-		Profiles[2] = "AnimationProfile_3.json"
-		Profiles[3] = "AnimationProfile_4.json"
-		Profiles[4] = "AnimationProfile_5.json"
-		SetMenuDialogStartIndex((Config.AnimProfile - 1))
-		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(Profiles)
-	endEvent
-	event OnMenuAcceptST(int i)
-		i += 1
-		; Export/Set/Import profiles
-		Config.SwapToProfile(ClampInt(i, 1, 5))
-		SetMenuOptionValueST("Profile #"+Config.AnimProfile)
-	endEvent
-	event OnDefaultST()
-		OnMenuAcceptST(1)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAnimationProfile")
-	endEvent
-endState
 
 state RaceAdjustments
 	event OnSelectST()
@@ -2379,7 +2353,6 @@ string[] SoundTreatment
 
 function ExpressionEditor()
 	SetCursorFillMode(LEFT_TO_RIGHT)
-
 	if !Expression
 		Expression = ExpressionSlots.GetBySlot(0)
 		Phase = 1
@@ -2453,16 +2426,14 @@ function ExpressionEditor()
 
 		return ; to hide the rest of the options
 
-	else
-		SetTitleText(Expression.Name)
+	endif
+	SetTitleText(Expression.Name)
 
-		AddHeaderOption("$SSL_OpenMouthConfig")
-		AddHeaderOption("")
+	AddHeaderOption("$SSL_OpenMouthConfig")
+	AddHeaderOption("")
 
-		AddSliderOptionST("OpenMouthSize","$SSL_OpenMouthSize", Config.OpenMouthSize, "{0}%")
-		AddTextOptionST("AdvancedOpenMouth", "$SSL_EditOpenMouth", "$SSL_ClickHere")
-
-	endIf
+	AddSliderOptionST("OpenMouthSize","$SSL_OpenMouthSize", Config.OpenMouthSize, "{0}%")
+	AddTextOptionST("AdvancedOpenMouth", "$SSL_EditOpenMouth", "$SSL_ClickHere")
 
 	; 1
 	AddHeaderOption("$SSL_ExpressionEditor")
@@ -2473,18 +2444,15 @@ function ExpressionEditor()
 
 	; 2
 	AddToggleOptionST("ExpressionNormal", "$SSL_ExpressionsNormal", Expression.HasTag("Normal"))
-	AddTextOptionST("ExportExpression", "$SSL_ExportExpression", "$SSL_ClickHere")
+	AddEmptyOption()
 
 	; 3
 	AddToggleOptionST("ExpressionVictim", "$SSL_ExpressionsVictim", Expression.HasTag("Victim"))
-	AddTextOptionST("ImportExpression", "$SSL_ImportExpression", "$SSL_ClickHere")
+	AddEmptyOption()
 
 	; 4
 	AddToggleOptionST("ExpressionAggressor", "$SSL_ExpressionsAggressor", Expression.HasTag("Aggressor"))
 	AddTextOptionST("ExpressionTestPlayer", "$SSL_TestOnPlayer", "$SSL_Apply")
-
-	; AddTextOptionST("ExpressionCopyFromPlayer", "$SSL_ExpressionCopyFrom", "$SSL_ClickHere")
-	; AddTextOptionST("ExpressionCopyFromTarget", "$SSL_ExpressionCopyFrom", "$SSL_ClickHere", Math.LogicalAnd(OPTION_FLAG_NONE, (TargetRef == none) as int))
 
 	; 5
 	AddMenuOptionST("ExpressionPhase", "$SSL_Modifying{"+Expression.Name+"}Phase", Phase)
@@ -2597,56 +2565,6 @@ state ExpressionPhase
 		Phase = 1
 		SetMenuOptionValueST(Phase)
 		ForcePageReset()
-	endEvent
-endState
-
-state ExportExpression
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnExportExpression{"+Expression.Name+"}", true, "$Yes", "$No")
-			if Expression.ExportJson()
-				ShowMessage("$SSL_SuccessExportExpression")
-			else
-				ShowMessage("$SSL_ErrorExportExpression")
-			endIf
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoExportExpression{"+Expression.Registry+"}")
-	endEvent
-endState
-
-state ImportExpression
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnImportExpression{"+Expression.Name+"}", true, "$Yes", "$No")
-			if Expression.ImportJson()
-				ShowMessage("$SSL_SuccessImportExpression")
-				Phase = 1
-				ForcePageReset()
-			else
-				ShowMessage("$SSL_ErrorImportExpression")
-			endIf
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoImportExpression{"+Expression.Registry+"}")
-	endEvent
-endState
-
-state ExpressionCopyFromPlayer
-	event OnSelectST()
-		Actor ActorRef = PlayerRef
-		if TargetRef && ShowMessage("$SSL_ExpressionCopyFromTarget", true, TargetName, PlayerName)
-			ActorRef == TargetRef
-		endIf
-		float[] Preset = sslBaseExpression.GetCurrentMFG(ActorRef)
-		if PapyrusUtil.AddFloatValues(Preset) > (Preset[30] + Preset[31])
-			Expression.SetPhase(Phase, ActorRef.GetLeveledActorBase().GetSex(), Preset)
-		else
-			ShowMessage("$SSL_ExpressionCopy{"+ActorRef.GetLeveledActorBase().GetName()+"}Empty")
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_ExpressionCopyFromInfo")
 	endEvent
 endState
 

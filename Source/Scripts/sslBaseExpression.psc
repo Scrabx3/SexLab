@@ -268,7 +268,7 @@ function SetIndex(int Phase, int Gender, int Mode, int id, int value)
 	if i != 30
 		Preset[i] = Preset[i] / 100.0
 	endIf
-	SetValues(Registry, Phase, Gender, Preset)
+	SetPhase(Phase, GEnder, Preset)
 endFunction
 
 function SetPreset(int Phase, int Gender, int Mode, int id, int value)
@@ -312,7 +312,7 @@ endFunction
 
 function EmptyPhase(int Phase, int Gender)
 	float[] Preset = new float[32]
-	SetValues(Registry, Phase, Gender, Preset)
+	SetPhase(Phase, Gender, Preset)
 endFunction
 
 function AddPhase(int Phase, int Gender)
@@ -321,7 +321,7 @@ function AddPhase(int Phase, int Gender)
 		Preset[30] = 7.0
 		Preset[31] = 0.5
 	endIf
-	SetValues(Registry, Phase, Gender, Preset)
+	SetPhase(Phase, Gender, Preset)
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -407,7 +407,7 @@ int property PhasesFemale hidden
 endProperty
 
 Function _SetRegistryID(String asSet)
-	If (asSet != "" && Registry != "")
+	If (asSet != "")
 		RenameExpression(Registry, asSet)
 	EndIf
 	Parent._SetRegistryID(asSet)
@@ -453,7 +453,12 @@ float[] function GenderPhase(int Phase, int Gender)
 endFunction
 
 function SetPhase(int Phase, int Gender, float[] Preset)
-	SetValues(Registry, Gender == Female, Phase, Preset)
+	If (Gender == -1)
+		SetValues(Registry, true, Phase, Preset)
+		SetValues(Registry, false, Phase, Preset)
+	Else
+		SetValues(Registry, Gender == Female, Phase, Preset)
+	EndIf
 endFunction
 
 ; ------------------------------------------------------- ;

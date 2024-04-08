@@ -44,6 +44,7 @@ sslBaseExpression[] property Expressions hidden
 endProperty
 
 String[] Function GetRegistrySnapShot()
+	SyncBackend()
 	Alias[] aliases = GetAliases()
 	String[] ret = Utility.CreateStringArray(aliases.Length)
 	int i = 0
@@ -201,9 +202,23 @@ endFunction
 ; ------------------------------------------------------- ;
 
 sslBaseExpression function GetBySlot(int index)
-	if index < 0 || index > Slotted
-		return GetNthAlias(index) as sslBaseExpression
+	if index < 0
+		return none
 	endIf
+	SyncBackend()
+	Alias[] aliases = GetAliases()
+	int i = 0
+	While (i < aliases.Length)
+		sslBaseExpression it = aliases[i] as sslBaseExpression
+		If (it && it.Registered)
+			If (index == 0)
+				return it
+			Else
+				index -= 1
+			EndIf
+		EndIf
+		i += 1
+	EndWhile
 	return none
 endFunction
 
@@ -260,28 +275,29 @@ string[] function GetSlotNames(int page = 1, int perpage = 125)
 endfunction
 
 sslBaseExpression[] function GetSlots(int page = 1, int perpage = 125)
+	SyncBackend()
 	perpage = PapyrusUtil.ClampInt(perpage, 1, 128)
 	if page > PageCount(perpage) || page < 1
 		return sslUtility.ExpressionArray(0)
 	endIf
 	sslBaseExpression[] PageSlots
+	int skippages = (page - 1) * perpage
 	if page == PageCount(perpage)
-		PageSlots = sslUtility.ExpressionArray((Slotted - ((page - 1) * perpage)))
+		PageSlots = sslUtility.ExpressionArray(Slotted - skippages)
 	else
 		PageSlots = sslUtility.ExpressionArray(perpage)
 	endIf
 	Alias[] aliases = GetAliases()
 	int i = 0
 	int ii = 0
-	int skipuntil = (page - 1) * perpage
 	While (i < aliases.Length && ii < PageSlots.Length)
 		sslBaseExpression it = aliases[i] as sslBaseExpression
 		If (it && it.Registered)
-			If (skipuntil == 0)
+			If (skippages == 0)
 				PageSlots[ii] = it
 				ii += 1
 			Else
-				skipuntil -= 1
+				skippages -= 1
 			EndIf
 		EndIf
 		i += 1
@@ -294,6 +310,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 int Function FindEmpty()
+	SyncBackend()
 	Alias[] aliases = GetAliases()
 	int i = 0
 	While (i < aliases.Length)
@@ -308,7 +325,6 @@ EndFunction
 
 bool RegisterLock = false
 int function Register(string Registrar)
-	SyncBackend()
 	if Registrar == "" || Registry.Find(Registrar) != -1
 		return -1
 	endIf
