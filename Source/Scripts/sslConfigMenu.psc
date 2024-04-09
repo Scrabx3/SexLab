@@ -174,9 +174,9 @@ Event OnConfigInit()
 		Config.DisableScale = true
 		Debug.MessageBox("[SexLab]\nYou are using an outdated version of Skyrim and scaling has thus been disabled to prevent crashes.")
 	EndIf
-	If (SKSE.GetPluginVersion("SexLabUtil") > -1)
-		Debug.MessageBox("[SexLab]\nYou seem to have installed SexLabUtil.dll, this plugin is no longer used by SLP+ and may cause problems if kept installed.\nDelete or hide it in your mod manager to ensure SexLab works corretly.")
-	EndIf
+	; If (SKSE.GetPluginVersion("SexLabUtil") > -1)
+	; 	Debug.MessageBox("[SexLab]\nYou seem to have installed SexLabUtil.dll, this plugin is no longer used by SLP+ and may cause problems if kept installed.\nDelete or hide it in your mod manager to ensure SexLab works corretly.")
+	; EndIf
 EndEvent
 
 event OnConfigOpen()
