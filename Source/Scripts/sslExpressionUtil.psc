@@ -22,6 +22,7 @@ Function SmoothSetModifier(Actor act, Int mod1, Int str_dest, float strModifier 
 	str_dest = (str_dest * strModifier) as Int
 	MfgConsoleFuncExt.SetModifier(act,mod1,str_dest, 1)
 EndFunction
+
 ;Aah 0    BigAah 1
 ;BMP 2    ChjSh 3
 ;DST 4    Eee 5
