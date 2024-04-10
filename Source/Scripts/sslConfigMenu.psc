@@ -803,8 +803,8 @@ event OnSelectST()
 	; Timers & Stripping - Stripping
 	ElseIf(Options[0] == "StrippingW")
 		int i = Options[1] as int
-		int value = 1 - sslSystemConfig.GetSettingIntA("iStripForms", i)
-		sslSystemConfig.SetSettingIntA("iStripForms", value, i)
+		int value = 1 - sslSystemConfig.GetSettingIntA("iStripForms", i + 1)
+		sslSystemConfig.SetSettingIntA("iStripForms", value, i + 1)
 		SetToggleOptionValueST(value)
 	ElseIf(Options[0] == "Stripping")
 		int i = Options[1] as int
@@ -812,7 +812,7 @@ event OnSelectST()
 		int bit = Math.LeftShift(1, n)
 		int value = Math.LogicalXor(sslSystemConfig.GetSettingIntA("iStripForms", i), bit)
 		sslSystemConfig.SetSettingIntA("iStripForms", value, i)
-    SetToggleOptionValueST(Math.LogicalAnd(value, bit))
+    	SetToggleOptionValueST(Math.LogicalAnd(value, bit))
 		
 	; Strip Editor
 	ElseIf(Options[0] == "StripEditorPlayer" || Options[0] == "StripEditorTarget")
@@ -2817,15 +2817,15 @@ Function TimersStripping()
 		AddHeaderOption("$SSL_FemaleStripFrom")
 		AddHeaderOption("$SSL_MaleStripFrom")
 	EndIf
-	int r1 = ts * 4										; 0 / 4 / 8
-	int r2 = (ts * ts) + (3 * ts) + 2	; 2 / 6 / 12
+	int r1 = ts * 4						; 0-1 / 4-5 / 8-9
+	int r2 = (ts * ts) + (3 * ts) + 2	; 2-3 / 6-7 / 12-13
+	AddToggleOptionST("StrippingW_" + r2, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 1))
 	AddToggleOptionST("StrippingW_" + r1, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
-	AddToggleOptionST("StrippingW_" + r2, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 3))
 	int i = 0
 	While (i < 32)
 		int bit = Math.LeftShift(1, i)
-		AddToggleOptionST("Stripping_" + r1 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r1), bit))
 		AddToggleOptionST("Stripping_" + r2 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r2), bit))
+		AddToggleOptionST("Stripping_" + r1 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r1), bit))
 		If (i == 13)
 			AddHeaderOption("$SSL_ExtraSlots")
 			AddHeaderOption("$SSL_ExtraSlots")
