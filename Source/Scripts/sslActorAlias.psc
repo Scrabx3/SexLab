@@ -380,10 +380,7 @@ State Ready
 			EndIf
 		EndIf
 		; Position
-		If(!GetIsDead() && ActorRef.GetActorValue("Paralysis") > 0)
-			ActorRef.SetActorValue("Paralysis", 0.0)
-			SendDefaultAnimEvent()
-		EndIf
+		ActorRef.SetActorValue("Paralysis", 0.0)
 		If(akPathTo && !abUseFade && DoPathToCenter)
 			ObjectReference pathto = akPathTo as ObjectReference
 			float distance = ActorRef.GetDistance(pathto)
@@ -481,11 +478,8 @@ State Paused
 		_StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		_LastOrgasm = _StartedAt
 		; wait to ensure schlong mesh and AI package are updated
-		Utility.Wait(0.5)
+		Utility.Wait(0.6)
 		LockActor()
-		If (_livestatus != LIVESTATUS_ALIVE)
-			SendDefaultAnimEvent()
-		EndIf
 		_Thread.AnimationStart()
 		Utility.Wait(0.2)
 		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
@@ -527,6 +521,7 @@ State Paused
 			ActorUtil.AddPackageOverride(ActorRef, _Thread.DoNothingPackage, 100, 1)
 			_ActorRef.EvaluatePackage()
 		EndIf
+		SendDefaultAnimEvent()
 		GoToState(STATE_PLAYING)
 	EndFunction
 	
@@ -869,7 +864,11 @@ Function ResolveStraponImpl()
 EndFunction
 
 int[] Function GetStripSettings()
-	return _Config.GetStripSettings((_sex == 1 || _sex == 2), _Thread.UseLimitedStrip(), !_Thread.IsConsent(), IsVictim())
+	If (_Thread.IsConsent())
+		return sslSystemConfig.GetStripForms(_sex == 1 || _sex == 2, false)
+	Else
+		return sslSystemConfig.GetStripForms(IsVictim(), true)
+	EndIf
 EndFunction
 
 Function Redress()

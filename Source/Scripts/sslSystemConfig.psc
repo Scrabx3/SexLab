@@ -116,8 +116,6 @@ int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
 int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
 int Property CLIMAXTYPE_EXTERN = 2 AutoReadOnly
 
-; iStripForms: 0b[Weapon][Gender][Leadin || Submissive][Aggressive]
-
 ; Booleans
 bool property AllowCreatures hidden
   bool Function Get()
@@ -206,14 +204,6 @@ bool property OrgasmEffects hidden
   EndFunction
   Function Set(bool aSet)
     SetSettingBool("bOrgasmEffects", aSet)
-  EndFunction
-EndProperty
-bool property LimitedStrip hidden
-  bool Function Get()
-    return GetSettingBool("bLimitedStrip")
-  EndFunction
-  Function Set(bool aSet)
-    SetSettingBool("bLimitedStrip", aSet)
   EndFunction
 EndProperty
 bool property RestrictSameSex hidden
@@ -729,13 +719,9 @@ float function GetVoiceDelay(bool IsFemale = false, int Stage = 1, bool IsSilent
   return VoiceDelay
 endFunction
 
-int[] Function GetStripSettings(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
-  int idx
-  If(IsAggressive)
-    idx = (Math.LeftShift(IsVictim as int, 1) + 4) * 2
-  Else
-    idx = ((IsFemale as int) + Math.LeftShift(IsLeadIn as int, 1)) * 2
-  EndIf
+; iStripForms: 0b[Weapon][Female | Submissive][Aggressive]
+int[] Function GetStripForms(bool abFemaleOrSubmissive, bool abAggressive) global
+  int idx = 2 * abFemaleOrSubmissive as int + 4 * abAggressive as int
   int[] ret = new int[2]
   ret[0] = GetSettingIntA("iStripForms", idx)
   ret[1] = GetSettingIntA("iStripForms", idx + 1)
@@ -1901,6 +1887,7 @@ bool property RemoveHeelEffect = true auto hidden
 bool property SeedNPCStats = true auto hidden
 bool property FixVictimPos = true auto hidden
 bool property ForceSort = true auto hidden
+bool property LimitedStrip = false auto hidden
 
 float property LeadInCoolDown = 0.0 auto hidden
 
@@ -2029,6 +2016,10 @@ endFunction
 ; ------------------------------------------------------- ;
 ; --- Pre P2.0 Config Accessors                       --- ;
 ; ------------------------------------------------------- ;
+
+int[] Function GetStripSettings(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
+  return GetStripForms(IsFemale || IsVictim , IsAggressive)
+EndFunction
 
 bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
   int[] ret = GetStripSettings(IsFemale, IsLeadIn, IsAggressive, IsVictim)

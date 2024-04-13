@@ -165,10 +165,9 @@ Event OnConfigInit()
 	SoundTreatment[2] = "$SSL_CutOnTime"
 
 	; Timers & Stripping
-	TSModes = new string[3]
+	TSModes = new string[2]
 	TSModes[0] = "$SSL_NormalTimersStripping"
-	TSModes[1] = "$SSL_ForeplayTimersStripping"
-	TSModes[2] = "$SSL_AggressiveTimersStripping"
+	TSModes[1] = "$SSL_AggressiveTimersStripping"
 
 	If (SKSE.GetVersionMinor() < 2)
 		Config.DisableScale = true
@@ -1064,7 +1063,7 @@ function AnimationSettings()
 	AddToggleOptionST("StraponsFemale","$SSL_FemalesUseStrapons", Config.UseStrapons)
 	AddToggleOptionST("UndressAnimation","$SSL_UndressAnimation", Config.UndressAnimation)
 	AddToggleOptionST("RedressVictim","$SSL_VictimsRedress", Config.RedressVictim)
-	AddToggleOptionST("LimitedStrip","$SSL_LimitedStrip", Config.LimitedStrip)
+	; AddToggleOptionST("LimitedStrip","$SSL_LimitedStrip", Config.LimitedStrip)
 	AddToggleOptionST("DisableTeleport","$SSL_DisableTeleport", Config.DisableTeleport)
 	AddToggleOptionST("ShowInMap","$SSL_ShowInMap", Config.ShowInMap)
 	AddTextOptionST("NPCBed","$SSL_NPCsUseBeds", Chances[ClampInt(Config.NPCBed, 0, 2)])
@@ -2810,17 +2809,18 @@ Function TimersStripping()
 	AddSliderOptionST("Timers_2", "$SSL_Stage3Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 2)), "$SSL_Seconds")
 	AddEmptyOption()
 	; Stripping
-	If(ts == 2)
+	If(ts == 1)
 		AddHeaderOption("$SSL_VictimStripFrom")
 		AddHeaderOption("$SSL_AggressorStripFrom")
 	Else
 		AddHeaderOption("$SSL_FemaleStripFrom")
 		AddHeaderOption("$SSL_MaleStripFrom")
 	EndIf
-	int r1 = ts * 4										; 0 / 4 / 8
-	int r2 = (ts * ts) + (3 * ts) + 2	; 2 / 6 / 12
-	AddToggleOptionST("StrippingW_" + r1, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
-	AddToggleOptionST("StrippingW_" + r2, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 3))
+	; iStripForms: 0b[Weapon][Female | Submissive][Aggressive]
+	int r1 = ts * 4	; 0 / 4
+	int r2 = r1 + 2	; 2 / 6
+	AddToggleOptionST("StrippingW_" + (r1 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
+	AddToggleOptionST("StrippingW_" + (r2 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 1))
 	int i = 0
 	While (i < 32)
 		int bit = Math.LeftShift(1, i)

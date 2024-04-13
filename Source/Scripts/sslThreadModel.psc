@@ -1443,15 +1443,6 @@ Function SetFurnitureIgnored(bool disabling = true)
 	CenterRef.SetNoFavorAllowed(disabling)
 EndFunction
 
-bool Function UseLimitedStrip()
-	If (LeadIn)
-		return true
-	EndIf
-	bool excplicit = HasTag("Penetration") || HasTag("DoublePenetration") || HasTag("TripplePenetration") || HasTag("Fingering") || HasTag("Fisting")
-	excplicit = excplicit || HasTag("Tribadism") || HasTag("Grinding") || HasTag("Boobjob") || HasTag("Buttjob")
-	return Config.LimitedStrip && !excplicit
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Function Declarations                           --- ;
 ; ------------------------------------------------------- ;
@@ -2306,7 +2297,6 @@ EndFunction
 Function ResolveTimers()
 EndFunction
 
-
 Function SetStrip(Actor ActorRef, bool[] StripSlots)
 	if StripSlots && StripSlots.Length == 33
 		ActorAlias(ActorRef).OverrideStrip(StripSlots)
@@ -2323,6 +2313,15 @@ Function SetNoStripping(Actor ActorRef)
 			Slot.DoUndress = false
 		endIf
 	endIf
+EndFunction
+
+bool Function UseLimitedStrip()
+	If (LeadIn)
+		return true
+	EndIf
+	bool excplicit = HasTag("Penetration") || HasTag("DoublePenetration") || HasTag("TripplePenetration") || HasTag("Fingering") || HasTag("Fisting")
+	excplicit = excplicit || HasTag("Tribadism") || HasTag("Grinding") || HasTag("Boobjob") || HasTag("Buttjob")
+	return Config.LimitedStrip && !excplicit
 EndFunction
 
 Function DisableUndressAnimation(Actor ActorRef = none, bool disabling = true)
