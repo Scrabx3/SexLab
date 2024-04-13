@@ -175,8 +175,10 @@ Actor Property ActorRef
 EndProperty
 
 int _sex
-int _livestatus
 bool _victim
+
+int _livestatus
+Actor _killer
 
 int _AnimVarIsNPC
 bool _AnimVarbHumanoidFootIKDisable
@@ -272,6 +274,7 @@ Auto State Empty
 		_ActorRef = ProspectRef
 		If (_ActorRef.IsDead())
 			_livestatus = LIVESTATUS_DEAD
+			_killer = _ActorRef.GetKiller()
 		ElseIf (_ActorRef.IsUnconscious())
 			_livestatus = LIVESTATUS_UNCONSCIOUS
 		Else
@@ -291,7 +294,7 @@ Auto State Empty
 			If (underlying.IsEssential())
 				underlying.GetActorBase().SetEssential(false)
 			EndIf
-			underlying.KillSilent()
+			underlying.KillSilent(_killer)
 		Else
 			_Thread.RequestStatisticUpdate(underlying, _StartedAt)
 		EndIf

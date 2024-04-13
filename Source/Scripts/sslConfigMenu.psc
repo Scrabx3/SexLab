@@ -2996,7 +2996,7 @@ function RebuildClean()
 	AddHeaderOption("Registry Info")
 	AddTextOption("Animations", sslSystemConfig.GetAnimationCount(), OPTION_FLAG_DISABLED)
 	AddTextOption("Voices", VoiceSlots.Slotted+" / 375", OPTION_FLAG_DISABLED)
-	AddTextOption("Expressions", ExpressionSlots.Slotted+" / 375", OPTION_FLAG_DISABLED)
+	AddTextOption("Expressions", sslExpressionSlots.GetAllProfileIDs().Length, OPTION_FLAG_DISABLED)
 	AddHeaderOption("System Requirements")
 	SystemCheckOptions()	
 endFunction
