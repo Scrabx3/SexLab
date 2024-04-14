@@ -109,7 +109,7 @@ int Function GetAdjustPos()
 		AdjustPos = Positions.Find(Config.TargetRef)
 	endIf
 	if AdjustPos == -1
-		AdjustPos = (Positions.Length > 1) as int
+		AdjustPos = (ActorCount > 1) as int
 	endIf
 	if Positions[AdjustPos] != PlayerRef
 		Config.TargetRef = Positions[AdjustPos]
@@ -129,19 +129,18 @@ Function AdvanceStage(bool backwards = false)
 EndFunction
 
 Function ChangeAnimation(bool backwards = false)
-	string[] Scenes = GetPlayingScenes()
-	If(Scenes.Length < 2)
+	If(Animations.Length <= 1)
 		return
 	EndIf
 	UnregisterForUpdate()
-	int current = Scenes.Find(GetActiveScene())
 	String newScene
 	If (!Config.AdjustStagePressed())	; Forward/Backward
-		newScene = Scenes[sslUtility.IndexTravel(current, Scenes.Length, backwards)]
+		newScene = Scenes[sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards)]
 	Else	; Random
-		int r = Utility.RandomInt(0, Scenes.Length - 1)
+		int current = Animations.Find(Animation)
+		int r = Utility.RandomInt(0, Animations.Length - 1)
 		While(r == current)
-			r = Utility.RandomInt(0, Scenes.Length - 1)
+			r = Utility.RandomInt(0, Animations.Length - 1)
 		EndWhile
 		newScene = Scenes[r]
 	EndIf

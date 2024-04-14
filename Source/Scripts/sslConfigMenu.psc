@@ -26,14 +26,12 @@ sslSystemAlias property SystemAlias auto
 ; Function libraries
 sslActorLibrary Property ActorLib Auto
 sslThreadLibrary Property ThreadLib Auto
-sslActorStats Property Stats Auto
 
 ; Object registries
 sslThreadSlots Property ThreadSlots Auto
 sslAnimationSlots Property AnimSlots Auto
 sslCreatureAnimationSlots Property CreatureSlots Auto
 sslVoiceSlots Property VoiceSlots Auto
-sslExpressionSlots Property ExpressionSlots Auto
 
 ; Common Data
 Actor TargetRef
@@ -42,7 +40,7 @@ string TargetName
 string PlayerName
 
 ; ------------------------------------------------------- ;
-; --- Configuration Events                            --- ;
+; --- Conmfig Init				                            --- ;
 ; ------------------------------------------------------- ;
 
 int Function GetVersion()
@@ -167,19 +165,79 @@ Event OnConfigInit()
 	SoundTreatment[2] = "$SSL_CutOnTime"
 
 	; Timers & Stripping
-	TSModes = new string[3]
+	TSModes = new string[2]
 	TSModes[0] = "$SSL_NormalTimersStripping"
-	TSModes[1] = "$SSL_ForeplayTimersStripping"
-	TSModes[2] = "$SSL_AggressiveTimersStripping"
+	TSModes[1] = "$SSL_AggressiveTimersStripping"
 
 	If (SKSE.GetVersionMinor() < 2)
 		Config.DisableScale = true
-		Debug.MessageBox("[SexLab]\nYou seem to be using a pre-historic version of Skyrim and scaling has thus been disabled to prevent crashes.\nYou lost your right to complain about misalignments and if you still do I'll turn you into a rabbit.\n~~Scrab, that lost a neverending battle against the stubborness of their discord userbase and thus eventually succumbed for being simply too nice a person\n02.03.2024")
+		Debug.MessageBox("[SexLab]\nYou are using an outdated version of Skyrim and scaling has thus been disabled to prevent crashes.")
 	EndIf
+	; If (SKSE.GetPluginVersion("SexLabUtil") > -1)
+	; 	Debug.MessageBox("[SexLab]\nYou seem to have installed SexLabUtil.dll, this plugin is no longer used by SLP+ and may cause problems if kept installed.\nDelete or hide it in your mod manager to ensure SexLab works corretly.")
+	; EndIf
 EndEvent
 
+event OnConfigOpen()
+	If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
+		Pages[0] = "$SSL_SexJournal"
+	Else
+		Pages[0] = "$SSL_SexDiary"
+	EndIf
+	_trackedActors = SexLabStatistics.GetAllTrackedUniqueActorsSorted()
+	_trackedNames = Utility.CreateStringArray(_trackedActors.Length)
+	int i = 0
+	While (i < _trackedNames.Length)
+		_trackedNames[i] = _trackedActors[i].GetActorBase().GetName()
+		i += 1
+	EndWhile
+
+	; TODO: Review below
+
+	; Player & Target info
+	PlayerName = PlayerRef.GetLeveledActorBase().GetName()
+	TargetRef = Config.TargetRef
+	If(TargetRef)
+		If(TargetRef.Is3DLoaded())
+			TargetName = TargetRef.GetLeveledActorBase().GetName()
+			TargetFlag = OPTION_FLAG_NONE
+		EndIf
+	Else
+		TargetName = "$SSL_NoTarget"
+		TargetFlag = OPTION_FLAG_DISABLED
+	EndIf
+	; Reset animation editor auto selector
+	PreventOverwrite = false
+	; All paged menus need this
+	PerPage = 125
+	; AnimationEditor
+	AnimEditPage = 1
+	; ToggleAnimations
+	TogglePage = 1
+	ta = 0
+	EditTags = false
+	TagFilter = ""
+	TagMode = ""
+	; Stripping/Timers toggles
+	ts = 0
+	; Strip Editor
+	FullInventoryPlayer = false
+	FullInventoryTarget = false
+EndEvent
+
+Event OnConfigClose()
+	ModEvent.Send(ModEvent.Create("SexLabConfigClose"))
+	; Realign actors if an adjustment in editor was just made
+	If(AutoRealign)
+		AutoRealign = false
+		If(ThreadControlled)
+			ThreadControlled.RealignActors()
+		EndIf
+	EndIf
+endEvent
+
 ; ------------------------------------------------------- ;
-; --- Create MCM Pages                                --- ;
+; --- Config Pages						                        --- ;
 ; ------------------------------------------------------- ;
 
 Event OnPageReset(string page)
@@ -233,59 +291,132 @@ event OnPageSelected(String a_eventName, String a_strArg, Float a_numArg, Form a
 endEvent
 
 ; ------------------------------------------------------- ;
-; --- Config Setup                                    --- ;
+; --- Sex Diary/Journal Editor                        --- ;
 ; ------------------------------------------------------- ;
 
-event OnConfigOpen()
-	If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
-		Pages[0] = "$SSL_SexJournal"
-	Else
-		Pages[0] = "$SSL_SexDiary"
-	EndIf
+Actor[] _trackedActors
+String[] _trackedNames
+int _trackedIndex
 
-	; Player & Target info
-	PlayerName = PlayerRef.GetLeveledActorBase().GetName()
-	TargetRef = Config.TargetRef
-	If(TargetRef)
-		If(TargetRef.Is3DLoaded())
-			TargetName = TargetRef.GetLeveledActorBase().GetName()
-			TargetFlag = OPTION_FLAG_NONE
+String Function GetSexualityTitle(Actor ActorRef) global
+	int sexuality = SexLabStatistics.GetSexuality(ActorRef)
+	If (sexuality == 0)
+		return "$SSL_Heterosexual"
+	ElseIf (sexuality == 1)
+		If (SexLabRegistry.GetSex(ActorRef, true) == 0)
+			return "$SSL_Gay"
+		Else
+			return "$SSL_Lesbian"
 		EndIf
-		StatRef = TargetRef
 	Else
-		TargetName = "$SSL_NoTarget"
-		TargetFlag = OPTION_FLAG_DISABLED
-		StatRef = PlayerRef
+		return "$SSL_Bisexual"
 	EndIf
-	; Reset animation editor auto selector
-	PreventOverwrite = false
-	; All paged menus need this
-	PerPage = 125
-	; AnimationEditor
-	AnimEditPage = 1
-	; ToggleAnimations
-	TogglePage = 1
-	ta = 0
-	EditTags = false
-	TagFilter = ""
-	TagMode = ""
-	; Stripping/Timers toggles
-	ts = 0
-	; Strip Editor
-	FullInventoryPlayer = false
-	FullInventoryTarget = false
-EndEvent
+EndFunction
 
-Event OnConfigClose()
-	ModEvent.Send(ModEvent.Create("SexLabConfigClose"))
-	; Realign actors if an adjustment in editor was just made
-	If(AutoRealign)
-		AutoRealign = false
-		If(ThreadControlled)
-			ThreadControlled.RealignActors()
-		EndIf
+String[] Function StatTitles() global
+	String[] StatTitles = new String[7]
+	StatTitles[0] = "$SSL_Unskilled"
+	StatTitles[1] = "$SSL_Novice"
+	StatTitles[2] = "$SSL_Apprentice"
+	StatTitles[3] = "$SSL_Journeyman"
+	StatTitles[4] = "$SSL_Expert"
+	StatTitles[5] = "$SSL_Master"
+	StatTitles[6] = "$SSL_GrandMaster"
+	return StatTitles
+EndFunction
+
+Function SexDiary()
+	SetCursorFillMode(LEFT_TO_RIGHT)
+	If (!_trackedActors.Length)
+		; Initialized every time the Config Menu is opened
+		_trackedActors = new Actor[1]
+		_trackedNames = new String[1]
+		_trackedActors[0] = PlayerRef
+		_trackedNames[0] = PlayerRef.GetActorBase().GetName()
 	EndIf
-endEvent
+	If (_trackedIndex >= _trackedActors.Length)
+		_trackedIndex = 0
+	EndIf
+	Actor it = _trackedActors[_trackedIndex]
+	AddMenuOptionST("StatSelectingMenu", "$SSL_StatSelectingMenu", _trackedNames[_trackedIndex])
+	AddTextOptionST("ResetTargetStats", "$SSL_Reset{" + _trackedNames[_trackedIndex] + "}Stats", "$SSL_ClickHere")
+	AddHeaderOption("$SSL_Statistics")
+	AddEmptyOption()
+
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	AddTextOption("$SSL_LastTimeInScene", Utility.GameTimeToString(SexLabStatistics.GetStatistic(it, 0)))
+	AddTextOption("$SSL_TimeInScenes", sslActorStats.ParseTime(SexLabStatistics.GetStatistic(it, 1) as int))
+	String[] xp_titles = StatTitles()
+	int i = 2
+	While (i < 5)		; XP Statistics
+		float value = SexLabStatistics.GetStatistic(it, i)
+		int lv = PapyrusUtil.ClampInt(sslActorStats.CalcLevel(value), 0, xp_titles.Length - 1)
+		AddTextOption("$SSL_Statistic_" + i, xp_titles[lv])
+		i += 1
+	EndWhile
+	While (i < 9)		; Partner Statistics
+		AddTextOption("$SSL_Statistic_" + i, SexLabStatistics.GetStatistic(it, i) as int)
+		i += 1
+	EndWhile
+	SetCursorPosition(5)
+	AddTextOptionST("StatChangeSexuality", "$SSL_Sexuality", GetSexualityTitle(it))
+	While (i < 16)	; "Times" Statistics
+		AddTextOption("$SSL_Statistic_" + i, SexLabStatistics.GetStatistic(it, i) as int)
+		i += 1
+	EndWhile
+EndFunction
+
+State StatSelectingMenu
+	Event OnMenuOpenST()
+		SetMenuDialogStartIndex(_trackedIndex)
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_trackedNames)
+	EndEvent
+	Event OnMenuAcceptST(Int aiIndex)
+		_trackedIndex = aiIndex
+		SetMenuOptionValueST(_trackedNames[_trackedIndex])
+		ForcePageReset()
+	EndEvent
+	Event OnDefaultST()
+		_trackedIndex = 0
+		SetMenuOptionValueST(_trackedNames[_trackedIndex])
+		ForcePageReset()
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_StatSelectingMenuHighlight")
+	EndEvent
+EndState
+
+State ResetTargetStats
+	Event OnSelectST()
+		If (!ShowMessage("$SSL_WarnReset{" + _trackedNames[_trackedIndex] + "}Stats"))
+			return
+		EndIf
+		SexLabStatistics.ResetStatistics(_trackedActors[_trackedIndex])
+		ForcePageReset()
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_ResetStatHighlight")
+	EndEvent
+EndState
+
+State StatChangeSexuality
+	Event OnSelectST()
+		Actor it = _trackedActors[_trackedIndex]
+		int sex = SexLabStatistics.GetSexuality(it)
+		If (sex == 0)	; Hetero -> Homo
+			sslActorStats.SetLegacyStatistic(it, Stats.kSexuality, 25)
+		ElseIf (sex == 1)	; Homo -> Bi
+			sslActorStats.SetLegacyStatistic(it, Stats.kSexuality, 50)
+		Else	; Bi -> Hetero
+			sslActorStats.SetLegacyStatistic(it, Stats.kSexuality, 75)
+		EndIf
+		ForcePageReset()
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_SexualityHighlight")
+	EndEvent
+EndState
 
 ; ------------------------------------------------------- ;
 ; --- Object Pagination                               --- ;
@@ -629,214 +760,35 @@ Event OnMenuAcceptST(int aiIndex)
 EndEvent
 
 Event OnInputOpenST()
-	string[] Options = MapOptions()
-
-	; Set TimeSpent Actor Stat
-	if Options[0] == "SetStatTimeSpent"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "TimeSpent") as string)
-
-	; Set Vaginal Actor Stat
-	elseIf Options[0] == "SetStatVaginal"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Vaginal") as string)
-	
-	; Set Anal Actor Stat
-	elseIf Options[0] == "SetStatAnal"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Anal") as string)
-	
-	; Set Oral Actor Stat
-	elseIf Options[0] == "SetStatOral"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Oral") as string)
-	
-	; Set Foreplay Actor Stat
-	elseIf Options[0] == "SetStatForeplay"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Foreplay") as string)
-	
-	; Set Pure Actor Stat
-	elseIf Options[0] == "SetStatPure"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Pure") as string)
-	
-	; Set Lewd Actor Stat
-	elseIf Options[0] == "SetStatLewd"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Lewd") as string)
-	
-	; Set Males Actor Stat
-	elseIf Options[0] == "SetStatMales"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Males") as string)
-	
-	; Set Females Actor Stat
-	elseIf Options[0] == "SetStatFemales"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Females") as string)
-	
-	; Set Creatures Actor Stat
-	elseIf Options[0] == "SetStatCreatures"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Creatures") as string)
-	
-	; Set Masturbation Actor Stat
-	elseIf Options[0] == "SetStatMasturbation"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Masturbation") as string)
-	
-	; Set Aggressor Actor Stat
-	elseIf Options[0] == "SetStatAggressor"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Aggressor") as string)
-	
-	; Set Victim Actor Stat
-	elseIf Options[0] == "SetStatVictim"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "Victim") as string)
-	
-	; Set VaginalCount Actor Stat
-	elseIf Options[0] == "SetStatVaginalCount"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "VaginalCount") as string)
-	
-	; Set AnalCount Actor Stat
-	elseIf Options[0] == "SetStatAnalCount"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "AnalCount") as string)
-	
-	; Set OralCount Actor Stat
-	elseIf Options[0] == "SetStatOralCount"
-		SetInputDialogStartText(Stats.GetSkill(StatRef, "OralCount") as string)
-
-		; --- Matchmaker Tags
-	ElseIf Options[0] == "InputRequiredTags"
+	String[] options = PapyrusUtil.StringSplit(GetState(), "_")
+	; --- Matchmaker Tags
+	If (options[0] == "InputRequiredTags")
 		SetInputDialogStartText(Config.RequiredTags)
 		ForcePageReset()
-	ElseIf Options[0] == "InputExcludedTags"
+	ElseIf (options[0] == "InputExcludedTags")
 		SetInputDialogStartText(Config.ExcludedTags)
 		ForcePageReset()
-	ElseIf Options[0] == "InputOptionalTags"
+	ElseIf (options[0] == "InputOptionalTags")
 		SetInputDialogStartText(Config.OptionalTags)
 		ForcePageReset()
-
-	else
-		SetInputDialogStartText("Error Fatal: Opcion Desconocida")
-	endIf
+	Else
+		SetInputDialogStartText("Error: Invalid Option ID " + options)
+	EndIf
 EndEvent
 
 Event OnInputAcceptST(String inputString)
-	string[] Options = MapOptions()
-
-	; Set TimeSpent Actor Stat
-	if Options[0] == "SetStatTimeSpent"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "TimeSpent", inputString as int)
-			SetInputOptionValueST(sslActorStats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent")))
-		endIf
-
-	; Set Vaginal Actor Stat
-	elseIf Options[0] == "SetStatVaginal"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Vaginal", inputString as int)
-			SetInputOptionValueST(Stats.GetSkillTitle(StatRef, "Vaginal"))
-		endIf
-	
-	; Set Anal Actor Stat
-	elseIf Options[0] == "SetStatAnal"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Anal", inputString as int)
-			SetInputOptionValueST(Stats.GetSkillTitle(StatRef, "Anal"))
-		endIf
-	
-	; Set Oral Actor Stat
-	elseIf Options[0] == "SetStatOral"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Oral", inputString as int)
-			SetInputOptionValueST(Stats.GetSkillTitle(StatRef, "Oral"))
-		endIf
-	
-	; Set Foreplay Actor Stat
-	elseIf Options[0] == "SetStatForeplay"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Foreplay", inputString as int)
-			SetInputOptionValueST(Stats.GetSkillTitle(StatRef, "Foreplay"))
-		endIf
-	
-	; Set Pure Actor Stat
-	elseIf Options[0] == "SetStatPure"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Pure", inputString as int)
-			SetInputOptionValueST(Stats.GetPureTitle(StatRef))
-		endIf
-	
-	; Set Lewd Actor Stat
-	elseIf Options[0] == "SetStatLewd"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Lewd", inputString as int)
-			SetInputOptionValueST(Stats.GetLewdTitle(StatRef))
-		endIf
-	
-	; Set Males Actor Stat
-	elseIf Options[0] == "SetStatMales"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Males", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "Males"))
-		endIf
-	
-	; Set Females Actor Stat
-	elseIf Options[0] == "SetStatFemales"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Females", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "Females"))
-		endIf
-	
-	; Set Creatures Actor Stat
-	elseIf Options[0] == "SetStatCreatures"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Creatures", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "Creatures"))
-		endIf
-	
-	; Set Masturbation Actor Stat
-	elseIf Options[0] == "SetStatMasturbation"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Masturbation", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "Masturbation"))
-		endIf
-	
-	; Set Aggressor Actor Stat
-	elseIf Options[0] == "SetStatAggressor"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Aggressor", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "Aggressor"))
-		endIf
-	
-	; Set Victim Actor Stat
-	elseIf Options[0] == "SetStatVictim"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "Victim", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "Victim"))
-		endIf
-	
-	; Set VaginalCount Actor Stat
-	elseIf Options[0] == "SetStatVaginalCount"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "VaginalCount", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "VaginalCount"))
-		endIf
-	
-	; Set AnalCount Actor Stat
-	elseIf Options[0] == "SetStatAnalCount"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "AnalCount", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "AnalCount"))
-		endIf
-	
-	; Set OralCount Actor Stat
-	elseIf Options[0] == "SetStatOralCount"
-		if inputString as int > 0
-			Stats.SetSkill(StatRef, "OralCount", inputString as int)
-			SetInputOptionValueST(Stats.GetSkill(StatRef, "OralCount"))
-		endIf
-
-		; --- Matchmaker Tags
-	elseIf Options[0] == "InputRequiredTags"
+	String[] options = PapyrusUtil.StringSplit(GetState(), "_")
+	; --- Matchmaker Tags
+	If (options[0] == "InputRequiredTags")
 		Config.RequiredTags = inputString
 		SetInputOptionValueST(Config.RequiredTags)
-	elseIf Options[0] == "InputExcludedTags"
+	ElseIf (options[0] == "InputExcludedTags")
 		Config.ExcludedTags = inputString
 		SetInputOptionValueST(Config.ExcludedTags)
-	elseIf Options[0] == "InputOptionalTags"
+	ElseIf (options[0] == "InputOptionalTags")
 		Config.OptionalTags = inputString
 		SetInputOptionValueST(Config.OptionalTags)
-	endIf
+	EndIf
 EndEvent
 
 event OnSelectST()
@@ -1052,7 +1004,6 @@ function SystemCheckOptions()
 
 	AddTextOption("Skyrim Script Extender", okOrFail[Config.CheckSystemPart("SKSE") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("SexLab.dll", okOrFail[Config.CheckSystemPart("SexLabP+") as int], OPTION_FLAG_DISABLED)
-	AddTextOption("SexLabUtil.dll", okOrFail[Config.CheckSystemPart("SexLabUtil") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("PapyrusUtil.dll", okOrFail[Config.CheckSystemPart("PapyrusUtil") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("RaceMenu", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("Mfg Fix", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
@@ -1097,7 +1048,6 @@ function AnimationSettings()
 	; AddToggleOptionST("AllowFemaleFemaleCum","$SSL_AllowFemaleFemaleCum", Config.AllowFFCum, SexLabUtil.IntIfElse((!Config.UseCum), OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
 
 	SetCursorPosition(1)
-	; AddMenuOptionST("AnimationProfile", "$SSL_AnimationProfile", "Profile #"+Config.AnimProfile)
 	AddHeaderOption("$SSL_Creatures")
 	AddToggleOptionST("AllowCreatures","$SSL_AllowCreatures", Config.AllowCreatures)
 	AddToggleOptionST("UseCreatureGender","$SSL_UseCreatureGender", Config.UseCreatureGender)
@@ -1113,7 +1063,7 @@ function AnimationSettings()
 	AddToggleOptionST("StraponsFemale","$SSL_FemalesUseStrapons", Config.UseStrapons)
 	AddToggleOptionST("UndressAnimation","$SSL_UndressAnimation", Config.UndressAnimation)
 	AddToggleOptionST("RedressVictim","$SSL_VictimsRedress", Config.RedressVictim)
-	AddToggleOptionST("LimitedStrip","$SSL_LimitedStrip", Config.LimitedStrip)
+	; AddToggleOptionST("LimitedStrip","$SSL_LimitedStrip", Config.LimitedStrip)
 	AddToggleOptionST("DisableTeleport","$SSL_DisableTeleport", Config.DisableTeleport)
 	AddToggleOptionST("ShowInMap","$SSL_ShowInMap", Config.ShowInMap)
 	AddTextOptionST("NPCBed","$SSL_NPCsUseBeds", Chances[ClampInt(Config.NPCBed, 0, 2)])
@@ -1122,31 +1072,6 @@ function AnimationSettings()
 	; AddToggleOptionST("BedRemoveStanding","$SSL_BedRemoveStanding", Config.BedRemoveStanding)
 endFunction
 
-state AnimationProfile
-	event OnMenuOpenST()
-		string[] Profiles = new string[5]
-		Profiles[0] = "AnimationProfile_1.json"
-		Profiles[1] = "AnimationProfile_2.json"
-		Profiles[2] = "AnimationProfile_3.json"
-		Profiles[3] = "AnimationProfile_4.json"
-		Profiles[4] = "AnimationProfile_5.json"
-		SetMenuDialogStartIndex((Config.AnimProfile - 1))
-		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(Profiles)
-	endEvent
-	event OnMenuAcceptST(int i)
-		i += 1
-		; Export/Set/Import profiles
-		Config.SwapToProfile(ClampInt(i, 1, 5))
-		SetMenuOptionValueST("Profile #"+Config.AnimProfile)
-	endEvent
-	event OnDefaultST()
-		OnMenuAcceptST(1)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAnimationProfile")
-	endEvent
-endState
 
 state RaceAdjustments
 	event OnSelectST()
@@ -2427,7 +2352,6 @@ string[] SoundTreatment
 
 function ExpressionEditor()
 	SetCursorFillMode(LEFT_TO_RIGHT)
-
 	if !Expression
 		Expression = ExpressionSlots.GetBySlot(0)
 		Phase = 1
@@ -2501,16 +2425,14 @@ function ExpressionEditor()
 
 		return ; to hide the rest of the options
 
-	else
-		SetTitleText(Expression.Name)
+	endif
+	SetTitleText(Expression.Name)
 
-		AddHeaderOption("$SSL_OpenMouthConfig")
-		AddHeaderOption("")
+	AddHeaderOption("$SSL_OpenMouthConfig")
+	AddHeaderOption("")
 
-		AddSliderOptionST("OpenMouthSize","$SSL_OpenMouthSize", Config.OpenMouthSize, "{0}%")
-		AddTextOptionST("AdvancedOpenMouth", "$SSL_EditOpenMouth", "$SSL_ClickHere")
-
-	endIf
+	AddSliderOptionST("OpenMouthSize","$SSL_OpenMouthSize", Config.OpenMouthSize, "{0}%")
+	AddTextOptionST("AdvancedOpenMouth", "$SSL_EditOpenMouth", "$SSL_ClickHere")
 
 	; 1
 	AddHeaderOption("$SSL_ExpressionEditor")
@@ -2521,18 +2443,15 @@ function ExpressionEditor()
 
 	; 2
 	AddToggleOptionST("ExpressionNormal", "$SSL_ExpressionsNormal", Expression.HasTag("Normal"))
-	AddTextOptionST("ExportExpression", "$SSL_ExportExpression", "$SSL_ClickHere")
+	AddEmptyOption()
 
 	; 3
 	AddToggleOptionST("ExpressionVictim", "$SSL_ExpressionsVictim", Expression.HasTag("Victim"))
-	AddTextOptionST("ImportExpression", "$SSL_ImportExpression", "$SSL_ClickHere")
+	AddEmptyOption()
 
 	; 4
 	AddToggleOptionST("ExpressionAggressor", "$SSL_ExpressionsAggressor", Expression.HasTag("Aggressor"))
 	AddTextOptionST("ExpressionTestPlayer", "$SSL_TestOnPlayer", "$SSL_Apply")
-
-	; AddTextOptionST("ExpressionCopyFromPlayer", "$SSL_ExpressionCopyFrom", "$SSL_ClickHere")
-	; AddTextOptionST("ExpressionCopyFromTarget", "$SSL_ExpressionCopyFrom", "$SSL_ClickHere", Math.LogicalAnd(OPTION_FLAG_NONE, (TargetRef == none) as int))
 
 	; 5
 	AddMenuOptionST("ExpressionPhase", "$SSL_Modifying{"+Expression.Name+"}Phase", Phase)
@@ -2645,56 +2564,6 @@ state ExpressionPhase
 		Phase = 1
 		SetMenuOptionValueST(Phase)
 		ForcePageReset()
-	endEvent
-endState
-
-state ExportExpression
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnExportExpression{"+Expression.Name+"}", true, "$Yes", "$No")
-			if Expression.ExportJson()
-				ShowMessage("$SSL_SuccessExportExpression")
-			else
-				ShowMessage("$SSL_ErrorExportExpression")
-			endIf
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoExportExpression{"+Expression.Registry+"}")
-	endEvent
-endState
-
-state ImportExpression
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnImportExpression{"+Expression.Name+"}", true, "$Yes", "$No")
-			if Expression.ImportJson()
-				ShowMessage("$SSL_SuccessImportExpression")
-				Phase = 1
-				ForcePageReset()
-			else
-				ShowMessage("$SSL_ErrorImportExpression")
-			endIf
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoImportExpression{"+Expression.Registry+"}")
-	endEvent
-endState
-
-state ExpressionCopyFromPlayer
-	event OnSelectST()
-		Actor ActorRef = PlayerRef
-		if TargetRef && ShowMessage("$SSL_ExpressionCopyFromTarget", true, TargetName, PlayerName)
-			ActorRef == TargetRef
-		endIf
-		float[] Preset = sslBaseExpression.GetCurrentMFG(ActorRef)
-		if PapyrusUtil.AddFloatValues(Preset) > (Preset[30] + Preset[31])
-			Expression.SetPhase(Phase, ActorRef.GetLeveledActorBase().GetSex(), Preset)
-		else
-			ShowMessage("$SSL_ExpressionCopy{"+ActorRef.GetLeveledActorBase().GetName()+"}Empty")
-		endIf
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_ExpressionCopyFromInfo")
 	endEvent
 endState
 
@@ -2920,146 +2789,6 @@ state MoodAmountMale
 endState
 
 ; ------------------------------------------------------- ;
-; --- Sex Diary/Journal Editor                        --- ;
-; ------------------------------------------------------- ;
-
-Actor StatRef
-
-function SexDiary()
-	SetCursorFillMode(TOP_TO_BOTTOM)
-
-	if TargetRef != StatRef
-		AddTextOptionST("SetStatTarget", "$SSL_Viewing{"+StatRef.GetLeveledActorBase().GetName()+"}", "$SSL_View{"+TargetName+"}", TargetFlag)
-	else
-		AddTextOptionST("SetStatTarget", "$SSL_Viewing{"+TargetName+"}", "$SSL_View{"+PlayerName+"}")
-	endIf
-
-	AddHeaderOption("$SSL_SexualExperience")
-
-	if Config.DebugMode 
-		AddInputOptionST("SetStatTimeSpent", "$SSL_TimeSpentHavingSex", sslActorStats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent") as int))
-		AddInputOptionST("SetStatVaginal", "$SSL_VaginalProficiency", Stats.GetSkillTitle(StatRef, "Vaginal"))
-		AddInputOptionST("SetStatAnal", "$SSL_AnalProficiency", Stats.GetSkillTitle(StatRef, "Anal"))
-		AddInputOptionST("SetStatOral", "$SSL_OralProficiency", Stats.GetSkillTitle(StatRef, "Oral"))
-		AddInputOptionST("SetStatForeplay", "$SSL_ForeplayProficiency", Stats.GetSkillTitle(StatRef, "Foreplay"))
-		AddInputOptionST("SetStatPure", "$SSL_SexualPurity", Stats.GetPureTitle(StatRef))
-		AddInputOptionST("SetStatLewd", "$SSL_SexualPerversion", Stats.GetLewdTitle(StatRef))
-	else
-		AddTextOption("$SSL_TimeSpentHavingSex", sslActorStats.ParseTime(Stats.GetSkill(StatRef, "TimeSpent") as int))
-		AddTextOption("$SSL_VaginalProficiency", Stats.GetSkillTitle(StatRef, "Vaginal"))
-		AddTextOption("$SSL_AnalProficiency", Stats.GetSkillTitle(StatRef, "Anal"))
-		AddTextOption("$SSL_OralProficiency", Stats.GetSkillTitle(StatRef, "Oral"))
-		AddTextOption("$SSL_ForeplayProficiency", Stats.GetSkillTitle(StatRef, "Foreplay"))
-		AddTextOption("$SSL_SexualPurity", Stats.GetPureTitle(StatRef))
-		AddTextOption("$SSL_SexualPerversion", Stats.GetLewdTitle(StatRef))
-	endIf
-	; AddEmptyOption()
-
-	Actor ActorRef
-	if StatRef == PlayerRef
-		Actor[] PlayerPartners = Stats.MostUsedPlayerSexPartners(3)
-		int i = 0
-		while i < PlayerPartners.Length
-			if PlayerPartners[i] != none
-				AddTextOption("$SSL_MostActivePartner", PlayerPartners[i].GetLeveledActorBase().GetName()+" ("+Stats.PlayerSexCount(PlayerPartners[i])+")")
-			endIf
-			i += 1
-		endWhile
-	else
-		ActorRef = Stats.LastSexPartner(StatRef)
-		if ActorRef
-			AddTextOption("$SSL_LastPartner", ActorRef.GetLeveledActorBase().GetName())
-		endIf
-	endIf
-
-	ActorRef = Stats.LastAggressor(StatRef)
-	if ActorRef
-		AddTextOption("$SSL_LastAggressor", ActorRef.GetLeveledActorBase().GetName())
-	endIf
-
-	ActorRef = Stats.LastVictim(StatRef)
-	if ActorRef
-		AddTextOption("$SSL_LastVictim", ActorRef.GetLeveledActorBase().GetName())
-	endIf
-
-
-	SetCursorPosition(1)
-
-	AddTextOptionST("ResetTargetStats", "$SSL_Reset{"+StatRef.GetLeveledActorBase().GetName()+"}Stats", "$SSL_ClickHere")
-
-	AddHeaderOption("$SSL_SexualStats")
-	AddTextOptionST("SetStatSexuality", "$SSL_Sexuality", sslActorStats.GetSexualityTitle(StatRef))
-
-	if Config.DebugMode 
-		AddInputOptionST("SetStatMales", "$SSL_MaleSexualPartners", Stats.GetSkill(StatRef, "Males"))
-		AddInputOptionST("SetStatFemales", "$SSL_FemaleSexualPartners", Stats.GetSkill(StatRef, "Females"))
-		AddInputOptionST("SetStatCreatures", "$SSL_CreatureSexualPartners", Stats.GetSkill(StatRef, "Creatures"))
-		AddInputOptionST("SetStatMasturbation", "$SSL_TimesMasturbated", Stats.GetSkill(StatRef, "Masturbation"))
-		AddInputOptionST("SetStatAggressor", "$SSL_TimesAggressive", Stats.GetSkill(StatRef, "Aggressor"))
-		AddInputOptionST("SetStatVictim", "$SSL_TimesVictim", Stats.GetSkill(StatRef, "Victim"))
-		AddInputOptionST("SetStatVaginalCount", "$SSL_TimesVaginal", Stats.GetSkill(StatRef, "VaginalCount"))
-		AddInputOptionST("SetStatAnalCount", "$SSL_TimesAnal", Stats.GetSkill(StatRef, "AnalCount"))
-		AddInputOptionST("SetStatOralCount", "$SSL_TimesOral", Stats.GetSkill(StatRef, "OralCount"))
-	else
-		AddTextOption("$SSL_MaleSexualPartners", Stats.GetSkill(StatRef, "Males"))
-		AddTextOption("$SSL_FemaleSexualPartners", Stats.GetSkill(StatRef, "Females"))
-		AddTextOption("$SSL_CreatureSexualPartners", Stats.GetSkill(StatRef, "Creatures"))
-		AddTextOption("$SSL_TimesMasturbated", Stats.GetSkill(StatRef, "Masturbation"))
-		AddTextOption("$SSL_TimesAggressive", Stats.GetSkill(StatRef, "Aggressor"))
-		AddTextOption("$SSL_TimesVictim", Stats.GetSkill(StatRef, "Victim"))
-		AddTextOption("$SSL_TimesVaginal", Stats.GetSkill(StatRef, "VaginalCount"))
-		AddTextOption("$SSL_TimesAnal", Stats.GetSkill(StatRef, "AnalCount"))
-		AddTextOption("$SSL_TimesOral", Stats.GetSkill(StatRef, "OralCount"))
-	endIf
-	
-	; Custom stats set by other mods
-	if StatRef == PlayerRef
-		int i = Stats.GetNumStats()
-		while i
-			i -= 1
-			AddTextOption(Stats.GetNthStat(i), Stats.GetStatFull(StatRef, Stats.GetNthStat(i)))
-		endWhile
-	else
-		AddTextOption("$SSL_TimesWithPlayer", Stats.PlayerSexCount(StatRef))
-	endIf
-endFunction
-
-state SetStatTarget
-	event OnSelectST()
-		if StatRef == PlayerRef && TargetRef
-			StatRef = TargetRef
-		else
-			StatRef = PlayerRef
-		endIf
-		ForcePageReset()
-	endEvent
-endState
-state SetStatSexuality
-	event OnSelectST()
-		int Ratio = Stats.GetSexuality(StatRef)
-		if Stats.IsStraight(StatRef)
-			Stats.SetSkill(StatRef, "Sexuality", 50)
-		elseIf Stats.IsBisexual(StatRef)
-			Stats.SetSkill(StatRef, "Sexuality", 1)
-		else
-			Stats.SetSkill(StatRef, "Sexuality", 100)
-		endIf
-		SetTextOptionValueST(sslActorStats.GetSexualityTitle(StatRef))
-	endEvent
-endState
-
-State ResetTargetStats
-	Event OnSelectST()
-		String name = StatRef.GetLeveledActorBase().GetName()
-		If (!ShowMessage("$SSL_WarnReset{" + name + "}Stats"))
-			return
-		EndIf
-		SexLabStatistics.ResetStatistics(StatRef)
-		ForcePageReset()
-	EndEvent
-EndState
-
-; ------------------------------------------------------- ;
 ; --- Timers & Stripping                              --- ;
 ; ------------------------------------------------------- ;
 
@@ -3080,17 +2809,18 @@ Function TimersStripping()
 	AddSliderOptionST("Timers_2", "$SSL_Stage3Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 2)), "$SSL_Seconds")
 	AddEmptyOption()
 	; Stripping
-	If(ts == 2)
+	If(ts == 1)
 		AddHeaderOption("$SSL_VictimStripFrom")
 		AddHeaderOption("$SSL_AggressorStripFrom")
 	Else
 		AddHeaderOption("$SSL_FemaleStripFrom")
 		AddHeaderOption("$SSL_MaleStripFrom")
 	EndIf
-	int r1 = ts * 4										; 0 / 4 / 8
-	int r2 = (ts * ts) + (3 * ts) + 2	; 2 / 6 / 12
-	AddToggleOptionST("StrippingW_" + r1, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
-	AddToggleOptionST("StrippingW_" + r2, "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 3))
+	; iStripForms: 0b[Weapon][Female | Submissive][Aggressive]
+	int r1 = ts * 4	; 0 / 4
+	int r2 = r1 + 2	; 2 / 6
+	AddToggleOptionST("StrippingW_" + (r1 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
+	AddToggleOptionST("StrippingW_" + (r2 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 1))
 	int i = 0
 	While (i < 32)
 		int bit = Math.LeftShift(1, i)
@@ -3246,32 +2976,27 @@ function RebuildClean()
 	endIf
 	AddHeaderOption("$SSL_Maintenance")
 	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
-	AddToggleOptionST("Benchmark", "$SSL_Benchmark", Config.Benchmark)
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")			; This can stay
 	AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")		; This should go
 	AddTextOptionST("ResetAnimationRegistry","$SSL_ResetAnimationRegistry", "$SSL_ClickHere")		; TODO: Update, as it only syncs with legacy API
 	AddTextOptionST("ResetVoiceRegistry","$SSL_ResetVoiceRegistry", "$SSL_ClickHere")						; TODO: Review
 	AddTextOptionST("ResetExpressionRegistry","$SSL_ResetExpressionRegistry", "$SSL_ClickHere")	; TODO: Review
 	AddTextOptionST("ResetStripOverrides","$SSL_ResetStripOverrides", "$SSL_ClickHere")					; This can stay
-	AddTextOptionST("ClearNPCSexSkills","$SSL_ClearNPCSexSkills", "$SSL_ClickHere")							; COMEBACK: Stats need to be overhauled still. Might be unnecessary 
 	AddTextOptionST("CleanSystem","$SSL_CleanSystem", "$SSL_ClickHere")	; This can stay but the underlying implemenation might need a lookover
 	AddHeaderOption("$SSL_AvailableStrapons")
 	AddTextOptionST("RebuildStraponList","$SSL_RebuildStraponList", "$SSL_ClickHere")
 	int i = Config.Strapons.Length
-	while i
+	While i
 		i -= 1
-		string Name = Config.Strapons[i].GetName()
-		if Name == "strapon"
-			Name = "Aeon/Horker"
-		endIf
+		String Name = Config.Strapons[i].GetName()
 		AddTextOptionST("Strapon_" + i, Name, "$SSL_Remove")
-	endWhile
+	EndWhile
 
 	SetCursorPosition(1)
 	AddHeaderOption("Registry Info")
 	AddTextOption("Animations", sslSystemConfig.GetAnimationCount(), OPTION_FLAG_DISABLED)
 	AddTextOption("Voices", VoiceSlots.Slotted+" / 375", OPTION_FLAG_DISABLED)
-	AddTextOption("Expressions", ExpressionSlots.Slotted+" / 375", OPTION_FLAG_DISABLED)
+	AddTextOption("Expressions", sslExpressionSlots.GetAllProfileIDs().Length, OPTION_FLAG_DISABLED)
 	AddHeaderOption("System Requirements")
 	SystemCheckOptions()	
 endFunction
@@ -3996,18 +3721,6 @@ state ResetStripOverrides
 		SetOptionFlagsST(OPTION_FLAG_NONE)
 	endEvent
 endState
-state ClearNPCSexSkills
-	event OnSelectST()
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("$SSL_Resetting")
-
-		Stats.ClearNPCSexSkills()
-		
-		ShowMessage("$Done", false)
-		SetTextOptionValueST("$SSL_ClickHere")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
-	endEvent
-endState
 state DebugMode
 	event OnSelectST()
 		Config.DebugMode = !Config.DebugMode
@@ -4015,23 +3728,6 @@ state DebugMode
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoDebugMode")
-	endEvent
-endState
-state Benchmark
-	event OnSelectST()
-		Config.Benchmark = !Config.Benchmark
-		SetToggleOptionValueST(Config.Benchmark)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoBenchmark")
-	endEvent
-endState
-state ResetPlayerSexStats
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnResetStats")
-			Stats.ResetStats(PlayerRef)
-			Debug.Notification("$SSL_RunResetStats")
-		endIf
 	endEvent
 endState
 state CleanSystem
@@ -4124,6 +3820,18 @@ endFunction
 ;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslActorStats Property Stats Hidden
+  sslActorStats Function Get()
+	  return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorStats
+  EndFunction
+EndProperty
+
+sslExpressionSlots Property ExpressionSlots Hidden
+	sslExpressionSlots Function Get()
+		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
+	EndFunction
+EndProperty
 
 function Troubleshoot()
 endFunction

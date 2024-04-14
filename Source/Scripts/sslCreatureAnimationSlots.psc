@@ -61,16 +61,8 @@ string[] function GetAllRaceKeys(Race RaceRef = none) global
   return SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
 EndFunction
 
-string[] function GetAllRaceIDs(string RaceKey) global
-  Debug.MessageBox("The function \"GetAllRaceIDs\" in sslCreatureAnimation is no longer supported in SLP+ 2.0+")
-  String[] ret = new String[1]
-  return ret
-EndFunction
-Race[] function GetAllRaces(string RaceKey) global
-  Debug.MessageBox("The function \"GetAllRaces\" in sslCreatureAnimation is no longer supported in SLP+ 2.0+")
-  Race[] ret = new Race[1]
-  return ret
-EndFunction
+string[] function GetAllRaceIDs(string RaceKey) global native
+Race[] function GetAllRaces(string RaceKey) global native
 
 ; ------------------------------------------------------- ;
 ; --- Lookup creature aniamtions                      --- ;
@@ -120,8 +112,8 @@ sslBaseAnimation[] Function FilterCreatureGenders(sslBaseAnimation[] Anims, int 
     int p_count = Anims[i].ActorCount()
     int n = 0
     While (n < p_count)
-      bool male = SexLabRegistry.GetIsMaleCreaturePositon(Anims[i].PROXY_ID, n)
-      bool female = SexLabRegistry.GetIsFemaleCreaturePositon(Anims[i].PROXY_ID, n)
+      bool male = SexLabRegistry.GetIsMaleCreaturePositon(Anims[i].Registry, n)
+      bool female = SexLabRegistry.GetIsFemaleCreaturePositon(Anims[i].Registry, n)
       If (male && female)
         count[2] = count[2] + 1
       ElseIf(female)

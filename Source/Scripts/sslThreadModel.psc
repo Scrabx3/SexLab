@@ -48,9 +48,6 @@ EndFunction
 ; ------------------------------------------------------- ;
 ; --- Position Access                                 --- ;
 ; ------------------------------------------------------- ;
-;/
-	Functions to check if a specific Actor is part of the scene and how they are categorized in that scene
-/;
 
 bool Function HasPlayer()
 	return HasPlayer
@@ -138,20 +135,20 @@ sslBaseVoice Function GetVoice(Actor ActorRef)
 EndFunction
 
 ; Expressions
-Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
-	sslActorAlias ref = ActorAlias(ActorRef)
-	If (!ref)
-		return
-	EndIf
-	ref.SetExpression(Expression)
-EndFunction
-
-sslBaseExpression Function GetExpression(Actor ActorRef)
-	sslActorAlias ref = ActorAlias(ActorRef)
+String Function GetActorExpression(Actor akActor)
+	sslActorAlias ref = ActorAlias(akActor)
 	If (!ref)
 		return none
 	EndIf
-	return ref.GetExpression()
+	return ref.GetActorExpression()
+EndFunction
+
+Function SetActorExpression(Actor akActor, String asExpression)
+	sslActorAlias ref = ActorAlias(akActor)
+	If (!ref)
+		return
+	EndIf
+	ref.SetActorExpression(asExpression)
 EndFunction
 
 ; Orgasms
@@ -290,12 +287,6 @@ EndFunction
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
 ; ------------------------------------------------------- ;
-;/
-	Threads store the tags shared with every scene it is allowed to use; I.e. if we have 2 scenes:
-	["doggy", "loving", "behind"] and ["doggy", "loving", "hugging", "kissing"], then the thread tags will be ["doggy", "loving"]
-
-	Tags are read only, as they directly represent the underlying available scenes
-/;
 
 bool Function HasTag(String Tag)
 	return _ThreadTags.Length && _ThreadTags.Find(Tag) > -1
@@ -343,6 +334,39 @@ EndFunction
 
 bool Function IsLeadIn()
 	return LeadIn
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Physics					                                --- ;
+; ------------------------------------------------------- ;
+
+bool Function IsPhysicsEnabled()
+	return IsPhysicsRegistered()
+EndFunction
+
+; Get a list of all types the two actors interact with another
+; If akPartner is none, returns all interactions with any partner
+; This function is NOT commutative
+int[] Function GetInteractionTypes(Actor akPosition, Actor akPartner)
+EndFunction
+
+; If akPosition interacts with akPartner under a given type
+; If akPartner is none, checks against any available partner
+; If akPosition is none, iterates over all possible positions
+; If both are none, returns if the given type is present among any positions
+bool Function HasInteractionType(int aiType, Actor akPosition, Actor akPartner)
+EndFunction
+
+; Return the first actor that interacts with akPosition by the given type
+; (Returned value will be a subset of all positions in the scene)
+Actor Function GetPartnerByType(Actor akPosition, int aiType)
+EndFUnction
+Actor[] Function GetPartnersByType(Actor akPosition, int aiType)
+EndFUnction
+
+; Return the velocity of the specified interaction type
+; Velocity may be positive or negative, depending on the direction of movement
+float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -486,7 +510,7 @@ EndProperty
 float Property StartedAt Auto Hidden
 float Property TotalTime Hidden
 	float Function get()
-		return SexLabUtil.GetCurrentGameRealTimeEx() - StartedAt
+		return SexLabUtil.GetCurrentGameRealTime() - StartedAt
 	EndFunction
 EndProperty
 
@@ -834,7 +858,7 @@ Function ClearLeadAnimations()
 	ClearLeadInScenes()
 EndFunction
 Function SetStartingAnimation(sslBaseAnimation FirstAnimation)
-	SetStartingScene(FirstAnimation.PROXY_ID)
+	SetStartingScene(FirstAnimation.Registry)
 EndFunction
 Function DisableBedUse(bool disabling = true)
 	SetFurnitureStatus((!disabling) as int)
@@ -892,9 +916,9 @@ State Animating
 		_SFXTimer = Config.SFXDelay
 		_animationSyncCount = 0;
 		SendModEvent("SSL_READY_Thread" + tid)
-		StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
+		StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		AnimationStart()
-		RegisterSFX(Positions)
+		RegisterPhysics(Positions, _ActiveScene)
 	EndEvent
 	Function AnimationStart()
 		If (_animationSyncCount < Positions.Length)
@@ -916,6 +940,8 @@ State Animating
 	EndFunction
 
 	bool Function ResetScene(String asNewScene)
+		UnregisterForUpdate()
+		AddExperience(Positions, _ActiveScene, _StageHistory)
 		If (asNewScene != _ActiveScene)
 			If (!SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), asNewScene, true))
 				Log("Cannot reset scene. New Scene is not compatible with given positions")
@@ -933,11 +959,10 @@ State Animating
 			_InUseCoordinates[1] = _BaseCoordinates[1]
 			_InUseCoordinates[2] = _BaseCoordinates[2]
 			_InUseCoordinates[3] = _BaseCoordinates[3]
-			AddExperience(Positions, _ActiveScene, _StageHistory)
+			RegisterPhysics(Positions, asNewScene)
+			SortAliasesToPositions()
+			_ActiveScene = asNewScene
 		EndIf
-		UnregisterForUpdate()
-		SortAliasesToPositions()
-		_ActiveScene = asNewScene
 		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
 		int[] sex_ = SexLabRegistry.GetPositionSexA(_ActiveScene)
 		int[] schlongs_ = SexLabRegistry.GetSchlongAngleA(_ActiveScene, _ActiveStage)
@@ -1087,11 +1112,15 @@ State Animating
 		If (_SFXTimer > 0)
 			_SFXTimer -= ANIMATING_UPDATE_INTERVAL
 		Else
-			int sfxtype = GetSFXType()
-			Sound sfx = Config.GetSFXSound(sfxtype)
-			; MiscUtil.PrintConsole("[SLP+] Getting SFX Sound " + type + " -> Obj = " + sfx)
-			If (sfx)
-				sfx.Play(CenterRef)
+			bool penetration = HasPhysicType(PTYPE_VAGINALP, none, none) || HasPhysicType(PTYPE_ANALP, none, none)
+			bool oral = HasPhysicType(PTYPE_ORAL, none, none)
+			Log("SFX Testing; penetration = " + penetration + " / oral = " + oral)
+			If (oral && penetration)
+				Config.SexMixedFX.Play(CenterRef)
+			ElseIf (oral)
+				Config.SuckingFX.Play(CenterRef)
+			Else
+				Config.SquishingFX.Play(CenterRef)
 			EndIf
 			_SFXTimer = Utility.RandomFloat(0.9, 1.3) * Config.SFXDelay
 			If (_SFXTimer < 0.8)
@@ -1177,7 +1206,7 @@ State Animating
 				sslActorAlias slot = PickAlias(akNewPositions[n])
 				If(slot.SetActor(akNewPositions[n]))	; Add actor and move to playing state
 					slot.SetVictim(akSubmissives.Find(akNewPositions[n]) > -1)
-					slot.OnDoPrepare("", "", 0.0, none)
+					slot.OnDoPrepare("", "skip", 0.0, none)
 				EndIf
 			EndIf
 			n += 1
@@ -1204,9 +1233,6 @@ State Animating
 			ResetScene(_ActiveScene)
 		EndIf
 		SendThreadEvent("ActorChangeEnd")
-	EndFunction
-	Function PrepareDone()
-		; Avoid the log since we expect this to be invoked when ChangeActorEx() is called
 	EndFunction
 
 	function EndLeadIn()
@@ -1238,7 +1264,7 @@ State Animating
 	EndFunction
 
 	Event OnEndState()
-		UnregisterSFX()
+		UnregisterPhysics()
 		UnregisterForUpdate()
 		SetFurnitureIgnored(false)
 	EndEvent
@@ -1319,11 +1345,17 @@ EndFunction
 String Function PlaceAndPlay(Actor[] akPositions, float[] afCoordinates, String asSceneID, String asStageID) native
 Function RePlace(Actor akActor, float[] afBaseCoordinates, String asSceneID, String asStageID, int n) native
 Function UpdatePlacement(int n, sslActorAlias akAlias)
-	RePlace(akAlias.GetActorReference(), _InUseCoordinates, _ActiveScene, _ActiveStage, n)
+	RePlace(akAlias.GetReference() as Actor, _InUseCoordinates, _ActiveScene, _ActiveStage, n)
 EndFunction
-bool Function RegisterSFX(Actor[] akPositions) native
-Function UnregisterSFX() native
-int Function GetSFXType() native
+; Physics/SFX Related
+bool Function IsPhysicsRegistered() native
+Function RegisterPhysics(Actor[] akPosition, String asActiveScene) native
+Function UnregisterPhysics() native
+int[] Function GetPhysicTypes(Actor akPosition, Actor akPartner) native
+bool Function HasPhysicType(int aiType, Actor akPosition, Actor akPartner) native
+Actor Function GetPhysicPartnerByType(Actor akPosition, int aiType) native
+Actor[] Function GetPhysicPartnersByType(Actor akPosition, int aiType) native
+float Function GetPhysicVelocity(Actor akPosition, Actor akPartner, int aiType) native
 
 ; ------------------------------------------------------- ;
 ; --- Thread END                                      --- ;
@@ -1418,15 +1450,6 @@ Function SetFurnitureIgnored(bool disabling = true)
 	CenterRef.SetNoFavorAllowed(disabling)
 EndFunction
 
-bool Function UseLimitedStrip()
-	If (LeadIn)
-		return true
-	EndIf
-	bool excplicit = HasTag("Penetration") || HasTag("DoublePenetration") || HasTag("TripplePenetration") || HasTag("Fingering") || HasTag("Fisting")
-	excplicit = excplicit || HasTag("Tribadism") || HasTag("Grinding") || HasTag("Boobjob") || HasTag("Buttjob")
-	return Config.LimitedStrip && !excplicit
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Function Declarations                           --- ;
 ; ------------------------------------------------------- ;
@@ -1497,7 +1520,7 @@ Function AddExperience(Actor[] akPositions, String asActiveStage, String[] asSta
 ; Only call this once per actor, before positions are cleared. Only updates actors own statistics (no encounter updates)
 Function UpdateStatistics(Actor akActor, Actor[] akPositions,  String asActiveScene, String[] asPlayedStages, float afTimeInThread) native
 Function RequestStatisticUpdate(Actor akPosition, float afRegisteredAt)	; Called when one of the positions is cleared
-	float timeregistered = SexLabUtil.GetCurrentGameRealTimeEx() - afRegisteredAt
+	float timeregistered = SexLabUtil.GetCurrentGameRealTime() - afRegisteredAt
 	UpdateStatistics(akPosition, Positions, _ActiveScene, _StageHistory, timeregistered)
 EndFunction
 
@@ -2338,7 +2361,7 @@ Function AddAnimation(sslBaseAnimation AddAnimation, bool ForceTo = false)
 	If(!AddAnimation)
 		return
 	EndIf
-	AddScene(AddAnimation.PROXY_ID)
+	AddScene(AddAnimation.Registry)
 EndFunction
 Function SetAnimation(int aid = -1)
 	if aid < 0 || aid >= Animations.Length
@@ -2347,7 +2370,22 @@ Function SetAnimation(int aid = -1)
 	SetAnimationImpl(Animations[aid])
 EndFunction
 Function SetAnimationImpl(sslBaseAnimation akAnimation)
-	ResetScene(akAnimation.PROXY_ID)
+	ResetScene(akAnimation.Registry)
+EndFunction
+
+Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return
+	EndIf
+	ref.SetExpression(Expression)
+EndFunction
+sslBaseExpression Function GetExpression(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.GetExpression()
 EndFunction
 
 bool function AddTag(string Tag)
@@ -2545,7 +2583,7 @@ EndProperty
 float[] Property RealTime Hidden
 	float[] Function Get()
 		float[] ret = new float[1]
-		ret[0] = SexLabUtil.GetCurrentGameRealTimeEx()
+		ret[0] = SexLabUtil.GetCurrentGameRealTime()
 		return ret
 	EndFunction
 	Function Set(float[] aSet)
@@ -2655,7 +2693,6 @@ EndFunction
 Function ResolveTimers()
 EndFunction
 
-
 Function SetStrip(Actor ActorRef, bool[] StripSlots)
 	if StripSlots && StripSlots.Length == 33
 		ActorAlias(ActorRef).OverrideStrip(StripSlots)
@@ -2672,6 +2709,15 @@ Function SetNoStripping(Actor ActorRef)
 			Slot.DoUndress = false
 		endIf
 	endIf
+EndFunction
+
+bool Function UseLimitedStrip()
+	If (LeadIn)
+		return true
+	EndIf
+	bool excplicit = HasTag("Penetration") || HasTag("DoublePenetration") || HasTag("TripplePenetration") || HasTag("Fingering") || HasTag("Fisting")
+	excplicit = excplicit || HasTag("Tribadism") || HasTag("Grinding") || HasTag("Boobjob") || HasTag("Buttjob")
+	return Config.LimitedStrip && !excplicit
 EndFunction
 
 Function DisableUndressAnimation(Actor ActorRef = none, bool disabling = true)

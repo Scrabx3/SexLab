@@ -24,12 +24,10 @@ sslSystemConfig property Config auto
 ; Function libraries
 sslActorLibrary property ActorLib auto
 sslThreadLibrary property ThreadLib auto
-sslActorStats property Stats auto
 
 ; Object registry
 sslThreadSlots property ThreadSlots auto
 sslVoiceSlots property VoiceSlots auto
-sslExpressionSlots property ExpressionSlots auto
 
 int Property STATUS_IDLE = 0 AutoReadOnly
 int Property STATUS_INSTALLING = 1 AutoReadOnly
@@ -115,11 +113,9 @@ bool function SetupSystem()
 	; Function libraries
 	ThreadLib.Setup()
 	ActorLib.Setup()
-	Stats.Setup()
 
 	; Object registry
 	VoiceSlots.Setup()
-	ExpressionSlots.Setup()
 	ThreadSlots.Setup()
 
 	; Finish setup
@@ -245,10 +241,8 @@ function LoadLibs(bool Forced = false)
 	ThreadLib   = SexLabQuestFramework as sslThreadLibrary
 	ThreadSlots = SexLabQuestFramework as sslThreadSlots
 	ActorLib    = SexLabQuestFramework as sslActorLibrary
-	Stats       = SexLabQuestFramework as sslActorStats
 	; Sync secondary object registry - SexLabQuestRegistry
 	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-	ExpressionSlots = SexLabQuestRegistry as sslExpressionSlots
 	VoiceSlots      = SexLabQuestRegistry as sslVoiceSlots
 endFunction
 
@@ -276,6 +270,16 @@ EndProperty
 sslObjectFactory property Factory Hidden
 	sslObjectFactory Function Get()
 		return Game.GetFormFromFile(0x78818, "SexLab.esm") as sslObjectFactory
+	EndFunction
+EndProperty
+sslActorStats property Stats Hidden
+	sslActorStats Function Get()
+		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorStats
+	EndFunction
+EndProperty
+sslExpressionSlots property ExpressionSlots hidden
+	sslExpressionSlots Function Get()
+		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
 	EndFunction
 EndProperty
 

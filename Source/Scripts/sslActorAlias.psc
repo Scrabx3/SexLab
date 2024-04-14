@@ -28,7 +28,7 @@ int Function GetSex()
 EndFunction
 
 bool Function GetIsDead()
-	return _dead
+	return _livestatus == LIVESTATUS_DEAD
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -124,12 +124,12 @@ EndFunction
 ; --- Expression                                      --- ;
 ; ------------------------------------------------------- ;
 
-sslBaseExpression function GetExpression()
+String Function GetActorExpression()
 	return _Expression
-endFunction
+EndFunction
 
-Function SetExpression(sslBaseExpression ToExpression)
-	_Expression = ToExpression
+Function SetActorExpression(String asExpression)
+	_Expression = asExpression
 	TryRefreshExpression()
 EndFunction
 
@@ -177,6 +177,10 @@ String Property TRACK_ADDED 	= "Added" AutoReadOnly
 String Property TRACK_START 	= "Start" AutoReadOnly
 String Property TRACK_END		 	= "End" AutoReadOnly
 
+int Property LIVESTATUS_ALIVE 			= 0 AutoReadOnly
+int Property LIVESTATUS_DEAD 				= 1 AutoReadOnly
+int Property LIVESTATUS_UNCONSCIOUS = 2 AutoReadOnly
+
 ; ------------------------------------------------------- ;
 ; --- Alias Data                                      --- ;
 ; ------------------------------------------------------- ;
@@ -190,8 +194,10 @@ Actor Property ActorRef
 EndProperty
 
 int _sex
-bool _dead
 bool _victim
+
+int _livestatus
+Actor _killer
 
 int _AnimVarIsNPC
 bool _AnimVarbHumanoidFootIKDisable
@@ -256,8 +262,7 @@ bool property IsSilent hidden
 endProperty
 
 ; Expressions
-sslBaseExpression _Expression
-sslBaseExpression[] _Expressions
+String _Expression
 
 bool Property ForceOpenMouth Auto Hidden
 bool Property OpenMouth
@@ -295,7 +300,14 @@ Auto State Empty
 	bool Function SetActor(Actor ProspectRef)
 		ForceRefTo(ProspectRef)
 		_ActorRef = ProspectRef
-		_dead = ProspectRef.IsDead()
+		If (_ActorRef.IsDead())
+			_livestatus = LIVESTATUS_DEAD
+			_killer = _ActorRef.GetKiller()
+		ElseIf (_ActorRef.IsUnconscious())
+			_livestatus = LIVESTATUS_UNCONSCIOUS
+		Else
+			_livestatus = LIVESTATUS_ALIVE
+		EndIf
 		_sex = SexLabRegistry.GetSex(ProspectRef, true)
 
 		TrackedEvent(TRACK_ADDED)
@@ -306,11 +318,11 @@ Auto State Empty
 	Function Clear()
 			; Use direct access here as to not update an outdated actor instance
 			Actor underlying = GetReference() as Actor
-			If (_dead)
+			If (GetIsDead())
 				If (underlying.IsEssential())
 					underlying.GetActorBase().SetEssential(false)
 				EndIf
-				underlying.KillSilent()
+				underlying.KillSilent(_killer)
 			Else
 				_Thread.RequestStatisticUpdate(underlying, _StartedAt)
 			EndIf
@@ -356,11 +368,11 @@ State Ready
 		EndIf
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
 		_AnimVarbHumanoidFootIKDisable = _ActorRef.GetAnimationVariableBool("bHumanoidFootIKDisable")
-		; TODO: Code below to pathing isnt optimizedy yet !IMPORTANT
+		; TODO: Code below to ---- isnt optimizedy yet !IMPORTANT
 		; Delays
 		If(_sex > 2)
 			_BaseDelay = 3.0
-		ElseIf(_sex != 1)
+		ElseIf(_sex != 0)
 			_BaseDelay = _Config.FemaleVoiceDelay
 		Else
 			_BaseDelay = _Config.MaleVoiceDelay
@@ -372,7 +384,6 @@ State Ready
 		_ContextCheckDelay = 10.0
 		_hasOrgasm = false
 		_holdBack = false
-		String LogInfo = ""
 		; Voice
 		if !_Voice && !_IsForcedSilent
 			if _sex > 2
@@ -381,45 +392,39 @@ State Ready
 				_Voice = _Config.VoiceSlots.PickVoice(ActorRef)
 			endIf
 		endIf
-		If(_Voice)
-			LogInfo += "Voice[" + _Voice.Name + "] "
-		Else
-			LogInfo += "Voice[NONE] "
-		EndIf
+		; ----
 		; Strapon & Expression (for NPC only)
-		If(_sex <= 2)
-			If(_Config.UseStrapons && _sex == 1)
+		If (_sex <= 2)
+			If (_Config.UseStrapons && _sex == 1)
 				_HadStrapon = _Config.WornStrapon(ActorRef)
-				If(!_HadStrapon)
+				If (!_HadStrapon)
 					_Strapon = _Config.GetStrapon()
-				ElseIf(!_Strapon)	; Mightve been already set by SetStrapon prior to calling this
+				ElseIf (!_Strapon)
 					_Strapon = _HadStrapon
 				EndIf
 			EndIf
-			LogInfo += "Strapon[" + _Strapon + "] "
-			if !_Expression && _Config.UseExpressions
-				_Expressions = _Config.ExpressionSlots.GetByStatus(ActorRef, IsVictim(), _Thread.IsType[0] && !IsVictim())
-				if _Expressions && _Expressions.Length > 0
-					_Expression = _Expressions[Utility.RandomInt(0, (_Expressions.Length - 1))]
-				endIf
-			endIf
-			If(_Expression)
-				LogInfo += "_Expression[" + _Expression.Name + "] "
+			If (_Expression == "" && _Config.UseExpressions)
+				String[] expr
+				If (IsVictim())
+					expr = sslExpressionSlots.GetExpressionsByStatus(_ActorRef, 1)
+				ElseIf (IsAggressor())
+					expr = sslExpressionSlots.GetExpressionsByStatus(_ActorRef, 2)
+				Else
+					expr = sslExpressionSlots.GetExpressionsByStatus(_ActorRef, 0)
+				EndIf
+				_Expression = expr[Utility.RandomInt(0, expr.Length - 1)]
 			EndIf
 		EndIf
 		; Position
-		If(!_dead && ActorRef.GetActorValue("Paralysis") > 0)
-			ActorRef.SetActorValue("Paralysis", 0.0)
-			SendDefaultAnimEvent()
-		EndIf
+		ActorRef.SetActorValue("Paralysis", 0.0)
 		If(akPathTo && !abUseFade && DoPathToCenter)
 			ObjectReference pathto = akPathTo as ObjectReference
 			float distance = ActorRef.GetDistance(pathto)
 			If(distance > 256.0 && distance <= 6144.0)
-				float t = SexLabUtil.GetCurrentGameRealTimeEx() + 15.0
+				float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
 				ActorRef.SetFactionRank(_AnimatingFaction, 2)
 				ActorRef.EvaluatePackage()
-				While (ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTimeEx() < t)
+				While (ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
 					Utility.Wait(0.045)
 				EndWhile
 			EndIf
@@ -430,6 +435,18 @@ State Ready
 		_Thread.PrepareDone()
 		; Delayed Initialization
 		UpdateBaseEnjoymentCalculations()
+		If (!_Config.DebugMode)
+			return
+		EndIf
+		String LogInfo = ""
+		If(_Voice)
+			LogInfo += "Voice[" + _Voice.Name + "] "
+		Else
+			LogInfo += "Voice[NONE] "
+		EndIf
+		LogInfo += "Strapon[" + _Strapon + "] "
+		LogInfo += "Expression[" + _Expression + "] "
+		LogInfo += "FullEnjoyment["+FullEnjoyment+"]"
 		Log(LogInfo)
 	EndEvent
 
@@ -492,14 +509,11 @@ State Paused
 			ResolveStrapon()
 			ActorRef.QueueNiNodeUpdate()
 		EndIf
-		_StartedAt = SexLabUtil.GetCurrentGameRealTimeEx()
+		_StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		_LastOrgasm = _StartedAt
 		; wait to ensure schlong mesh and AI package are updated
-		Utility.Wait(0.5)
+		Utility.Wait(0.6)
 		LockActor()
-		If (_dead)
-			SendDefaultAnimEvent()
-		EndIf
 		_Thread.AnimationStart()
 		Utility.Wait(0.2)
 		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
@@ -541,6 +555,7 @@ State Paused
 			ActorUtil.AddPackageOverride(ActorRef, _Thread.DoNothingPackage, 100, 1)
 			_ActorRef.EvaluatePackage()
 		EndIf
+		SendDefaultAnimEvent()
 		GoToState(STATE_PLAYING)
 	EndFunction
 
@@ -613,7 +628,6 @@ float _LoopEnjoymentDelay
 State Animating
 	Event OnBeginState()
 		RegisterForModEvent("SSL_ORGASM_Thread" + _Thread.tid, "OnOrgasm")
-		RegisterForSingleUpdate(UpdateInterval)
 		If (_ActorRef == _PlayerRef)
 			RegisterForKey(HoldBackKeyCode)
 		EndIf
@@ -629,7 +643,7 @@ State Animating
 		if _VoiceDelay < 0.8
 			_VoiceDelay = 0.8 ; Can't have delay shorter than animation update loop (COMEBACK: why?)
 		endIf
-		; RegisterForSingleUpdate(UpdateInterval)
+		RegisterForSingleUpdate(UpdateInterval)
 	EndFunction
 
 	Function SetStrapon(Form ToStrapon)
@@ -667,19 +681,10 @@ State Animating
 				Log("PlayMoan:True; UseLipSync:"+UseLipSync+"; OpenMouth:"+OpenMouth)
 			endIf
 		endIf
-		if _Expressions.Length && _LoopExpressionDelay >= _ExpressionDelay
-			int newIdx = Utility.RandomInt(0, (_Expressions.Length - 1))
-			If (_Expression != _Expressions[newIdx])
-				_Expression = _Expressions[newIdx]
+		If (_RefreshExpressionDelay > 8.0)
 				RefreshExpression()
 			EndIf
-			Log("_Expression["+_Expression.Name+"] BaseVoiceDelay["+_BaseDelay+"] _ExpressionDelay["+_ExpressionDelay+"] _LoopExpressionDelay["+_LoopExpressionDelay+"] ")
-			_LoopExpressionDelay = 0.0
-		endIf
-		if _RefreshExpressionDelay > 8.0
-			RefreshExpression()
-		endIf
-		If (_holdBack && SexLabUtil.GetCurrentGameRealTimeEx() - _lastHoldBack >= 2.0)
+		If (_holdBack && SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack >= 2.0)
 			_holdBack = false
 		EndIf
 		; TODO: Trigger Orgasms
@@ -717,15 +722,10 @@ State Animating
 		ElseIf (sslBaseExpression.IsMouthOpen(ActorRef))
 			sslBaseExpression.CloseMouth(ActorRef)
 		EndIf
-		If (_Expression && !ActorRef.IsDead() && !ActorRef.IsUnconscious())
-			; TODO: remove vsex variable once Expressions can handle futa gender
-			int vsex = _sex
-			If (_sex >= 2)
-				vsex = _sex - 1
-			EndIf
-			int Strength = CalcReaction()
-			_Expression.Apply(ActorRef, Strength, vsex)
-			Log("_Expression.Applied("+_Expression.Name+") Strength:"+Strength+"; OpenMouth:"+OpenMouth)
+		If (_Expression && _livestatus == LIVESTATUS_ALIVE)
+			int strength = CalcReaction()
+			sslBaseExpression.ApplyExpression(_Expression, _ActorRef, strength)
+			Log("sslBaseExpression.ApplyExpression(" + _Expression + ") Strength:" + strength + "; OpenMouth:" + OpenMouth)
 		EndIf
 	EndFunction
 
@@ -841,12 +841,12 @@ State Animating
 
 	Event OnKeyDown(Int KeyCode)
 		; give some time to overlap
-		If (KeyCode != HoldBackKeyCode && SexLabUtil.GetCurrentGameRealTimeEx() - _lastHoldBack < 1.8)
+		If (KeyCode != HoldBackKeyCode && SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack < 1.8)
 			return
 		EndIf
 
 		_holdBack = true
-		_lastHoldBack = SexLabUtil.GetCurrentGameRealTimeEx()
+		_lastHoldBack = SexLabUtil.GetCurrentGameRealTime()
 	EndEvent
 
 	Event OnEndState()
@@ -950,7 +950,11 @@ Function ResolveStraponImpl()
 EndFunction
 
 int[] Function GetStripSettings()
-	return _Config.GetStripSettings((_sex == 1 || _sex == 2), _Thread.UseLimitedStrip(), !_Thread.IsConsent(), IsVictim())
+	If (_Thread.IsConsent())
+		return sslSystemConfig.GetStripForms(_sex == 1 || _sex == 2, false)
+	Else
+		return sslSystemConfig.GetStripForms(IsVictim(), true)
+	EndIf
 EndFunction
 
 Function Redress()
@@ -1004,9 +1008,8 @@ Function Initialize()
 	; Voice
 	_Voice          = none
 	_IsForcedSilent = false
-	; _Expression
-	_Expression     = none
-	_Expressions    = sslUtility.ExpressionArray(0)
+	; _LegacyExpression
+	_Expression     = ""
 	; Flags
 	_AllowRedress   = true
 	_CanOrgasm      = true
@@ -1014,6 +1017,7 @@ Function Initialize()
 	ForceOpenMouth  = false
 	; Integers
 	_sex            = -1
+	_livestatus     = 0
 	_PathingFlag    = 0
 	_OrgasmCount    = 0
 	FullEnjoyment   = 0
@@ -1022,7 +1026,6 @@ Function Initialize()
 	_StartedAt      = 0.0
 	; Booleans
 	_victim         = false
-	_dead           = false
 	; Enjoyment
 	ResetEnjoymentVariables()
 
@@ -1080,7 +1083,7 @@ Function Error(String msg, string src = "")
 EndFunction
 
 Function LogRedundant(String asFunction)
-	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.\n\nPlease report this to Scrab with a Papyrus Log attached")
+	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
 	Debug.TraceStack("Invoking Legacy Function " + asFunction)
 EndFunction
 
@@ -1095,9 +1098,18 @@ EndFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global native
-bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global native
-int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, bool IsFemaleActor, float Timer, int OnStage, int MaxStage) global native
+function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global
+	Debug.MessageBox("[SEXLAB]\n'OffsetCoords' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
+	Debug.TraceStack("Invoking Legacy Function OffsetCoords")
+EndFunction
+bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global
+	Debug.MessageBox("[SEXLAB]\n'IsInPosition' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
+	Debug.TraceStack("Invoking Legacy Function IsInPosition")
+EndFunction
+int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, bool IsFemaleActor, float Timer, int OnStage, int MaxStage) global
+	Debug.MessageBox("[SEXLAB]\n'CalcEnjoyment' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
+	Debug.TraceStack("Invoking Legacy Function CalcEnjoyment")
+EndFunction
 
 int Property Position
 	int Function Get()
@@ -1132,6 +1144,14 @@ bool property MalePosition hidden
 		return _Thread.Animation.GetGender(Position) == 0
 	endFunction
 endProperty
+
+sslBaseExpression function GetExpression()
+	return _Config.ExpressionSlots.GetByRegistrar(_Expression)
+endFunction
+Function SetExpression(sslBaseExpression ToExpression)
+	_Expression = ToExpression.Registry
+	TryRefreshExpression()
+EndFunction
 
 int function GetGender()
 	int ret = SexLabRegistry.GetSex(ActorRef, false)

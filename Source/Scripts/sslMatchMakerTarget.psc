@@ -11,6 +11,4 @@ Event OnEffectStart(Actor TargetRef, Actor CasterRef)
     sceneActors[1] = TargetRef
     
     MatchMakerMain.TriggerSex(sceneActors)
-
-    Dispel()
 EndEvent

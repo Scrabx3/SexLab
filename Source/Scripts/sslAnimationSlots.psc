@@ -100,7 +100,7 @@ sslBaseAnimation Function GetSetAnimation(String asScene)
   int i = Utility.RandomInt(0, _proxyid.Length - 1)
   _proxyid[i] = asScene
   sslBaseAnimation ret = GetNthAlias(i) as sslBaseAnimation
-  ret.PROXY_ID = asScene
+  ret.Registry = asScene
   return ret
 EndFunction
 
@@ -228,7 +228,7 @@ int function FindByRegistrar(string Registrar)
   int i = 0
   While (i < aliases.Length)
     sslBaseAnimation item = aliases[i] as sslBaseAnimation
-    If (item.PROXY_ID == Registrar)
+    If (item.Registry == Registrar)
       return i
     EndIf
     i += 1
@@ -553,7 +553,7 @@ function Setup()
   While (i < _proxyid.Length)
     sslBaseAnimation anim = aliases[i] as sslBaseAnimation
     If (anim)
-      anim.PROXY_ID = _proxyid[i]
+      anim.Registry = _proxyid[i]
     EndIf
     i += 1
   EndWhile

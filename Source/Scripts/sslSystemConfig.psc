@@ -14,9 +14,6 @@ ScriptName sslSystemConfig extends sslSystemLibrary
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; // TODO: Add a 3rd person mod detection when determining FNIS sensitive variables.
-; // Disable it when no longer relevant.
-
 ; ------------------------------------------------------- ;
 ; --- System Resources                                --- ;
 ; ------------------------------------------------------- ;
@@ -67,9 +64,7 @@ Sound[] property HotkeyDown auto
 
 Message property CleanSystemFinish auto
 Message property CheckSKSE auto
-Message property CheckFNIS auto
 Message property CheckSkyrim auto
-Message property CheckSexLabUtil auto
 Message property CheckPapyrusUtil auto
 Message property CheckSkyUI auto
 Message property TakeThreadControl auto
@@ -120,8 +115,6 @@ EndFunction
 int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
 int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
 int Property CLIMAXTYPE_EXTERN = 2 AutoReadOnly
-
-; iStripForms: 0b[Weapon][Gender][Leadin || Submissive][Aggressive]
 
 ; Booleans
 bool property AllowCreatures hidden
@@ -213,14 +206,6 @@ bool property OrgasmEffects hidden
     SetSettingBool("bOrgasmEffects", aSet)
   EndFunction
 EndProperty
-bool property LimitedStrip hidden
-  bool Function Get()
-    return GetSettingBool("bLimitedStrip")
-  EndFunction
-  Function Set(bool aSet)
-    SetSettingBool("bLimitedStrip", aSet)
-  EndFunction
-EndProperty
 bool property RestrictSameSex hidden
   bool Function Get()
     return GetSettingBool("bRestrictSameSex")
@@ -260,14 +245,6 @@ bool property UndressAnimation hidden
   Function Set(bool aSet)
     SetSettingBool("bUndressAnimation", aSet)
   EndFunction
-EndProperty
-bool property Benchmark hidden
-	bool Function Get()
-		return GetSettingBool("bBenchmark")
-	EndFunction
-	Function Set(bool aSet)
-	  SetSettingBool("bBenchmark", aSet)
-	EndFunction
 EndProperty
 bool property SubmissivePlayer hidden
   bool Function Get()
@@ -742,13 +719,9 @@ float function GetVoiceDelay(bool IsFemale = false, int Stage = 1, bool IsSilent
   return VoiceDelay
 endFunction
 
-int[] Function GetStripSettings(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
-  int idx
-  If(IsAggressive)
-    idx = (Math.LeftShift(IsVictim as int, 1) + 4) * 2
-  Else
-    idx = ((IsFemale as int) + Math.LeftShift(IsLeadIn as int, 1)) * 2
-  EndIf
+; iStripForms: 0b[Weapon][Female | Submissive][Aggressive]
+int[] Function GetStripForms(bool abFemaleOrSubmissive, bool abAggressive) global
+  int idx = 2 * abFemaleOrSubmissive as int + 4 * abAggressive as int
   int[] ret = new int[2]
   ret[0] = GetSettingIntA("iStripForms", idx)
   ret[1] = GetSettingIntA("iStripForms", idx + 1)
@@ -911,8 +884,6 @@ Event OnKeyDown(int keyCode)
     Else
       SetTargetActor()
     EndIf
-  ElseIf (keyCode == EndAnimation && BackwardsPressed())
-    ThreadSlots.StopAll()
   EndIf
 EndEvent
 
@@ -1085,8 +1056,16 @@ function SwapToProfile(int Profile)
   SetAdjustmentProfile("../SexLab/AnimationProfile_"+Profile+".json")
 endFunction
 
-bool function SetAdjustmentProfile(string ProfileName) global native
-bool function SaveAdjustmentProfile() global native
+bool function SetAdjustmentProfile(string ProfileName) global
+  String msg = "Adjustment Profiles are no longer supported"
+  Debug.MessageBox(msg)
+  Debug.TraceStack(msg)
+EndFunction
+bool function SaveAdjustmentProfile() global
+  String msg = "Adjustment Profiles are no longer supported"
+  Debug.MessageBox(msg)
+  Debug.TraceStack(msg)
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- 3rd party compatibility                         --- ;
@@ -1215,8 +1194,6 @@ bool function CheckSystemPart(string CheckSystem)
     return Quest.GetQuest("SKI_ConfigManagerInstance") != none
   elseIf CheckSystem == "SexLabP+"
     return SKSE.GetPluginVersion("SexLab") > -1
-  elseIf CheckSystem == "SexLabUtil"
-    return SexLabUtil.GetPluginVersion() >= 16300
   elseIf CheckSystem == "PapyrusUtil"
     return PapyrusUtil.GetVersion() >= 39
   elseIf CheckSystem == "NiOverride"
@@ -1238,9 +1215,6 @@ bool function CheckSystem()
     return false
   elseIf !CheckSystemPart("SkyUI")
     CheckSkyUI.Show(5.2)
-    return false
-  elseIf !CheckSystemPart("SexLabUtil")
-    CheckSexLabUtil.Show()
     return false
   elseIf !CheckSystemPart("PapyrusUtil")
     CheckPapyrusUtil.Show(4.4)
@@ -1298,7 +1272,6 @@ function ExportSettings()
   ; Export object registry
   ExportAnimations()
   ExportCreatures()
-  ExportExpressions()
   ExportVoices()
 endFunction
 
@@ -1306,7 +1279,6 @@ function ImportSettings()
   ; Import object registry
   ImportAnimations()
   ImportCreatures()
-  ImportExpressions()
   ImportVoices()
 
   ; Reload settings with imported values
@@ -1426,22 +1398,6 @@ function ImportCreatures()
   endWhile
 endFunction
 
-; Expressions
-function ExportExpressions()
-  int i = ExpressionSlots.Slotted
-  while i
-    i -= 1
-    ExpressionSlots.GetBySlot(i).ExportJson()
-  endWhile
-endfunction
-function ImportExpressions()
-  int i = ExpressionSlots.Slotted
-  while i
-    i -= 1
-    ExpressionSlots.GetBySlot(i).ImportJson()
-  endWhile
-endFunction
-
 ; Voices
 function ExportVoices()
   JsonUtil.StringListClear(File, "Voices")
@@ -1533,6 +1489,18 @@ SexLabFramework Property SexLab
     return SexLabUtil.GetAPI()
   EndFunction
 EndProperty
+
+Message property CheckFNIS Hidden
+  Message Function Get()
+    return Game.GetFormFromFile(0x70C38, "SexLab.esm") as Message
+  EndFunction
+EndProperty
+Message property CheckSexLabUtil Hidden
+  Message Function Get()
+    return Game.GetFormFromFile(0x7D380, "SexLab.esm") as Message
+  EndFunction
+EndProperty
+
 
 Faction property AnimatingFaction Hidden
   Faction Function Get()
@@ -1891,6 +1859,16 @@ float[] property BedOffset hidden
 EndProperty
 
 ; ------------------------------------------------------- ;
+; --- Export/Import to JSON                           --- ;
+; ------------------------------------------------------- ;
+
+; Expressions
+function ExportExpressions()
+endfunction
+function ImportExpressions()
+endFunction
+
+; ------------------------------------------------------- ;
 ; --- MCM Settings                                    --- ;
 ; ------------------------------------------------------- ;
 
@@ -1909,6 +1887,7 @@ bool property RemoveHeelEffect = true auto hidden
 bool property SeedNPCStats = true auto hidden
 bool property FixVictimPos = true auto hidden
 bool property ForceSort = true auto hidden
+bool property LimitedStrip = false auto hidden
 
 float property LeadInCoolDown = 0.0 auto hidden
 
@@ -2027,7 +2006,8 @@ function InitThreadHooks()
 endFunction
 
 bool Function HasCreatureInstall()
-  return FNIS.GetMajor(true) > 0
+  Log("Function HasCreatureInstall() is redundant and always returns true to avoid a FNIS Compile Dependency")
+  return true
 EndFunction
 
 function ReloadData()
@@ -2036,6 +2016,10 @@ endFunction
 ; ------------------------------------------------------- ;
 ; --- Pre P2.0 Config Accessors                       --- ;
 ; ------------------------------------------------------- ;
+
+int[] Function GetStripSettings(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
+  return GetStripForms(IsFemale || IsVictim , IsAggressive)
+EndFunction
 
 bool[] function GetStrip(bool IsFemale, bool IsLeadIn = false, bool IsAggressive = false, bool IsVictim = false)
   int[] ret = GetStripSettings(IsFemale, IsLeadIn, IsAggressive, IsVictim)

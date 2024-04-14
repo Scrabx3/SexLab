@@ -203,10 +203,10 @@ state FNIS
 	bool function DoTest()
 
 		; Check FNIS generation
-		if !FNIS.IsGenerated()
-			Error(160, "You most likely have not run the GenerateFNISforUsers.exe tool for your current version of FNIS.")
-			return false
-		endIf
+		; if !FNIS.IsGenerated()
+		; 	Error(160, "You most likely have not run the GenerateFNISforUsers.exe tool for your current version of FNIS.")
+		; 	return false
+		; endIf
 
 		; Attempt to play event
 		Tell("Attempting to play test animation on player, pay attention to your characters animation...")

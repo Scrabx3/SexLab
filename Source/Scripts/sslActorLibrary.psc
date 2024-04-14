@@ -215,7 +215,7 @@ bool function IsStrippable(Form ItemRef)
 endFunction
 
 Form[] function StripActor(Actor ActorRef, Actor VictimRef = none, bool DoAnimate = true, bool LeadIn = false)
-	int[] strips = Config.GetStripSettings(SexLabRegistry.GetSex(ActorRef, false) == 1, LeadIn, VictimRef, ActorRef == VictimRef)
+	int[] strips = sslSystemConfig.GetStripForms(ActorRef == VictimRef || SexLabRegistry.GetSex(ActorRef, false) == 1, VictimRef)
 	return StripActorImpl(ActorRef, strips[0], strips[1], DoAnimate)
 endFunction
 Form[] function StripSlots(Actor ActorRef, bool[] Strip, bool DoAnimate = false, bool AllowNudesuit = true)

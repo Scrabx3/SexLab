@@ -67,9 +67,10 @@ EndFunction
 ; ------------------------------------------------------- ;
 ;/
 	Tags are used to further describe a scene, they have different scopes:
-		- Thread: A list of tags shared by every scene the thread has been initiaited with
-		- Scene: Tags that describe the playing scene loosely, for each tag there is at least one stage that uses it
-		- Stage: Tags only describing the currently playing stage
+		- ThreadTags combine tags shared by every scene the thread has been initiaited with, Example: if we have 2 scenes: 
+				["doggy", "loving", "behind"] and ["doggy", "loving", "hugging", "kissing"], then the thread tags will be ["doggy", "loving"]
+		- SceneTags describe the playing scene loosely, for each tag there is at least one stage that uses it
+		- StageTags only describe the currently playing stage
 /;
 
 ; If this thread is tagged with the given argument
@@ -121,6 +122,54 @@ bool Function IsLeadIn()
 EndFunction
 
 ; ------------------------------------------------------- ;
+; --- Interaction		                                  --- ;
+; ------------------------------------------------------- ;
+;/
+	Lookup interaction data
+	This data is based on the actors 3D, its reliably thus heavily depends on 
+	how well aligned the animation is
+/;
+
+int Property PTYPE_ANY			= -1 AutoReadOnly
+int Property PTYPE_VAGINALP = 0  AutoReadOnly	; being penetrated
+int Property PTYPE_ANALP 		= 1  AutoReadOnly
+int Property PTYPE_VAGINALA = 2  AutoReadOnly	; penetrating someone else
+int Property PTYPE_ANALA 		= 3  AutoReadOnly
+int Property PTYPE_Oral 		= 4  AutoReadOnly	; receiving oral
+int Property PTYPE_Foot 		= 5  AutoReadOnly	; receiving footjob
+int Property PTYPE_Hand 		= 6  AutoReadOnly	; receiving handjob
+int Property PTYPE_GRINDING = 7  AutoReadOnly	; grinding against someone else
+
+; If physics related data is currently available or not
+bool Function IsPhysicsEnabled()
+EndFunction
+
+; Get a list of all types the two actors interact with another
+; If akPartner is none, returns all interactions with any partner
+; This function is NOT commutative
+int[] Function GetInteractionTypes(Actor akPosition, Actor akPartner)
+EndFunction
+
+; If akPosition interacts with akPartner under a given type
+; If akPartner is none, checks against any available partner
+; If akPosition is none, iterates over all possible positions
+; If both are none, returns if the given type is present among any positions
+bool Function HasInteractionType(int aiType, Actor akPosition, Actor akPartner)
+EndFunction
+
+; Return the first actor that interacts with akPosition by the given type
+; (Returned value will be a subset of all positions in the scene)
+Actor Function GetPartnerByType(Actor akPosition, int aiType)
+EndFUnction
+Actor[] Function GetPartnersByType(Actor akPosition, int aiType)
+EndFUnction
+
+; Return the velocity of the specified interaction type
+; Velocity may be positive or negative, depending on the direction of movement
+float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)
+EndFunction
+
+; ------------------------------------------------------- ;
 ; --- Time Data			                                  --- ;
 ; ------------------------------------------------------- ;
 ;/
@@ -148,6 +197,12 @@ EndFunction
 
 ; Retrieve all positions in the current scene. Order of actors is unspecified
 Actor[] Function GetPositions()
+EndFunction
+
+; Retrive the sex of this position as used by the thread
+int Function GetNthPositionSex(int n)
+EndFunction
+int[] Function GetPositionSexes()
 EndFunction
 
 ; --- Submission
@@ -189,9 +244,9 @@ EndFunction
 ; --- Expressions
 
 ; Update the given actors expression
-Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
+Function SetActorExpression(Actor akActor, String asExpression)
 EndFunction
-sslBaseExpression Function GetExpression(Actor ActorRef)
+String Function GetActorExpression(Actor akActor)
 EndFunction
 
 ; --- Orgasms
