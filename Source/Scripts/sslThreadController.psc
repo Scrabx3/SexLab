@@ -68,6 +68,19 @@ Event OnKeyDown(int KeyCode)
 	int hotkey = Hotkeys.Find(KeyCode)
 	If(hotkey == kAdvanceAnimation)
 		AdvanceStage(Config.BackwardsPressed())
+		;--------------------------------------------------
+		;insertion by SL_ClimaxEXT to compensate stage skip
+		int i = 0
+		While (i < Positions.Length)
+			int _enjTemp = ActorAlias[i].GetEnjoyment()
+			float _runtimeAdj = 50 - (_enjTemp * 0.5)
+			If _runtimeAdj < 25
+				_runtimeAdj = 25
+			EndIf
+			ActorAlias[i].CompensateStageSkip(_runtimeAdj)
+			i += 1
+		EndWhile
+		;--------------------------------------------------
 	ElseIf(hotkey == kChangeAnimation)
 		ChangeAnimation(Config.BackwardsPressed())
 	ElseIf(hotkey == kAdjustForward)
@@ -129,18 +142,19 @@ Function AdvanceStage(bool backwards = false)
 EndFunction
 
 Function ChangeAnimation(bool backwards = false)
-	If(Animations.Length <= 1)
+	string[] Scenes = GetPlayingScenes()
+	If(Scenes.Length < 2)
 		return
 	EndIf
 	UnregisterForUpdate()
+	int current = Scenes.Find(GetActiveScene())
 	String newScene
 	If (!Config.AdjustStagePressed())	; Forward/Backward
-		newScene = Scenes[sslUtility.IndexTravel(Animations.Find(Animation), Animations.Length, backwards)]
+		newScene = Scenes[sslUtility.IndexTravel(current, Scenes.Length, backwards)]
 	Else	; Random
-		int current = Animations.Find(Animation)
-		int r = Utility.RandomInt(0, Animations.Length - 1)
+		int r = Utility.RandomInt(0, Scenes.Length - 1)
 		While(r == current)
-			r = Utility.RandomInt(0, Animations.Length - 1)
+			r = Utility.RandomInt(0, Scenes.Length - 1)
 		EndWhile
 		newScene = Scenes[r]
 	EndIf
