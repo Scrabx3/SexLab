@@ -233,14 +233,6 @@ int Function GetOrgasmCount(Actor ActorRef)
 	return ref.GetOrgasmCount()
 EndFunction
 
-Function SetOrgasmCount(Actor ActorRef, int value)
-	sslActorAlias ref = ActorAlias(ActorRef)
-	If (!ref)
-		return
-	EndIf
-	return ref.SetOrgasmCount(value)
-EndFunction
-
 Actor[] Function CanBeImpregnated(Actor akActor,  bool abAllowFutaImpregnation, bool abFutaCanPregnate, bool abCreatureCanPregnate)
 	Actor[] ret
 	sslActorAlias ref = ActorAlias(akActor)
@@ -2659,6 +2651,8 @@ EndFunction
 float Function GetInteractionFactor(Actor ActorRef, int typeASL, int infoActor)
 	float factorInter = 0.0
 	; TODO: add toggle to switch between physic-based enjoyment and tags-based enjoyment
+	;(dont wanna mess with the MCM, so leaving this to you)
+
 	;/if (GetEnjoymentType() == ENJ_PHYSIC) && IsPhysicsRegistered()
 		factorInter = CalcPhysicFactor(ActorRef)
 	elseif GetEnjoymentType() == ENJ_TAGS
@@ -2749,7 +2743,7 @@ int Function GuessActorInterInfo(Actor ActorRef, int ActorSex, bool IsActorSub, 
 			endif
 		else
 			; function stays in ThreadModel cuz of this
-			if GetPosition(ActorRef) == 0 
+			if GetPosition(ActorRef) == 0
 				ActorInterInfo = ACTORINT_PASSIVE
 			else
 				ActorInterInfo = ACTORINT_ACTIVE
@@ -2913,11 +2907,11 @@ EndFunction
 
 bool Function SameSexThread()
 	bool SameSexThread = false
-	int MaleCount = ActorLib.CountMale(Positions)
-	int FemCount = ActorLib.CountFemale(Positions)
-	int FutaCount = ActorLib.CountFuta(Positions)
-	int CrtMaleCount = ActorLib.CountCrtMale(Positions)
-	int CrtFemaleCount = ActorLib.CountCrtFemale(Positions)
+	int MaleCount = sslActorLibrary.CountMale(Positions)
+	int FemCount = sslActorLibrary.CountFemale(Positions)
+	int FutaCount = sslActorLibrary.CountFuta(Positions)
+	int CrtMaleCount = sslActorLibrary.CountCrtMale(Positions)
+	int CrtFemaleCount = sslActorLibrary.CountCrtFemale(Positions)
 	If (Positions.Length != 1 && ((MaleCount + CrtMaleCount == Positions.Length) || (FemCount + CrtFemaleCount == Positions.Length) || (FutaCount == Positions.Length)))
 		SameSexThread = true ; returns false for solo scenes
 	EndIf
@@ -2942,7 +2936,7 @@ EndFunction
 
 bool Function CrtMaleHugePP()
 	bool HugePP = false
-	If ActorLib.CountCrtMale(Positions) > 0
+	If sslActorLibrary.CountCrtMale(Positions) > 0
 		int CreMalePos = -1
 		int i = 0
 		while i < Positions.Length
@@ -2967,8 +2961,7 @@ EndFunction
 bool Function IsVaginalComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
 	If (IsPhysicsRegistered() && (HasPhysicType(PTYPE_VAGINALP, ActorRef, none) || HasPhysicType(PTYPE_VAGINALA, ActorRef, none))) \
-		|| (TypeInterASL >= ASLTYPE_VG && (TypeInterASL != ASLTYPE_AN && TypeInterASL != ASLTYPE_SRAN) \
-		|| (!HasSceneTag("ASLTagged") && HasStageTag("Vaginal")))
+		|| (TypeInterASL >= ASLTYPE_VG && (TypeInterASL != ASLTYPE_AN && TypeInterASL != ASLTYPE_SRAN))
 		ret = True
 	EndIf
 	return ret
@@ -2977,8 +2970,7 @@ EndFunction
 bool Function IsAnalComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
 	If (IsPhysicsRegistered() && (HasPhysicType(PTYPE_ANALP, ActorRef, none) || HasPhysicType(PTYPE_ANALA, ActorRef, none))) \
-		|| (TypeInterASL >= ASLTYPE_AN && (TypeInterASL != ASLTYPE_SRVG)) \
-		|| (!HasSceneTag("ASLTagged") && HasStageTag("Anal"))
+		|| (TypeInterASL >= ASLTYPE_AN && (TypeInterASL != ASLTYPE_SRVG))
 		ret = True
 	EndIf
 	return ret
@@ -2987,9 +2979,23 @@ EndFunction
 bool Function IsOralComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
 	If (IsPhysicsRegistered() && HasPhysicType(PTYPE_ORAL, ActorRef, none)) \
-		|| (TypeInterASL >= ASLTYPE_OR && (TypeInterASL != ASLTYPE_VG && TypeInterASL != ASLTYPE_AN)) \
-		|| (!HasSceneTag("ASLTagged") && HasStageTag("Oral"))
+		|| (TypeInterASL >= ASLTYPE_OR && (TypeInterASL != ASLTYPE_VG && TypeInterASL != ASLTYPE_AN))
 		ret = True
 	EndIf
 	return ret
+EndFunction
+
+Function ApplyCumFX(Actor SourceRef)
+	; TODO: If there is no schlong, consider failing silenently
+	int i = 0
+	while i < Positions.Length
+		int otherSex = GetNthPositionSex(i)
+
+		Log("Checking for cum FX: " + i + " " + otherSex)
+
+		if (i != GetPosition(SourceRef)) && (otherSex == 1 || otherSex == 2 || otherSex == 4)
+			ActorAlias[i].ApplyCum()
+		endIf
+		i += 1
+	endWhile
 EndFunction

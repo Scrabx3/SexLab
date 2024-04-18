@@ -47,13 +47,6 @@ int function GetOrgasmCount()
 	return _OrgasmCount
 EndFunction
 
-; Enjoyment reduction upon orgasm is dependent upon orgasm count
-; The higher the orgasm count, the higher the OnOrgasmPenalty()
-function SetOrgasmCount(int value)
-	_OrgasmCount = value
-	_countLast = value
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Enjoyment & Pain                                --- ;
 ; ------------------------------------------------------- ;
@@ -73,8 +66,8 @@ int Function GetFullEnjoyment()
 	return _FullEnjoyment
 EndFunction
 
-; Multiplication factor influencing the rate at which enjoyment increases over time
-; Dependent upon arousal, sexuality, best relation, and context
+; Multiplication factor influencing the rate at which non-interaction enjoyment increases over time
+; Dependent upon arousal, sexuality, best relation, and context (boosted a bit on stage advance too)
 float Function GetEnjFactor()
 	return _EnjFactor
 EndFunction
@@ -237,7 +230,6 @@ int _OrgasmCount
 bool _CanOrgasm
 int _countLast
 bool _hasOrgasm
-bool _holdBack
 float _lastHoldBack
 
 ; Enjoyment
@@ -410,7 +402,7 @@ State Ready
 		_EnjoymentDelay = 1.5 ;SLSO's widget too 'jumpy' with 3.0
 		_ContextCheckDelay = 8.0
 		_hasOrgasm = false
-		_holdBack = false
+		_lastHoldBack = 0.0
 		; Voice
 		if !_Voice && !_IsForcedSilent
 			if _sex > 2
@@ -713,9 +705,6 @@ State Animating
 		If (_RefreshExpressionDelay > 8.0)
 			RefreshExpression()
 		EndIf
-		If (_holdBack && SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack >= 2.0)
-			_holdBack = false
-		EndIf
 		If (IsSeparateOrgasm() && _CanOrgasm && _FullEnjoyment >= 100)
 			int cmp
 			If(_sex == 0)
@@ -779,7 +768,10 @@ State Animating
 			; TODO: ruined orgasm
 			; rely on reducing _FullEnjoyment
 		EndIf
-		If (_holdBack && _FullEnjoyment < 120)
+		If (SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack >= 2.0)
+			_lastHoldBack = 0.0
+		EndIf
+		If (_lastHoldBack > 0.0 && _FullEnjoyment < 120)
 			Log("Orgasm manually got held back")
 			_hasOrgasm = false
 			return
@@ -798,19 +790,8 @@ State Animating
 			; TODO: Trigger Cum FX
 			; Ideally this should invoke some function on the Thread to avoid this script accessing other sslActorAlias instances
 			; this should only apply the actual FX with this Positions underlying Ref being the source. If there is no schlong, consider failing silenently
-			; _Tread.ApplyCumFX(Source = ActorRef)
-			int i = 0
-			while i < _Thread.ActorCount
-				int otherSex = _Thread.PositionAlias(i).GetGender()
-
-				Log("Checking for cum FX: " + i + " " + otherSex)
-
-				if i != Position && (otherSex == 1 || otherSex == 2 || otherSex == 4)
-					_Thread.PositionAlias(i).ApplyCum()
-				endIf
-
-				i += 1
-			endWhile
+			; _Thread.ApplyCumFX(Source = ActorRef)
+			_Thread.ApplyCumFX(_ActorRef)
 		EndIf
 		; Events
 		int eid = ModEvent.Create("SexLabOrgasm")
@@ -876,7 +857,6 @@ State Animating
 		If (KeyCode != HoldBackKeyCode && SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack < 1.8)
 			return
 		EndIf
-		_holdBack = true
 		_lastHoldBack = SexLabUtil.GetCurrentGameRealTime()
 	EndEvent
 
@@ -1035,30 +1015,30 @@ EndFunction
 ; Initialize will clear the alias and reset all of the data accordingly
 Function Initialize()
 	; Forms
-	_ActorRef 		= none
-	_HadStrapon 	= none
+	_ActorRef 	= none
+	_HadStrapon = none
 	_Strapon 		= none
 	; Voice
-	_Voice 			= none
+	_Voice 					= none
 	_IsForcedSilent = false
 	; _LegacyExpression
-	_Expression 	= ""
+	_Expression = ""
 	; Flags
-	_AllowRedress	= true
+	_AllowRedress		= true
 	_CanOrgasm    	= true
 	_hasOrgasm      = false
 	ForceOpenMouth	= false
 	; Integers
-	_sex 			= -1
-	_livestatus 	= 0
-	_PathingFlag 	= 0
-	_OrgasmCount 	= 0
+	_sex = -1
+	_livestatus = 0
+	_PathingFlag = 0
+	_OrgasmCount = 0
 	_FullEnjoyment	= 0
 	; Floats
-	_LastOrgasm 	= 0.0
-	_StartedAt		= 0.0
+	_LastOrgasm = 0.0
+	_StartedAt	= 0.0
 	; Booleans
-	_victim 		= false
+	_victim = false
 
 	TryToClear()
 	UnregisterForAllModEvents()
@@ -1253,6 +1233,9 @@ endEvent
 bool function NeedsOrgasm()
 	return _FullEnjoyment >= 100
 endFunction
+function SetOrgasmCount(int value)
+	; Will mess with internal enjoyment, deemed redundant!
+EndFunction
 
 function RegisterEvents()
 endFunction
@@ -1365,17 +1348,23 @@ function ApplyCum()
 
 	Log("START", "ApplyCum")
 	if _ActorRef && _ActorRef.Is3DLoaded()
-		Cell _ParentCell = _ActorRef.GetParentCell()
+		Cell ParentCell = _ActorRef.GetParentCell()
 
-		bool _vaginal = _Thread.IsVaginalComplex(_ActorRef, _TypeInterASL)
-		bool _oral = _Thread.IsOralComplex(_ActorRef, _TypeInterASL)
-		bool _anal = _Thread.IsAnalComplex(_ActorRef, _TypeInterASL)
+		bool vaginalPen = _Thread.IsVaginalComplex(_ActorRef, _TypeInterASL)
+		bool oralPen = _Thread.IsOralComplex(_ActorRef, _TypeInterASL)
+		bool analPen = _Thread.IsAnalComplex(_ActorRef, _TypeInterASL)
 
-		Log("Adding v = " + _vaginal + " o = " + _oral + " a = " + _anal, "ApplyCum")
+		if !vaginalPen && !oralPen && !analPen && !_Thread.HasStageTag("ASLTagged")
+			vaginalPen = _Thread.IsVaginal()
+			oralPen = _Thread.IsOral()
+			analPen = _Thread.IsAnal()
+		endIf
 
-		if (_vaginal || _oral || _anal) && _ParentCell && _ParentCell.IsAttached() 
+		Log("Adding v = " + vaginalPen + " o = " + oralPen + " a = " + analPen, "ApplyCum")
+
+		if (vaginalPen || oralPen || analPen) && ParentCell && ParentCell.IsAttached() 
 			; thanks a lot for removing ActorLib scrab
-			(Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary).AddCum(_ActorRef, _vaginal, _oral, _anal)
+			(Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary).AddCum(_ActorRef, vaginalPen, oralPen, analPen)
 		endIf
 	endIf
 endFunction
@@ -1459,6 +1448,14 @@ int _FullEnjoyment
 float _AdjustEnjFactor
 float _AdjustPain
 int _AdjustEnjoyment
+
+;customizable variables
+float _timeMax = 60.0 ;the timespan above which no pen_pain
+float _requiredXP = 50.0 ;the xp above which no pen_pain
+float _boostTime = 20.0 ;constant InterType gives enj boost till _TimeInter stays below _boostTime
+float _penaltyTime = 80.0 ;constant InterType gives enj penalty if _TimeInter goes higher than _penaltyTime
+int _MaxNoPainOrgasmsM = 1 ;after this many orgasms for males, enjoyment reset OnOrgasm will be less than zero (pserudo pain)
+int _MaxNoPainOrgasmsF = 3 ;same as above but for female and futa actors
 
 Function ResetEnjoymentVariables()
 	;stats variables
@@ -1648,20 +1645,18 @@ EndFunction
 float Function CalcEffectivePain()
 	_PainEffective = 0
 	_PainPen = 0.0
-	float timeMax = 60 ;the timespan above which no pen_pain
-	float requiredXP = 50 ;the xp above which no pen_pain
 	If (_Thread.IsVaginalComplex(_ActorRef, _TypeInterASL) || _Thread.IsAnalComplex(_ActorRef, _TypeInterASL)) \
-		&& (_VaginalXP < requiredXP || _AnalXP < requiredXP) && (_TotalInterTime < timeMax) 
+		&& (_VaginalXP < _requiredXP || _AnalXP < _requiredXP) && (_TotalInterTime < _timeMax) 
 		If ((_Thread.HasPhysicType(_Thread.PTYPE_VAGINALP, _ActorRef, none) && (_sex == 1 || _sex == 4)) \
 			|| _Thread.HasPhysicType(_Thread.PTYPE_ANALP, _ActorRef, none)) \
 			|| (_ActorInterInfo == _Thread.ACTORINT_PASSIVE)
-			float factorXP = (2 - ((1 / (requiredXP * 2)) * (1 + _VaginalXP + _AnalXP)))
+			float factorXP = (2 - ((1 / (_requiredXP * 2)) * (1 + _VaginalXP + _AnalXP)))
 			float factorPP = 0.0
 			If _CrtMaleHugePP && _sex <= 2
 				factorPP = 0.5
 			EndIf
 			_PainPen = (_InterFactor + factorPP) * factorXP * 25
-			float InterTimeModifier = _PainPen * ((1 / timeMax) * _TotalInterTime)
+			float InterTimeModifier = _PainPen * ((1 / _timeMax) * _TotalInterTime)
 			_PainPen -= InterTimeModifier
 		EndIf
 		If _PainPen < 0
@@ -1679,16 +1674,14 @@ float Function CalcEffectiveEnjoyment()
 	_EnjEffective = 0.0
 	_NonInterEnj = 0.0
 	_EnjInter = 0.0
-	float boostTime = 20 ;constant InterType gives enj boost till InterTime stays below boostTime
-	float penaltyTime = 80 ;constant InterType gives enj penalty if InterTime goes higher than penaltyTime
 	;intractions-based enjoyment
 	If _InterFactor > 0 && _TimeInter >= _EnjoymentDelay
 		_EnjInter = _InterFactor * _TimeInter
 		float InterTimeModifier = 0
-		If _TimeInter < boostTime
-			InterTimeModifier = _EnjInter * (boostTime - _TimeInter) * 0.05
-		ElseIf _TimeInter > penaltyTime
-			InterTimeModifier = _EnjInter * ((penaltyTime - _TimeInter) / 150)
+		If _TimeInter < _boostTime
+			InterTimeModifier = _EnjInter * (_boostTime - _TimeInter) * 0.05
+		ElseIf _TimeInter > _penaltyTime
+			InterTimeModifier = _EnjInter * ((_penaltyTime - _TimeInter) / 150)
 		EndIf
 		_EnjInter += InterTimeModifier
 	EndIf
@@ -1720,11 +1713,14 @@ Function AdjustEnjTimeVariables()
 	If _OrgasmCount > 0
 		If _sex == 0 || _sex == 3
 			_ThreadRuntime = ((_ThreadRuntime - 40) / (4 * _OrgasmCount))
-			If _OrgasmCount > 1
+			If _OrgasmCount > _MaxNoPainOrgasmsM
 				_ThreadRuntime -= _OrgasmCount * 20
 			EndIf
 		Else
 			_ThreadRuntime = ((_ThreadRuntime - 40) / (3 + _OrgasmCount))
+			If _OrgasmCount > _MaxNoPainOrgasmsF
+				_ThreadRuntime -= _OrgasmCount * 10
+			EndIf
 		EndIf
 		;reduces intractions-based enjoyment (OnOrgasm)
 		If (_countLast != _OrgasmCount)
