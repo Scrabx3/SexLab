@@ -69,15 +69,15 @@ Event OnKeyDown(int KeyCode)
 	If(hotkey == kAdvanceAnimation)
 		AdvanceStage(Config.BackwardsPressed())
 		;--------------------------------------------------
-		;insertion by SL_ClimaxEXT to compensate stage skip
+		;insertion by ClimaxEXT to compensate stage skip
 		int i = 0
 		While (i < Positions.Length)
-			int _enjTemp = ActorAlias[i].GetEnjoyment()
-			float _runtimeAdj = 50 - (_enjTemp * 0.5)
-			If _runtimeAdj < 25
-				_runtimeAdj = 25
+			int enjTemp = ActorAlias[i].GetEnjoyment()
+			float runtimeAdj = 50 - (enjTemp * 0.5)
+			If runtimeAdj < 25
+				runtimeAdj = 25
 			EndIf
-			ActorAlias[i].CompensateStageSkip(_runtimeAdj)
+			ActorAlias[i].CompensateStageSkip(runtimeAdj)
 			i += 1
 		EndWhile
 		;--------------------------------------------------

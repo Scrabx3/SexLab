@@ -489,7 +489,7 @@ String Property STATE_SETUP_M	= "Making_M" AutoReadOnly
 String Property STATE_PLAYING = "Animating" AutoReadOnly
 String Property STATE_END 		= "Ending" AutoReadOnly
 
-; Additions by SL_ClimaxEXT
+; Additions by ClimaxEXT
 Int Property CONSENT_CONNONSUB 		= 0 AutoReadOnly Hidden
 Int Property CONSENT_NONCONNONSUB 	= 1 AutoReadOnly Hidden
 Int Property CONSENT_CONSUB 		= 2 AutoReadOnly Hidden
@@ -1706,7 +1706,7 @@ Function Initialize()
 	_ThreadTags = Utility.CreateStringArray(0)
 	_ContextTags = Utility.CreateStringArray(0)
 	_Hooks = Utility.CreateStringArray(0)
-	InitiateInteractionFactors() ; inserted by SL_ClimaxEXT
+	InitiateInteractionFactors() ; inserted by ClimaxEXT
 	; Enter thread selection pool
 	GoToState("Unlocked")
 EndFunction
@@ -1889,7 +1889,6 @@ bool Property IsAggressive hidden
 EndProperty
 bool Property IsVaginal hidden
 	bool Function get()
-		bool ret = False
 		return SexlabRegistry.IsSceneTag(_ActiveScene, "Vaginal")
 	endfunction
 	Function set(bool value)
@@ -2537,17 +2536,17 @@ float _pVaginal
 float _aAnal
 float _pAnal
 ; non-default variables
-float grindingSet
-float aFootSet
-float pFootSet
-float aHandSet
-float pHandSet
-float aOralSet
-float pOralSet
-float aVaginalSet
-float pVaginalSet
-float aAnalSet
-float pAnalSet
+float _grindingSet
+float _aFootSet
+float _pFootSet
+float _aHandSet
+float _pHandSet
+float _aOralSet
+float _pOralSet
+float _aVaginalSet
+float _pVaginalSet
+float _aAnalSet
+float _pAnalSet
 
 ; Gets called by Initialize()
 Function InitiateInteractionFactors()
@@ -2562,54 +2561,54 @@ Function InitiateInteractionFactors()
 	_pVaginal = Utility.RandomFloat(0.8, 0.85)
 	_aAnal = Utility.RandomFloat(0.9, 0.95)
 	_aVaginal = Utility.RandomFloat(1.0, 1.05)
-	if grindingSet
-		_grinding = grindingSet
+	if _grindingSet
+		_grinding = _grindingSet
 	endif
-	if aFootSet
-		_aFoot = aFootSet
+	if _aFootSet
+		_aFoot = _aFootSet
 	endif
-	if aHandSet
-		_aHand = aHandSet
+	if _aHandSet
+		_aHand = _aHandSet
 	endif
-	if aOralSet
-		_aOral = aOralSet
+	if _aOralSet
+		_aOral = _aOralSet
 	endif
-	if pFootSet
-		_pFoot = pFootSet
+	if _pFootSet
+		_pFoot = _pFootSet
 	endif
-	if pHandSet
-		_pHand = pHandSet
+	if _pHandSet
+		_pHand = _pHandSet
 	endif
-	if pOralSet
-		_pOral = pOralSet
+	if _pOralSet
+		_pOral = _pOralSet
 	endif
-	if pAnalSet
-		_pAnal = pAnalSet
+	if _pAnalSet
+		_pAnal = _pAnalSet
 	endif
-	if pVaginalSet
-		_pVaginal = pVaginalSet
+	if _pVaginalSet
+		_pVaginal = _pVaginalSet
 	endif
-	if aAnalSet
-		_aAnal = aAnalSet
+	if _aAnalSet
+		_aAnal = _aAnalSet
 	endif
-	if aVaginalSet
-		_aVaginal = aVaginalSet
+	if _aVaginalSet
+		_aVaginal = _aVaginalSet
 	endif
 EndFunction
 
 ; TODO: expose this to the MCM maybe (or SexLab.ini, so people can share presets)?
 Function RedefineInteractionFactors(float grinding, float aFoot, float pFoot, float aHand, float pHand, float aOral, float pOral, float aVaginal, float pVaginal, float aAnal, float pAnal)
-	grindingSet = grinding
-	aFootSet = aFoot
-	aHandSet = aHand
-	aOralSet = aOral
-	pFootSet = pFoot
-	pHandSet = pHand
-	pOralSet = pOral
-	aVaginalSet = aVaginal
-	pVaginalSet = pVaginal
-	aAnalSet = aAnal
-	pAnalSet = pAnal
+	_grindingSet = grinding
+	_aFootSet = aFoot
+	_pFootSet = pFoot
+	_aHandSet = aHand
+	_pHandSet = pHand
+	_aOralSet = aOral
+	_pOralSet = pOral
+	_aVaginalSet = aVaginal
+	_pVaginalSet = pVaginal
+	_aAnalSet = aAnal
+	_pAnalSet = pAnal
 EndFunction
 
 float Function CalcPhysicFactor(Actor ActorRef)
@@ -2618,7 +2617,6 @@ float Function CalcPhysicFactor(Actor ActorRef)
 	bool actor_pOral = false
 	bool actor_pFoot = false
 	bool actor_pHand = false
-	string _name = ActorRef.GetLeveledActorBase().GetName()
 
 	int[] typesPhysic = GetPhysicTypes(ActorRef, none)
 	int i = 0
@@ -2717,32 +2715,32 @@ int Function GetInteractionTypeASL()
 	endif
 EndFunction
 
-int Function GuessActorInterInfo(Actor ActorRef, int _gender, bool _IsVictim, int ConSubStatus, bool SameSexThread)
+int Function GuessActorInterInfo(Actor ActorRef, int ActorSex, bool IsActorSub, int ConSubStatus, bool SameSexThread)
 	;IMP: roles will be reversed for oral (ACTORINT_PASSIVE is the OralGiving and ACTORINT_ACTIVE is OralReceiving)
 	;Not adjusting values here cuz that will have unintended effects for Spirtoast, DP, and TP scenes 
 	int ActorInterInfo = ACTORINT_NONPART
 	if ConSubStatus > CONSENT_NONCONNONSUB
 		bool FemDom = HasSceneTag("FemDom")
 		if !SameSexThread
-			if (_IsVictim && !FemDom) || (!_IsVictim && FemDom)
+			if (IsActorSub && !FemDom) || (!IsActorSub && FemDom)
 				ActorInterInfo = ACTORINT_PASSIVE
-			elseif (!_IsVictim && !FemDom) || (_IsVictim && FemDom)
+			elseif (!IsActorSub && !FemDom) || (IsActorSub && FemDom)
 				ActorInterInfo = ACTORINT_ACTIVE
 			endif
 		else
-			if _IsVictim
+			if IsActorSub
 				ActorInterInfo = ACTORINT_PASSIVE
-			elseif !_IsVictim
+			elseif !IsActorSub
 				ActorInterInfo = ACTORINT_ACTIVE
 			endif
 		endif
 	else
 		if !SameSexThread
-			if _gender == 1 || _gender == 4
+			if ActorSex == 1 || ActorSex == 4
 				ActorInterInfo = ACTORINT_PASSIVE
-			elseif _gender == 0 || _gender == 3
+			elseif ActorSex == 0 || ActorSex == 3
 				ActorInterInfo = ACTORINT_ACTIVE
-			elseif _gender == 2
+			elseif ActorSex == 2
 				if HasSceneTag("Anubs") && HasSceneTag("MF")
 					ActorInterInfo = Utility.RandomInt(1, 2)
 				else
@@ -2845,7 +2843,7 @@ W_agg=18 | w_vic=19 | <<spouse+lover=20>> | w_dom=21 | w_sub=22/;
 int Function GetRelationForScene(Actor ActorRef, Actor TargetRef, int ConSubStatus)
 	int BaseRelation = 0
 	int ContextRelation = 0
-	int Relation = 0
+	int retRelation = 0
 	bool withSpouse = false
 	bool withLover = false
 	
@@ -2881,8 +2879,8 @@ int Function GetRelationForScene(Actor ActorRef, Actor TargetRef, int ConSubStat
 		EndIf
 	EndIf
 
-	Relation = BaseRelation + ContextRelation
-	return Relation
+	retRelation = BaseRelation + ContextRelation
+	return retRelation
 EndFunction
 
 int Function GetBestRelationForScene(Actor ActorRef, int ConSubStatus)
