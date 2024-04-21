@@ -39,19 +39,20 @@ function AddRaceID(string RaceKey, string RaceID) global
 EndFunction
 
 bool function HasRaceID(string RaceKey, string RaceID) global
-  return true
+  return SexLabRegistry.MapRaceKeyToID(RaceKey) > 0
 EndFunction
 bool function HasRaceKey(string RaceKey) global
-  return SexLabRegistry.GetAllRaceKeys(false).Find(RaceKey) > -1
+  return SexLabRegistry.GetAllRaceKeys(false).Find(RaceKey) > 0
 EndFunction
 bool function ClearRaceKey(string RaceKey) global
   return true
 EndFunction
 bool function HasCreatureType(Actor ActorRef) global
-  return true
+  return SexLabRegistry.GetRaceID(ActorRef) > 0
 EndFunction
 bool function HasRaceType(Race RaceRef) global
-  return true
+  String racekey = SexLabRegistry.GetRaceKeyByRace(RaceRef)
+  return SexLabRegistry.MapRaceKeyToID(racekey) > 0
 EndFunction
 
 string[] function GetAllRaceKeys(Race RaceRef = none) global
