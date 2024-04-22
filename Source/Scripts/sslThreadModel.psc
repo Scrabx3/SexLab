@@ -168,15 +168,7 @@ int Function GetEnjoyment(Actor ActorRef)
 	return ref.GetEnjoyment()
 EndFunction
 
-float Function GetEnjFactor(Actor ActorRef)
-	sslActorAlias ref = ActorAlias(ActorRef)
-	If (!ref)
-		return 0
-	EndIf
-	return ref.GetEnjFactor()
-EndFunction
-
-Function AdjustPain(Actor ActorRef, float AdjustBy)
+Function AdjustPain(Actor ActorRef, int AdjustBy)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
 		return
@@ -190,14 +182,6 @@ Function AdjustEnjoyment(Actor ActorRef, int AdjustBy)
 		return
 	EndIf
 	return ref.AdjustEnjoyment(AdjustBy)
-EndFunction
-
-Function AdjustEnjFactor(Actor ActorRef, float AdjustBy)
-	sslActorAlias ref = ActorAlias(ActorRef)
-	If (!ref)
-		return
-	EndIf
-	return ref.AdjustEnjFactor(AdjustBy)
 EndFunction
 
 ; Orgasms
@@ -223,14 +207,6 @@ Function ForceOrgasm(Actor ActorRef)
 		return none
 	EndIf
 	return ref.DoOrgasm(true)
-EndFunction
-
-int Function GetOrgasmCount(Actor ActorRef)
-	sslActorAlias ref = ActorAlias(ActorRef)
-	If (!ref)
-		return 0
-	EndIf
-	return ref.GetOrgasmCount()
 EndFunction
 
 Actor[] Function CanBeImpregnated(Actor akActor,  bool abAllowFutaImpregnation, bool abFutaCanPregnate, bool abCreatureCanPregnate)
@@ -2732,14 +2708,8 @@ int Function GuessActorInterInfo(Actor ActorRef, int ActorSex, bool IsActorSub, 
 		if !SameSexThread
 			if ActorSex == 1 || ActorSex == 4
 				ActorInterInfo = ACTORINT_PASSIVE
-			elseif ActorSex == 0 || ActorSex == 3
+			else ; ignoring complexities with futas
 				ActorInterInfo = ACTORINT_ACTIVE
-			elseif ActorSex == 2
-				if HasSceneTag("Anubs") && HasSceneTag("MF")
-					ActorInterInfo = Utility.RandomInt(1, 2)
-				else
-					ActorInterInfo = ACTORINT_ACTIVE
-				endif
 			endif
 		else
 			; function stays in ThreadModel cuz of this
@@ -2957,6 +2927,10 @@ bool Function CrtMaleHugePP()
 	EndIf
 	return HugePP
 EndFunction
+
+; ------------------------------------------------------- ;
+; --- ORGASM FX                                       --- ;
+; ------------------------------------------------------- ;
 
 bool Function IsVaginalComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False

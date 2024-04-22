@@ -51,35 +51,24 @@ EndFunction
 ; --- Enjoyment & Pain                                --- ;
 ; ------------------------------------------------------- ;
 
-; Pain based on context and interaction, dynamic, often reducing over time
 int Function GetPain()
 	return _PainEffective as int
 EndFunction
 
-; Enjoyment that takes psychological factors, physics/interactions, and pain into account
 int Function GetEnjoyment()
 	return _FullEnjoyment
 EndFunction
 
-; Same as GetEnjoyment(), for partial compatibility with SLSO based mods
-int Function GetFullEnjoyment()
-	return _FullEnjoyment
-EndFunction
-
-; Multiplication factor influencing the rate at which non-interaction enjoyment increases over time
-; Dependent upon arousal, sexuality, best relation, and context (boosted a bit on stage advance too)
-float Function GetEnjFactor()
-	return _EnjFactor
-EndFunction
-
-Function AdjustPain(float AdjustBy)
+Function AdjustPain(int AdjustBy)
 	_AdjustPain = AdjustBy
 EndFunction
 Function AdjustEnjoyment(int AdjustBy)
 	_AdjustEnjoyment = AdjustBy
 EndFunction
-Function AdjustEnjFactor(float AdjustBy)
-	_AdjustEnjFactor = AdjustBy
+
+; for compatibility with SLSO-based mods
+int Function GetFullEnjoyment()
+	return _FullEnjoyment
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -228,14 +217,15 @@ ObjectReference _myMarker
 ; Orgasms
 int _OrgasmCount
 bool _CanOrgasm
-int _countLast
-bool _hasOrgasm
 float _lastHoldBack
 
 ; Enjoyment
 float _EnjoymentDelay
 float _ContextCheckDelay
-float _EnjRaise
+
+; Not Implemented
+;bool _hasOrgasm
+;float _EnjRaise
 
 ; Stripping
 int _stripData		; Strip data as provided by the animation
@@ -398,10 +388,9 @@ State Ready
 		EndIf
 		_VoiceDelay = _BaseDelay
 		_ExpressionDelay = _BaseDelay * 2
-		; TODO: find fitting interval for enjoyment updates
-		_EnjoymentDelay = 1.5 ;SLSO's widget too 'jumpy' with 3.0
+		_EnjoymentDelay = 1.5
 		_ContextCheckDelay = 8.0
-		_hasOrgasm = false
+		;_hasOrgasm = false
 		_lastHoldBack = 0.0
 		; Voice
 		if !_Voice && !_IsForcedSilent
@@ -684,11 +673,13 @@ State Animating
 		; Probably should changes this to reduce and compare timers to 0?
 		If _LoopContextCheckDelay >= _ContextCheckDelay
 			_LoopContextCheckDelay = 0
-			RecheckConSubStatus()
+			If (_Thread.IdentifyConsentSubStatus()) != _ConSubStatus
+				UpdateBaseEnjoymentCalculations()
+			EndIf
 		EndIf
-		If _LoopEnjoymentDelay >= _EnjoymentDelay ; && IsSeparateOrgasm()
+		If _LoopEnjoymentDelay >= _EnjoymentDelay
 			_LoopEnjoymentDelay = 0
-			UpdateEffectiveEnjoymentCalculations() ;call this before CalcReaction()
+			UpdateEffectiveEnjoymentCalculations()
 		EndIf
 		int Strength = CalcReaction()
 		if _LoopDelay >= _VoiceDelay && (_Config.LipsFixedValue || Strength > 10)
@@ -707,10 +698,8 @@ State Animating
 		EndIf
 		If (IsSeparateOrgasm() && _CanOrgasm && _FullEnjoyment >= 100)
 			int cmp
-			If(_sex == 0)
+			If(_sex == 0 || _sex == 3)
 				cmp = 20
-			ElseIf(_sex == 3)
-				cmp = 30
 			Else
 				cmp = 10
 			EndIf
@@ -755,25 +744,29 @@ State Animating
 		DoOrgasm()
 	EndEvent
 	Function DoOrgasm(bool Forced = false)
-		If (_hasOrgasm || !Forced && (!_CanOrgasm || (IsSeparateOrgasm() && _FullEnjoyment < 90)))
-			Log("Tried to orgasm, but orgasms are disabled for this position: hasOrgasm = " + _hasOrgasm + " Forced=" + Forced + " _CanOrgasm=" + _CanOrgasm + " FullEnjoyment=" + _FullEnjoyment)
+		If !Forced && (!_CanOrgasm || (IsSeparateOrgasm() && _FullEnjoyment < 100))
+			Log("Tried to orgasm, but orgasms are disabled for this position: Forced=" + Forced + " _CanOrgasm=" + _CanOrgasm + " FullEnjoyment=" + _FullEnjoyment)
+			return
+		EndIf
+		;/If _hasOrgasm
 			return
 		EndIf
 		_hasOrgasm = true
-		; TODO: actor specific orgasm conditions (+ edging / overstim)
+		;TODO: actor specific orgasm conditions (+ edging / overstim)
 		If (_EnjRaise < 0.03 && _FullEnjoyment > 90 && _FullEnjoyment < 100)
-			; TODO: edging - let enjoyment raise faster and faster
-			; rely on increasing _EnjFactor
+			;TODO: edging - let enjoyment raise faster and faster
+			;rely on increasing _EnjFactor
 		ElseIf (_FullEnjoyment > 100 && _EnjRaise < 0.03)
-			; TODO: ruined orgasm
-			; rely on reducing _FullEnjoyment
-		EndIf
-		If (SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack >= 2.0)
+			;TODO: ruined orgasm
+			;rely on reducing _FullEnjoyment
+		EndIf/;
+		If ((SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack) > (3.7 - (_FullEnjoyment * 0.017)))
 			_lastHoldBack = 0.0
 		EndIf
-		If (_lastHoldBack > 0.0 && _FullEnjoyment < 120)
+		If (_lastHoldBack > 0.0 && _FullEnjoyment <= 200)
 			Log("Orgasm manually got held back")
-			_hasOrgasm = false
+			_EnjFactor += 0.02 ;value small cuz (_EnjoymentDelay/UpdateInterval == 6); the boost in 3 secondds will be 0.24
+			;_hasOrgasm = false
 			return
 		EndIf
 		; SFX
@@ -808,12 +801,29 @@ State Animating
 				ModEvent.Send(handle)
 			EndIf
 		EndIf
-		; enjoyment reduction handled by AdjustEnjTimeVariables()
 		RegisterForSingleUpdate(UpdateInterval)
 		_LastOrgasm = SexLabUtil.GetCurrentGameRealTime()
-		_countLast = _OrgasmCount
 		_OrgasmCount += 1
-		_hasOrgasm = false
+		;_hasOrgasm = false
+		; Enjoyment
+		_EnjFactor = _BaseFactor
+		_HoldBackSpamPenalty = 0
+		_TimeInter = _EnjoymentDelay
+		If _sex == 0 || _sex == 3
+			_timeAdjusted = ((_timeAdjusted - 40) / (4 * _OrgasmCount))
+			If _OrgasmCount > _MaxNoPainOrgasmsM
+				_timeAdjusted -= _OrgasmCount * 20
+			EndIf
+		Else
+			_timeAdjusted = ((_timeAdjusted - 40) / (3 + _OrgasmCount))
+			If _OrgasmCount > _MaxNoPainOrgasmsF
+				_timeAdjusted -= _OrgasmCount * 10
+			EndIf
+		EndIf
+		UpdateEffectiveEnjoymentCalculations()
+		; Arousal
+		float arousalScene = PapyrusUtil.ClampFloat(_FullEnjoyment as float, 0, 100)
+		SexlabStatistics.SetStatistic(_ActorRef, 17, arousalScene)
 		Log(GetActorName() + ": Orgasms[" + _OrgasmCount + "] FullEnjoyment [" + _FullEnjoyment + "]")
 	EndFunction
 
@@ -853,8 +863,17 @@ State Animating
 	EndFunction
 
 	Event OnKeyDown(Int KeyCode)
-		; give some time to overlap
-		If (KeyCode != HoldBackKeyCode && SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack < 1.8)
+		If (KeyCode != HoldBackKeyCode || _FullEnjoyment < 90)
+			return
+		EndIf
+		; TODO: expose timeHoldBackEffect as some UI bar when making custom widget; can be a cool minigame feature
+		float allowedHoldbackTimeWindow = (3.7 - (_FullEnjoyment * 0.017)) / 2
+		If _lastHoldBack && (SexLabUtil.GetCurrentGameRealTime() - _lastHoldBack < allowedHoldbackTimeWindow)
+			Log("Detected holdback spam; successive holdbacks should be at least " + allowedHoldbackTimeWindow + " seconds apart")
+			_HoldBackSpamPenalty += (allowedHoldbackTimeWindow as int) * 2
+			If _EnjFactor > 1.5
+				_EnjFactor -= 0.03
+			EndIf
 			return
 		EndIf
 		_lastHoldBack = SexLabUtil.GetCurrentGameRealTime()
@@ -863,9 +882,9 @@ State Animating
 	Event OnEndState()
 		UnregisterForModEvent("SSL_ORGASM_Thread" + _Thread.tid)
 		UnregisterForKey(HoldBackKeyCode)
-		If _ThreadRuntime > 40
-			_SceneArousal = PapyrusUtil.ClampFloat(_FullEnjoyment as float, 0, 100)
-			SexlabStatistics.SetStatistic(_ActorRef, 17, _SceneArousal)
+		If (SexLabUtil.GetCurrentGameRealTime() - _LastOrgasm > 25)
+			float arousalScene = PapyrusUtil.ClampFloat(_FullEnjoyment as float, 0, 100)
+			SexlabStatistics.SetStatistic(_ActorRef, 17, arousalScene)
 		EndIf
 		If(_Expression || sslBaseExpression.IsMouthOpen(ActorRef))
 			sslBaseExpression.CloseMouth(ActorRef)
@@ -1026,7 +1045,7 @@ Function Initialize()
 	; Flags
 	_AllowRedress		= true
 	_CanOrgasm    	= true
-	_hasOrgasm      = false
+	;_hasOrgasm      = false
 	ForceOpenMouth	= false
 	; Integers
 	_sex = -1
@@ -1409,224 +1428,179 @@ endFunction
 ; --- Enjoyment                                       --- ;
 ; ------------------------------------------------------- ;
 
-;stats variables
-float _ArousalStat
-float _SceneArousal
-float _VaginalXP
-float _AnalXP
-int _SexualityStat
-int _ActorSexuality
-;thread info
-bool _SameSexThread
+; Thread
+int _numStage
+float _timeAdjusted
+; Base
 bool _CrtMaleHugePP
 int _ConSubStatus
 int _ActorInterInfo
-int _numStage
-float _ThreadRuntime
-float _StageSkippedAt
-float _StageSkipCompensation
-;base variables
-float _BestRelation
 float _PainContext
 float _EnjFactor
-float _StageAdvanceFactor
-;penetration variables
+float _BaseFactor
+; Interaction
 int _TypeInterASL
 float _InterFactor
-float _InterStartedAt
 float _TimeInter
 float _TotalInterTime
-;effective variables
-float _PainPen
+; Effective
 float _PainEffective
-float _EnjInter
 float _InterEnjBackup
-float _NonInterEnj
-float _EnjEffective
 int _FullEnjoyment
-;adjustment variables
-float _AdjustEnjFactor
-float _AdjustPain
+int _HoldBackSpamPenalty
+; Adjustment
+int _AdjustPain
 int _AdjustEnjoyment
 
-;customizable variables
-float _timeMax = 60.0 ;the timespan above which no pen_pain
-float _requiredXP = 50.0 ;the xp above which no pen_pain
-float _boostTime = 20.0 ;constant InterType gives enj boost till _TimeInter stays below _boostTime
+; Customizables (TODO: expose these to sexlab.ini)
+float _factorNonInterEnjRaise = 0.6 ;one of the factors determining time-based enjoyment; if you want more orgasms, increasing this value will help and vice versa
+float _factorInterEnjRaise = 1.2 ;one of the factors determining interaction-based enjoyment; will also affect penetration pain; same suggestion as above
+float _timeMax = 30.0 ;the timespan above which no penetration pain
+float _requiredXP = 50.0 ;the xp above which no penetration pain
+float _boostTime = 30.0 ;constant InterType gives enj boost till _TimeInter stays below _boostTime
 float _penaltyTime = 80.0 ;constant InterType gives enj penalty if _TimeInter goes higher than _penaltyTime
-int _MaxNoPainOrgasmsM = 1 ;after this many orgasms for males, enjoyment reset OnOrgasm will be less than zero (pserudo pain)
+int _MaxNoPainOrgasmsM = 1 ;after this many orgasms for males, enjoyment reset OnOrgasm will be less than zero (pseudo pain)
 int _MaxNoPainOrgasmsF = 3 ;same as above but for female and futa actors
 
 Function ResetEnjoymentVariables()
-	;stats variables
-	_ArousalStat = 0.0
-	_SceneArousal = 0.0
-	_VaginalXP = 0.0
-	_AnalXP = 0.0
-	_SexualityStat = 0
-	_ActorSexuality = -1
-	;thread info
-	_SameSexThread = False
+	; Thread
+	_numStage = 0
+	_timeAdjusted = 0.0
+	; Base
 	_CrtMaleHugePP = False
 	_ConSubStatus = _Thread.CONSENT_CONNONSUB
 	_ActorInterInfo = _Thread.ACTORINT_NONPART
-	_numStage = 0
-	_ThreadRuntime = 0.0
-	_StageSkippedAt = 0.0
-	_StageSkipCompensation = 0.0
-	;base variables
-	_BestRelation = 0.0
 	_PainContext = 0.0
 	_EnjFactor = 0.0
-	_StageAdvanceFactor = 0.0
-	;penetration variables
+	_BaseFactor = 0.0
+	; Interaction
 	_TypeInterASL = 0
 	_InterFactor = 0.0
-	_InterStartedAt = 0.0
 	_TimeInter = 0.0
 	_TotalInterTime = 0.0
-	;effective variables
-	_PainPen = 0.0
+	; Effective
 	_PainEffective = 0.0
-	_EnjInter = 0.0
 	_InterEnjBackup = 0.0
-	_NonInterEnj = 0.0
-	_EnjEffective = 0.0
 	_FullEnjoyment = 0
-	;adjustment variables
-	_AdjustEnjFactor = 0.0
-	_AdjustPain = 0.0
+	_HoldBackSpamPenalty = 0
+	; Adjustment
+	_AdjustPain = 0
 	_AdjustEnjoyment = 0
 EndFunction
 
 Function UpdateBaseEnjoymentCalculations()
 	ResetEnjoymentVariables()
-	_ArousalStat = SexlabStatistics.GetStatistic(_ActorRef, 17)
-	_VaginalXP = SexlabStatistics.GetStatistic(_ActorRef, 2)
-	_AnalXP = SexlabStatistics.GetStatistic(_ActorRef, 3)
-	_SexualityStat = SexlabStatistics.GetSexuality(_ActorRef)
-	_ActorSexuality = SexlabStatistics.MapSexuality(_SexualityStat)
-	_SameSexThread = _Thread.SameSexThread()
+	If _livestatus != LIVESTATUS_ALIVE
+		return
+	EndIf
 	_CrtMaleHugePP = _Thread.CrtMaleHugePP()
 	_ConSubStatus = _Thread.IdentifyConsentSubStatus()
-	_ActorInterInfo = _Thread.GuessActorInterInfo(_ActorRef, _sex, _victim, _ConSubStatus, _SameSexThread)
-	_BestRelation  = _Thread.GetBestRelationForScene(_ActorRef, _ConSubStatus) as float
-	_PainContext = CalcContextPain()
-	_EnjFactor = CalcEnjoymentFactor()
+	bool SameSexThread = _Thread.SameSexThread()
+	float BestRelation  = _Thread.GetBestRelationForScene(_ActorRef, _ConSubStatus) as float
+	_ActorInterInfo = _Thread.GuessActorInterInfo(_ActorRef, _sex, _victim, _ConSubStatus, SameSexThread)
+	_PainContext = CalcContextPain(BestRelation)
+	_EnjFactor = CalcEnjoymentFactor(SameSexThread, BestRelation)
+	_BaseFactor = _EnjFactor
 	If _Config.DebugMode
 		DebugBaseCalcVariables()
 	EndIf
 EndFunction
 
 Function UpdateEffectiveEnjoymentCalculations()
-	;update _EnjFactor
-	int _numStageTemp = _Thread.GetStageHistoryLength()
-	If (_numStageTemp > _numStage) && _numStage
-		If !_victim
-			_StageAdvanceFactor += 0.25
-		Else
-			_StageAdvanceFactor += 0.15
-		EndIf
-		_EnjFactor = (_EnjFactor + _StageAdvanceFactor)
+	If _livestatus != LIVESTATUS_ALIVE
+		return
 	EndIf
-	_numStage = _numStageTemp
-	If _AdjustEnjFactor
-		_EnjFactor = (_EnjFactor + _AdjustEnjFactor)
-	EndIf
-	;check interactions
+	; Interactions
 	_TypeInterASL = _Thread.GetInteractionTypeASL()
 	float InterFactorTemp = _Thread.GetInteractionFactor(_ActorRef, _TypeInterASL, _ActorInterInfo)
 	If InterFactorTemp > 0 && _InterFactor == 0
 		_TimeInter = _EnjoymentDelay
-		_InterStartedAt = SexLabUtil.GetCurrentGameRealTime()
+		_TotalInterTime = _EnjoymentDelay
 	ElseIf InterFactorTemp > 0 && _InterFactor > 0
 		_TimeInter += _EnjoymentDelay
 	ElseIf InterFactorTemp == 0 && _InterFactor > 0
 		_TimeInter = 0
 	EndIf
 	_InterFactor = InterFactorTemp
-	;time
-	_TotalInterTime = SexLabUtil.GetCurrentGameRealTime() - _InterStartedAt
-	_ThreadRuntime = SexLabUtil.GetCurrentGameRealTime() - _StartedAt
-	AdjustEnjTimeVariables()
-	;pain
+	; Time
+	_timeAdjusted += _EnjoymentDelay
+	If _TotalInterTime
+		_TotalInterTime += _EnjoymentDelay
+	EndIf
+	; StageAdvance
+	int numStageTemp = _Thread.GetStageHistoryLength()
+	If _numStage && (numStageTemp > _numStage) && (_FullEnjoyment < 70)
+		If !_victim
+			_EnjFactor = _EnjFactor + 0.30
+		Else
+			_EnjFactor = _EnjFactor + 0.20
+		EndIf
+	EndIf
+	_numStage = numStageTemp
+	; Pain
 	_PainEffective = CalcEffectivePain()
 	If _AdjustPain
-		_PainEffective = (_PainEffective + _AdjustPain)
+		_PainEffective = _PainEffective + _AdjustPain as float
 	EndIf
-	;enjoyment
-	_EnjEffective = CalcEffectiveEnjoyment()
-	_FullEnjoyment = _EnjEffective as int
+	; Enjoyment
+	_FullEnjoyment = CalcEffectiveEnjoyment() as int
+	If _HoldBackSpamPenalty
+		_FullEnjoyment = _FullEnjoyment - _HoldBackSpamPenalty
+	EndIf
 	If _AdjustEnjoyment
-		_FullEnjoyment = (_FullEnjoyment + _AdjustEnjoyment)
+		_FullEnjoyment = _FullEnjoyment + _AdjustEnjoyment
 	EndIf
-	;arousal (OnOrgasm)
-	If _countLast != _OrgasmCount
-		_SceneArousal = PapyrusUtil.ClampFloat(_FullEnjoyment as float, 0, 100)
-		SexlabStatistics.SetStatistic(_ActorRef, 17, _SceneArousal)
-		_countLast = _OrgasmCount
-		_StageAdvanceFactor = 0.0
-	EndIf
-	;debug
+	; Debug
 	If _Config.DebugMode
 		DebugEffectiveCalcVariables()
 	EndIf
 EndFunction
 
-Function RecheckConSubStatus()
-	int ConSubTemp = _Thread.IdentifyConsentSubStatus()
-	If ConSubTemp != _ConSubStatus
-		_ActorInterInfo = _Thread.GuessActorInterInfo(_ActorRef, _sex, _victim, _ConSubStatus, _SameSexThread)
-		_BestRelation  = _Thread.GetBestRelationForScene(_ActorRef, _ConSubStatus) as float
-		_PainContext = CalcContextPain()
-		_EnjFactor = CalcEnjoymentFactor()
-		_ConSubStatus = ConSubTemp
+float Function CalcContextPain(float BestRelation)
+	If _ConSubStatus == _Thread.CONSENT_CONNONSUB
+		return 0
 	EndIf
-EndFunction
-
-float Function CalcContextPain()
-    _PainContext = 0
-    If _victim && _ConSubStatus != _Thread.CONSENT_CONNONSUB
+    If (_victim || _ActorInterInfo == _Thread.ACTORINT_PASSIVE)
+		If _Thread.HasSceneTag("Humiliation")
+			return 25
+		ElseIf _Thread.HasSceneTag("Forced")
+			return 35
+		ElseIf _Thread.HasSceneTag("Ryona")
+			return 45
+		EndIf
+		float contextPain = 0.0
 		If _Thread.HasSceneTag("Spanking")
-			_PainContext += 3
+			contextPain += 5
 		EndIf
 		If _Thread.HasSceneTag("Dominant")
-			_PainContext += 8
+			contextPain += 10
 		EndIf
 		If _Thread.HasSceneTag("Asphyxiation")
-			_PainContext += 10
-		EndIf
-		If _Thread.HasSceneTag("Humiliation")
-			_PainContext = 15
-		ElseIf _Thread.HasSceneTag("Forced") && !(_Thread.HasSceneTag("Rape"))
-			_PainContext = 18
-		ElseIf _Thread.HasSceneTag("Forced") && _Thread.HasSceneTag("Rape")
-			_PainContext = 25
-		ElseIf _Thread.HasSceneTag("Ryona")
-			_PainContext = 30
-		ElseIf _Thread.HasSceneTag("Gore")
-			_PainContext = 35
+			contextPain += 15
 		EndIf
 		If _ConSubStatus == _Thread.CONSENT_CONSUB
-			_PainContext -= (_BestRelation * _PainContext * 0.03)
+			contextPain -= (BestRelation * contextPain * 0.03)
 		EndIf
+		return contextPain
     EndIf
-    return _PainContext
+    return 0
 EndFunction
 
-float Function CalcEnjoymentFactor()
+float Function CalcEnjoymentFactor(bool SameSexThread, float BestRelation)
 	_EnjFactor = 0
 	;arousal
-	If _ArousalStat <= 0
-		_ArousalStat = 0
-	ElseIf _ArousalStat > 100
-		_ArousalStat = 100
+	float statArousal = SexlabStatistics.GetStatistic(_ActorRef, 17)
+	If statArousal <= 0
+		statArousal = 0
+	ElseIf statArousal > 100
+		statArousal = 100
 	EndIf
-	_EnjFactor = (0.5 + (_ArousalStat / 50))
+	_EnjFactor = (0.5 + (statArousal / 50))
 	;sexuality
-	If (_ActorSexuality == 0 && !_SameSexThread) || (_ActorSexuality == 1 && _SameSexThread) || (_ActorSexuality == 2)
+	int actorSexuality = SexlabStatistics.MapSexuality(SexlabStatistics.GetSexuality(_ActorRef))
+	If (actorSexuality == 0 && !SameSexThread) || (actorSexuality == 1 && SameSexThread) || (actorSexuality == 2)
 		_EnjFactor += 0.5
-	ElseIf (_ActorSexuality == 1 && !_SameSexThread) || (_ActorSexuality == 0 && _SameSexThread)
+	ElseIf (actorSexuality == 1 && !SameSexThread) || (actorSexuality == 0 && SameSexThread)
 		_EnjFactor -= 0.5
 	EndIf
 	;context
@@ -1638,32 +1612,34 @@ float Function CalcEnjoymentFactor()
 		EndIf
 	EndIf
 	;relation
-	_EnjFactor += (0.5 + (_BestRelation / 22))
+	_EnjFactor += (0.5 + (BestRelation / 22))
 	return _EnjFactor
 EndFunction
 
 float Function CalcEffectivePain()
 	_PainEffective = 0
-	_PainPen = 0.0
+	float PainPen = 0.0
+	float vaginalXP = SexlabStatistics.GetStatistic(_ActorRef, 2)
+	float analXP = SexlabStatistics.GetStatistic(_ActorRef, 3)
 	If (_Thread.IsVaginalComplex(_ActorRef, _TypeInterASL) || _Thread.IsAnalComplex(_ActorRef, _TypeInterASL)) \
-		&& (_VaginalXP < _requiredXP || _AnalXP < _requiredXP) && (_TotalInterTime < _timeMax) 
+		&& (vaginalXP < _requiredXP || analXP < _requiredXP) && (_TotalInterTime < _timeMax)
 		If ((_Thread.HasPhysicType(_Thread.PTYPE_VAGINALP, _ActorRef, none) && (_sex == 1 || _sex == 4)) \
 			|| _Thread.HasPhysicType(_Thread.PTYPE_ANALP, _ActorRef, none)) \
 			|| (_ActorInterInfo == _Thread.ACTORINT_PASSIVE)
-			float factorXP = (2 - ((1 / (_requiredXP * 2)) * (1 + _VaginalXP + _AnalXP)))
+			float factorXP = (2 - ((1 / (_requiredXP * 2)) * (1 + vaginalXP + analXP)))
 			float factorPP = 0.0
 			If _CrtMaleHugePP && _sex <= 2
 				factorPP = 0.5
 			EndIf
-			_PainPen = (_InterFactor + factorPP) * factorXP * 25
-			float InterTimeModifier = _PainPen * ((1 / _timeMax) * _TotalInterTime)
-			_PainPen -= InterTimeModifier
+			PainPen = ((_InterFactor + factorPP) * _factorInterEnjRaise) * factorXP * 25
+			float InterTimeModifier = PainPen * ((1 / _timeMax) * _TotalInterTime)
+			PainPen -= InterTimeModifier
 		EndIf
-		If _PainPen < 0
-			_PainPen = 0
+		If PainPen < 0
+			PainPen = 0
 		EndIf
 	EndIf
-	_PainEffective = _PainContext + _PainPen
+	_PainEffective = _PainContext + PainPen
 	If _PainEffective < 0
 		_PainEffective = 0
 	EndIf
@@ -1671,67 +1647,33 @@ float Function CalcEffectivePain()
 EndFunction
 
 float Function CalcEffectiveEnjoyment()
-	_EnjEffective = 0.0
-	_NonInterEnj = 0.0
-	_EnjInter = 0.0
+	float EnjEffective = 0
+	float NonInterEnj = 0.0
+	float EnjInter = 0.0
 	;intractions-based enjoyment
 	If _InterFactor > 0 && _TimeInter >= _EnjoymentDelay
-		_EnjInter = _InterFactor * _TimeInter
+		EnjInter = _InterFactor * _TimeInter * _factorInterEnjRaise
 		float InterTimeModifier = 0
 		If _TimeInter < _boostTime
-			InterTimeModifier = _EnjInter * (_boostTime - _TimeInter) * 0.05
+			InterTimeModifier = EnjInter * (_boostTime - _TimeInter) * 0.05
 		ElseIf _TimeInter > _penaltyTime
-			InterTimeModifier = _EnjInter * ((_penaltyTime - _TimeInter) / 150)
+			InterTimeModifier = EnjInter * ((_penaltyTime - _TimeInter) / 150)
 		EndIf
-		_EnjInter += InterTimeModifier
+		EnjInter += InterTimeModifier
 	EndIf
-	;avoiding rapid drops in _EnjInter
-	If _EnjInter > 0
-		_InterEnjBackup = _EnjInter
+	;avoiding rapid drops in EnjInter
+	If EnjInter > 0
+		_InterEnjBackup = EnjInter
 	EndIf
-	If _EnjInter == 0 && _InterEnjBackup > 0
-		_InterEnjBackup -= (1 * _EnjoymentDelay)
-		_EnjInter = _InterEnjBackup
+	If EnjInter == 0 && _InterEnjBackup > 0
+		_InterEnjBackup -= 2 * _EnjoymentDelay
+		EnjInter = _InterEnjBackup
 	EndIf
 	;runtime-based enjoyment
-	_NonInterEnj = _EnjFactor * (_ThreadRuntime * 0.4)
-	;calculating return value
-	_EnjEffective = _NonInterEnj + _EnjInter - _PainEffective
-	return _EnjEffective
-EndFunction
-
-Function AdjustEnjTimeVariables()
-	;increases runtime-based enjoyment (OnStageSkip)
-	If _StageSkipCompensation
-		float adjustedRuntime = _StageSkippedAt + _StageSkipCompensation
-		If _ThreadRuntime < adjustedRuntime
-			_StageSkipCompensation -= _EnjoymentDelay
-			_ThreadRuntime = _ThreadRuntime + _StageSkipCompensation
-		EndIf
-	EndIf
-	;reduces runtime-based enjoyment (OnOrgasm)
-	If _OrgasmCount > 0
-		If _sex == 0 || _sex == 3
-			_ThreadRuntime = ((_ThreadRuntime - 40) / (4 * _OrgasmCount))
-			If _OrgasmCount > _MaxNoPainOrgasmsM
-				_ThreadRuntime -= _OrgasmCount * 20
-			EndIf
-		Else
-			_ThreadRuntime = ((_ThreadRuntime - 40) / (3 + _OrgasmCount))
-			If _OrgasmCount > _MaxNoPainOrgasmsF
-				_ThreadRuntime -= _OrgasmCount * 10
-			EndIf
-		EndIf
-		;reduces intractions-based enjoyment (OnOrgasm)
-		If (_countLast != _OrgasmCount)
-			_TimeInter = _EnjoymentDelay
-		EndIf
-	EndIf
-EndFunction
-
-Function CompensateStageSkip(float AdjustBy)
-	_StageSkippedAt = _ThreadRuntime
-	_StageSkipCompensation = AdjustBy
+	NonInterEnj = _EnjFactor * _timeAdjusted * _factorNonInterEnjRaise
+	;calculating return
+	EnjEffective = NonInterEnj + EnjInter - _PainEffective
+	return EnjEffective
 EndFunction
 
 int function CalcReaction()
@@ -1741,12 +1683,20 @@ int function CalcReaction()
 	return PapyrusUtil.ClampInt(Strength, 0, 100)
 endFunction
 
+float Function InternalActorInteractionFactor()
+	return _InterFactor
+EndFunction
+
+Function InternalCompensateStageSkip(float AdjustBy)
+	_timeAdjusted += AdjustBy
+EndFunction
+
 Function DebugBaseCalcVariables()
-	string BaseCalcLog = "[ClimaxEXT_Base] Actor: " + GetActorName() + ", IsVictim: " + IsVictim() + ", Sexuality: " + _ActorSexuality + ", SameSexThread: " + _SameSexThread + ", CrtMaleHugePP: " + _CrtMaleHugePP + ", ConSubStatus: " + _ConSubStatus + ", ActorInterInfo: " + _ActorInterInfo + ", BestRelation: " + _BestRelation as int + ", ArousalStat: " + _ArousalStat as int + ", AnalXP: " + _AnalXP as int + ", VaginalXP: " + _VaginalXP as int + ", ContextPain: " + _PainContext as int + ", EnjFactor: " + _EnjFactor
+	string BaseCalcLog = "[ClimaxEXT_Base] IsVictim: " + IsVictim() + ", Sexuality: " + SexlabStatistics.MapSexuality(SexlabStatistics.GetSexuality(_ActorRef)) + ", SameSexThread: " + _Thread.SameSexThread() + ", CrtMaleHugePP: " + _CrtMaleHugePP + ", ConSubStatus: " + _ConSubStatus + ", ActorInterInfo: " + _ActorInterInfo + ", BestRelation: " + _Thread.GetBestRelationForScene(_ActorRef, _ConSubStatus) + ", ArousalStat: " + SexlabStatistics.GetStatistic(_ActorRef, 17) as int + ", VaginalXP: " + SexlabStatistics.GetStatistic(_ActorRef, 2) as int + ", AnalXP: " + SexlabStatistics.GetStatistic(_ActorRef, 3) as int + ", ContextPain: " + _PainContext as int + ", EnjFactor: " + _EnjFactor
 	Log(BaseCalcLog)
 EndFunction
 
 Function DebugEffectiveCalcVariables()
-	string EffectiveCalcLog = "[ClimaxEXT_Full] Actor: " + GetActorName() + ", PhysicTypes: " + _Thread.GetPhysicTypes(_ActorRef, none) + ", ASLType: " + _TypeInterASL + ", EnjFactor: " + _EnjFactor + ", IntFactor: " + _InterFactor + ", AdjustedRuntime: " + _ThreadRuntime as int + ", IntTime: " + _TimeInter as int + ", PenPain: " + _PainPen as int + ", EffectivePain: " + _PainEffective as int + ", InterEnj: " + _EnjInter as int + ", NonInterEnj: " + _NonInterEnj as int + ", FullEnjoyment: " + _FullEnjoyment
+	string EffectiveCalcLog = "[ClimaxEXT] PhysicTypes: " + _Thread.GetPhysicTypes(_ActorRef, none) + ", ASLType: " + _TypeInterASL + ", EnjFactor: " + _EnjFactor + ", IntFactor: " + _InterFactor + ", AdjustedTime: " + _timeAdjusted as int + ", IntTime: " + _TimeInter as int + ", Pain: " + _PainEffective as int + ", Enjoyment: " + _FullEnjoyment
 	Log(EffectiveCalcLog)
 EndFunction
