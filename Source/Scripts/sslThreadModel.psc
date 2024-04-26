@@ -151,7 +151,15 @@ Function SetActorExpression(Actor akActor, String asExpression)
 	ref.SetActorExpression(asExpression)
 EndFunction
 
-; Orgasms
+; Enjoyment
+int Function GetPain(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return 0
+	EndIf
+	return ref.GetPain()
+EndFunction
+
 int Function GetEnjoyment(Actor ActorRef)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
@@ -160,6 +168,23 @@ int Function GetEnjoyment(Actor ActorRef)
 	return ref.GetEnjoyment()
 EndFunction
 
+Function AdjustPain(Actor ActorRef, int AdjustBy)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return
+	EndIf
+	return ref.AdjustPain(AdjustBy)
+EndFunction
+
+Function AdjustEnjoyment(Actor ActorRef, int AdjustBy)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return
+	EndIf
+	return ref.AdjustEnjoyment(AdjustBy)
+EndFunction
+
+; Orgasms
 Function DisableOrgasm(Actor ActorRef, bool OrgasmDisabled = true)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
@@ -217,7 +242,6 @@ Actor[] Function CanBeImpregnated(Actor akActor,  bool abAllowFutaImpregnation, 
 EndFunction
 
 ; Actor Strapons
-
 bool Function IsUsingStrapon(Actor ActorRef)
 	return ActorAlias(ActorRef).IsUsingStrapon()
 EndFunction
@@ -432,6 +456,28 @@ String Property STATE_SETUP 	= "Making" AutoReadOnly
 String Property STATE_SETUP_M	= "Making_M" AutoReadOnly
 String Property STATE_PLAYING = "Animating" AutoReadOnly
 String Property STATE_END 		= "Ending" AutoReadOnly
+
+; Additions by ClimaxEXT
+Int Property CONSENT_CONNONSUB 		= 0 AutoReadOnly Hidden
+Int Property CONSENT_NONCONNONSUB 	= 1 AutoReadOnly Hidden
+Int Property CONSENT_CONSUB 		= 2 AutoReadOnly Hidden
+Int Property CONSENT_NONCONSUB 		= 3 AutoReadOnly Hidden
+
+Int Property ACTORINT_NONPART 		= 0 AutoReadOnly Hidden
+Int Property ACTORINT_PASSIVE 		= 1 AutoReadOnly Hidden
+Int Property ACTORINT_ACTIVE 		= 2 AutoReadOnly Hidden
+
+int Property ASLTYPE_NONE	= -1 AutoReadOnly	; none
+int Property ASLTYPE_GR 	= 0  AutoReadOnly 	; grinding
+int Property ASLTYPE_HJ		= 1  AutoReadOnly 	; handjob
+int Property ASLTYPE_FJ		= 2  AutoReadOnly 	; footjob
+int Property ASLTYPE_OR 	= 3  AutoReadOnly 	; oral
+int Property ASLTYPE_VG 	= 4  AutoReadOnly	; vaginal
+int Property ASLTYPE_AN		= 5  AutoReadOnly	; anal
+int Property ASLTYPE_SRVG	= 6  AutoReadOnly	; spitroast (oral+vaginal)
+int Property ASLTYPE_SRAN 	= 7  AutoReadOnly	; spitroast (oral+anal)
+int Property ASLTYPE_DP 	= 8  AutoReadOnly	; double penetration
+int Property ASLTYPE_TP 	= 9  AutoReadOnly	; triple penetration
 
 ; ------------------------------------------------------- ;
 ; --- Thread Status                                   --- ;
@@ -1099,6 +1145,8 @@ State Animating
 			If (_StageTimer <= 0)
 				; IDEA: Randomize branching..?
 				GoToStage(_StageHistory.Length + 1)
+				; TODO: avoid last stage if GetOrgasmCount() for dom is 0 and enj < 80
+				; perpetutate 2nd last stage or use ChangeAnimation() instead, and skip to 2nd/3rd stage
 				return
 			EndIf
 		EndIf
@@ -1551,6 +1599,493 @@ Function UpdateAllEncounters()
 EndFunction
 
 ; ------------------------------------------------------- ;
+; --- ENJOYMENT: Interaction Factor                   --- ;
+; ------------------------------------------------------- ;
+
+; implementation variables
+float _grinding
+float _aFoot
+float _pFoot
+float _aHand
+float _pHand
+float _aOral
+float _pOral
+float _aVaginal
+float _pVaginal
+float _aAnal
+float _pAnal
+; non-default variables
+float _grindingSet
+float _aFootSet
+float _pFootSet
+float _aHandSet
+float _pHandSet
+float _aOralSet
+float _pOralSet
+float _aVaginalSet
+float _pVaginalSet
+float _aAnalSet
+float _pAnalSet
+
+; Gets called by Initialize()
+Function InitiateInteractionFactors()
+	_grinding = Utility.RandomFloat(0.05, 0.1)
+	_aFoot = Utility.RandomFloat(0.15, 0.25)
+	_aHand = Utility.RandomFloat(0.25, 0.35)
+	_aOral = Utility.RandomFloat(0.35, 0.4)
+	_pFoot = Utility.RandomFloat(0.45, 0.5)
+	_pHand = Utility.RandomFloat(0.5, 0.55)
+	_pOral = Utility.RandomFloat(0.55, 0.6)
+	_pAnal = Utility.RandomFloat(0.7, 0.75)
+	_pVaginal = Utility.RandomFloat(0.8, 0.85)
+	_aAnal = Utility.RandomFloat(0.9, 0.95)
+	_aVaginal = Utility.RandomFloat(1.0, 1.05)
+	if _grindingSet
+		_grinding = _grindingSet
+	endif
+	if _aFootSet
+		_aFoot = _aFootSet
+	endif
+	if _aHandSet
+		_aHand = _aHandSet
+	endif
+	if _aOralSet
+		_aOral = _aOralSet
+	endif
+	if _pFootSet
+		_pFoot = _pFootSet
+	endif
+	if _pHandSet
+		_pHand = _pHandSet
+	endif
+	if _pOralSet
+		_pOral = _pOralSet
+	endif
+	if _pAnalSet
+		_pAnal = _pAnalSet
+	endif
+	if _pVaginalSet
+		_pVaginal = _pVaginalSet
+	endif
+	if _aAnalSet
+		_aAnal = _aAnalSet
+	endif
+	if _aVaginalSet
+		_aVaginal = _aVaginalSet
+	endif
+EndFunction
+
+; TODO: expose this to the MCM maybe (or SexLab.ini, so people can share presets)?
+Function RedefineInteractionFactors(float grinding, float aFoot, float pFoot, float aHand, float pHand, float aOral, float pOral, float aVaginal, float pVaginal, float aAnal, float pAnal)
+	_grindingSet = grinding
+	_aFootSet = aFoot
+	_pFootSet = pFoot
+	_aHandSet = aHand
+	_pHandSet = pHand
+	_aOralSet = aOral
+	_pOralSet = pOral
+	_aVaginalSet = aVaginal
+	_pVaginalSet = pVaginal
+	_aAnalSet = aAnal
+	_pAnalSet = pAnal
+EndFunction
+
+float Function CalcPhysicFactor(Actor ActorRef)
+	float factorPhysic = 0.0
+	float velocityMax = 0.03
+	bool actor_pOral = false
+	bool actor_pFoot = false
+	bool actor_pHand = false
+
+	int[] typesPhysic = GetPhysicTypes(ActorRef, none)
+	int i = 0
+    while i < typesPhysic.Length
+		int typePhysic = typesPhysic[i]
+		if typePhysic == PTYPE_VAGINALP
+            factorPhysic += _pVaginal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_VAGINALP)) / velocityMax))
+        elseif typePhysic == PTYPE_ANALP
+            factorPhysic += _pAnal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_ANALP)) / velocityMax))
+        elseif typePhysic == PTYPE_VAGINALA
+            factorPhysic += _aVaginal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_VAGINALA)) / velocityMax))
+        elseif typePhysic == PTYPE_ANALA
+            factorPhysic += _aAnal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_ANALA)) / velocityMax))
+        elseif typePhysic == PTYPE_Oral
+            factorPhysic += _pOral * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_Oral)) / velocityMax))
+			actor_pOral = true
+        elseif typePhysic == PTYPE_Foot
+            factorPhysic += _pFoot
+			actor_pFoot = true
+        elseif typePhysic == PTYPE_Hand
+            factorPhysic += _pHand
+			actor_pHand = true
+        elseif typePhysic == PTYPE_GRINDING
+            factorPhysic += _grinding
+        endif
+        i += 1
+    endwhile
+	if !actor_pOral && HasPhysicType(PTYPE_Oral, none, ActorRef)
+		factorPhysic += _aOral 
+	endif
+	if !actor_pFoot && HasPhysicType(PTYPE_Foot, none, ActorRef)
+		factorPhysic += _aFoot
+	endif
+	if !actor_pHand && HasPhysicType(PTYPE_Hand, none, ActorRef)
+		factorPhysic += _aHand
+	endif
+	return factorPhysic
+EndFunction
+
+float Function GetInteractionFactor(Actor ActorRef, int typeASL, int infoActor)
+	float factorInter = 0.0
+	; TODO: add toggle to switch between physic-based enjoyment and tags-based enjoyment
+	;(dont wanna mess with the MCM, so leaving this to you)
+
+	;/if (GetEnjoymentType() == ENJ_PHYSIC) && IsPhysicsRegistered()
+		factorInter = CalcPhysicFactor(ActorRef)
+	elseif GetEnjoymentType() == ENJ_TAGS
+		factorInter = CalcInteractionFactorASL(typeASL, infoActor)
+	elseif GetEnjoymentType() == ENJ_DYNAMIC/;
+		if IsPhysicsRegistered()
+			factorInter = CalcPhysicFactor(ActorRef)
+		endif
+		if (factorInter == 0) || (Positions.Length == 1)
+			factorInter = CalcInteractionFactorASL(typeASL, infoActor)
+		endif
+	;endif
+	return factorInter
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- ENJOYMENT: Interaction Info (based on tags)     --- ;
+; ------------------------------------------------------- ;
+
+int Function GetInteractionTypeASL()
+	;not conditioned by ASL
+	bool stageHJ = (HasStageTag("Masturbation") || HasStageTag("HandJob") || HasStageTag("Fingering"))
+	bool stageFJ = (HasStageTag("FootJob") || HasStageTag("Feet"))
+	bool stageGR = HasStageTag("Grinding")
+	;often conditioned by ASL
+	bool stageOR = HasStageTag("Oral") && HasSceneTag("ASLTagged")
+	bool stageVG = HasStageTag("Vaginal") && HasSceneTag("ASLTagged")
+	bool stageAN = HasStageTag("Anal") && HasSceneTag("ASLTagged")
+
+	if (stageOR && stageVG && stageAN)
+		return ASLTYPE_TP
+	elseif (stageVG && stageAN)
+		return ASLTYPE_DP
+	elseif (stageOR && (stageVG || stageAN))
+		if stageAN && !stageVG
+			return ASLTYPE_SRAN
+		else
+			return ASLTYPE_SRVG
+		endif
+	elseif stageAN
+		return ASLTYPE_AN
+	elseif stageVG
+		return ASLTYPE_VG
+	elseif stageOR
+		return ASLTYPE_OR
+	elseif stageFJ
+		return ASLTYPE_FJ
+	elseif stageHJ
+		return ASLTYPE_HJ
+	elseif stageGR
+		return ASLTYPE_GR
+	else
+		return ASLTYPE_NONE
+	endif
+EndFunction
+
+int Function GuessActorInterInfo(Actor ActorRef, int ActorSex, bool IsActorSub, int ConSubStatus, bool SameSexThread)
+	;IMP: roles will be reversed for oral (ACTORINT_PASSIVE is the OralGiving and ACTORINT_ACTIVE is OralReceiving)
+	;Not adjusting values here cuz that will have unintended effects for Spirtoast, DP, and TP scenes 
+	int ActorInterInfo = ACTORINT_NONPART
+	if ConSubStatus > CONSENT_NONCONNONSUB
+		bool FemDom = HasSceneTag("FemDom")
+		if !SameSexThread
+			if (IsActorSub && !FemDom) || (!IsActorSub && FemDom)
+				ActorInterInfo = ACTORINT_PASSIVE
+			elseif (!IsActorSub && !FemDom) || (IsActorSub && FemDom)
+				ActorInterInfo = ACTORINT_ACTIVE
+			endif
+		else
+			if IsActorSub
+				ActorInterInfo = ACTORINT_PASSIVE
+			elseif !IsActorSub
+				ActorInterInfo = ACTORINT_ACTIVE
+			endif
+		endif
+	else
+		if !SameSexThread
+			if ActorSex == 1 || ActorSex == 4
+				ActorInterInfo = ACTORINT_PASSIVE
+			else ; ignoring complexities with futas
+				ActorInterInfo = ACTORINT_ACTIVE
+			endif
+		else
+			; function stays in ThreadModel cuz of this
+			if GetPosition(ActorRef) == 0
+				ActorInterInfo = ACTORINT_PASSIVE
+			else
+				ActorInterInfo = ACTORINT_ACTIVE
+			endif
+		endif
+	endif
+	return ActorInterInfo
+EndFunction
+
+float Function CalcInteractionFactorASL(int typeASL, int infoActor)
+	if infoActor > ACTORINT_NONPART
+		if typeASL == ASLTYPE_NONE
+			return 0
+		elseif typeASL == ASLTYPE_GR
+			return _grinding
+		elseif typeASL == ASLTYPE_HJ
+			if infoActor == ACTORINT_ACTIVE
+				return _pHand
+			else
+				return _aHand
+			endif
+		elseif typeASL == ASLTYPE_FJ
+			if infoActor == ACTORINT_ACTIVE
+				return _pFoot
+			else
+				return _aFoot
+			endif
+		elseif typeASL == ASLTYPE_OR
+			if infoActor == ACTORINT_ACTIVE
+				return _pOral
+			else
+				return _aOral
+			endif
+		elseif typeASL == ASLTYPE_VG
+			if infoActor == ACTORINT_ACTIVE
+				return _aVaginal
+			else
+				return _pVaginal
+			endif
+		elseif typeASL == ASLTYPE_AN
+			if infoActor == ACTORINT_ACTIVE
+				return _aAnal
+			else
+				return _pAnal
+			endif
+		;TODO: improve conditions for ACTORINT_ACTIVE, if possible
+		elseif typeASL == ASLTYPE_SRVG
+			if infoActor == ACTORINT_ACTIVE
+				return Utility.RandomFloat(_pOral, _aVaginal)
+			else
+				return (_aOral + _pVaginal)
+			endif
+		elseif typeASL == ASLTYPE_SRAN
+			if infoActor == ACTORINT_ACTIVE
+				return Utility.RandomFloat(_pOral, _aAnal)
+			else
+				return (_aOral + _pAnal)
+			endif
+		elseif typeASL == ASLTYPE_DP
+			if infoActor == ACTORINT_ACTIVE
+				return Utility.RandomFloat(_aAnal, _aVaginal)
+			else
+				return (_pVaginal + _pAnal)
+			endif
+		elseif typeASL == ASLTYPE_TP
+			if infoActor == ACTORINT_ACTIVE
+				return Utility.RandomFloat(_aVaginal, _aAnal)
+			else
+				return (_aOral + _pVaginal + _pAnal)
+			endif
+		endif
+	endif
+	return 0
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- ENJOYMENT: Best Relation                        --- ;
+; ------------------------------------------------------- ;
+
+; TODO: fill out new properties in CK
+AssociationType Property SpouseAssocation Auto
+Faction Property PlayerMarriedFaction Auto
+
+;/mapping: Stranger=-2~2 | PersonOfInterest=3~7 | Lover=8~12 | Spouse=13~17 | LoverSpouse=18~22
+w_agg=-2 | w_vic=-1 | <<stranger=0>> | w_dom=1 | w_sub=2
+W_agg=3 | w_vic=4 | <<poi=5>> | w_dom=6 | w_sub=7
+W_agg=8 | w_vic=9 | <<lover=10>> | w_dom=11 | w_sub=12
+W_agg=13 | w_vic=14 | <<spouse=15>> | w_dom=16 | w_sub=17
+W_agg=18 | w_vic=19 | <<spouse+lover=20>> | w_dom=21 | w_sub=22/;
+
+int Function GetRelationForScene(Actor ActorRef, Actor TargetRef, int ConSubStatus)
+	int BaseRelation = 0
+	int ContextRelation = 0
+	int retRelation = 0
+	bool withSpouse = false
+	bool withLover = false
+	
+	If ActorRef == PlayerRef
+		If TargetRef.IsInFaction(PlayerMarriedFaction)
+			withSpouse = true
+			BaseRelation = 15
+		EndIf
+	Else
+		If ActorRef.HasAssociation(SpouseAssocation, TargetRef)
+			withSpouse = true
+			BaseRelation = 15
+		EndIf
+	EndIf
+	If !withSpouse && ActorRef.GetRelationshipRank(TargetRef) >= 4
+		withLover = true
+		BaseRelation = 10
+	ElseIf !withLover && !withSpouse && (ActorRef.GetRelationshipRank(TargetRef) >= 1) && (SexLabStatistics.GetTimesMet(ActorRef, TargetRef) >= 3)
+		BaseRelation = 5
+	EndIf
+
+	If ConSubStatus == CONSENT_CONSUB
+		If IsVictim(ActorRef)
+			ContextRelation = 1
+		ElseIf IsVictim(TargetRef)
+			ContextRelation = 2
+		EndIf
+	Else
+		If IsVictim(ActorRef)
+			ContextRelation = -2
+		ElseIf IsVictim(TargetRef)
+			ContextRelation = -1
+		EndIf
+	EndIf
+
+	retRelation = BaseRelation + ContextRelation
+	return retRelation
+EndFunction
+
+int Function GetBestRelationForScene(Actor ActorRef, int ConSubStatus)
+	if Positions.Length <= 1
+		return 0
+	elseif Positions.Length == 2
+		if(ActorRef == Positions[0])
+			return GetRelationForScene(ActorRef, Positions[1], ConSubStatus)
+		else
+			return GetRelationForScene(ActorRef, Positions[0], ConSubStatus)
+		endif
+	endIf
+	int ret = -2
+	int i = 0
+	while i < Positions.Length
+		if Positions[i] != ActorRef
+			int relation = GetRelationForScene(ActorRef, Positions[i], ConSubStatus)
+			if relation > ret
+				ret = relation
+			endif
+		endIf
+		i += 1
+	endWhile
+	return ret
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- ENJOYMENT: Thread Info                          --- ;
+; ------------------------------------------------------- ;
+
+bool Function SameSexThread()
+	bool SameSexThread = false
+	int MaleCount = sslActorLibrary.CountMale(Positions)
+	int FemCount = sslActorLibrary.CountFemale(Positions)
+	int FutaCount = sslActorLibrary.CountFuta(Positions)
+	int CrtMaleCount = sslActorLibrary.CountCrtMale(Positions)
+	int CrtFemaleCount = sslActorLibrary.CountCrtFemale(Positions)
+	If (Positions.Length != 1 && ((MaleCount + CrtMaleCount == Positions.Length) || (FemCount + CrtFemaleCount == Positions.Length) || (FutaCount == Positions.Length)))
+		SameSexThread = true ; returns false for solo scenes
+	EndIf
+	return SameSexThread
+EndFunction
+
+int Function IdentifyConsentSubStatus()
+	int ConSubStatus = CONSENT_CONNONSUB
+	If GetSubmissives().Length == 0
+		If !IsConsent()
+			ConSubStatus = CONSENT_NONCONNONSUB
+		EndIf
+	Else
+		If IsConsent()
+			ConSubStatus = CONSENT_CONSUB
+		Else
+			ConSubStatus = CONSENT_NONCONSUB
+		EndIf
+	EndIf
+	return ConSubStatus
+EndFunction
+
+bool Function CrtMaleHugePP()
+	bool HugePP = false
+	If sslActorLibrary.CountCrtMale(Positions) > 0
+		int CreMalePos = -1
+		int i = 0
+		while i < Positions.Length
+			if Positions[i] != None
+				int gender = GetNthPositionSex(i)
+				if gender == 3
+					CreMalePos = i
+				endIf
+			endIf
+			i += 1
+		endWhile
+		If CreMalePos > -1
+			string CreRacekey = SexlabRegistry.GetRaceKey(Positions[CreMalePos])
+			If CreRacekey ==  "bears" || CreRacekey ==  "chaurus" || CreRacekey ==  "chaurushunters" || CreRacekey ==  "chaurusreapers" || CreRacekey ==  "dragons" || CreRacekey ==  "dwarvencenturions" || CreRacekey ==  "frostatronach" || CreRacekey ==  "gargoyles" || CreRacekey ==  "giants" || CreRacekey ==  "giantspiders" || CreRacekey ==  "horses" || CreRacekey ==  "largespiders" || CreRacekey ==  "lurkers" || CreRacekey ==  "mammoths" || CreRacekey ==  "sabrecats" || CreRacekey ==  "trolls" || CreRacekey ==  "werewolves"
+				HugePP = true
+			EndIf
+		EndIf
+	EndIf
+	return HugePP
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- ORGASM FX                                       --- ;
+; ------------------------------------------------------- ;
+
+bool Function IsVaginalComplex(Actor ActorRef, int TypeInterASL)
+	bool ret = False
+	If (IsPhysicsRegistered() && (HasPhysicType(PTYPE_VAGINALP, ActorRef, none) || HasPhysicType(PTYPE_VAGINALA, ActorRef, none))) \
+		|| (TypeInterASL >= ASLTYPE_VG && (TypeInterASL != ASLTYPE_AN && TypeInterASL != ASLTYPE_SRAN))
+		ret = True
+	EndIf
+	return ret
+EndFunction
+
+bool Function IsAnalComplex(Actor ActorRef, int TypeInterASL)
+	bool ret = False
+	If (IsPhysicsRegistered() && (HasPhysicType(PTYPE_ANALP, ActorRef, none) || HasPhysicType(PTYPE_ANALA, ActorRef, none))) \
+		|| (TypeInterASL >= ASLTYPE_AN && (TypeInterASL != ASLTYPE_SRVG))
+		ret = True
+	EndIf
+	return ret
+EndFunction
+
+bool Function IsOralComplex(Actor ActorRef, int TypeInterASL)
+	bool ret = False
+	If (IsPhysicsRegistered() && HasPhysicType(PTYPE_ORAL, ActorRef, none)) \
+		|| (TypeInterASL >= ASLTYPE_OR && (TypeInterASL != ASLTYPE_VG && TypeInterASL != ASLTYPE_AN))
+		ret = True
+	EndIf
+	return ret
+EndFunction
+
+Function ApplyCumFX(Actor SourceRef)
+	; TODO: If there is no schlong, consider failing silenently
+	int i = 0
+	while i < Positions.Length
+		int otherSex = GetNthPositionSex(i)
+
+		Log("Checking for cum FX: " + i + " " + otherSex)
+
+		if (i != GetPosition(SourceRef)) && (otherSex == 1 || otherSex == 2 || otherSex == 4)
+			ActorAlias[i].ApplyCum()
+		endIf
+		i += 1
+	endWhile
+EndFunction
+
+; ------------------------------------------------------- ;
 ; --- Thread Hooks & Events                           --- ;
 ; ------------------------------------------------------- ;
 ;/
@@ -1626,6 +2161,7 @@ Function Initialize()
 	_ThreadTags = Utility.CreateStringArray(0)
 	_ContextTags = Utility.CreateStringArray(0)
 	_Hooks = Utility.CreateStringArray(0)
+	InitiateInteractionFactors() ; inserted by ClimaxEXT
 	; Enter thread selection pool
 	GoToState("Unlocked")
 EndFunction
@@ -2425,20 +2961,3 @@ EndFunction
 Function RecordSkills()
 	AddExperience(Positions, _ActiveScene, _StageHistory)
 endfunction
-
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-; ----------------------------------------------------------------------------- ;
-; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
-
-; Enjoyment/Pain
-int Function GetPain(Actor ActorRef)
-	return ActorAlias(ActorRef).GetPain()
-EndFunction

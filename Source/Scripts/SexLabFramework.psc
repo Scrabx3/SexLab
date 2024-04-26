@@ -260,25 +260,25 @@ EndFunction
 ;   [3] represents the number of creature males
 ;   [4] represents the number of creature females
 int[] Function CountSexAll(Actor[] akPositions)
-  return ActorLib.CountSexAll(akPositions)
+  return sslActorLibrary.CountSexAll(akPositions)
 EndFunction
 int Function CountMale(Actor[] akPositions)
-	return ActorLib.CountMale(akPositions)
+	return sslActorLibrary.CountMale(akPositions)
 EndFunction
 int Function CountFemale(Actor[] akPositions)
-	return ActorLib.CountFemale(akPositions)
+	return sslActorLibrary.CountFemale(akPositions)
 EndFunction
 int Function CountFuta(Actor[] akPositions)
-	return ActorLib.CountFuta(akPositions)
+	return sslActorLibrary.CountFuta(akPositions)
 EndFunction
 int Function CountCreatures(Actor[] akPositions)
-	return ActorLib.CountCreatures(akPositions)
+	return sslActorLibrary.CountCreatures(akPositions)
 EndFunction
 int Function CountCrtMale(Actor[] akPositions)
-	return ActorLib.CountCrtMale(akPositions)
+	return sslActorLibrary.CountCrtMale(akPositions)
 EndFunction
 int Function CountCrtFemale(Actor[] akPositions)
-	return ActorLib.CountCrtFemale(akPositions)
+	return sslActorLibrary.CountCrtFemale(akPositions)
 EndFunction
 
 ; Checks if the given actor is a valid target for SexLab animations.
