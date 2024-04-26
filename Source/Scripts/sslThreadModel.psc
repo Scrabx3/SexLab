@@ -314,7 +314,7 @@ String[] Function GetTags()
 EndFunction
 
 bool Function HasContext(String asTag)
-	return _ContextTags.Length && _ContextTags.Find(asTag)
+	return _ContextTags.Length && _ContextTags.Find(asTag) > -1
 EndFunction
 
 Function AddContext(String asContext)
