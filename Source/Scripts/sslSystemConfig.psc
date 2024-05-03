@@ -77,6 +77,9 @@ SoundCategory property AudioVoice auto
 ; ------------------------------------------------------- ;
 
 int Function GetAnimationCount() native global
+float[] Function GetEnjoymentFactors() native global
+int Function GetEnjoymentSettingInt(String asSetting) native global
+float Function GetEnjoymentSettingFlt(String asSetting) native global
 Form[] Function GetStrippableItems(Actor akActor, bool abWornOnly) native global
 
 bool Function GetSettingBool(String asSetting) native global
@@ -1888,13 +1891,13 @@ bool property SeedNPCStats = true auto hidden
 bool property FixVictimPos = true auto hidden
 bool property ForceSort = true auto hidden
 bool property LimitedStrip = false auto hidden
+bool property ScaleActors = false auto hidden ; Scale is encoded in animation, disable all scale with other setting
+int property AnimProfile = 1 auto hidden  ; scaling is considered absolute, 1 profile to fit them all
 
 float property LeadInCoolDown = 0.0 auto hidden
 
 ; COMEBACK: Re-implement?
 bool property RaceAdjustments = false auto hidden    ; this and v is used for ActorKey scale profile settings
-bool property ScaleActors = false auto hidden
-int property AnimProfile = 1 auto hidden
 
 bool property SeparateOrgasms Hidden
   bool Function Get()

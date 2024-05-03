@@ -342,7 +342,7 @@ bool Function HasContext(String asTag)
 EndFunction
 
 Function AddContext(String asContext)
-	If (_ContextTags.Length && _ContextTags.Find(asContext) > -1)
+	If (HasContext(asContext))
 		return
 	EndIf
 	_ContextTags = PapyrusUtil.PushString(_ContextTags, asContext)
@@ -459,25 +459,25 @@ String Property STATE_END 		= "Ending" AutoReadOnly
 
 ; Additions by ClimaxEXT
 Int Property CONSENT_CONNONSUB 		= 0 AutoReadOnly Hidden
-Int Property CONSENT_NONCONNONSUB 	= 1 AutoReadOnly Hidden
-Int Property CONSENT_CONSUB 		= 2 AutoReadOnly Hidden
+Int Property CONSENT_NONCONNONSUB = 1 AutoReadOnly Hidden
+Int Property CONSENT_CONSUB 			= 2 AutoReadOnly Hidden
 Int Property CONSENT_NONCONSUB 		= 3 AutoReadOnly Hidden
 
-Int Property ACTORINT_NONPART 		= 0 AutoReadOnly Hidden
-Int Property ACTORINT_PASSIVE 		= 1 AutoReadOnly Hidden
+Int Property ACTORINT_NONPART 	= 0 AutoReadOnly Hidden
+Int Property ACTORINT_PASSIVE 	= 1 AutoReadOnly Hidden
 Int Property ACTORINT_ACTIVE 		= 2 AutoReadOnly Hidden
 
-int Property ASLTYPE_NONE	= -1 AutoReadOnly	; none
+int Property ASLTYPE_NONE	= -1 AutoReadOnly		; none
 int Property ASLTYPE_GR 	= 0  AutoReadOnly 	; grinding
 int Property ASLTYPE_HJ		= 1  AutoReadOnly 	; handjob
 int Property ASLTYPE_FJ		= 2  AutoReadOnly 	; footjob
 int Property ASLTYPE_OR 	= 3  AutoReadOnly 	; oral
-int Property ASLTYPE_VG 	= 4  AutoReadOnly	; vaginal
-int Property ASLTYPE_AN		= 5  AutoReadOnly	; anal
-int Property ASLTYPE_SRVG	= 6  AutoReadOnly	; spitroast (oral+vaginal)
-int Property ASLTYPE_SRAN 	= 7  AutoReadOnly	; spitroast (oral+anal)
-int Property ASLTYPE_DP 	= 8  AutoReadOnly	; double penetration
-int Property ASLTYPE_TP 	= 9  AutoReadOnly	; triple penetration
+int Property ASLTYPE_VG 	= 4  AutoReadOnly		; vaginal
+int Property ASLTYPE_AN		= 5  AutoReadOnly		; anal
+int Property ASLTYPE_SRVG	= 6  AutoReadOnly		; spitroast (oral+vaginal)
+int Property ASLTYPE_SRAN = 7  AutoReadOnly		; spitroast (oral+anal)
+int Property ASLTYPE_DP 	= 8  AutoReadOnly		; double penetration
+int Property ASLTYPE_TP 	= 9  AutoReadOnly		; triple penetration
 
 ; ------------------------------------------------------- ;
 ; --- Thread Status                                   --- ;
@@ -1602,92 +1602,24 @@ EndFunction
 ; --- ENJOYMENT: Interaction Factor                   --- ;
 ; ------------------------------------------------------- ;
 
-; implementation variables
-float _grinding
-float _aFoot
-float _pFoot
-float _aHand
-float _pHand
-float _aOral
-float _pOral
-float _aVaginal
-float _pVaginal
-float _aAnal
-float _pAnal
-; non-default variables
-float _grindingSet
-float _aFootSet
-float _pFootSet
-float _aHandSet
-float _pHandSet
-float _aOralSet
-float _pOralSet
-float _aVaginalSet
-float _pVaginalSet
-float _aAnalSet
-float _pAnalSet
+float Function GetInteractionFactor(Actor ActorRef, int typeASL, int infoActor)
+	float ret = 0.0
+	; TODO: add toggle to switch between physic-based enjoyment and tags-based enjoyment
+	;(dont wanna mess with the MCM, so leaving this to you)
 
-; Gets called by Initialize()
-Function InitiateInteractionFactors()
-	_grinding = Utility.RandomFloat(0.05, 0.1)
-	_aFoot = Utility.RandomFloat(0.15, 0.25)
-	_aHand = Utility.RandomFloat(0.25, 0.35)
-	_aOral = Utility.RandomFloat(0.35, 0.4)
-	_pFoot = Utility.RandomFloat(0.45, 0.5)
-	_pHand = Utility.RandomFloat(0.5, 0.55)
-	_pOral = Utility.RandomFloat(0.55, 0.6)
-	_pAnal = Utility.RandomFloat(0.7, 0.75)
-	_pVaginal = Utility.RandomFloat(0.8, 0.85)
-	_aAnal = Utility.RandomFloat(0.9, 0.95)
-	_aVaginal = Utility.RandomFloat(1.0, 1.05)
-	if _grindingSet
-		_grinding = _grindingSet
-	endif
-	if _aFootSet
-		_aFoot = _aFootSet
-	endif
-	if _aHandSet
-		_aHand = _aHandSet
-	endif
-	if _aOralSet
-		_aOral = _aOralSet
-	endif
-	if _pFootSet
-		_pFoot = _pFootSet
-	endif
-	if _pHandSet
-		_pHand = _pHandSet
-	endif
-	if _pOralSet
-		_pOral = _pOralSet
-	endif
-	if _pAnalSet
-		_pAnal = _pAnalSet
-	endif
-	if _pVaginalSet
-		_pVaginal = _pVaginalSet
-	endif
-	if _aAnalSet
-		_aAnal = _aAnalSet
-	endif
-	if _aVaginalSet
-		_aVaginal = _aVaginalSet
-	endif
-EndFunction
-
-; TODO: expose this to the MCM maybe (or SexLab.ini, so people can share presets)?
-Function RedefineInteractionFactors(float grinding, float aFoot, float pFoot, float aHand, float pHand, float aOral, float pOral, float aVaginal, float pVaginal, float aAnal, float pAnal)
-	_grindingSet = grinding
-	_aFootSet = aFoot
-	_pFootSet = pFoot
-	_aHandSet = aHand
-	_pHandSet = pHand
-	_aOralSet = aOral
-	_pOralSet = pOral
-	_aVaginalSet = aVaginal
-	_pVaginalSet = pVaginal
-	_aAnalSet = aAnal
-	_pAnalSet = pAnal
+	;/if (GetEnjoymentType() == ENJ_PHYSIC) && IsPhysicsRegistered()
+		ret = CalcPhysicFactor(ActorRef)
+	elseif GetEnjoymentType() == ENJ_TAGS
+		ret = CalcInteractionFactorASL(typeASL, infoActor)
+	elseif GetEnjoymentType() == ENJ_DYNAMIC/;
+		If (Positions.Length > 1 && IsPhysicsRegistered())
+			ret = CalcPhysicFactor(ActorRef)
+		Endif
+		If (ret == 0)
+			ret = CalcInteractionFactorASL(typeASL, infoActor)
+		Endif
+	;endif
+	return ret
 EndFunction
 
 float Function CalcPhysicFactor(Actor ActorRef)
@@ -1698,61 +1630,43 @@ float Function CalcPhysicFactor(Actor ActorRef)
 	bool actor_pHand = false
 
 	int[] typesPhysic = GetPhysicTypes(ActorRef, none)
+	float[] factors = sslSystemConfig.GetEnjoymentFactors()
 	int i = 0
-    while i < typesPhysic.Length
+  While (i < typesPhysic.Length)
 		int typePhysic = typesPhysic[i]
-		if typePhysic == PTYPE_VAGINALP
-            factorPhysic += _pVaginal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_VAGINALP)) / velocityMax))
-        elseif typePhysic == PTYPE_ANALP
-            factorPhysic += _pAnal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_ANALP)) / velocityMax))
-        elseif typePhysic == PTYPE_VAGINALA
-            factorPhysic += _aVaginal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_VAGINALA)) / velocityMax))
-        elseif typePhysic == PTYPE_ANALA
-            factorPhysic += _aAnal * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_ANALA)) / velocityMax))
-        elseif typePhysic == PTYPE_Oral
-            factorPhysic += _pOral * (1 + (Math.Abs(GetPhysicVelocity(ActorRef, none, PTYPE_Oral)) / velocityMax))
+		float mult = 1 + Math.Abs(GetPhysicVelocity(ActorRef, none, typePhysic)) / velocityMax
+		If (typePhysic == PTYPE_VAGINALP)
+			factorPhysic += factors[ASLTYPE_VG] * mult
+		ElseIf (typePhysic == PTYPE_ANALP)
+			factorPhysic += factors[ASLTYPE_AN] * mult
+		ElseIf (typePhysic == PTYPE_VAGINALA)
+			factorPhysic += factors[ASLTYPE_VG + 1] * mult
+		ElseIf (typePhysic == PTYPE_ANALA)
+			factorPhysic += factors[ASLTYPE_AN + 1] * mult
+		ElseIf (typePhysic == PTYPE_Oral)
+			factorPhysic += factors[ASLTYPE_OR] * mult
 			actor_pOral = true
-        elseif typePhysic == PTYPE_Foot
-            factorPhysic += _pFoot
+		ElseIf (typePhysic == PTYPE_Foot)
+			factorPhysic += factors[ASLTYPE_FJ]
 			actor_pFoot = true
-        elseif typePhysic == PTYPE_Hand
-            factorPhysic += _pHand
+		ElseIf (typePhysic == PTYPE_Hand)
+			factorPhysic += factors[ASLTYPE_HJ]
 			actor_pHand = true
-        elseif typePhysic == PTYPE_GRINDING
-            factorPhysic += _grinding
-        endif
-        i += 1
-    endwhile
-	if !actor_pOral && HasPhysicType(PTYPE_Oral, none, ActorRef)
-		factorPhysic += _aOral 
-	endif
-	if !actor_pFoot && HasPhysicType(PTYPE_Foot, none, ActorRef)
-		factorPhysic += _aFoot
-	endif
-	if !actor_pHand && HasPhysicType(PTYPE_Hand, none, ActorRef)
-		factorPhysic += _aHand
-	endif
+		ElseIf (typePhysic == PTYPE_GRINDING)
+			factorPhysic += factors[ASLTYPE_GR]
+		EndIf
+		i += 1
+  EndWhile
+	If (!actor_pOral && HasPhysicType(PTYPE_Oral, none, ActorRef))
+		factorPhysic += factors[ASLTYPE_OR + 1]
+	Endif
+	If (!actor_pFoot && HasPhysicType(PTYPE_Foot, none, ActorRef))
+		factorPhysic += factors[ASLTYPE_FJ + 1]
+	Endif
+	If (!actor_pHand && HasPhysicType(PTYPE_Hand, none, ActorRef))
+		factorPhysic += factors[ASLTYPE_HJ + 1]
+	Endif
 	return factorPhysic
-EndFunction
-
-float Function GetInteractionFactor(Actor ActorRef, int typeASL, int infoActor)
-	float factorInter = 0.0
-	; TODO: add toggle to switch between physic-based enjoyment and tags-based enjoyment
-	;(dont wanna mess with the MCM, so leaving this to you)
-
-	;/if (GetEnjoymentType() == ENJ_PHYSIC) && IsPhysicsRegistered()
-		factorInter = CalcPhysicFactor(ActorRef)
-	elseif GetEnjoymentType() == ENJ_TAGS
-		factorInter = CalcInteractionFactorASL(typeASL, infoActor)
-	elseif GetEnjoymentType() == ENJ_DYNAMIC/;
-		if IsPhysicsRegistered()
-			factorInter = CalcPhysicFactor(ActorRef)
-		endif
-		if (factorInter == 0) || (Positions.Length == 1)
-			factorInter = CalcInteractionFactorASL(typeASL, infoActor)
-		endif
-	;endif
-	return factorInter
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -1823,7 +1737,6 @@ int Function GuessActorInterInfo(Actor ActorRef, int ActorSex, bool IsActorSub, 
 				ActorInterInfo = ACTORINT_ACTIVE
 			endif
 		else
-			; function stays in ThreadModel cuz of this
 			if GetPosition(ActorRef) == 0
 				ActorInterInfo = ACTORINT_PASSIVE
 			else
@@ -1835,69 +1748,33 @@ int Function GuessActorInterInfo(Actor ActorRef, int ActorSex, bool IsActorSub, 
 EndFunction
 
 float Function CalcInteractionFactorASL(int typeASL, int infoActor)
-	if infoActor > ACTORINT_NONPART
-		if typeASL == ASLTYPE_NONE
-			return 0
-		elseif typeASL == ASLTYPE_GR
-			return _grinding
-		elseif typeASL == ASLTYPE_HJ
-			if infoActor == ACTORINT_ACTIVE
-				return _pHand
-			else
-				return _aHand
-			endif
-		elseif typeASL == ASLTYPE_FJ
-			if infoActor == ACTORINT_ACTIVE
-				return _pFoot
-			else
-				return _aFoot
-			endif
-		elseif typeASL == ASLTYPE_OR
-			if infoActor == ACTORINT_ACTIVE
-				return _pOral
-			else
-				return _aOral
-			endif
-		elseif typeASL == ASLTYPE_VG
-			if infoActor == ACTORINT_ACTIVE
-				return _aVaginal
-			else
-				return _pVaginal
-			endif
-		elseif typeASL == ASLTYPE_AN
-			if infoActor == ACTORINT_ACTIVE
-				return _aAnal
-			else
-				return _pAnal
-			endif
-		;TODO: improve conditions for ACTORINT_ACTIVE, if possible
-		elseif typeASL == ASLTYPE_SRVG
-			if infoActor == ACTORINT_ACTIVE
-				return Utility.RandomFloat(_pOral, _aVaginal)
-			else
-				return (_aOral + _pVaginal)
-			endif
-		elseif typeASL == ASLTYPE_SRAN
-			if infoActor == ACTORINT_ACTIVE
-				return Utility.RandomFloat(_pOral, _aAnal)
-			else
-				return (_aOral + _pAnal)
-			endif
-		elseif typeASL == ASLTYPE_DP
-			if infoActor == ACTORINT_ACTIVE
-				return Utility.RandomFloat(_aAnal, _aVaginal)
-			else
-				return (_pVaginal + _pAnal)
-			endif
-		elseif typeASL == ASLTYPE_TP
-			if infoActor == ACTORINT_ACTIVE
-				return Utility.RandomFloat(_aVaginal, _aAnal)
-			else
-				return (_aOral + _pVaginal + _pAnal)
-			endif
-		endif
-	endif
-	return 0
+	If (infoActor == ACTORINT_NONPART || typeASL == ASLTYPE_NONE)
+		return 0
+	EndIf
+	float[] factors = sslSystemConfig.GetEnjoymentFactors()
+	If (typeASL == ASLTYPE_GR)
+		return factors[ASLTYPE_GR]
+	EndIf
+	float div = 2.0
+	float ret
+	int idxAct = infoActor - 1
+	int idxRev = 1 - idxAct
+	If (typeASL == ASLTYPE_SRVG)
+		ret = factors[ASLTYPE_OR + idxRev] + factors[ASLTYPE_VG + idxAct]
+	ElseIf (typeASL == ASLTYPE_SRAN)
+		ret = factors[ASLTYPE_OR + idxRev] + factors[ASLTYPE_AN + idxAct]
+	ElseIf (typeASL == ASLTYPE_DP)
+		ret = factors[ASLTYPE_VG + idxAct] + factors[ASLTYPE_AN + idxAct]
+	ElseIf (typeASL == ASLTYPE_TP)
+		ret = factors[ASLTYPE_OR + idxAct] + factors[ASLTYPE_VG + idxAct] + factors[ASLTYPE_AN + idxAct]
+		div = 3.0
+	Else
+		return factors[typeASL + idxAct]
+	EndIf
+	If (infoActor == ACTORINT_ACTIVE)
+	 	ret /= div
+	EndIf
+	return ret
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -2161,7 +2038,6 @@ Function Initialize()
 	_ThreadTags = Utility.CreateStringArray(0)
 	_ContextTags = Utility.CreateStringArray(0)
 	_Hooks = Utility.CreateStringArray(0)
-	InitiateInteractionFactors() ; inserted by ClimaxEXT
 	; Enter thread selection pool
 	GoToState("Unlocked")
 EndFunction
