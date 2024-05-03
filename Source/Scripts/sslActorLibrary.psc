@@ -309,7 +309,7 @@ Function ClearForcedSex(Actor akActor)
 	TreatAsSex(akActor, SexLabRegistry.GetSex(akActor, true))
 EndFunction
 
-int[] Function CountSexAll(Actor[] akPositions)
+int[] Function CountSexAll(Actor[] akPositions) global
 	int[] ret = new int[5]
 	int i = 0
 	While (i < akPositions.Length)
@@ -320,23 +320,23 @@ int[] Function CountSexAll(Actor[] akPositions)
 	return ret
 EndFunction
 
-int Function CountMale(Actor[] akPositions)
+int Function CountMale(Actor[] akPositions) global
 	return CountSexAll(akPositions)[0]
 EndFunction
-int Function CountFemale(Actor[] akPositions)
+int Function CountFemale(Actor[] akPositions) global
 	return CountSexAll(akPositions)[1]
 EndFunction
-int Function CountFuta(Actor[] akPositions)
+int Function CountFuta(Actor[] akPositions) global
 	return CountSexAll(akPositions)[2]
 EndFunction
-int Function CountCreatures(Actor[] akPositions)
+int Function CountCreatures(Actor[] akPositions) global
 	int[] count = CountSexAll(akPositions)
 	return count[3] + count[4]
 EndFunction
-int Function CountCrtMale(Actor[] akPositions)
+int Function CountCrtMale(Actor[] akPositions) global
 	return CountSexAll(akPositions)[3]
 EndFunction
-int Function CountCrtFemale(Actor[] akPositions)
+int Function CountCrtFemale(Actor[] akPositions) global
 	return CountSexAll(akPositions)[4]
 EndFunction
 
