@@ -1041,29 +1041,20 @@ function AnimationSettings()
 	AddToggleOptionST("UseCum","$SSL_ApplyCumEffects", Config.UseCum)
 	AddSliderOptionST("CumEffectTimer","$SSL_CumEffectTimer", Config.CumTimer, "$SSL_Seconds")
 	AddToggleOptionST("UseExpressions","$SSL_UseExpressions", Config.UseExpressions)
-	; AddToggleOptionST("RefreshExpressions","$SSL_RefreshExpressions", Config.RefreshExpressions)
 	; AddSliderOptionST("ExpressionDelay","$SSL_ExpressionDelay", Config.ExpressionDelay, "{1}x")
 	AddToggleOptionST("UseLipSync", "$SSL_UseLipSync", Config.UseLipSync)
-	; AddToggleOptionST("SeparateOrgasms","$SSL_SeparateOrgasms", Config.SeparateOrgasms)
-	; AddToggleOptionST("AllowFemaleFemaleCum","$SSL_AllowFemaleFemaleCum", Config.AllowFFCum, SexLabUtil.IntIfElse((!Config.UseCum), OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
 
 	SetCursorPosition(1)
 	AddHeaderOption("$SSL_Creatures")
 	AddToggleOptionST("AllowCreatures","$SSL_AllowCreatures", Config.AllowCreatures)
 	AddToggleOptionST("UseCreatureGender","$SSL_UseCreatureGender", Config.UseCreatureGender)
 	AddHeaderOption("$SSL_AnimationHandling")
-	; AddToggleOptionST("RaceAdjustments","$SSL_RaceAdjustments", Config.RaceAdjustments)
 	AddMenuOptionST("UseFade","$SSL_UseFade", _FadeOpt[sslSystemConfig.GetSettingInt("iUseFade")])
 	AddToggleOptionST("DisableScale","$SSL_DisableScale", Config.DisableScale)
-	; AddToggleOptionST("SeedNPCStats","$SSL_SeedNPCStats", Config.SeedNPCStats)
-	; AddToggleOptionST("ScaleActors","$SSL_EvenActorsHeight", Config.ScaleActors, SexLabUtil.IntIfElse(Config.DisableScale, OPTION_FLAG_DISABLED, OPTION_FLAG_NONE))
-	; AddToggleOptionST("ForeplayStage","$SSL_PreSexForeplay", Config.ForeplayStage)
-	; AddSliderOptionST("LeadInCoolDown","$SSL_LeadInCoolDown", Config.LeadInCoolDown, "$SSL_Seconds", SexLabUtil.IntIfElse(Config.ForeplayStage, OPTION_FLAG_NONE, OPTION_FLAG_DISABLED))
 	AddToggleOptionST("RestrictSameSex","$SSL_RestrictSameSex", Config.RestrictSameSex)
 	AddToggleOptionST("StraponsFemale","$SSL_FemalesUseStrapons", Config.UseStrapons)
 	AddToggleOptionST("UndressAnimation","$SSL_UndressAnimation", Config.UndressAnimation)
 	AddToggleOptionST("RedressVictim","$SSL_VictimsRedress", Config.RedressVictim)
-	; AddToggleOptionST("LimitedStrip","$SSL_LimitedStrip", Config.LimitedStrip)
 	AddToggleOptionST("DisableTeleport","$SSL_DisableTeleport", Config.DisableTeleport)
 	AddToggleOptionST("ShowInMap","$SSL_ShowInMap", Config.ShowInMap)
 	AddTextOptionST("NPCBed","$SSL_NPCsUseBeds", Chances[ClampInt(Config.NPCBed, 0, 2)])
@@ -1073,16 +1064,6 @@ function AnimationSettings()
 endFunction
 
 
-state RaceAdjustments
-	event OnSelectST()
-		Config.RaceAdjustments = !Config.RaceAdjustments
-		SetToggleOptionValueST(Config.RaceAdjustments)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoRaceAdjustments")
-	endEvent
-endState
-
 state DisableTeleport
 	event OnSelectST()
 		Config.DisableTeleport = !Config.DisableTeleport
@@ -1090,16 +1071,6 @@ state DisableTeleport
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoDisableTeleport")
-	endEvent
-endState
-
-state SeedNPCStats
-	event OnSelectST()
-		Config.SeedNPCStats = !Config.SeedNPCStats
-		SetToggleOptionValueST(Config.SeedNPCStats)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoSeedNPCStats")
 	endEvent
 endState
 
@@ -3076,19 +3047,6 @@ state UseExpressions
 		SetInfoText("$SSL_InfoUseExpressions")
 	endEvent
 endState
-state RefreshExpressions
-	event OnSelectST()
-		Config.RefreshExpressions = !Config.RefreshExpressions
-		SetToggleOptionValueST(Config.RefreshExpressions)
-	endEvent
-	event OnDefaultST()
-		Config.RefreshExpressions = true
-		SetToggleOptionValueST(Config.RefreshExpressions)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoRefreshExpressions")
-	endEvent
-endState
 state UseLipSync
 	event OnSelectST()
 		Config.UseLipSync = !Config.UseLipSync
@@ -3113,19 +3071,6 @@ state ShowInMap
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoShowInMap")
-	endEvent
-endState
-state LimitedStrip
-	event OnSelectST()
-		Config.LimitedStrip = !Config.LimitedStrip
-		SetToggleOptionValueST(Config.LimitedStrip)
-	endEvent
-	event OnDefaultST()
-		Config.LimitedStrip = false
-		SetToggleOptionValueST(Config.LimitedStrip)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_LimitedStripInfo")
 	endEvent
 endState
 state RedressVictim
@@ -3154,19 +3099,6 @@ state UseCum
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoUseCum")
-	endEvent
-endState
-state AllowFemaleFemaleCum
-	event OnSelectST()
-		Config.AllowFFCum = !Config.AllowFFCum
-		SetToggleOptionValueST(Config.AllowFFCum)
-	endEvent
-	event OnDefaultST()
-		Config.AllowFFCum = false
-		SetToggleOptionValueST(Config.AllowFFCum)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAllowFFCum")
 	endEvent
 endState
 state CumEffectTimer
@@ -3223,19 +3155,6 @@ state OrgasmEffects
 	endEvent
 	event OnHighlightST()
 		SetInfoText("$SSL_InfoOrgasmEffects")
-	endEvent
-endState
-state SeparateOrgasms
-	event OnSelectST()
-		Config.SeparateOrgasms = !Config.SeparateOrgasms
-		SetToggleOptionValueST(Config.SeparateOrgasms)
-	endEvent
-	event OnDefaultST()
-		Config.SeparateOrgasms = false
-		SetToggleOptionValueST(Config.SeparateOrgasms)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoSeparateOrgasms")
 	endEvent
 endState
 state RemoveHeelEffect
@@ -3321,66 +3240,11 @@ state BedRemoveStanding
 		SetInfoText("$SSL_InfoBedRemoveStanding")
 	endEvent
 endState
-state ForeplayStage
-	event OnSelectST()
-		Config.ForeplayStage = !Config.ForeplayStage
-		SetToggleOptionValueST(Config.ForeplayStage)
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		Config.ForeplayStage = true
-		SetToggleOptionValueST(Config.ForeplayStage)
-		ForcePageReset()
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoForeplayStage")
-	endEvent
-endState
-state LeadInCoolDown
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.LeadInCoolDown)
-		SetSliderDialogDefaultValue(0)
-		SetSliderDialogRange(0, 3600)
-		SetSliderDialogInterval(30)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.LeadInCoolDown = value
-		SetSliderOptionValueST(Config.LeadInCoolDown, "$SSL_Seconds")
-	endEvent
-	event OnDefaultST()
-		Config.LeadInCoolDown = 0.0
-		SetToggleOptionValueST(Config.LeadInCoolDown, "$SSL_Seconds")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoLeadInCoolDown")
-	endEvent
-endState
-state ScaleActors
-	event OnSelectST()
-		Config.ScaleActors = !Config.ScaleActors
-		SetToggleOptionValueST(Config.ScaleActors)
-		if Config.ScaleActors && Config.DisableScale
-			Config.DisableScale = false
-			SexLabUtil.VehicleFixMode(0)
-		endIf
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		Config.ScaleActors = false
-		SetToggleOptionValueST(Config.ScaleActors)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoScaleActors")
-	endEvent
-endState
 state DisableScale
 	event OnSelectST()
 		Config.DisableScale = !Config.DisableScale
 		SetToggleOptionValueST(Config.DisableScale)
 		SexLabUtil.VehicleFixMode((Config.DisableScale as int))
-		if Config.DisableScale && Config.ScaleActors
-			Config.ScaleActors = false
-		endIf
 		ForcePageReset()
 	endEvent
 	event OnDefaultST()
