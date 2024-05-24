@@ -9,7 +9,6 @@ String[] Function GetExpressionTags(String asID) native global
 Function SetExpressionTags(String asID, String[] asNewTags) native global
 bool Function GetEnabled(String asID) native global
 Function SetEnabled(String asID, bool abEnabled) native global
-Function RenameExpression(String asID, String asNewID) native global
 int[] Function GetLevelCounts(String asID) native global
 float[] Function GetValues(String asID, bool abFemale, int aiLevel) native global
 Function SetValues(String asID, bool abFemale, int aiLevel, float[] afValues) native global
@@ -115,12 +114,9 @@ endFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-Function _SetRegistryID(String asSet)
-	If (asSet != "")
-		RenameExpression(Registry, asSet)
-	EndIf
-	Parent._SetRegistryID(asSet)
-EndFunction
+Function CreateEmptyProfile(String asID) native global
+Function SaveProfile(String asID) native global
+
 String Function _GetName()
 	return Registry
 EndFunction
@@ -133,7 +129,10 @@ Function _SetEnabled(bool abEnabled)
 	EndIf
 EndFunction
 String[] Function _GetTags()
-	return GetExpressionTags(Registry)
+	If (Registry)
+		return GetExpressionTags(Registry)
+	EndIf
+	return Parent._GetTags()
 EndFunction
 Function _SetTags(String[] asSet)
 	If (Registry != "")
@@ -449,7 +448,11 @@ bool function ExportJson()
 	return true
 endFunction
 
-; ------------------------------------------------------- ;
+function Save(int id = -1)
+	SaveProfile(Registry)
+endFunction
+
+;SaveProfile----------------------------------------- ;
 ; --- DEPRECATED                                      --- ;
 ; ------------------------------------------------------- ;
 

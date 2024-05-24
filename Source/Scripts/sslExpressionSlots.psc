@@ -340,6 +340,9 @@ int function Register(string Registrar)
 	RegisterLock = true
 	int ret = FindEmpty()
 	If (ret > -1)
+		If (!sslBaseExpression.CreateEmptyProfile(Registrar))
+			return -1
+		EndIf
 		sslBaseExpression expr = GetNthAlias(ret) as sslBaseExpression
 		expr.Initialize()
 		expr.Registry = Registrar
