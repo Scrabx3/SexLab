@@ -1,6 +1,25 @@
 scriptname sslVoiceFactory extends Quest hidden
+{
+	Voices are no longer intended to be registered through the Papyrus interface
+	Create .yml files with the necessary data instead
+}
 
-sslVoiceSlots property Slots auto hidden
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+sslVoiceSlots property Slots hidden
+	sslVoiceSlots Function Get()
+		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
+	EndFunction
+EndProperty
 
 ; Gender Types
 int property Male = 0 autoreadonly hidden
@@ -16,7 +35,6 @@ int property CreatureFemale = 3 autoreadonly hidden
 
 ; Prepare the factory for use
 function PrepareFactory()
-	Slots = Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
 endFunction
 
 ; Send callback event to start registration
@@ -46,5 +64,4 @@ sslBaseVoice function Create(int id)
 endFunction
 
 function Initialize()
-	PrepareFactory()
 endfunction
