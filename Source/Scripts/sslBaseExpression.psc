@@ -115,22 +115,6 @@ endFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-int[] property PhaseCounts hidden
-	int[] function get()
-		return GetLevelCounts(Registry)
-	endFunction
-endProperty
-int property PhasesMale hidden
-	int function get()
-		return PhaseCounts[Male]
-	endFunction
-endProperty
-int property PhasesFemale hidden
-	int function get()
-		return PhaseCounts[Female]
-	endFunction
-endProperty
-
 Function _SetRegistryID(String asSet)
 	If (asSet != "")
 		RenameExpression(Registry, asSet)
@@ -141,7 +125,7 @@ String Function _GetName()
 	return Registry
 EndFunction
 bool Function _GetEnabled()
-	return GetEnabled(Registry)
+	return Registry && GetEnabled(Registry)
 EndFunction
 Function _SetEnabled(bool abEnabled)
 	If (Registry != "")
@@ -189,6 +173,22 @@ int property Mood     = 30 autoreadonly
 ; ID loop ranges
 int property PhonemeIDs  = 15 autoreadonly
 int property ModifierIDs = 13 autoreadonly
+
+int[] property PhaseCounts hidden
+	int[] function get()
+		return GetLevelCounts(Registry)
+	endFunction
+endProperty
+int property PhasesMale hidden
+	int function get()
+		return PhaseCounts[Male]
+	endFunction
+endProperty
+int property PhasesFemale hidden
+	int function get()
+		return PhaseCounts[Female]
+	endFunction
+endProperty
 
 ; ------------------------------------------------------- ;
 ; --- Application Functions                           --- ;

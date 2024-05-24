@@ -38,7 +38,7 @@ EndFunction
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 bool Function _GetEnabled()
-	return SexLabRegistry.SceneExists(Registry) && SexLabRegistry.IsSceneEnabled(Registry)
+	return Registry && SexLabRegistry.SceneExists(Registry) && SexLabRegistry.IsSceneEnabled(Registry)
 EndFunction
 Function _SetEnabled(bool aSet)
 	If (!SexLabRegistry.SceneExists(Registry))

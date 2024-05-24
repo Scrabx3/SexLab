@@ -116,7 +116,11 @@ endFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-sslSystemConfig Property Config Auto Hidden
+sslSystemConfig Property Config Hidden
+	sslSystemConfig Function Get()
+		return SexLabUtil.GetConfig()
+	EndFunction
+EndProperty
 
 function Log(string Log, string Type = "NOTICE")
 	Log = Type+" "+Registry+" - "+Log
@@ -127,11 +131,7 @@ function Log(string Log, string Type = "NOTICE")
 endFunction
 
 function Initialize()
-	Config 	 = Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
-	Name     = ""
 	Registry = ""
-	Enabled  = false
-	Tags     = Utility.CreateStringArray(0)
 endFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*	;
@@ -227,9 +227,5 @@ bool Property Ephemeral hidden
 endProperty
 
 function MakeEphemeral(string Token, Form OwnerForm)
-	Initialize()
-	Enabled   = true
-	Registry  = Token
-	Storage   = OwnerForm
-	Log("Created Non-Global Object '"+Token+"'", Storage)
+	Log("MakeEphemeral() is no longer supported; '" + Token + "'", Storage)
 endFunction
