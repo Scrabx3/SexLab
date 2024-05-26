@@ -1949,6 +1949,9 @@ EndFunction
 
 Function ApplyCumFX(Actor SourceRef)
 	; TODO: If there is no schlong, consider failing silenently
+	If (!Config.UseCum)
+		return
+	EndIf
 	int i = 0
 	while i < Positions.Length
 		int otherSex = GetNthPositionSex(i)
