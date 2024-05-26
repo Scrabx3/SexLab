@@ -13,6 +13,7 @@ int Function GetCompatibleSex(String asID) native global
 String[] Function GetCompatibleRaces(String asID) native global
 
 Sound Function GetSoundObject(String asID, int aiStrength, String[] asContext, String asScene, String asStage, int aiPositionIdx) native global
+Sound Function GetOrgasmSound(String asID, String[] asContext, String asScene, String asStage, int aiPositionIdx) native global
 Function PlaySound(Actor akActor, Sound akSound, float afStrength, bool abSyncLips) global
 	If (abSyncLips)
 		MoveLips(akActor, akSound, afStrength / 100.0)
@@ -349,8 +350,9 @@ function AddRaceKey(string RaceKey)
 	if !RaceKey
 		; Do nothing
 	elseIf !RaceKeys || !RaceKeys.Length
-		RaceKeys = new string[1]
-		RaceKeys[0] = RaceKey
+		String[] arg = new string[1]
+		arg[0] = RaceKey
+		RaceKeys = arg
 	elseIf RaceKeys.Find(RaceKey) == -1
 		RaceKeys = PapyrusUtil.PushString(RaceKeys, RaceKey)
 	endIf
