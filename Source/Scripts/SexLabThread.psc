@@ -146,7 +146,7 @@ EndFunction
 
 ; Get a list of all types the two actors interact with another
 ; If akPartner is none, returns all interactions with any partner
-; This function is NOT commutative
+; This function is NOT commutative, see type description for interaction direction
 int[] Function GetInteractionTypes(Actor akPosition, Actor akPartner)
 EndFunction
 
@@ -158,11 +158,21 @@ bool Function HasInteractionType(int aiType, Actor akPosition, Actor akPartner)
 EndFunction
 
 ; Return the first actor that interacts with akPosition by the given type
+; The array versions may be NONE, in which case all actors involved in the given type are returned
+; in this case it holds that GetPartnersByType() == GetPartnersByTypeRev()
+; (respecting interaction direction as stated by type)
 ; (Returned value will be a subset of all positions in the scene)
 Actor Function GetPartnerByType(Actor akPosition, int aiType)
-EndFUnction
+EndFunction
 Actor[] Function GetPartnersByType(Actor akPosition, int aiType)
-EndFUnction
+EndFunction
+; Same as above but gathers the data in reverse, e.g.
+; GetPartnersByType(Act, ORAL) returns all actors Act is receiving Oral from
+; GetPartnersByTypeRev(Act, ORAL) returns all actors Act is giving Oral to
+Actor Function GetPartnerByTypeRev(Actor akPartner, int aiType)
+EndFunction
+Actor[] Function GetPartnersByTypeRev(Actor akPartner, int aiType)
+EndFunction
 
 ; Return the velocity of the specified interaction type
 ; Velocity may be positive or negative, depending on the direction of movement
@@ -199,7 +209,13 @@ EndFunction
 Actor[] Function GetPositions()
 EndFunction
 
+; Retrieve the index of this actors position within the thread
+int Function GetPositionIdx(Actor akActor)
+EndFunction
+
 ; Retrive the sex of this position as used by the thread
+int Function GetActorSex(Actor akActor)
+EndFunction
 int Function GetNthPositionSex(int n)
 EndFunction
 int[] Function GetPositionSexes()
@@ -236,9 +252,9 @@ EndFunction
 ; --- Voice
 
 ; Update the given actors voice
-Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
+Function SetActorVoice(Actor akActor, String asVoice, bool abForceSilent)
 EndFunction
-sslBaseVoice Function GetVoice(Actor ActorRef)
+String Function GetActorVoice(Actor akActor)
 EndFunction
 
 ; --- Expressions
