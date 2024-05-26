@@ -1470,8 +1470,9 @@ function SoundSettings()
 	; Toggle Voices
 	AddHeaderOption("$SSL_ToggleVoices")
 	AddHeaderOption("")
+	int ii = VoiceSlots.Slotted
 	int i
-	while i < VoiceSlots.Slotted
+	while i < ii
 		sslBaseVoice Voice = VoiceSlots.GetBySlot(i)
 		if Voice
 			AddToggleOptionST("Voice_"+i, Voice.Name, Voice.Enabled)
