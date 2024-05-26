@@ -22,12 +22,10 @@ SexLabFramework property SexLab auto
 sslSystemConfig property Config auto
 
 ; Function libraries
-sslActorLibrary property ActorLib auto
 sslThreadLibrary property ThreadLib auto
 
 ; Object registry
 sslThreadSlots property ThreadSlots auto
-sslVoiceSlots property VoiceSlots auto
 
 int Property STATUS_IDLE = 0 AutoReadOnly
 int Property STATUS_INSTALLING = 1 AutoReadOnly
@@ -105,25 +103,17 @@ bool function SetupSystem()
 	LoadLibs()
 	SexLab.GoToState("Disabled")
 	Version = SexLabUtil.GetVersion()
-
 	; Framework
 	SexLab.Setup()
 	Config.Setup()
-
 	; Function libraries
 	ThreadLib.Setup()
-	ActorLib.Setup()
-
 	; Object registry
-	VoiceSlots.Setup()
 	ThreadSlots.Setup()
-
 	; Finish setup
 	SexLab.GoToState("Enabled")
 	_InstallStatus = STATUS_READY
 	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Ready!")
-	; Clean storage lists	(Async)
-	CleanActorStorage()
 	return true
 endFunction
 
@@ -137,84 +127,6 @@ event InstallSystem()
 	ModEvent.PushInt(eid, Version)
 	ModEvent.Send(eid)
 endEvent
-
-; ------------------------------------------------------- ;
-; --- System Cleanup                                  --- ;
-; ------------------------------------------------------- ;
-
-function CleanActorStorage()
-	if !PreloadDone
-		GoToState("PreloadStorage")
-		return
-	endIf
-	Log("Starting actor storage cleanup" ,"CleanActorStorage")
-	FormListRemove(none, "SexLab.ActorStorage", none, true)
-	Form[] ActorStorage = FormListToArray(none, "SexLab.ActorStorage")
-	int i = ActorStorage.Length
-	while i > 0
-		i -= 1
-		Actor ref = ActorStorage[i] as Actor
-		if !ref || !IsImportant(ref, false)
-			ClearFromActorStorage(ActorStorage[i])
-		endIf
-	endWhile
-	; Log change in storage
-	int Count = FormListCount(none, "SexLab.ActorStorage")
-	Log("Completed actor storage cleanup: " + ActorStorage.Length + " -> " + Count, "CleanActorStorage")
-	if Config.DebugMode
-		debug_Cleanup()
-	endIf
-endFunction
-
-function ClearFromActorStorage(Form FormRef)
-	UnsetStringValue(FormRef, "SexLab.SavedVoice")
-	UnsetStringValue(FormRef, "SexLab.CustomVoiceAlias")
-	UnsetFormValue(FormRef, "SexLab.CustomVoiceQuest")
-	FormListRemove(none, "SexLab.ActorStorage", FormRef, true)
-endFunction
-
-bool function IsImportant(Actor ActorRef, bool Strict = false) global
-	if ActorRef == Game.GetPlayer()
-		return true
-	elseIf !ActorRef || ActorRef.IsDead() || ActorRef.IsDeleted() || ActorRef.IsChild()
-		return false
-	elseIf !Strict
-		return true
-	endIf
-	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-	return BaseRef.IsUnique() || BaseRef.IsEssential() || BaseRef.IsInvulnerable() || BaseRef.IsProtected() || ActorRef.IsPlayerTeammate() || ActorRef.Is3DLoaded()
-endFunction
-
-state PreloadStorage
-	event OnBeginState()
-		RegisterForSingleUpdate(0.1)
-	endEvent
-	event OnUpdate()
-		GoToState("")
-		if PreloadDone
-			return
-		endIf
-		PreloadDone = true
-		Log("Preloading actor storage")
-		; Start actor preloading
-		int PreCount = FormListCount(none, "SexLab.ActorStorage")
-		FormListRemove(none, "SexLab.ActorStorage", none, true)
-		; Check string values for SexLab.SavedVoice
-		Form[] Forms = debug_AllStringObjs()
-		int i = Forms.Length
-		while i > 0
-			i -= 1
-			if Forms[i] && !FormListHas(none, "SexLab.ActorStorage", Forms[i]) && HasStringValue(Forms[i], "SexLab.SavedVoice")
-				sslSystemConfig.StoreActor(Forms[i])
-			endIf
-		endWhile
-		; Log change in storage
-		int Count = FormListCount(none, "SexLab.ActorStorage")
-		Log("Completed preload: " + PreCount + " -> " + Count, "PreloadSavedStorage")
-		; Preload finished, now clean it.
-		CleanActorStorage()
-	endEvent
-endState
 
 ; ------------------------------------------------------- ;
 ; --- System Utils                                    --- ;
@@ -234,16 +146,11 @@ function LogAll(string Log)
 endFunction
 
 function LoadLibs(bool Forced = false)
-	; Sync function Libraries - SexLabQuestFramework
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	SexLab      = SexLabQuestFramework as SexLabFramework
 	Config      = SexLabQuestFramework as sslSystemConfig
 	ThreadLib   = SexLabQuestFramework as sslThreadLibrary
 	ThreadSlots = SexLabQuestFramework as sslThreadSlots
-	ActorLib    = SexLabQuestFramework as sslActorLibrary
-	; Sync secondary object registry - SexLabQuestRegistry
-	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-	VoiceSlots      = SexLabQuestRegistry as sslVoiceSlots
 endFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -280,6 +187,16 @@ EndProperty
 sslExpressionSlots property ExpressionSlots hidden
 	sslExpressionSlots Function Get()
 		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
+	EndFunction
+EndProperty
+sslVoiceSlots property VoiceSlots Hidden
+  sslVoiceSlots Function Get()
+	  return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
+  EndFunction
+EndProperty
+sslActorLibrary property ActorLib Hidden
+	sslActorLibrary Function Get()
+		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary
 	EndFunction
 EndProperty
 
@@ -340,4 +257,26 @@ endFunction
 
 function MenuWait()
 	Utility.Wait(0.1)
+endFunction
+
+; ------------------------------------------------------- ;
+; --- System Cleanup                                  --- ;
+; ------------------------------------------------------- ;
+
+function CleanActorStorage()
+endFunction
+
+function ClearFromActorStorage(Form FormRef)
+endFunction
+
+bool function IsImportant(Actor ActorRef, bool Strict = false) global
+	if ActorRef == Game.GetPlayer()
+		return true
+	elseIf !ActorRef || ActorRef.IsDead() || ActorRef.IsDeleted() || ActorRef.IsChild()
+		return false
+	elseIf !Strict
+		return true
+	endIf
+	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
+	return BaseRef.IsUnique() || BaseRef.IsEssential() || BaseRef.IsInvulnerable() || BaseRef.IsProtected() || ActorRef.IsPlayerTeammate() || ActorRef.Is3DLoaded()
 endFunction

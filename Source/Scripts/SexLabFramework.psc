@@ -688,132 +688,35 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-;/* PickVoice
-* * @RETURNS an actors saved voice object if the user has the "reuse voices" option enabled, otherwise random for gender.
-* * 
-* * @param: Actor ActorRef - The actor to pick a voice for.
-* * @return: sslBaseVoice - A suitable voice object for the actor to use.
-*/;
-sslBaseVoice function PickVoice(Actor ActorRef)
-  return VoiceSlots.PickVoice(ActorRef)
-endFunction
-sslBaseVoice function GetVoice(Actor ActorRef) ; Alias of PickVoice()
-  return VoiceSlots.PickVoice(ActorRef)
-endFunction
+; Select a Voice matching this actor
+; --- Params
+; akActor:  An actor to match a voice on. May be none for Tag versions, in which case any voice with given tags will be selected
+; asTags:   A string/list of tags. Supports prefixing (-/~)
+; --- Return:
+; A String ID representing a unique voice object
+String Function SelectVoice(Actor akActor)
+  sslVoiceSlots.SelectVoice(akActor)
+EndFunction
+String Function SelectVoiceByTags(Actor akActor, String asTags)
+  sslVoiceSlots.SelectVoiceByTags(akActor, asTags)
+EndFunction
+String Function SelectVoiceByTagsA(Actor akActor, String[] asTags)
+  sslVoiceSlots.SelectVoiceByTagsA(akActor, asTags)
+EndFunction
 
-;/* 
-* * Saves a given voice to an actor. Once saved the function GetSavedVoice() will always return their saved voice,
-* * PickVoice() / GetVoice() will also return this voice for the actor if the user has the "reuse voices" option enabled 
-* * 
-* * @param: Actor ActorRef - The actor to pick a voice for.
-* * @return: sslBaseVoice - A suitable voice object for the actor to use. Does not have to be a registered SexLab voice object.
-*/;
-function SaveVoice(Actor ActorRef, sslBaseVoice Saving)
-  VoiceSlots.SaveVoice(ActorRef, Saving)
-endFunction
-
-;/* ForgetVoice
-* * Removes any saved voice on an actor.
-* * 
-* * @param: Actor ActorRef - The actor you want to remove a saved voice from.
-*/;
-function ForgetVoice(Actor ActorRef)
-  VoiceSlots.ForgetVoice(ActorRef)
-endFunction
-
-;/* GetSavedVoice
-* * @RETURNS an actors saved voice object, if they have one saved.
-* * 
-* * @param: Actor ActorRef - The actor get the saved voice for.
-* * @return: sslBaseVoice - The actors saved voice object if one exists, otherwise NONE.
-*/;
-sslBaseVoice function GetSavedVoice(Actor ActorRef)
-  return VoiceSlots.GetSaved(ActorRef)
-endFunction
-
-;/* HasCustomVoice
-* * Checks if the given Actor has a custom, non-registered SexLab voice.
-* * 
-* * @param: Actor ActorRef - The actor to check.
-* * @return: sslBaseVoice - A suitable voice object for the actor to use.
-*/;
-bool function HasCustomVoice(Actor ActorRef)
-  return VoiceSlots.HasCustomVoice(ActorRef)
-endFunction
-
-;/* GetVoiceByGender
-* * Get a random voice for a given gender.
-* * 
-* * @param: int Gender - The gender number to get a random voice for. 0 = male 1 = female.
-* * @return: sslBaseVoice - A suitable voice object for the given actor gender.
-*/;
-sslBaseVoice function GetVoiceByGender(int Gender)
-  return VoiceSlots.PickGender(Gender)
-endFunction
-
-;/* GetVoicesByGender
-* * Get an array of voices for a given gender.
-* * 
-* * @param: int Gender - The gender number to get a random voice for. 0 = male 1 = female.
-* * @return: sslBaseVoice[] - An array of suitable voices for the given actor gender.
-*/;
-sslBaseVoice[] function GetVoicesByGender(int Gender)
-  return VoiceSlots.GetAllGender(Gender)
-endFunction
-
-;/* GetVoiceByName
-* * Get a single voice object by name. Ignores if a user has the voice enabled or not.
-* * 
-* * @param: string FindName - The name of an voice object as seen in the SexLab MCM.
-* * @return: sslBaseVoice - The voice object whose name matches, if found.
-*/;
-sslBaseVoice function GetVoiceByName(string FindName)
-  return VoiceSlots.GetByName(FindName)
-endFunction
-
-;/* FindVoiceByName
-* * Find the registration slot number that an voice currently occupies.
-* * 
-* * @param: string FindName - The name of an voice as seen in the SexLab MCM.
-* * @return: int - The registration slot number for the voice.
-*/;
-int function FindVoiceByName(string FindName)
-  return VoiceSlots.FindByName(FindName)
-endFunction
-
-;/* GetVoiceBySlot
-* * @RETURNS a voice object by it's registration slot number.
-* * 
-* * @param: int slot - The slot number of the voice object.
-* * @return: sslBaseVoice - The voice object that currently occupies that slot, NONE if nothing occupies it.
-*/;
-sslBaseVoice function GetVoiceBySlot(int slot)
-  return VoiceSlots.GetBySlot(slot)
-endFunction
-
-;/* GetVoiceByTags
-* * Selects a single voice from a set of given tag options.
-* * 
-* * @param: string Tags - A comma separated list of voice tags you want to use as a filter.
-* * @param: string TagSuppress - A comma separated list of voice tags you DO NOT want present on the returned voice.
-* * @param: bool RequireAll - If TRUE, all tags in the provided "string Tags" list must be present in an voice to be returned. When FALSE only one tag in the list is needed.
-* * @return: sslBaseVoice - A randomly selected voice object among any that match the provided search arguments.
-*/;
-sslBaseVoice function GetVoiceByTags(string Tags, string TagSuppress = "", bool RequireAll = true)
-  return VoiceSlots.GetByTags(Tags, TagSuppress, RequireAll)
-endFunction
-
-;/* GetVoicesByTags
-* * Selects a single voice from a set of given tag options.
-* * 
-* * @param: string Tags - A comma separated list of voice tags you want to use as a filter.
-* * @param: string TagSuppress - A comma separated list of voice tags you DO NOT want present on the returned voice.
-* * @param: bool RequireAll - If TRUE, all tags in the provided "string Tags" list must be present in an voice to be returned. When FALSE only one tag in the list is needed.
-* * @return: sslBaseVoice[] - An array of voices that match the provided search arguments.
-*/;
-sslBaseVoice[] function GetVoicesByTags(string Tags, string TagSuppress = "", bool RequireAll = true)
-  return VoiceSlots.GetAllByTags(Tags, TagSuppress, RequireAll)
-endFunction
+; Reserve a voice that this actor will prefer over a randomly selected one
+Function StoreVoice(Actor akActor, String asVoice)
+  sslVoiceSlots.StoreVoice(akActor, asVoice)
+EndFunction
+bool Function HasStoredVoice(Actor akActor)
+  return GetStoredVoice(akActor) != ""
+EndFunction
+String Function GetStoredVoice(Actor akActor)
+  return sslVoiceSlots.GetSavedVoice(akActor)
+EndFunction
+Function ClearVoice(Actor akActor)
+  sslVoiceSlots.DeleteVoice(akActor)
+EndFunction
 
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
@@ -1695,6 +1598,48 @@ bool function IsMouthOpen(Actor ActorRef)
   return sslBaseExpression.IsMouthOpen(ActorRef)
 endFunction
 
+; --- Legacy Voice Functions
+
+sslBaseVoice function PickVoice(Actor ActorRef)
+  return VoiceSlots.PickVoice(ActorRef)
+endFunction
+sslBaseVoice function GetVoice(Actor ActorRef)
+  return VoiceSlots.PickVoice(ActorRef)
+endFunction
+function SaveVoice(Actor ActorRef, sslBaseVoice Saving)
+  VoiceSlots.SaveVoice(ActorRef, Saving)
+endFunction
+function ForgetVoice(Actor ActorRef)
+  VoiceSlots.ForgetVoice(ActorRef)
+endFunction
+sslBaseVoice function GetSavedVoice(Actor ActorRef)
+  return VoiceSlots.GetSaved(ActorRef)
+endFunction
+bool function HasCustomVoice(Actor ActorRef)
+  return VoiceSlots.HasCustomVoice(ActorRef)
+endFunction
+sslBaseVoice function GetVoiceByGender(int Gender)
+  return VoiceSlots.PickGender(Gender)
+endFunction
+sslBaseVoice[] function GetVoicesByGender(int Gender)
+  return VoiceSlots.GetAllGender(Gender)
+endFunction
+sslBaseVoice function GetVoiceByName(string FindName)
+  return VoiceSlots.GetByName(FindName)
+endFunction
+int function FindVoiceByName(string FindName)
+  return VoiceSlots.FindByName(FindName)
+endFunction
+sslBaseVoice function GetVoiceBySlot(int slot)
+  return VoiceSlots.GetBySlot(slot)
+endFunction
+sslBaseVoice function GetVoiceByTags(string Tags, string TagSuppress = "", bool RequireAll = true)
+  return VoiceSlots.GetByTags(Tags, TagSuppress, RequireAll)
+endFunction
+sslBaseVoice[] function GetVoicesByTags(string Tags, string TagSuppress = "", bool RequireAll = true)
+  return VoiceSlots.GetAllByTags(Tags, TagSuppress, RequireAll)
+endFunction
+
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 ;#                                                                                                                                         #
 ;# ^^^                                            END DEPRECATED FUNCTIONS - DO NOT USE THEM                                           ^^^ #
@@ -1767,27 +1712,17 @@ endFunction
 ;#                                                                                                                                         #
 ;#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-; Data
 sslSystemConfig property Config Auto
-
-; Function libraries
 sslActorLibrary property ActorLib Auto
 sslThreadLibrary property ThreadLib Auto
-
-; Object registries
 sslThreadSlots property ThreadSlots Auto
-sslVoiceSlots property VoiceSlots Auto
 
 function Setup()
-	; Reset function Libraries - SexLabQuestFramework
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	Config = SexLabQuestFramework as sslSystemConfig
 	ThreadLib = SexLabQuestFramework as sslThreadLibrary
 	ThreadSlots = SexLabQuestFramework as sslThreadSlots
 	ActorLib = SexLabQuestFramework as sslActorLibrary
-	; Reset secondary object registry - SexLabQuestRegistry
-	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-	VoiceSlots = SexLabQuestRegistry as sslVoiceSlots
 
   Log(self + " - Loaded SexLabFramework")
 endFunction
@@ -1895,6 +1830,11 @@ EndProperty
 sslCreatureAnimationSlots property CreatureSlots Hidden
   sslCreatureAnimationSlots Function Get()
     return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationSlots
+  EndFunction
+EndProperty
+sslVoiceSlots property VoiceSlots Hidden
+  sslVoiceSlots Function Get()
+	  return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
   EndFunction
 EndProperty
 sslObjectFactory property Factory Hidden

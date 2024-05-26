@@ -225,13 +225,7 @@ sslBaseAnimation function CopyAnimation(sslBaseAnimation Copy, sslBaseAnimation 
 endFunction
 
 sslBaseVoice function CopyVoice(sslBaseVoice Copy, sslBaseVoice Orig)
-	; TODO: Update once Voices have been overhauled
-	Copy.Name   = Orig.Name
-	Copy.Gender = Orig.Gender
-	Copy.Mild   = Orig.Mild
-	Copy.Medium = Orig.Medium
-	Copy.Hot    = Orig.Hot
-	Copy.AddTags(Orig.GetTags())
+	Copy.Registry = Orig.Registry
 	return Copy
 endFunction
 

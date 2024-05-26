@@ -44,15 +44,16 @@ Spell[] Property MatchMakerSpells Auto
 {4 Spells: Solo | Target | OrgySolo | OrgyTarget}
 bool Property MatchMaker Hidden
   bool Function Get()
-	  return PlayerRef.HasSpell(MatchMakerSpells[0])
+	  return Game.GetPlayer().HasSpell(MatchMakerSpells[0])
   EndFunction
   Function set(bool abValue)
+    Actor player = Game.GetPlayer()
     int i = 0
     While (i < MatchMakerSpells.Length)
       If (abValue)
-        PlayerRef.AddSpell(MatchMakerSpells[i], true)
+        player.AddSpell(MatchMakerSpells[i], true)
       Else
-        PlayerRef.RemoveSpell(MatchMakerSpells[i])
+        player.RemoveSpell(MatchMakerSpells[i])
       EndIf
       i += 1
     EndWhile
@@ -828,41 +829,10 @@ endFunction
 ; --- SFX                                             --- ;
 ; ------------------------------------------------------- ;
 
-; IDEA: Config system to replace SFX Sounds
-; IDEA: Use Velocity value to dynamically adjust volume
-; IDEA: SFX Types as bitflags
-; TODO: Remaining SFX Sound Types
-
-int Property TYPE_NULL      = 0 AutoReadOnly
-int Property TYPE_FOOT      = 1 AutoReadOnly
-int Property TYPE_HAND      = 2 AutoReadOnly
-int Property TYPE_TRIBADISM = 4 AutoReadOnly
-int Property TYPE_GRINDING  = 8 AutoReadOnly
-int Property TYPE_ORAL      = 16 AutoReadOnly
-int Property TYPE_ANAL      = 32 AutoReadOnly
-int Property TYPE_VAGINAL   = 64 AutoReadOnly
-
 Sound property OrgasmFX auto
 Sound property SquishingFX auto
 Sound property SuckingFX auto
 Sound property SexMixedFX auto
-
-Sound Function GetSFXSound(int aiSFXType)
-  If (aiSFXType == TYPE_NULL)
-    return none
-  EndIf
-  int all = TYPE_ANAL + TYPE_VAGINAL + TYPE_ORAL
-  If (Math.LogicalAnd(aiSFXType, TYPE_ANAL + TYPE_VAGINAL + TYPE_ORAL) > 0)
-    If (Math.LogicalAnd(aiSFXType, TYPE_ORAL) == 0)
-      return SquishingFX
-    Else
-      return SexMixedFX
-    EndIf
-  ElseIf (Math.LogicalAnd(aiSFXType, TYPE_ORAL) > 0)
-    return SuckingFX
-  EndIf
-  return none
-EndFUnction
 
 ; ------------------------------------------------------- ;
 ; --- Hotkeys & TargetRef                             --- ;
@@ -900,7 +870,7 @@ Function SetTargetActor()
   ; Attempt to grab control of their animation?
   sslThreadController TargetThread = ThreadSlots.GetActorController(TargetRef)
   If (TargetThread && !TargetThread.HasPlayer && TargetThread.GetStatus() == TargetThread.STATUS_INSCENE && \
-        !ThreadSlots.GetActorController(PlayerRef) && TakeThreadControl.Show())
+        !ThreadSlots.GetActorController(Game.GetPlayer()) && TakeThreadControl.Show())
     GetThreadControl(TargetThread) 
   EndIf
 EndFunction
@@ -958,14 +928,14 @@ Function GetThreadControl(sslThreadController TargetThread)
   _ActiveControl = TargetThread
   ; Lock players movement iff they arent owned by the thread
   If (!_ActiveControl.HasPlayer)
+    Actor player = Game.GetPlayer()
     _ActiveControl.AutoAdvance = false
-    PlayerRef.StopCombatAlarm()
-    if PlayerRef.IsWeaponDrawn()
-      PlayerRef.SheatheWeapon()
+    player.StopCombatAlarm()
+    if player.IsWeaponDrawn()
+      player.SheatheWeapon()
     endIf
     Game.SetPlayerAIDriven()
   EndIf
-  ; Give player control
   _ActiveControl.EnableHotkeys(true)
 EndFunction
 
@@ -1258,175 +1228,10 @@ function Setup()
 endFunction
 
 function SetDefaults()
-  ; Reload config
   Reload()
-  ; Reset data
   LoadStrapons()
-  ; Rest some player configurations
-  VoiceSlots.ForgetVoice(PlayerRef)
 endFunction
 
-; ------------------------------------------------------- ;
-; --- Export/Import to JSON                           --- ;
-; ------------------------------------------------------- ;
-
-string File
-function ExportSettings()
-  ; Export object registry
-  ExportAnimations()
-  ExportCreatures()
-  ExportVoices()
-endFunction
-
-function ImportSettings()  
-  ; Import object registry
-  ImportAnimations()
-  ImportCreatures()
-  ImportVoices()
-
-  ; Reload settings with imported values
-  Reload()
-endFunction
-
-; Integers
-function ExportInt(string Name, int Value)
-  JsonUtil.SetIntValue(File, Name, Value)
-endFunction
-int function ImportInt(string Name, int Value)
-  return JsonUtil.GetIntValue(File, Name, Value)
-endFunction
-
-; Booleans
-function ExportBool(string Name, bool Value)
-  JsonUtil.SetIntValue(File, Name, Value as int)
-endFunction
-bool function ImportBool(string Name, bool Value)
-  return JsonUtil.GetIntValue(File, Name, Value as int) as bool
-endFunction
-
-; Floats
-function ExportFloat(string Name, float Value)
-  JsonUtil.SetFloatValue(File, Name, Value)
-endFunction
-float function ImportFloat(string Name, float Value)
-  return JsonUtil.GetFloatValue(File, Name, Value)
-endFunction
-
-; Float Arrays
-function ExportFloatList(string Name, float[] Values, int len)
-  JsonUtil.FloatListClear(File, Name)
-  JsonUtil.FloatListCopy(File, Name, Values)
-endFunction
-float[] function ImportFloatList(string Name, float[] Values, int len)
-  if JsonUtil.FloatListCount(File, Name) == len
-    if Values.Length != len
-      Values = Utility.CreateFloatArray(len)
-    endIf
-    int i
-    while i < len
-      Values[i] = JsonUtil.FloatListGet(File, Name, i)
-      i += 1
-    endWhile
-  endIf
-  return Values
-endFunction
-
-; Boolean Arrays
-function ExportBoolList(string Name, bool[] Values, int len)
-  JsonUtil.IntListClear(File, Name)
-  int i
-  while i < len
-    JsonUtil.IntListAdd(File, Name, Values[i] as int)
-    i += 1
-  endWhile
-endFunction
-bool[] function ImportBoolList(string Name, bool[] Values, int len)
-  if JsonUtil.IntListCount(File, Name) == len
-    if Values.Length != len
-      Values = Utility.CreateBoolArray(len)
-    endIf
-    int i
-    while i < len
-      Values[i] = JsonUtil.IntListGet(File, Name, i) as bool
-      i += 1
-    endWhile
-  endIf
-  return Values
-endFunction
-
-; Animations
-function ExportAnimations()
-  JsonUtil.StringListClear(File, "Animations")
-  int i = AnimSlots.Slotted
-  while i
-    i -= 1
-    sslBaseAnimation Slot = AnimSlots.GetBySlot(i)
-    JsonUtil.StringListAdd(File, "Animations", sslUtility.MakeArgs(",", Slot.Registry, Slot.Enabled as int, Slot.HasTag("LeadIn") as int, Slot.HasTag("Aggressive") as int))
-  endWhile
-endfunction
-function ImportAnimations()
-  int i = JsonUtil.StringListCount(File, "Animations")
-  while i
-    i -= 1
-    ; Registrar, Enabled, Foreplay, Aggressive
-    string[] args = PapyrusUtil.StringSplit(JsonUtil.StringListGet(File, "Animations", i))
-    if args.Length == 4 && AnimSlots.FindByRegistrar(args[0]) != -1
-      sslBaseAnimation Slot = AnimSlots.GetbyRegistrar(args[0])
-      Slot.Enabled = (args[1] as int) as bool
-      Slot.AddTagConditional("LeadIn", (args[2] as int) as bool)
-      Slot.AddTagConditional("Aggressive", (args[3] as int) as bool)
-    endIf
-  endWhile
-endFunction
-
-; Creatures
-function ExportCreatures()
-  JsonUtil.StringListClear(File, "Creatures")
-  int i = CreatureSlots.Slotted
-  while i
-    i -= 1
-    sslBaseAnimation Slot = CreatureSlots.GetBySlot(i)
-    JsonUtil.StringListAdd(File, "Creatures", sslUtility.MakeArgs(",", Slot.Registry, Slot.Enabled as int))
-  endWhile
-endFunction
-function ImportCreatures()
-  int i = JsonUtil.StringListCount(File, "Creatures")
-  while i
-    i -= 1
-    ; Registrar, Enabled
-    string[] args = PapyrusUtil.StringSplit(JsonUtil.StringListGet(File, "Creatures", i))
-    if args.Length == 2 && CreatureSlots.FindByRegistrar(args[0]) != -1
-      CreatureSlots.GetbyRegistrar(args[0]).Enabled = (args[1] as int) as bool
-    endIf
-  endWhile
-endFunction
-
-; Voices
-function ExportVoices()
-  JsonUtil.StringListClear(File, "Voices")
-  int i = VoiceSlots.Slotted
-  while i
-    i -= 1
-    sslBaseVoice Slot = VoiceSlots.GetBySlot(i)
-    JsonUtil.StringListAdd(File, "Voices", sslUtility.MakeArgs(",", Slot.Registry, Slot.Enabled as int))
-  endWhile
-  ; Player voice
-  JsonUtil.SetStringValue(File, "PlayerVoice", VoiceSlots.GetSavedName(PlayerRef))
-endfunction
-function ImportVoices()
-  int i = JsonUtil.StringListCount(File, "Voices")
-  while i
-    i -= 1
-    ; Registrar, Enabled
-    string[] args = PapyrusUtil.StringSplit(JsonUtil.StringListGet(File, "Voices", i))
-    if args.Length == 2 && VoiceSlots.FindByRegistrar(args[0]) != -1
-      VoiceSlots.GetbyRegistrar(args[0]).Enabled = (args[1] as int) as bool
-    endIf
-  endWhile
-  ; Player voice
-  VoiceSlots.ForgetVoice(PlayerRef)
-  VoiceSlots.SaveVoice(PlayerRef, VoiceSlots.GetByName(JsonUtil.GetStringValue(File, "PlayerVoice", "$SSL_Random")))
-endFunction
 ; ------------------------------------------------------- ;
 ; --- Config Properties                               --- ;
 ; ------------------------------------------------------- ;
@@ -1457,9 +1262,6 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function StoreActor(Form FormRef) global
-  if FormRef
-    StorageUtil.FormListAdd(none, "SexLab.ActorStorage", FormRef, false)
-  endIf
 endFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -1864,6 +1666,65 @@ EndProperty
 ; ------------------------------------------------------- ;
 ; --- Export/Import to JSON                           --- ;
 ; ------------------------------------------------------- ;
+
+function ExportSettings()
+endFunction
+
+function ImportSettings()
+endFunction
+
+; Integers
+function ExportInt(string Name, int Value)
+endFunction
+int function ImportInt(string Name, int Value)
+  return Value
+endFunction
+
+; Booleans
+function ExportBool(string Name, bool Value)
+endFunction
+bool function ImportBool(string Name, bool Value)
+  return Value
+endFunction
+
+; Floats
+function ExportFloat(string Name, float Value)
+endFunction
+float function ImportFloat(string Name, float Value)
+  return 0.0
+endFunction
+
+; Float Arrays
+function ExportFloatList(string Name, float[] Values, int len)
+endFunction
+float[] function ImportFloatList(string Name, float[] Values, int len)
+  return values
+endFunction
+
+; Boolean Arrays
+function ExportBoolList(string Name, bool[] Values, int len)
+endFunction
+bool[] function ImportBoolList(string Name, bool[] Values, int len)
+  return values
+endFunction
+
+; Animations
+function ExportAnimations()
+endfunction
+function ImportAnimations()
+endFunction
+
+; Creatures
+function ExportCreatures()
+endFunction
+function ImportCreatures()
+endFunction
+
+; Voices
+function ExportVoices()
+endfunction
+function ImportVoices()
+endFunction
 
 ; Expressions
 function ExportExpressions()

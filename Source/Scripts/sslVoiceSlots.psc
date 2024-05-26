@@ -46,7 +46,9 @@ string[] Property Registry Hidden
 		int ii = 0
 		While (i < aliases.Length)
 			sslBaseVoice it = aliases[i] as sslBaseVoice
-			If (it && it.Registered)
+			If (!it)
+				i = aliases.Length
+			ElseIf (it.Registered)
 				ret[ii] = it.Name
 				ii += 1
 			EndIf
@@ -158,7 +160,7 @@ sslBaseVoice function PickVoice(Actor ActorRef)
 	EndIf
 	return GetbyRegistrar(v)
 
-	; TODO: Check what this all does. Might be interesting for native implementation
+	; COMEBACK: Check what this all does. Might be interesting for native implementation
 	; ; Pick a taged voice based on gender and scale
 	; ActorBase BaseRef = ActorRef.GetLeveledActorBase()
 	; float ActorScale = ActorRef.GetScale()
@@ -258,6 +260,9 @@ sslBaseVoice function GetSaved(Actor ActorRef)
 endFunction
 
 string function GetSavedName(Actor ActorRef)
+	If (!ActorRef)
+		return "$SSL_Random"
+	EndIf
 	String v = GetSavedVoice(ActorRef)
 	If (!v)
 		return "$SSL_Random"
@@ -500,8 +505,6 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Setup()
-Debug.MessageBox("Setup Voices")
-		(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceDefaults).LoadCreatureVoices()
 endFunction
 
 function Log(string msg)

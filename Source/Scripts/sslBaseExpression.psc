@@ -114,8 +114,8 @@ endFunction
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-Function CreateEmptyProfile(String asID) native global
-Function SaveProfile(String asID) native global
+bool Function CreateEmptyProfile(String asID) native global
+Function SaveExpression(String asID) native global
 
 String Function _GetName()
 	return Registry
@@ -449,10 +449,10 @@ bool function ExportJson()
 endFunction
 
 function Save(int id = -1)
-	SaveProfile(Registry)
+	SaveExpression(Registry)
 endFunction
 
-;SaveProfile----------------------------------------- ;
+; ------------------------------------------------------- ;
 ; --- DEPRECATED                                      --- ;
 ; ------------------------------------------------------- ;
 

@@ -58,7 +58,10 @@ Function _SetEnabled(bool abEnabled)
 	EndIf
 EndFunction
 String[] Function _GetTags()
-	return GetVoiceTags(Registry)
+	If (Registry != "")
+		return GetVoiceTags(Registry)
+	EndIf
+	return Utility.CreateStringArray(0)
 EndFunction
 Function _SetTags(String[] asSet)
 	If (Registry != "")

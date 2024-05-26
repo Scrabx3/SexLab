@@ -15,15 +15,8 @@ scriptname sslSystemLibrary extends Quest hidden
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; Settings access
-sslSystemConfig property Config auto
-
 ; Object registeries
 sslThreadSlots property ThreadSlots auto
-sslVoiceSlots property VoiceSlots auto
-
-; Data
-Actor property PlayerRef auto
 
 ; ------------------------------------------------------- ;
 ; --- Setup                                           --- ;
@@ -34,13 +27,7 @@ Actor property PlayerRef auto
 
 function LoadLibs(bool Forced = false)
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
-	Config = SexLabQuestFramework as sslSystemConfig
 	ThreadSlots = SexLabQuestFramework as sslThreadSlots
-
-	Form SexLabQuestRegistry = Game.GetFormFromFile(0x664FB, "SexLab.esm")
-	VoiceSlots = SexLabQuestRegistry as sslVoiceSlots
-
-	PlayerRef = Game.GetPlayer()
 endFunction
 
 function Setup()
@@ -71,7 +58,7 @@ Function Error(String asMsg)
 	asMsg = "ERROR - " + asMsg
 	Debug.TraceStack("SEXLAB - " + asMsg)
 	SexLabUtil.PrintConsole(asMsg)
-	if Config.DebugMode
+	if SexLabUtil.GetConfig().DebugMode
 		Debug.TraceUser("SexLabDebug", asMsg)
 	endIf
 EndFunction
@@ -115,6 +102,21 @@ EndProperty
 sslExpressionSlots property ExpressionSlots Hidden
 	sslExpressionSlots Function Get()
 		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
+	EndFunction
+EndProperty
+sslVoiceSlots property VoiceSlots Hidden
+  sslVoiceSlots Function Get()
+	  return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
+  EndFunction
+EndProperty
+sslSystemConfig property Config Hidden
+	sslSystemConfig Function Get()
+		return SexLabUtil.GetConfig()
+	EndFunction
+EndProperty
+Actor property PlayerRef Hidden
+	Actor Function Get()
+		return Game.GetPlayer()
 	EndFunction
 EndProperty
 

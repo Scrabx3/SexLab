@@ -234,9 +234,6 @@ Form Function StripSlot(Actor ActorRef, int SlotMask)
 EndFunction
 
 Function UnstripActor(Actor ActorRef, Form[] Stripped, bool IsVictim = false)
-	If (IsVictim && !Config.RedressVictim)
-		return
-	EndIf
 	int i = 0
 	While(i < Stripped.Length)
 		If(Stripped[i])

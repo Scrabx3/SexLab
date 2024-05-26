@@ -42,7 +42,9 @@ String[] Property Registry
 		int ii = 0
 		While (i < aliases.Length)
 			sslBaseExpression it = aliases[i] as sslBaseExpression
-			If (it && it.Registered)
+			If (!it)
+				i = aliases.Length
+			ElseIf (it.Registered)
 				ret[ii] = it.Name
 				ii += 1
 			EndIf
@@ -313,7 +315,9 @@ int function Register(string Registrar)
 	endWhile
 	RegisterLock = true
 	int ret = FindEmpty()
-	If (ret > -1 && !sslBaseExpression.CreateEmptyProfile(Registrar))
+	If (ret == -1 || !sslBaseExpression.CreateEmptyProfile(Registrar))
+		sslBaseExpression it = GetBySlot(ret) as sslBaseExpression
+		it.Registry = Registrar
 		RegisterLock = false
 		return -1
 	EndIf
