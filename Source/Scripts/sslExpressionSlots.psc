@@ -35,12 +35,25 @@ String[] Function GetExpressionsByTags(Actor akActor, String asTags) native glob
 
 String[] Property Registry
 	String[] Function Get()
-		return GetRegistrySnapShot()
+		SyncBackend()
+		Alias[] aliases = GetAliases()
+		String[] ret = Utility.CreateStringArray(aliases.Length)
+		int i = 0
+		int ii = 0
+		While (i < aliases.Length)
+			sslBaseExpression it = aliases[i] as sslBaseExpression
+			If (it && it.Registered)
+				ret[ii] = it.Name
+				ii += 1
+			EndIf
+			i += 1
+		EndWhile
+		return PapyrusUtil.ClearEmpty(ret)
 	EndFunction
 EndProperty
 int property Slotted hidden
 	int Function Get()
-		return GetRegistrySnapShot().Length
+		return Registry.Length
 	EndFunction
 EndProperty
 sslBaseExpression[] property Expressions hidden
@@ -48,23 +61,6 @@ sslBaseExpression[] property Expressions hidden
 		return GetSlots(1)
 	endFunction
 endProperty
-
-String[] Function GetRegistrySnapShot()
-	SyncBackend()
-	Alias[] aliases = GetAliases()
-	String[] ret = Utility.CreateStringArray(aliases.Length)
-	int i = 0
-	int ii = 0
-	While (i < aliases.Length)
-		sslBaseExpression it = aliases[i] as sslBaseExpression
-		If (it && it.Registered)
-			ret[ii] = it.Name
-			ii += 1
-		EndIf
-		i += 1
-	EndWhile
-	return PapyrusUtil.ClearEmpty(ret)
-EndFunction
 
 Function SyncBackend()
 	Alias[] aliases = GetAliases()
@@ -74,7 +70,6 @@ Function SyncBackend()
 	While (i < aliases.Length && ii < profiles.Length)
 		sslBaseExpression expr = aliases[i] as sslBaseExpression
 		If (expr)
-			expr.Initialize()
 			expr.Registry = profiles[ii]
 			ii += 1
 		EndIf
@@ -131,7 +126,6 @@ sslBaseExpression function RandomByTag(string Tag, bool ForFemale = true)
 endFunction
 
 sslBaseExpression[] function GetByTag(string Tag, bool ForFemale = true)
-	SyncBackend()
 	bool[] Valid = Utility.CreateBoolArray(Slotted)
 	Alias[] aliases = GetAliases()
 	int i = 0
@@ -208,24 +202,10 @@ endFunction
 ; ------------------------------------------------------- ;
 
 sslBaseExpression function GetBySlot(int index)
-	if index < 0
+	if index < 0 || index >= GetNumAliases()
 		return none
 	endIf
-	SyncBackend()
-	Alias[] aliases = GetAliases()
-	int i = 0
-	While (i < aliases.Length)
-		sslBaseExpression it = aliases[i] as sslBaseExpression
-		If (it && it.Registered)
-			If (index == 0)
-				return it
-			Else
-				index -= 1
-			EndIf
-		EndIf
-		i += 1
-	EndWhile
-	return none
+	return GetNthAlias(index) as sslBaseExpression
 endFunction
 
 bool function IsRegistered(string Registrar)
@@ -316,16 +296,10 @@ endFunction
 ; ------------------------------------------------------- ;
 
 int Function FindEmpty()
-	SyncBackend()
-	Alias[] aliases = GetAliases()
-	int i = 0
-	While (i < aliases.Length)
-		sslBaseExpression it = aliases[i] as sslBaseExpression
-		If (it && !it.Registered)
-			return i
-		EndIf
-		i += 1
-	EndWhile
+	int n = Slotted
+	If (GetNthAlias(n + 1))
+		return n + 1
+	EndIf
 	return -1
 EndFunction
 
@@ -339,13 +313,9 @@ int function Register(string Registrar)
 	endWhile
 	RegisterLock = true
 	int ret = FindEmpty()
-	If (ret > -1)
-		If (!sslBaseExpression.CreateEmptyProfile(Registrar))
-			return -1
-		EndIf
-		sslBaseExpression expr = GetNthAlias(ret) as sslBaseExpression
-		expr.Initialize()
-		expr.Registry = Registrar
+	If (ret > -1 && !sslBaseExpression.CreateEmptyProfile(Registrar))
+		RegisterLock = false
+		return -1
 	EndIf
 	RegisterLock = false
 	return ret
@@ -374,15 +344,15 @@ endFunction
 function RegisterSlots()
 endFunction
 
+bool function UnregisterExpression(string Registrar)
+	return false
+endFunction
+
 ; ------------------------------------------------------- ;
 ; --- System Use Only                                 --- ;
 ; ------------------------------------------------------- ;
 
 function Setup()
-endFunction
-
-bool function UnregisterExpression(string Registrar)
-	return false
 endFunction
 
 bool function TestSlots()
