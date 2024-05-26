@@ -83,21 +83,21 @@ sslBaseAnimation[] function GetByRaceKey(int ActorCount, string RaceKey)
   return GetByRaceKeyTags(ActorCount, RaceKey, "")
 endFunction
 sslBaseAnimation[] function GetByRaceKeyTags(int ActorCount, string RaceKey, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-  return AsBaseAnimation(GetByRaceKeyTagsImpl(ActorCount, RaceKey, MergeSplitTags(Tags, TagsSuppressed, RequireAll)))
+  return AsBaseAnimation(GetByRaceKeyTagsImpl(ActorCount, RaceKey, SexLabUtil.MergeSplitTags(Tags, TagsSuppressed, RequireAll)))
 EndFunction
 
 sslBaseAnimation[] function GetByCreatureActors(int ActorCount, Actor[] Positions)
   return GetByCreatureActorsTags(ActorCount, Positions, "")
 endFunction
 sslBaseAnimation[] function GetByCreatureActorsTags(int ActorCount, Actor[] Positions, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-  return AsBaseAnimation(GetByCreatureActorsTagsImpl(ActorCount, Positions, MergeSplitTags(Tags, TagsSuppressed, RequireAll)))
+  return AsBaseAnimation(GetByCreatureActorsTagsImpl(ActorCount, Positions, SexLabUtil.MergeSplitTags(Tags, TagsSuppressed, RequireAll)))
 endFunction
 
 sslBaseAnimation[] function GetByRaceGenders(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, bool ForceUse = false)
   return GetByRaceGendersTags(ActorCount, RaceRef, MaleCreatures, FemaleCreatures, "")
 endFunction
 sslBaseAnimation[] function GetByRaceGendersTags(int ActorCount, Race RaceRef, int MaleCreatures = 0, int FemaleCreatures = 0, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-  String[] tags_ = MergeSplitTags(Tags, TagsSuppressed, RequireAll)
+  String[] tags_ = SexLabUtil.MergeSplitTags(Tags, TagsSuppressed, RequireAll)
   return AsBaseAnimation(GetByRaceGendersTagsImpl(ActorCount, SexlabRegistry.GetRaceKeyByRace(RaceRef), MaleCreatures, FemaleCreatures, tags_))
 endFunction
 

@@ -64,33 +64,6 @@ String[] Function GetByTagsImpl(int aiActorCount, String[] asTags) native
 String[] Function GetByTypeImpl(int aiActorCount, int aiMales, int aiFemales, String[] asTags) native
 String[] Function PickByActorsImpl(Actor[] akActors, String[] asTags) native
 
-String[] Function MergeSplitTags(String asTags, String asTagsSuppress, bool abRequireAll)
-  String[] ret1 = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTags, ","))
-  String[] ret2 = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTagsSuppress, ","))
-  If (ret1.Length + ret2.Length == 0)
-    return Utility.CreateStringArray(0)
-  EndIf
-  If (!abRequireAll)
-    int i = 0
-    While (i < ret1.Length)
-      ret1[i] = "~" + ret1[i]
-      i += 1
-    EndWhile
-  EndIf
-  int n = 0
-  While (n < ret2.Length)
-    ret2[n] = "-" + ret2[n]
-    n += 1
-  EndWhile
-  If (ret1.Length && ret2.Length)
-    return PapyrusUtil.MergeStringArray(ret1, ret2, true)
-  ElseIf(ret1.Length)
-    return ret1
-  Else
-    return ret2
-  EndIf
-EndFunction
-
 sslBaseAnimation Function GetSetAnimation(String asScene)
   int where = _proxyid.Find(asScene)
   If (where > -1)
@@ -120,12 +93,12 @@ sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
 EndFunction
 
 sslBaseAnimation[] Function GetByTags(int ActorCount, string Tags, string TagsSuppressed = "", bool RequireAll = true)
-  return AsBaseAnimation(GetByTagsImpl(ActorCount, MergeSplitTags(Tags, TagsSuppressed, RequireAll)))
+  return AsBaseAnimation(GetByTagsImpl(ActorCount, SexLabUtil.MergeSplitTags(Tags, TagsSuppressed, RequireAll)))
 EndFunction
 
 sslBaseAnimation[] function GetByCommonTags(int ActorCount, string CommonTags, string Tags, string TagsSuppressed = "", bool RequireAll = true)
   String[] common = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(CommonTags, ","))
-  String[] tags_ = PapyrusUtil.MergeStringArray(common, MergeSplitTags(Tags, TagsSuppressed, RequireAll), true)
+  String[] tags_ = PapyrusUtil.MergeStringArray(common, SexLabUtil.MergeSplitTags(Tags, TagsSuppressed, RequireAll), true)
   return AsBaseAnimation(GetByTagsImpl(ActorCount, tags_))
 endFunction
 
@@ -164,7 +137,7 @@ sslBaseAnimation[] function GetByDefaultTags(int Males, int Females, bool IsAggr
     ; Will throw a error on the log with the same format as other errors :shrug:
     return GetByType(-1)
   EndIf
-  String[] tags_ = MergeSplitTags(Tags, TagsSuppressed, RequireAll)
+  String[] tags_ = SexLabUtil.MergeSplitTags(Tags, TagsSuppressed, RequireAll)
   If (IsAggressive && !RestrictAggressive)
     tags_ = PapyrusUtil.PushString(tags_, "Forced")
   ElseIf(RestrictAggressive)

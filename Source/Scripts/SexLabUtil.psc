@@ -70,6 +70,33 @@ function PrintConsole(string output) global native
 Actor[] function MakeActorArray(Actor Actor1 = none, Actor Actor2 = none, Actor Actor3 = none, Actor Actor4 = none, Actor Actor5 = none) global native
 float function GetCurrentGameRealTime() global native
 
+String[] Function MergeSplitTags(String asTags, String asTagsSuppress, bool abRequireAll) global
+  String[] ret1 = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTags, ","))
+  String[] ret2 = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(asTagsSuppress, ","))
+  If (ret1.Length + ret2.Length == 0)
+    return Utility.CreateStringArray(0)
+  EndIf
+  If (!abRequireAll)
+    int i = 0
+    While (i < ret1.Length)
+      ret1[i] = "~" + ret1[i]
+      i += 1
+    EndWhile
+  EndIf
+  int n = 0
+  While (n < ret2.Length)
+    ret2[n] = "-" + ret2[n]
+    n += 1
+  EndWhile
+  If (ret1.Length && ret2.Length)
+    return PapyrusUtil.MergeStringArray(ret1, ret2, true)
+  ElseIf(ret1.Length)
+    return ret1
+  Else
+    return ret2
+  EndIf
+EndFunction
+
 function Log(string msg, string source, string type = "NOTICE", string display = "trace", bool minimal = true) global
 	if StringUtil.Find(display, "trace") != -1
 		if minimal
