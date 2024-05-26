@@ -1,7 +1,22 @@
 scriptname sslExpressionDefaults extends sslExpressionFactory
+{
+	Old default expressions of SL. ALl of this is legacy and no longer used
+	Expressions are now iniitlaized within its own dll (or through a .yml file system)
+}
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 function LoadExpressions()
-	Debug.Messagebox("Default Expressions are initialized in SexLab.dll. Default Expressions should no longer be installed through Papyrus")
+	Debug.Messagebox("Default Expressions are initialized in SexLabs .dll. Default Expressions should no longer be installed through Papyrus")
 	return
 
 	; Prepare factory resources

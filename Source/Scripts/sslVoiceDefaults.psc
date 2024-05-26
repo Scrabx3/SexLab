@@ -1,6 +1,23 @@
 scriptname sslVoiceDefaults extends sslVoiceFactory
+{
+	Old voice initialization
+	SLP initializes voices through a .yml file system. This script is no longer used
+}
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
+;								██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝							;
+;								██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝ 							;
+;								██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝  							;
+;								███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║   							;
+;								╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝   							;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 function LoadVoices()
+	Debug.Messagebox("Default Voices are initialized through .yaml files included in the SexLab download. Installation through the Papyrus interface is no longer supported")
+	return
 	; Prepare factory resources
 	PrepareFactory()
 	; Female voices
@@ -203,6 +220,8 @@ endFunction
 
 
 function LoadCreatureVoices()
+	Debug.Messagebox("Default Voices are initialized through .yaml files included in the SexLab download. Installation through the Papyrus interface is no longer supported")
+	return
 	; Prepare factory resources
 	PrepareFactory()
 	; Register creature voices
