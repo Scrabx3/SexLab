@@ -7,9 +7,6 @@ ScriptName sslThreadModel extends SexLabThread Hidden
 	To access, read and write scene related data see sslThreadController.psc
 }
 
-; TODO: SFX Sounds are currently not supported
-; They should be handled by the dll and will require some registration from the front end to become active
-
 int Function GetThreadID()
 	return tid
 EndFunction
@@ -58,6 +55,14 @@ EndFunction
 
 Actor[] Function GetPositions()
 	return PapyrusUtil.RemoveActor(Positions, none)
+EndFunction
+
+int Function GetPositionIdx(Actor akActor)
+	return Positions.Find(akActor)
+EndFunction
+
+int Function GetActorSex(Actor akActor)
+	return GetNthPositionSex(GetPositionIdx(akActor))
 EndFunction
 
 int Function GetNthPositionSex(int n)
@@ -118,20 +123,19 @@ Function SetPathingFlag(Actor akActor, int aiPathingFlag)
 EndFunction
 
 ; Voice
-Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
-	sslActorAlias ref = ActorAlias(ActorRef)
+Function SetActorVoice(Actor akActor, String asVoice, bool abForceSilent)
+	sslActorAlias ref = ActorAlias(akActor)
 	If (!ref)
 		return
 	EndIf
-	ref.SetVoice(Voice, ForceSilent)
+	ref.SetActorVoice(asVoice, abForceSilent)
 EndFunction
-
-sslBaseVoice Function GetVoice(Actor ActorRef)
-	sslActorAlias ref = ActorAlias(ActorRef)
+String Function GetActorVoice(Actor akActor)
+	sslActorAlias ref = ActorAlias(akActor)
 	If (!ref)
 		return none
 	EndIf
-	return ref.GetVoice()
+	return ref.GetActorVoice()
 EndFunction
 
 ; Expressions
@@ -368,29 +372,29 @@ bool Function IsPhysicsEnabled()
 	return IsPhysicsRegistered()
 EndFunction
 
-; Get a list of all types the two actors interact with another
-; If akPartner is none, returns all interactions with any partner
-; This function is NOT commutative
 int[] Function GetInteractionTypes(Actor akPosition, Actor akPartner)
+	return GetPhysicTypes(akPosition, akPartner)
 EndFunction
 
-; If akPosition interacts with akPartner under a given type
-; If akPartner is none, checks against any available partner
-; If akPosition is none, iterates over all possible positions
-; If both are none, returns if the given type is present among any positions
 bool Function HasInteractionType(int aiType, Actor akPosition, Actor akPartner)
+	return HasPhysicType(aiType, akPosition, akPartner)
 EndFunction
 
-; Return the first actor that interacts with akPosition by the given type
-; (Returned value will be a subset of all positions in the scene)
 Actor Function GetPartnerByType(Actor akPosition, int aiType)
+	return GetPhysicPartnerByType(akPosition, aiType)
 EndFUnction
 Actor[] Function GetPartnersByType(Actor akPosition, int aiType)
+	return GetPhysicPartnersByType(akPosition, aiType)
 EndFUnction
+Actor Function GetPartnerByTypeRev(Actor akPartner, int aiType)
+	return GetPhysicPartnerByTypeRev(akPartner, aiType)
+EndFunction
+Actor[] Function GetPartnersByTypeRev(Actor akPartner, int aiType)
+	return GetPhysicPartnersByTypeRev(akPartner, aiType)
+EndFunction
 
-; Return the velocity of the specified interaction type
-; Velocity may be positive or negative, depending on the direction of movement
 float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)
+	return GetPhysicVelocity(akPosition, akPartner, aiType)
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -871,45 +875,6 @@ ObjectReference Function FindCenter(String[] asScenes, String[] asOutScenes, flo
 bool Function UpdateBaseCoordinates(String asScene, float[] afBaseOut) native
 Function ApplySceneOffset(String asScene, float[] afBaseOut) native
 Function ShuffleScenes(String[] asScenes, String asStart) native
-
-; --- Legacy
-
-Function SetAnimations(sslBaseAnimation[] AnimationList)
-	If (AnimationList.Length && AnimationList.Find(none) == -1)
-		SetScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
-	EndIf
-EndFunction
-Function ClearAnimations()
-	ClearScenes()
-EndFunction
-Function SetForcedAnimations(sslBaseAnimation[] AnimationList)
-	If (AnimationList.Length && AnimationList.Find(none) == -1)
-		SetForcedScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
-	EndIf
-EndFunction
-Function ClearForcedAnimations()
-	ClearForcedScenes()
-EndFunction
-Function SetLeadAnimations(sslBaseAnimation[] AnimationList)
-	if AnimationList.Length && AnimationList.Find(none) == -1
-		SetLeadScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
-	endIf
-EndFunction
-Function ClearLeadAnimations()
-	ClearLeadInScenes()
-EndFunction
-Function SetStartingAnimation(sslBaseAnimation FirstAnimation)
-	SetStartingScene(FirstAnimation.Registry)
-EndFunction
-Function DisableBedUse(bool disabling = true)
-	SetFurnitureStatus((!disabling) as int)
-EndFunction
-Function SetBedFlag(int flag = 0)
-	SetFurnitureStatus(flag + 1)	; New Status is [0, 2] instead of [-1, 1]
-EndFunction
-Function SetBedding(int flag = 0)
-	SetBedFlag(flag)
-EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Thread PLAYING                                  --- ;
@@ -1396,6 +1361,8 @@ int[] Function GetPhysicTypes(Actor akPosition, Actor akPartner) native
 bool Function HasPhysicType(int aiType, Actor akPosition, Actor akPartner) native
 Actor Function GetPhysicPartnerByType(Actor akPosition, int aiType) native
 Actor[] Function GetPhysicPartnersByType(Actor akPosition, int aiType) native
+Actor Function GetPhysicPartnerByTypeRev(Actor akPartner, int aiType) native
+Actor[] Function GetPhysicPartnersByTypeRev(Actor akPartner, int aiType) native
 float Function GetPhysicVelocity(Actor akPosition, Actor akPartner, int aiType) native
 
 ; ------------------------------------------------------- ;
@@ -1547,6 +1514,13 @@ Function SortAliasesToPositions()
 		EndIf
 		i += 1
 	EndWhile
+EndFunction
+
+Sound Function GetAliasSound(sslActorAlias akThis, String asVoice, int aiStrength)
+	return sslBaseVoice.GetSoundObject(asVoice, aiStrength, _ContextTags, _ActiveScene, _ActiveStage, ActorAlias.Find(akThis))
+EndFunction
+Sound Function GetAliasOrgasmSound(sslActorAlias akThis, String asVoice)
+	return sslBaseVoice.GetOrgasmSound(asVoice, _ContextTags, _ActiveScene, _ActiveStage, ActorAlias.Find(akThis))
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -2392,6 +2366,21 @@ Function SetAnimationImpl(sslBaseAnimation akAnimation)
 	ResetScene(akAnimation.Registry)
 EndFunction
 
+Function SetVoice(Actor ActorRef, sslBaseVoice Voice, bool ForceSilent = false)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return
+	EndIf
+	ref.SetVoice(Voice, ForceSilent)
+EndFunction
+sslBaseVoice Function GetVoice(Actor ActorRef)
+	sslActorAlias ref = ActorAlias(ActorRef)
+	If (!ref)
+		return none
+	EndIf
+	return ref.GetVoice()
+EndFunction
+
 Function SetExpression(Actor ActorRef, sslBaseExpression Expression)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)
@@ -2782,6 +2771,43 @@ Function ForcePathToCenter(Actor ActorRef = none, bool forced = true)
 		ActorAlias[3].ForcePathToCenter(forced)
 		ActorAlias[4].ForcePathToCenter(forced)
 	endIf
+EndFunction
+
+Function SetAnimations(sslBaseAnimation[] AnimationList)
+	If (AnimationList.Length && AnimationList.Find(none) == -1)
+		SetScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
+	EndIf
+EndFunction
+Function ClearAnimations()
+	ClearScenes()
+EndFunction
+Function SetForcedAnimations(sslBaseAnimation[] AnimationList)
+	If (AnimationList.Length && AnimationList.Find(none) == -1)
+		SetForcedScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
+	EndIf
+EndFunction
+Function ClearForcedAnimations()
+	ClearForcedScenes()
+EndFunction
+Function SetLeadAnimations(sslBaseAnimation[] AnimationList)
+	if AnimationList.Length && AnimationList.Find(none) == -1
+		SetLeadScenes(sslBaseAnimation.AsSceneIDs(AnimationList))
+	endIf
+EndFunction
+Function ClearLeadAnimations()
+	ClearLeadInScenes()
+EndFunction
+Function SetStartingAnimation(sslBaseAnimation FirstAnimation)
+	SetStartingScene(FirstAnimation.Registry)
+EndFunction
+Function DisableBedUse(bool disabling = true)
+	SetFurnitureStatus((!disabling) as int)
+EndFunction
+Function SetBedFlag(int flag = 0)
+	SetFurnitureStatus(flag + 1)	; New Status is [0, 2] instead of [-1, 1]
+EndFunction
+Function SetBedding(int flag = 0)
+	SetBedFlag(flag)
 EndFunction
 
 bool property DisableOrgasms hidden
