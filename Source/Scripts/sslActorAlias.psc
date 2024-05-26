@@ -114,15 +114,13 @@ EndFunction
 ; --- Voice                                           --- ;
 ; ------------------------------------------------------- ;
 
-sslBaseVoice function GetVoice()
+String Function GetActorVoice()
 	return _Voice
-endFunction
+EndFUnction
 
-Function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
-	_IsForcedSilent = ForceSilence
-	if ToVoice && (_sex > 2) == ToVoice.Creature
-		_Voice = ToVoice
-	endIf
+Function SetActorVoice(String asNewVoice, bool abForceSilent)
+	_IsForcedSilent = abForceSilent
+	_Voice = asNewVoice
 EndFunction
 
 bool Function IsSilent()
@@ -258,7 +256,7 @@ Form _Strapon			; Strapon used by the animation
 Form _HadStrapon	; Strapon worn prior to animation start
 
 ; Voice
-sslBaseVoice _Voice
+String _Voice
 bool _IsForcedSilent
 float _BaseDelay
 float _VoiceDelay
@@ -276,7 +274,7 @@ String _Expression
 bool Property ForceOpenMouth Auto Hidden
 bool Property OpenMouth
 	bool Function Get()
-		return ForceOpenMouth || _Thread.Animation.UseOpenMouth(Position, _Thread.Stage)
+		return ForceOpenMouth && _Thread.HasInteractionType(_Thread.PTYPE_Oral, none, _ActorRef)
 	EndFunction
 	Function Set(bool abSet)
 		ForceOpenMouth = abSet
@@ -375,40 +373,24 @@ State Ready
 		EndIf
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
 		_AnimVarbHumanoidFootIKDisable = _ActorRef.GetAnimationVariableBool("bHumanoidFootIKDisable")
-		; TODO: Code below to ---- isnt optimizedy yet !IMPORTANT
-		; Delays
-		If(_sex > 2)
-			_BaseDelay = 3.0
-		ElseIf(_sex != 0)
-			_BaseDelay = _Config.FemaleVoiceDelay
-		Else
-			_BaseDelay = _Config.MaleVoiceDelay
+		If (!_IsForcedSilent && !_Voice)
+			_Voice = sslVoiceSlots.SelectVoice(_ActorRef)
 		EndIf
-		_VoiceDelay = _BaseDelay
-		_ExpressionDelay = _BaseDelay * 2
-		_EnjoymentDelay = 1.5
-		_ContextCheckDelay = 8.0
-		_lastHoldBack = 0.0
-		; Voice
-		if !_Voice && !_IsForcedSilent
-			if _sex > 2
-				_Voice = _Config.VoiceSlots.PickByRaceKey(SexLabRegistry.GetRaceKey(ActorRef))
-			else
-				_Voice = _Config.VoiceSlots.PickVoice(ActorRef)
-			endIf
-		endIf
-		; ----
-		; Strapon & Expression (for NPC only)
-		If (_sex <= 2)
-			If (_Config.UseStrapons && _sex == 1)
-				_HadStrapon = _Config.WornStrapon(ActorRef)
-				If (!_HadStrapon)
-					_Strapon = _Config.GetStrapon()
-				ElseIf (!_Strapon)
-					_Strapon = _HadStrapon
+		If (_sex <= 2)	; NPC: Strapon, Expression
+			If (_sex == 0)
+				_BaseDelay = _Config.MaleVoiceDelay
+			Else
+				_BaseDelay = _Config.FemaleVoiceDelay
+				If (_Config.UseStrapons && _sex == 1)
+					_HadStrapon = _Config.WornStrapon(ActorRef)
+					If (!_HadStrapon)
+						_Strapon = _Config.GetStrapon()
+					ElseIf (!_Strapon)
+						_Strapon = _HadStrapon
+					EndIf
 				EndIf
 			EndIf
-			If (_Expression == "" && _Config.UseExpressions)
+			If (_Config.UseExpressions && !_Expression)
 				String[] expr
 				If (IsVictim())
 					expr = sslExpressionSlots.GetExpressionsByStatus(_ActorRef, 1)
@@ -419,7 +401,14 @@ State Ready
 				EndIf
 				_Expression = expr[Utility.RandomInt(0, expr.Length - 1)]
 			EndIf
+		Else	; Creature
+			_BaseDelay = 3.0
 		EndIf
+		_VoiceDelay = _BaseDelay
+		_ExpressionDelay = _BaseDelay * 2
+		_EnjoymentDelay = 1.5
+		_ContextCheckDelay = 8.0
+		_lastHoldBack = 0.0
 		; Position
 		ActorRef.SetActorValue("Paralysis", 0.0)
 		If(akPathTo && !abUseFade && DoPathToCenter)
@@ -446,11 +435,7 @@ State Ready
 			return
 		EndIf
 		String LogInfo = ""
-		If(_Voice)
-			LogInfo += "Voice[" + _Voice.Name + "] "
-		Else
-			LogInfo += "Voice[NONE] "
-		EndIf
+		LogInfo += "Voice[" + _Voice + "] "
 		LogInfo += "Strapon[" + _Strapon + "] "
 		LogInfo += "Expression[" + _Expression + "] "
 		Log(LogInfo)
@@ -646,7 +631,7 @@ State Animating
 		EndIf
 		_VoiceDelay -= Utility.RandomFloat(0.1, 0.3)
 		if _VoiceDelay < 0.8
-			_VoiceDelay = 0.8 ; Can't have delay shorter than animation update loop (COMEBACK: why?)
+			_VoiceDelay = 0.8
 		endIf
 	EndFunction
 
@@ -671,20 +656,13 @@ State Animating
 			_LoopEnjoymentDelay = 0
 			UpdateEffectiveEnjoymentCalculations()
 		EndIf
-		int Strength = CalcReaction()
-		; TODO: Review Voice Update
-		if _LoopDelay >= _VoiceDelay && (_Config.LipsFixedValue || Strength > 10)
+		int strength = CalcReaction()
+		If (_LoopDelay >= _VoiceDelay && strength > 10 && !IsSilent)
 			_LoopDelay = 0.0
-			bool UseLipSync = _Config.UseLipSync && _sex <= 2
-			if OpenMouth && UseLipSync && !_Config.LipsFixedValue
-				sslBaseVoice.MoveLips(ActorRef, none, 0.3)
-				Log("PlayMoan:False; UseLipSync:"+UseLipSync+"; OpenMouth:"+OpenMouth)
-			elseIf !IsSilent
-				_Voice.PlayMoan(ActorRef, Strength, IsVictim(), UseLipSync)
-				Log("PlayMoan:True; UseLipSync:"+UseLipSync+"; OpenMouth:"+OpenMouth)
-			endIf
-		endIf
-		; ----
+			bool lipsync = !OpenMouth && _Config.UseLipSync && _sex <= 2
+			Sound snd = _Thread.GetAliasSound(Self, _Voice, strength)
+			sslBaseVoice.PlaySound(_ActorRef, snd, strength, lipsync)
+		EndIf
 		If (_RefreshExpressionDelay > 8.0)
 			RefreshExpression()
 		EndIf
@@ -775,7 +753,8 @@ State Animating
 				Game.ShakeCamera(none, _Config.ShakeStrength, _Config.ShakeStrength + 1.0)
 			EndIf
 			If (!IsSilent)
-				PlayLouder(_Voice.GetSound(100, false), ActorRef, _Config.VoiceVolume)
+				Sound snd = _Thread.GetAliasOrgasmSound(Self, _Voice)
+				PlayLouder(snd, _ActorRef, _Config.VoiceVolume)
 			EndIf
 			PlayLouder(_Config.OrgasmFX, ActorRef, _Config.SFXVolume)
 		EndIf
@@ -1260,10 +1239,8 @@ float Function CalcEffectiveEnjoyment()
 EndFunction
 
 int function CalcReaction()
-	; This function is intended to represent the excitement of an actor
-	; It controls how "loud" an actor moans, how strong the expression is
-	int Strength = Math.Abs(_FullEnjoyment) as int
-	return PapyrusUtil.ClampInt(Strength, 0, 100)
+	int ret = Math.Abs(_FullEnjoyment) as int
+	return PapyrusUtil.ClampInt(ret, 0, 100)
 endFunction
 
 Function InternalCompensateStageSkip()
@@ -1481,6 +1458,17 @@ endFunction
 Function SetExpression(sslBaseExpression ToExpression)
 	_Expression = ToExpression.Registry
 	TryRefreshExpression()
+EndFunction
+
+sslBaseVoice function GetVoice()
+	return _Config.VoiceSlots.GetByRegistrar(_Voice)
+endFunction
+Function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
+	If (ToVoice)
+		SetActorVoice(ToVoice.Registry, ForceSilence)
+	Else
+		SetActorVoice("", ForceSilence)
+	EndIf
 EndFunction
 
 int function GetGender()

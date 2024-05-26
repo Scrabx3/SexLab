@@ -1,30 +1,106 @@
 scriptname sslVoiceSlots extends Quest
+{
+	Script for accessing voice data
+}
 
-import PapyrusUtil
-import StorageUtil
+; Selects matching voice for this actor. Returns saved voice if it exists
+String Function SelectVoice(Actor akActor) native global
+String Function SelectVoiceByTags(Actor akActor, String asTags) native global
+String Function SelectVoiceByTagsA(Actor akActor, String[] asTags) native global
 
-; Voices storage
-Alias[] Objects
-string[] Registry
-int property Slotted auto hidden
+String Function GetSavedVoice(Actor akActor) native global
+Function StoreVoice(Actor akActor, String asVoice) native global
+Function DeleteVoice(Actor akActor) native global
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
+;        ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║            ;
+;        ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║            ;
+;        ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║            ;
+;        ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗       ;
+;        ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝       ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+String[] Function GetAllVoices() native global
+String Function SelectVoiceByRace(String asRaceKey) native global
+
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+; ----------------------------------------------------------------------------- ;
+;               ██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗              ;
+;               ██║     ██╔════╝██╔════╝ ██╔══██╗██╔════╝╚██╗ ██╔╝              ;
+;               ██║     █████╗  ██║  ███╗███████║██║      ╚████╔╝               ;
+;               ██║     ██╔══╝  ██║   ██║██╔══██║██║       ╚██╔╝                ;
+;               ███████╗███████╗╚██████╔╝██║  ██║╚██████╗   ██║                 ;
+;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
+; ----------------------------------------------------------------------------- ;
+; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+string[] Property Registry Hidden
+	String[] Function Get()
+		SyncBackend()
+		Alias[] aliases = GetAliases()
+		String[] ret = Utility.CreateStringArray(aliases.Length)
+		int i = 0
+		int ii = 0
+		While (i < aliases.Length)
+			sslBaseVoice it = aliases[i] as sslBaseVoice
+			If (it && it.Registered)
+				ret[ii] = it.Name
+				ii += 1
+			EndIf
+			i += 1
+		EndWhile
+		return PapyrusUtil.ClearEmpty(ret)
+	EndFunction
+EndProperty
+int property Slotted hidden
+	int Function Get()
+		return Registry.Length
+	EndFunction
+EndProperty
 sslBaseVoice[] property Voices hidden
 	sslBaseVoice[] function get()
 		return GetSlots(1, 128)
 	endFunction
 endProperty
 
+Function SyncBackend()
+	Alias[] aliases = GetAliases()
+	String[] arr = GetAllVoices()
+	int i = 0
+	int ii = 0
+	While (i < aliases.Length && ii < arr.Length)
+		sslBaseVoice v = aliases[i] as sslBaseVoice
+		If (v)
+			v.Registry = arr[ii]
+			ii += 1
+		EndIf
+		i += 1
+	EndWhile
+EndFunction
+
 ; Libraries
-sslSystemConfig property Config auto
-Actor property PlayerRef auto
+sslSystemConfig property Config hidden
+	sslSystemConfig Function Get()
+		return SexLabUtil.GetConfig()
+	EndFunction
+EndProperty
+Actor property PlayerRef hidden
+	Actor Function Get()
+		return Game.GetPlayer()
+	EndFunction
+EndProperty
 
 ; ------------------------------------------------------- ;
 ; --- Voice Filtering                                 --- ;
 ; ------------------------------------------------------- ;
 
 sslBaseVoice[] function FilterTaggedVoices(sslBaseVoice[] VoiceList, string[] Tags, bool HasTag = true) global
-	if !VoiceList || VoiceList.Length < 1
+	if VoiceList.Length < 1
 		return VoiceList
-	elseIf !Tags || Tags.Length < 1
+	elseIf Tags.Length < 1
 		if HasTag
 			return sslUtility.VoiceArray(0)
 		endIf
@@ -62,191 +138,143 @@ sslBaseVoice[] function GetAllGender(int Gender)
 	while i
 		i -= 1
 		sslBaseVoice Slot = GetBySlot(i)
-		Valid[i] = Slot.Enabled && !Slot.Creature && (Gender == Slot.Gender || Slot.Gender == -1)
+		Valid[i] = Slot.Registered && Slot.Enabled && !Slot.Creature && (Gender == Slot.Gender || Slot.Gender == -1)
 	endwhile
 	return GetList(Valid)
 endFunction
 
 sslBaseVoice function PickGender(int Gender = 1)
-	; Get list of valid voices
-	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	int i = Slotted
-	while i
-		i -= 1
-		sslBaseVoice Slot = GetBySlot(i)
-		Valid[i] = Slot.Enabled && !Slot.Creature && (Gender == Slot.Gender || Slot.Gender == -1)
-	endwhile
-	; Select a random true in the list
-	i = Utility.RandomInt(0, (Slotted - 1))
-	int Slot = Valid.Find(true, i)
-	if Slot == -1
-		Slot = Valid.RFind(true, i)
-	endIf
-	return GetbySlot(Slot)
+	sslBaseVoice[] ret = GetAllGender(Gender)
+	If (!ret.Length)
+		return none
+	EndIf
+	return ret[Utility.RandomInt(0, ret.Length - 1)]
 endFunction
 
 sslBaseVoice function PickVoice(Actor ActorRef)
-	bool IsPlayer = ActorRef == PlayerRef
-	; Find if a saved voice exists and in what slot
-	sslBaseVoice Saved = GetSaved(ActorRef)
-	if Saved && (IsPlayer || Config.NPCSaveVoice || HasCustomVoice(ActorRef))
-		return Saved ; Use saved voice
-	endIf
-	; Pick a taged voice based on gender and scale
-	ActorBase BaseRef = ActorRef.GetLeveledActorBase()
-	float ActorScale = ActorRef.GetScale()
-	string Tags = "Male"
-	string SuppressTags = ""
-	string[] Filters
-	VoiceType ActorVoice = BaseRef.GetVoiceType()
-	string ActorVoiceString = ""
-	if ActorVoice
-		ActorVoiceString = ActorVoice as String
-		Log(ActorVoiceString)
-		if StringUtil.Find(ActorVoiceString, "Orc") >= 0 || StringUtil.Find(ActorVoiceString, "Brute") >= 0
-			Filters = PapyrusUtil.PushString(Filters, "Rough")
-		endIf
-		if StringUtil.Find(ActorVoiceString, "Toned") >= 0 || StringUtil.Find(ActorVoiceString, "Shrill") >= 0
-			Filters = PapyrusUtil.PushString(Filters, "Loud")
-		endIf
-		if StringUtil.Find(ActorVoiceString, "Sultry") >= 0
-			Filters = PapyrusUtil.PushString(Filters, "Excited")
-		endIf
-		if StringUtil.Find(ActorVoiceString, "Coward") >= 0
-			Filters = PapyrusUtil.PushString(Filters, "Quiet")
-		endIf
-	endIf
-	if BaseRef.GetSex() == 1
-		Tags = "Female"
-	endIf
-	if StringUtil.Find(ActorVoiceString, "Old") >= 0 || StringUtil.Find(ActorVoiceString, "Druk") >= 0 || StringUtil.Find(ActorVoiceString, "Khajiit") >= 0 || StringUtil.Find(ActorVoiceString, "Argonian") >= 0
-		SuppressTags = "Young"
-		Filters = PapyrusUtil.PushString(Filters, "Old")
-	elseIf StringUtil.Find(ActorVoiceString, "Young") >= 0 || ActorScale < 0.95
-		SuppressTags = "Old"
-		Filters = PapyrusUtil.PushString(Filters, "Young")
-	else
-		SuppressTags += ",Young,Old"
-	endif
-	sslBaseVoice[] VoiceList = GetAllByTags(Tags,SuppressTags)
+	String v = SelectVoice(ActorRef)
+	If (!v)
+		return none
+	EndIf
+	return GetbyRegistrar(v)
+
+	; TODO: Check what this all does. Might be interesting for native implementation
+	; ; Pick a taged voice based on gender and scale
+	; ActorBase BaseRef = ActorRef.GetLeveledActorBase()
+	; float ActorScale = ActorRef.GetScale()
+	; string Tags = "Male"
+	; string SuppressTags = ""
+	; string[] Filters
+	; VoiceType ActorVoice = BaseRef.GetVoiceType()
+	; string ActorVoiceString = ""
+	; if ActorVoice
+	; 	ActorVoiceString = ActorVoice as String
+	; 	Log(ActorVoiceString)
+	; 	if StringUtil.Find(ActorVoiceString, "Orc") >= 0 || StringUtil.Find(ActorVoiceString, "Brute") >= 0
+	; 		Filters = PapyrusUtil.PushString(Filters, "Rough")
+	; 	endIf
+	; 	if StringUtil.Find(ActorVoiceString, "Toned") >= 0 || StringUtil.Find(ActorVoiceString, "Shrill") >= 0
+	; 		Filters = PapyrusUtil.PushString(Filters, "Loud")
+	; 	endIf
+	; 	if StringUtil.Find(ActorVoiceString, "Sultry") >= 0
+	; 		Filters = PapyrusUtil.PushString(Filters, "Excited")
+	; 	endIf
+	; 	if StringUtil.Find(ActorVoiceString, "Coward") >= 0
+	; 		Filters = PapyrusUtil.PushString(Filters, "Quiet")
+	; 	endIf
+	; endIf
+	; if BaseRef.GetSex() == 1
+	; 	Tags = "Female"
+	; endIf
+	; if StringUtil.Find(ActorVoiceString, "Old") >= 0 || StringUtil.Find(ActorVoiceString, "Druk") >= 0 || StringUtil.Find(ActorVoiceString, "Khajiit") >= 0 || StringUtil.Find(ActorVoiceString, "Argonian") >= 0
+	; 	SuppressTags = "Young"
+	; 	Filters = PapyrusUtil.PushString(Filters, "Old")
+	; elseIf StringUtil.Find(ActorVoiceString, "Young") >= 0 || ActorScale < 0.95
+	; 	SuppressTags = "Old"
+	; 	Filters = PapyrusUtil.PushString(Filters, "Young")
+	; else
+	; 	SuppressTags += ",Young,Old"
+	; endif
+	; sslBaseVoice[] VoiceList = GetAllByTags(Tags,SuppressTags)
 	
-	sslBaseVoice[] Filtered = FilterTaggedVoices(VoiceList, Filters, true)
-	if Filtered.Length > 0 && VoiceList.Length > Filtered.Length
-		Log("Filtered out '"+(VoiceList.Length - Filtered.Length)+"' voices without the tags: "+Filters)
-		VoiceList = Filtered
-	endIf
-	if VoiceList && VoiceList.Length > 0
-		int i = (Utility.RandomInt(0, (VoiceList.Length - 1)))
-		if !IsPlayer && Config.NPCSaveVoice
-			SaveVoice(ActorRef, VoiceList[i])
-		endIf
-		return VoiceList[i]
-	endIf
-	; Pick a random voice based on gender
-	sslBaseVoice Picked = PickGender(BaseRef.GetSex())
-	; Save the voice to NPC for reuse, if enabled
-	if Picked && !IsPlayer && Config.NPCSaveVoice
-		SaveVoice(ActorRef, Picked)
-	endIf
-	return Picked
+	; sslBaseVoice[] Filtered = FilterTaggedVoices(VoiceList, Filters, true)
+	; if Filtered.Length > 0 && VoiceList.Length > Filtered.Length
+	; 	Log("Filtered out '"+(VoiceList.Length - Filtered.Length)+"' voices without the tags: "+Filters)
+	; 	VoiceList = Filtered
+	; endIf
+	; if VoiceList && VoiceList.Length > 0
+	; 	int i = (Utility.RandomInt(0, (VoiceList.Length - 1)))
+	; 	if !IsPlayer && Config.NPCSaveVoice
+	; 		SaveVoice(ActorRef, VoiceList[i])
+	; 	endIf
+	; 	return VoiceList[i]
+	; endIf
+	; ; Pick a random voice based on gender
+	; sslBaseVoice Picked = PickGender(BaseRef.GetSex())
+	; ; Save the voice to NPC for reuse, if enabled
+	; if Picked && !IsPlayer && Config.NPCSaveVoice
+	; 	SaveVoice(ActorRef, Picked)
+	; endIf
+	; return Picked
 endFunction
 
 sslBaseVoice function GetByTags(string Tags, string TagsSuppressed = "", bool RequireAll = true)
 	sslBaseVoice[] Found = GetAllByTags(Tags, TagsSuppressed, RequireAll)
-	if Found && Found.Length > 0
+	if Found.Length
 		return Found[(Utility.RandomInt(0, (Found.Length - 1)))]
 	endIf
 	return none
 endFunction
 
 sslBaseVoice[] function GetAllByTags(string Tags, string TagsSuppressed = "", bool RequireAll = true)
-	string[] Search = StringSplit(Tags)
-	if Search.Length == 0
-		return none
-	endIf
-	string[] Suppress = StringSplit(TagsSuppressed)
-	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	int i = Slotted
-	while i
-		i -= 1
-		sslBaseVoice Slot = GetBySlot(i)
-		Valid[i] = Slot.Enabled && !Slot.Creature && (TagsSuppressed == "" || Slot.CheckTags(Suppress, false, true)) && Slot.CheckTags(Search, RequireAll)
-	endWhile
-	return GetList(Valid)
+	String[] arg = SexLabUtil.MergeSplitTags(Tags, TagsSuppressed, RequireAll)
+	String v = SelectVoiceByTagsA(none, arg)
+	If (!v)
+		return sslUtility.VoiceArray(0)
+	EndIf
+	sslBaseVoice[] ret = new sslBaseVoice[1]
+	ret[0] = GetbyRegistrar(v)
+	return ret
 endFunction
 
 sslBaseVoice function PickByRaceKey(string RaceKey)
-	if !RaceKey
-		Log("Empty RaceKey!")
+	String v = SelectVoiceByRace(RaceKey)
+	If (!v)
 		return none
-	endIf
-	Log("PickByRaceKey("+RaceKey+")")
-	bool[] Valid = Utility.CreateBoolArray(Slotted)
-	int i = Slotted
-	while i
-		i -= 1
-		sslBaseVoice Slot = GetBySlot(i)
-		Valid[i] = Slot.Enabled && Slot.Creature && Slot.RaceKeys.Find(RaceKey) != -1
-	endWhile
-	sslBaseVoice[] Found = GetList(Valid)
-	if Found && Found.Length > 0
-		return Found[(Utility.RandomInt(0, (Found.Length - 1)))]
-	endIf
-	return none
+	EndIf
+	return GetbyRegistrar(v)
 endFunction
 
 int function FindSaved(Actor ActorRef)
-	return FindByRegistrar(GetStringValue(ActorRef, "SexLab.SavedVoice", ""))
+	return FindByRegistrar(GetSaved(ActorRef))
 endFunction
 
 sslBaseVoice function GetSaved(Actor ActorRef)
-	if HasCustomVoice(ActorRef)
-		Form VoiceQuest = GetFormValue(ActorRef, "SexLab.CustomVoiceQuest")
-		string VoiceAlias = GetStringValue(ActorRef, "SexLab.CustomVoiceAlias")
-		if VoiceQuest && VoiceAlias != ""
-			return (VoiceQuest as Quest).GetAliasByName(VoiceAlias) as sslBaseVoice
-		endIf
-	endIf
-	return GetBySlot(FindSaved(ActorRef))
+	String v = GetSavedVoice(ActorRef)
+	If (!v)
+		return none
+	EndIf
+	return GetbyRegistrar(v)
 endFunction
 
 string function GetSavedName(Actor ActorRef)
-	if !ActorRef
+	String v = GetSavedVoice(ActorRef)
+	If (!v)
 		return "$SSL_Random"
-	endIf
-	sslBaseVoice Voice = GetSaved(ActorRef)
-	if !Voice
-		return "$SSL_Random"
-	endIf
-	return Voice.Name
+	EndIf
+	return v
 endFunction
 
 function SaveVoice(Actor ActorRef, sslBaseVoice Saving)
-	if !Saving
-		return
-	endIf
-	ForgetVoice(ActorRef)
-	if Registry.Find(Saving.Registry) != -1
-		; Voice is a default one from this script
-		SetStringValue(ActorRef, "SexLab.SavedVoice", Saving.Registry)
-		sslSystemConfig.StoreActor(ActorRef)
-	else
-		; Voice is a custom one from another quest/script
-		SetFormValue(ActorRef, "SexLab.CustomVoiceQuest", Saving.GetOwningQuest())
-		SetStringValue(ActorRef, "SexLab.CustomVoiceAlias", Saving.GetName())
-	endIf
+	StoreVoice(ActorRef, Saving)
 endFunction
 
 function ForgetVoice(Actor ActorRef)
-	; Local default voices
-	UnsetStringValue(ActorRef, "SexLab.SavedVoice")
-	; Custom voice
-	UnsetFormValue(ActorRef, "SexLab.CustomVoiceQuest")
-	UnsetStringValue(ActorRef, "SexLab.CustomVoiceAlias")
+	DeleteVoice(ActorRef)
 endFunction
 
 bool function HasCustomVoice(Actor ActorRef)
-	return HasFormValue(ActorRef, "SexLab.CustomVoiceQuest") && HasStringValue(ActorRef, "SexLab.CustomVoiceAlias")
+	return GetSavedVoice(ActorRef)
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -257,7 +285,7 @@ sslBaseVoice[] function GetList(bool[] Valid)
 	sslBaseVoice[] Output
 	if Valid.Length > 0 && Valid.Find(true) != -1
 		int n = Valid.Find(true)
-		int i = CountBool(Valid, true)
+		int i = PapyrusUtil.CountBool(Valid, true)
 		; Trim over 100 to random selection
 		if i > 100
 			int end = Valid.RFind(true) - 1
@@ -268,7 +296,7 @@ sslBaseVoice[] function GetList(bool[] Valid)
 					i -= 1
 				endIf
 				if i == 101 ; To be sure only 100 stay
-					i = CountBool(Valid, true)
+					i = PapyrusUtil.CountBool(Valid, true)
 					n = Valid.Find(true)
 					end = Valid.RFind(true) - 1
 				endIf
@@ -278,7 +306,7 @@ sslBaseVoice[] function GetList(bool[] Valid)
 		Output = sslUtility.VoiceArray(i)
 		while n != -1 && i > 0
 			i -= 1
-			Output[i] = Objects[n] as sslBaseVoice
+			Output[i] = GetNthAlias(n) as sslBaseVoice
 			n += 1
 			if n < Slotted
 				n = Valid.Find(true, n)
@@ -286,8 +314,6 @@ sslBaseVoice[] function GetList(bool[] Valid)
 				n = -1
 			endIf
 		endWhile
-	else
-		; Log("No Voices Found")
 	endIf
 	return Output
 endFunction
@@ -312,10 +338,10 @@ endFunction
 ; ------------------------------------------------------- ;
 
 sslBaseVoice function GetBySlot(int index)
-	if index >= 0 && index < Slotted
-		return Objects[index] as sslBaseVoice
+	if index < 0 || index >= GetNumAliases()
+		return none
 	endIf
-	return none
+	return GetNthAlias(index) as sslBaseVoice
 endFunction
 
 bool function IsRegistered(string Registrar)
@@ -330,14 +356,7 @@ int function FindByRegistrar(string Registrar)
 endFunction
 
 int function FindByName(string FindName)
-	int i = Slotted
-	while i
-		i -= 1
-		if GetBySlot(i).Name == FindName
-			return i
-		endIf
-	endWhile
-	return -1
+	return FindByRegistrar(FindName)
 endFunction
 
 sslBaseVoice function GetByName(string FindName)
@@ -386,9 +405,7 @@ sslBaseVoice[] function GetSlots(int page = 1, int perpage = 125)
 	while i
 		i -= 1
 		n -= 1
-		if Objects[n]
-			PageSlots[i] = Objects[n] as sslBaseVoice
-		endIf
+		PageSlots[i] = GetNthAlias(n) as sslBaseVoice
 	endWhile
 	return PageSlots
 endFunction
@@ -428,56 +445,30 @@ endFunction
 ; --- Object Registration                                 ;
 ; ------------------------------------------------------- ;
 
-function RegisterSlots()
-	; Register default voices
-	(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceDefaults).LoadVoices()
-	; Install creature voices, if needed.
-	if Config.AllowCreatures
-		(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceDefaults).LoadCreatureVoices()
-	endIf
-	; Send mod event for 3rd party voices
-	ModEvent.Send(ModEvent.Create("SexLabSlotVoices"))
-	Debug.Notification("$SSL_NotifyVoiceInstall")
-endFunction
+int Function FindEmpty()
+	int n = Slotted
+	If (GetNthAlias(n + 1))
+		return n + 1
+	EndIf
+	return -1
+EndFunction
 
-bool RegisterLock
+bool RegisterLock = false
 int function Register(string Registrar)
-	if Registrar == "" || Registry.Find(Registrar) != -1 || Slotted >= 375
+	if Registrar == "" || Registry.Find(Registrar) != -1
 		return -1
 	endIf
-	
-	; Thread lock registration
-	float failsafe = Utility.GetCurrentRealTime() + 6.0
-	while RegisterLock && failsafe < Utility.GetCurrentRealTime()
+	while RegisterLock
 		Utility.WaitMenuMode(0.5)
-		Log("Register("+Registrar+") - Lock wait...")
 	endWhile
 	RegisterLock = true
-
-	int i = Slotted
-	Slotted += 1
-	if i >= Registry.Length
-		int n = Registry.Length + 32
-		if n > 375
-			n = 375
-		endIf
-		Config.Log("Resizing voice registry slots: "+Registry.Length+" -> "+n, "Register")
-		Registry = Utility.ResizeStringArray(Registry, n)
-		Objects  = Utility.ResizeAliasArray(Objects, n, GetNthAlias(0))
-		while n
-			n -= 1
-			if Registry[n] == ""
-				Objects[n] = none
-			endIf
-		endWhile
-		i = Registry.Find("")
-	endIf
-	Registry[i] = Registrar
-	Objects[i]  = GetNthAlias(i)
-
-	; Release lock
+	int ret = FindEmpty()
+	If (ret > -1 && !sslBaseVoice.InitializeVoiceObject(Registrar))
+		RegisterLock = false
+		return -1
+	EndIf
 	RegisterLock = false
-	return i
+	return ret
 endFunction
 
 sslBaseVoice function RegisterVoice(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
@@ -497,15 +488,10 @@ sslBaseVoice function RegisterVoice(string Registrar, Form CallbackForm = none, 
 	return Slot
 endFunction
 
+function RegisterSlots()
+endFunction
+
 bool function UnregisterVoice(string Registrar)
-	if Registrar != "" && Registry.Find(Registrar) != -1
-		int Slot = Registry.Find(Registrar)
-		(Objects[Slot] as sslBaseVoice).Initialize()
-		Objects[Slot] = none
-		Registry[Slot] = ""
-		Config.Log("Voice["+Slot+"] "+Registrar, "UnregisterVoice()")
-		return true	
-	endIf
 	return false
 endFunction
 
@@ -514,24 +500,8 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function Setup()
-	GoToState("Locked")
-	; Init slots
-	Slotted  = 0
-	Registry = new string[32]
-	Objects  = new Alias[32]
-	; Init Libraries
-	PlayerRef = Game.GetPlayer()
-	if !Config
-		Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
-		if SexLabQuestFramework
-			Config = SexLabQuestFramework as sslSystemConfig
-		endIf
-	endIf
-	; Init defaults
-	RegisterLock = false
-	RegisterSlots()
-	; RegisterCreatureVoices()
-	GoToState("")
+Debug.MessageBox("Setup Voices")
+		(Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceDefaults).LoadCreatureVoices()
 endFunction
 
 function Log(string msg)
