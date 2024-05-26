@@ -9,9 +9,3 @@ Tags:
   - creature
 Voices:
   573584|SexLab.esm: 0
-Extra:
-  - Voices:
-      573584|SexLab.esm: 0
-    Conditions:
-      Context:
-        - Aggressive
