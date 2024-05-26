@@ -1,0 +1,17 @@
+Name: DraugrVoice01
+Actor:
+  Sex: Any
+  Race:
+    - draugrs
+Tags:
+  - female
+  - male
+  - creature
+Voices:
+  573580|SexLab.esm: 0
+Extra:
+  - Voices:
+      573580|SexLab.esm: 0
+    Conditions:
+      Context:
+        - Aggressive

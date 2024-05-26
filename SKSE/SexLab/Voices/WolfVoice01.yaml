@@ -1,0 +1,17 @@
+Name: WolfVoice01
+Actor:
+  Sex: Any
+  Race:
+    - wolves
+Tags:
+  - female
+  - male
+  - creature
+Voices:
+  570811|SexLab.esm: 0
+Extra:
+  - Voices:
+      570811|SexLab.esm: 0
+    Conditions:
+      Context:
+        - Aggressive

@@ -1,0 +1,17 @@
+Name: GiantVoice01
+Actor:
+  Sex: Any
+  Race:
+    - giants
+Tags:
+  - female
+  - male
+  - creature
+Voices:
+  573582|SexLab.esm: 0
+Extra:
+  - Voices:
+      573582|SexLab.esm: 0
+    Conditions:
+      Context:
+        - Aggressive

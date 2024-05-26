@@ -1,0 +1,17 @@
+Name: SprigganVoice01
+Actor:
+  Sex: Any
+  Race:
+    - spriggans
+Tags:
+  - female
+  - male
+  - creature
+Voices:
+  573579|SexLab.esm: 0
+Extra:
+  - Voices:
+      573579|SexLab.esm: 0
+    Conditions:
+      Context:
+        - Aggressive

@@ -1,0 +1,17 @@
+Name: TrollVoice01
+Actor:
+  Sex: Any
+  Race:
+    - trolls
+Tags:
+  - female
+  - male
+  - creature
+Voices:
+  573577|SexLab.esm: 0
+Extra:
+  - Voices:
+      573577|SexLab.esm: 0
+    Conditions:
+      Context:
+        - Aggressive
