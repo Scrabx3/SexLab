@@ -14,119 +14,69 @@ scriptname sslSystemAlias extends ReferenceAlias
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-import StorageUtil
-import SexLabUtil
-
 ; Framework
 SexLabFramework property SexLab auto
 sslSystemConfig property Config auto
-
-; Function libraries
 sslThreadLibrary property ThreadLib auto
-
-; Object registry
 sslThreadSlots property ThreadSlots auto
-
-int Property STATUS_IDLE = 0 AutoReadOnly
-int Property STATUS_INSTALLING = 1 AutoReadOnly
-int Property STATUS_READY = 2 AutoReadOnly
-int _InstallStatus
 
 bool property IsInstalled hidden
 	bool function get()
-		return _InstallStatus == STATUS_READY
+		return SexLab.GetState() == "Enabled"
 	endFunction
 endProperty
-
-; Version the mod has been initialized with
-int Version
-
-; COMEBACK: May eventually want to make these properties redundant as well
-; Currently being held back by the Stats system/actor cleanup being papyurs based
-bool ForcedOnce = false
-bool property PreloadDone auto hidden
 
 ; ------------------------------------------------------- ;
 ; --- System Startup                                  --- ;
 ; ------------------------------------------------------- ;
 
-
-event OnInit()
-	; TODO: When fully automating installation, have this initialize the mod
-
-	; GoToState("")
-	; LoadLibs(false)
-	; ForcedOnce = false
-endEvent
-
-event OnPlayerLoadGame()
-	; Config.DebugMode = true
-	Log("Version " + Version + " / " + SexLabUtil.GetVersion(), "LOADED")
-	If (!Config.CheckSystem())
-		; Function above will notify the player in case of error, can fail silently here
+Event OnInit()
+	If (!GetReference())
 		return
-	ElseIf IsInstalled
-		If (Version < SexLabUtil.GetVersion())
-			; --- update code here?
-			Version = SexLabUtil.GetVersion()
-		EndIf
+	EndIf
+	Quest UnboundQ = Quest.GetQuest("MQ101")
+	While (!UnboundQ.GetStageDone(250) && UnboundQ.GetStage() > 0)
+		Utility.Wait(30.0)
+	EndWhile
+	InstallSystem()
+EndEvent
+
+Event OnPlayerLoadGame()
+	Log("Version " + SexLabUtil.GetVersion(), "LOADED")
+	If (!Config.CheckSystem())
+		return
+	ElseIf (IsInstalled)
 		Config.Reload()
 		ThreadSlots.StopAll()
 		ModEvent.Send(ModEvent.Create("SexLabGameLoaded"))
-	elseIf !ForcedOnce
-		Utility.Wait(0.1)
-		RegisterForSingleUpdate(30.0)
-	endIf
-endEvent
-
-; Check if we should force install system, because user hasn't done it manually yet for some reason. Or it failed somehow.
-event OnUpdate()
-	if !IsInstalled && !ForcedOnce && _InstallStatus == STATUS_IDLE
-		Quest UnboundQ = Quest.GetQuest("MQ101")
-		if !UnboundQ.GetStageDone(250) && UnboundQ.GetStage() > 0
-			; Wait until the end of the opening quest(cart scene) to prevent issues related with the First Person Camera
-			RegisterForSingleUpdate(120.0)
-		else
-			ForcedOnce = true
-			LogAll("Automatically Installing SexLab v" + SexLabUtil.GetStringVer())
-			InstallSystem()
-		endIf
-	endIf
-endEvent
+	Else
+		InstallSystem()
+	EndIf
+EndEvent
 
 ; ------------------------------------------------------- ;
 ; --- System Install/Update                           --- ;
 ; ------------------------------------------------------- ;
 
-bool function SetupSystem()
-	_InstallStatus = STATUS_INSTALLING
-	LoadLibs()
+bool Function SetupSystem()
 	SexLab.GoToState("Disabled")
-	Version = SexLabUtil.GetVersion()
-	; Framework
+	LoadLibs()
 	SexLab.Setup()
 	Config.Setup()
-	; Function libraries
 	ThreadLib.Setup()
-	; Object registry
 	ThreadSlots.Setup()
-	; Finish setup
 	SexLab.GoToState("Enabled")
-	_InstallStatus = STATUS_READY
 	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Ready!")
 	return true
-endFunction
+EndFunction
 
-event InstallSystem()
-	ForcedOnce = true
-	; Begin installatio
+Event InstallSystem()
 	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Installing...")
-	; Init system
 	SetupSystem()
 	int eid = ModEvent.Create("SexLabInstalled")
-	ModEvent.PushInt(eid, Version)
+	ModEvent.PushInt(eid, SexLabUtil.GetVersion())
 	ModEvent.Send(eid)
-endEvent
+EndEvent
 
 ; ------------------------------------------------------- ;
 ; --- System Utils                                    --- ;
@@ -163,6 +113,8 @@ endFunction
 ;               ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝   ╚═╝                 ;
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
+
+bool property PreloadDone = true auto hidden
 
 sslAnimationSlots property AnimSlots Hidden
 	sslAnimationSlots Function Get()
@@ -202,40 +154,20 @@ EndProperty
 
 bool property UpdatePending hidden
 	bool function get()
-		return Version < SexLabUtil.GetVersion()
+		return false
 	endFunction
 endProperty
 
 int property CurrentVersion hidden
 	int function get()
-		return Version
+		return SexLabUtil.GetVersion()
 	endFunction
 endProperty
 
 function CleanTrackedActors()
-	FormListRemove(Config, "TrackedActors", none, true)
-	Form[] TrackedActors = FormListToArray(Config, "TrackedActors")
-	int i = TrackedActors.Length
-	while i > 0
-		i -= 1
-		if !IsActor(TrackedActors[i])
-			FormListRemoveAt(Config, "TrackedActors", i)
-			StringListClear(TrackedActors[i], "SexLabEvents")
-		endIf
-	endWhile
 endFunction
 
 function CleanTrackedFactions()
-	FormListRemove(Config, "TrackedFactions", none, true)
-	Form[] TrackedFactions = FormListToArray(Config, "TrackedFactions")
-	int i = TrackedFactions.Length
-	while i
-		i -= 1
-		if !TrackedFactions[i] || TrackedFactions[i].GetType() != 11 ; kFaction
-			FormListRemoveAt(Config, "TrackedFactions", i)
-			StringListClear(TrackedFactions[i], "SexLabEvents")
-		endIf
-	endWhile
 endFunction
 
 event UpdateSystem(int OldVersion, int NewVersion)
