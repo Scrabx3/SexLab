@@ -1853,8 +1853,5 @@ sslExpressionSlots property ExpressionSlots Hidden
   EndFunction
 EndProperty
 
-
 event OnInit()
-  ; p+ 2.0: Setup is exclusively handled by sslSystemAlias
-	; Setup()
 endEvent

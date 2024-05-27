@@ -2949,7 +2949,7 @@ function RebuildClean()
 	AddHeaderOption("$SSL_Maintenance")
 	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")			; This can stay
-	AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")		; This should go
+	; AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")		; This should go
 	AddTextOptionST("ResetAnimationRegistry","$SSL_ResetAnimationRegistry", "$SSL_ClickHere")		; TODO: Update, as it only syncs with legacy API
 	AddTextOptionST("ResetVoiceRegistry","$SSL_ResetVoiceRegistry", "$SSL_ClickHere")						; TODO: Review
 	AddTextOptionST("ResetExpressionRegistry","$SSL_ResetExpressionRegistry", "$SSL_ClickHere")	; TODO: Review

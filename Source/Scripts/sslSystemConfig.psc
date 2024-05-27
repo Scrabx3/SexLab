@@ -1013,34 +1013,6 @@ Function RunHook(int aiHookID, SexLabThread akThread)
 EndFunction
 
 ; ------------------------------------------------------- ;
-; --- Animation Profiles                              --- ;
-; ------------------------------------------------------- ;
-
-function ExportProfile(int Profile = 1)
-  SaveAdjustmentProfile()
-endFunction
-
-function ImportProfile(int Profile = 1)
-  SetAdjustmentProfile("../SexLab/AnimationProfile_"+Profile+".json")
-endfunction
-
-function SwapToProfile(int Profile)
-  AnimProfile = Profile
-  SetAdjustmentProfile("../SexLab/AnimationProfile_"+Profile+".json")
-endFunction
-
-bool function SetAdjustmentProfile(string ProfileName) global
-  String msg = "Adjustment Profiles are no longer supported"
-  Debug.MessageBox(msg)
-  Debug.TraceStack(msg)
-EndFunction
-bool function SaveAdjustmentProfile() global
-  String msg = "Adjustment Profiles are no longer supported"
-  Debug.MessageBox(msg)
-  Debug.TraceStack(msg)
-EndFunction
-
-; ------------------------------------------------------- ;
 ; --- 3rd party compatibility                         --- ;
 ; ------------------------------------------------------- ;
 
@@ -1159,9 +1131,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 bool function CheckSystemPart(string CheckSystem)
-  if CheckSystem == "Skyrim"
-    return (StringUtil.SubString(Debug.GetVersionNumber(), 0, 3) as float) >= 1.5
-  elseIf CheckSystem == "SKSE"
+  If CheckSystem == "SKSE"
     return SKSE.GetScriptVersionRelease() >= 64
   elseIf CheckSystem == "SkyUI"
     return Quest.GetQuest("SKI_ConfigManagerInstance") != none
@@ -1180,10 +1150,7 @@ bool function CheckSystemPart(string CheckSystem)
 endFunction
 
 bool function CheckSystem()
-  if !CheckSystemPart("Skyrim")
-    CheckSkyrim.Show(1.6)
-    return false
-  elseIf !CheckSystemPart("SKSE")
+  If !CheckSystemPart("SKSE")
     CheckSKSE.Show(2.22)
     return false
   elseIf !CheckSystemPart("SkyUI")
@@ -1196,40 +1163,29 @@ bool function CheckSystem()
   return true
 endFunction
 
-function Reload()
-  if DebugMode
+Function Reload()
+  If (DebugMode)
     Debug.OpenUserLog("SexLabDebug")
     Debug.TraceUser("SexLabDebug", "Config Reloading...")
-  endIf
-  parent.Setup()
-
-  ; Configure SFX & Voice volumes
+  EndIf
   AudioVoice.SetVolume(VoiceVolume)
   AudioSFX.SetVolume(SFXVolume)
-
-  ; Remove any targeted actors
   RegisterForCrosshairRef()
   _CrosshairRef = none
   TargetRef = none
 
-  ; TFC Toggle key
   UnregisterForAllKeys()
   RegisterForKey(ToggleFreeCamera)
   RegisterForKey(TargetActor)
   RegisterForKey(EndAnimation)
 
-  ; Remove any NPC thread control player has
   DisableThreadControl(_ActiveControl)
-endFunction
+EndFunction
 
 function Setup()
   parent.Setup()
-  SetDefaults()
-endFunction
-
-function SetDefaults()
-  Reload()
   LoadStrapons()
+  Reload()
 endFunction
 
 ; ------------------------------------------------------- ;
@@ -1663,6 +1619,30 @@ float[] property BedOffset hidden
   EndFunction
 EndProperty
 
+function SetDefaults()
+  Setup()
+endFunction
+
+; ------------------------------------------------------- ;
+; --- Animation Profiles                              --- ;
+; ------------------------------------------------------- ;
+
+function ExportProfile(int Profile = 1)
+endFunction
+
+function ImportProfile(int Profile = 1)
+endfunction
+
+function SwapToProfile(int Profile)
+endFunction
+
+bool function SetAdjustmentProfile(string ProfileName) global
+  return false
+EndFunction
+bool function SaveAdjustmentProfile() global
+  return false
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Export/Import to JSON                           --- ;
 ; ------------------------------------------------------- ;
@@ -1818,11 +1798,9 @@ bool function UsesNudeSuit(bool IsFemale)
   return false
 endFunction
 
-bool property HasHDTHeels
+bool property HasHDTHeels Hidden
   bool Function Get()
     return Game.GetModByName("hdtHighHeel.esm") != 255
-  EndFunction
-  Function Set(bool aSet)
   EndFunction
 EndProperty
 
