@@ -290,7 +290,7 @@ EndFunction
 ;   -11 = The Actor is forbidden form SexLab animations
 ;   -12 = The Actor does not have the 3D loaded
 ;   -13 = The Actor is dead (He's dead Jim.)
-;   -14 = The Actor is disabled
+;   -14 = The Actor is disabled (Model or AI)
 ;   -15 = The Actor is flying (so it cannot be SexLab animated)
 ;   -16 = The Actor is on mount (so it cannot be SexLab animated)
 ;   -17 = The Actor is a creature but creature animations are disabled

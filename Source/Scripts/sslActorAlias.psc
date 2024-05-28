@@ -1406,16 +1406,35 @@ EndFunction
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 function OffsetCoords(float[] Output, float[] CenterCoords, float[] OffsetBy) global
-	Debug.MessageBox("[SEXLAB]\n'OffsetCoords' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
-	Debug.TraceStack("Invoking Legacy Function OffsetCoords")
+	If (OffsetBy.Length != 4 && CenterCoords.Length != 6 && Output.Length != 6)
+		return
+	EndIf
+	float pi = 2.0 * Math.asin(1.0)
+	float x2 = CenterCoords[0]
+	float y2 = CenterCoords[1]
+
+	float argX = CenterCoords[5] * pi / 180
+	x2 += Math.sin(argX) * OffsetBy[0]
+	y2 += Math.cos(argX) * OffsetBy[0]
+	If (OffsetBy[1] != 0) 
+		float argY = CenterCoords[5] + 90
+		argY = argY * pi / 180
+		x2 += Math.sin(argY) * OffsetBy[1]
+		y2 += Math.cos(argY) * OffsetBy[1]
+	EndIf
+	
+	Output[0] = x2
+	Output[1] = y2
+	Output[2] = CenterCoords[2] + OffsetBy[2]
+	Output[3] = CenterCoords[3]
+	Output[4] = CenterCoords[4]
+	Output[5] = CenterCoords[5] + OffsetBy[3]
 EndFunction
 bool function IsInPosition(Actor CheckActor, ObjectReference CheckMarker, float maxdistance = 30.0) global
-	Debug.MessageBox("[SEXLAB]\n'IsInPosition' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
-	Debug.TraceStack("Invoking Legacy Function IsInPosition")
+	return CheckActor.GetDistance(CheckMarker) < maxdistance
 EndFunction
 int function CalcEnjoyment(float[] XP, float[] SkillsAmounts, bool IsLeadin, bool IsFemaleActor, float Timer, int OnStage, int MaxStage) global
-	Debug.MessageBox("[SEXLAB]\n'CalcEnjoyment' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
-	Debug.TraceStack("Invoking Legacy Function CalcEnjoyment")
+	return 0
 EndFunction
 
 int Property Position
