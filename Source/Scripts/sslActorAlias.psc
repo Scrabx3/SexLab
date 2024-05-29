@@ -4,9 +4,6 @@ ScriptName sslActorAlias extends ReferenceAlias
 	See SexLabThread.psc for documentation and functions to correctly access this class
 }
 
-; TODO: Expressions, esp "OpenMouth" ones should be calculated in real time in the dll, 
-; the dll respecting the "forced" flag but the script otherwise only requests this information from the dll, not controlling it
-
 String Function GetActorName()
 	return ActorRef.GetLeveledActorBase().GetName()
 EndFunction
@@ -182,6 +179,7 @@ String Property STATE_PLAYING = "Animating" AutoReadOnly
 
 String Property TRACK_ADDED 	= "Added" AutoReadOnly
 String Property TRACK_START 	= "Start" AutoReadOnly
+String Property TRACK_ORGASM 	= "Orgasm" AutoReadOnly
 String Property TRACK_END		 	= "End" AutoReadOnly
 
 int Property LIVESTATUS_ALIVE 			= 0 AutoReadOnly
@@ -502,13 +500,11 @@ State Paused
 		EndIf
 		_StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		_LastOrgasm = _StartedAt
-		; wait to ensure schlong mesh and AI package are updated
-		Utility.Wait(0.6)
 		LockActor()
 		_Thread.AnimationStart()
-		Utility.Wait(0.2)
-		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
 		TrackedEvent(TRACK_START)
+		Utility.Wait(1)	; Wait for schlong to update
+		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
 	EndEvent
 
 	Function SetStrapon(Form ToStrapon)
@@ -522,12 +518,14 @@ State Paused
 		LockActor()
 	EndFunction
 	Function LockActor()
+		Debug.SendAnimationEvent(_ActorRef, "IdleFurnitureExit")
+		Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
+		Debug.SendAnimationEvent(_ActorRef, "IdleStop")
 		LockActorImpl()
 		If (!sslActorLibrary.HasVehicle(_ActorRef))
 			If (!_myMarker)
 				_myMarker = _ActorRef.PlaceAtMe(_xMarker)
 			EndIf
-			; Utility.Wait(0.5)
 			_ActorRef.SetVehicle(_myMarker)
 		EndIf
 		_ActorRef.SheatheWeapon()
@@ -767,7 +765,7 @@ State Animating
 		ModEvent.PushInt(eid, _FullEnjoyment)
 		ModEvent.PushInt(eid, _OrgasmCount)
 		ModEvent.Send(eid)
-		TrackedEvent("Orgasm")
+		TrackedEvent(TRACK_ORGASM)
 		If (IsSeparateOrgasm())
 			Int handle = ModEvent.Create("SexlabOrgasmSeparate")
 			ModEvent.PushForm(handle, ActorRef)
