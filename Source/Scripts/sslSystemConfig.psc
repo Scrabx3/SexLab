@@ -629,11 +629,11 @@ float[] property StageTimerAggr hidden
 EndProperty
 float[] Function _GetfTimers(int aiIdx0)
     float[] ret = new float[5]
-    ret[aiIdx0 + 0] = GetSettingFltA("fTimers", aiIdx0 + 0)
-    ret[aiIdx0 + 1] = GetSettingFltA("fTimers", aiIdx0 + 1)
-    ret[aiIdx0 + 2] = GetSettingFltA("fTimers", aiIdx0 + 2)
-    ret[aiIdx0 + 3] = GetSettingFltA("fTimers", aiIdx0 + 3)
-    ret[aiIdx0 + 4] = GetSettingFltA("fTimers", aiIdx0 + 4)
+    ret[0] = GetSettingFltA("fTimers", aiIdx0 + 0)
+    ret[1] = GetSettingFltA("fTimers", aiIdx0 + 1)
+    ret[2] = GetSettingFltA("fTimers", aiIdx0 + 2)
+    ret[3] = GetSettingFltA("fTimers", aiIdx0 + 3)
+    ret[4] = GetSettingFltA("fTimers", aiIdx0 + 4)
     return ret
 EndFunction
 Function _SetfTimers(int aiIdx0, float[] afSet)
