@@ -5,7 +5,7 @@ ScriptName sslActorAlias extends ReferenceAlias
 }
 
 String Function GetActorName()
-	return ActorRef.GetLeveledActorBase().GetName()
+	return _ActorRef.GetLeveledActorBase().GetName()
 EndFunction
 
 bool function IsVictim()
@@ -79,7 +79,7 @@ Function SetStripping(int aiSlots, bool abStripWeapons, bool abApplyNow)
 	If (abApplyNow && GetState() == STATE_PLAYING)
 		int[] set
 		_equipment = StripByDataEx(0x80, set, _stripCstm, _equipment)
-		ActorRef.QueueNiNodeUpdate()
+		_ActorRef.QueueNiNodeUpdate()
 	EndIf
 EndFunction
 
@@ -100,7 +100,7 @@ Form function GetStrapon()
 endFunction
 
 bool function IsUsingStrapon()
-	return _useStrapon && _Strapon && ActorRef.IsEquipped(_Strapon)
+	return _useStrapon && _Strapon && _ActorRef.IsEquipped(_Strapon)
 endFunction
 
 Function SetStrapon(Form ToStrapon)
@@ -367,7 +367,7 @@ State Ready
 			_ActorRef.SheatheWeapon()
 			Game.SetPlayerAIDriven()
 		Else
-			_Config.CheckBardAudience(ActorRef, true)
+			_Config.CheckBardAudience(_ActorRef, true)
 		EndIf
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
 		_AnimVarbHumanoidFootIKDisable = _ActorRef.GetAnimationVariableBool("bHumanoidFootIKDisable")
@@ -380,7 +380,7 @@ State Ready
 			Else
 				_BaseDelay = _Config.FemaleVoiceDelay
 				If (_Config.UseStrapons && _sex == 1)
-					_HadStrapon = _Config.WornStrapon(ActorRef)
+					_HadStrapon = _Config.WornStrapon(_ActorRef)
 					If (!_HadStrapon)
 						_Strapon = _Config.GetStrapon()
 					ElseIf (!_Strapon)
@@ -408,21 +408,21 @@ State Ready
 		_ContextCheckDelay = 8.0
 		_lastHoldBack = 0.0
 		; Position
-		ActorRef.SetActorValue("Paralysis", 0.0)
+		_ActorRef.SetActorValue("Paralysis", 0.0)
 		If(akPathTo && !abUseFade && DoPathToCenter)
 			ObjectReference pathto = akPathTo as ObjectReference
-			float distance = ActorRef.GetDistance(pathto)
+			float distance = _ActorRef.GetDistance(pathto)
 			If(distance > 256.0 && distance <= 6144.0)
 				float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
-				ActorRef.SetFactionRank(_AnimatingFaction, 2)
-				ActorRef.EvaluatePackage()
-				While (ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
+				_ActorRef.SetFactionRank(_AnimatingFaction, 2)
+				_ActorRef.EvaluatePackage()
+				While (_ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
 					Utility.Wait(0.045)
 				EndWhile
 			EndIf
 		EndIf
-		ActorRef.SetFactionRank(_AnimatingFaction, 1)
-		ActorRef.EvaluatePackage()
+		_ActorRef.SetFactionRank(_AnimatingFaction, 1)
+		_ActorRef.EvaluatePackage()
 		GoToState(STATE_PAUSED)
 		If (asStringArg != "skip")
 			_Thread.PrepareDone()
@@ -474,7 +474,7 @@ EndFunction
 int _schlonganglestart
 
 State Paused
-	; Should only be called once the first time the main thread enters animating state
+	; Only called once the first time the main thread enters animating state
 	Function ReadyActor(int aiStripData, int aiPositionGenders, int aiSchlongAngle)
 		_stripData = aiStripData
 		_useStrapon = _sex == 1 && Math.LogicalAnd(aiPositionGenders, 0x2) == 0
@@ -482,29 +482,28 @@ State Paused
 		RegisterForModEvent("SSL_READY_Thread" + _Thread.tid, "OnStartPlaying")
 	EndFunction
 	Event OnStartPlaying(string asEventName, string asStringArg, float afNumArg, form akSender)
-		; Only called once on the first enter to Animating State
 		UnregisterForModEvent("SSL_READY_Thread" + _Thread.tid)
+		LockActor()
 		If (_sex <= 2)
 			If (DoUndress)
 				DoUndress = false
 				If (_sex == 0)
-					Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G1")
+					Debug.SendAnimationEvent(_ActorRef, "Arrok_Undress_G1")
 				Else
-					Debug.SendAnimationEvent(ActorRef, "Arrok_Undress_G1")
+					Debug.SendAnimationEvent(_ActorRef, "Arrok_Undress_G1")
 				EndIf
 				Utility.Wait(0.6)
 			EndIf
 			_equipment = StripByData(_stripData, GetStripSettings(), _stripCstm)
 			ResolveStrapon()
-			ActorRef.QueueNiNodeUpdate()
+			_ActorRef.QueueNiNodeUpdate()
 		EndIf
 		_StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		_LastOrgasm = _StartedAt
-		LockActor()
 		_Thread.AnimationStart()
 		TrackedEvent(TRACK_START)
 		Utility.Wait(1)	; Wait for schlong to update
-		Debug.SendAnimationEvent(ActorRef, "SOSBend" + _schlonganglestart)
+		Debug.SendAnimationEvent(_ActorRef, "SOSBend" + _schlonganglestart)
 	EndEvent
 
 	Function SetStrapon(Form ToStrapon)
@@ -518,6 +517,10 @@ State Paused
 		LockActor()
 	EndFunction
 	Function LockActor()
+		_ActorRef.SheatheWeapon()
+		If (_ActorRef.IsSneaking())
+			_ActorRef.StartSneaking()
+		EndIf
 		Debug.SendAnimationEvent(_ActorRef, "IdleFurnitureExit")
 		Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
 		Debug.SendAnimationEvent(_ActorRef, "IdleStop")
@@ -528,20 +531,16 @@ State Paused
 			EndIf
 			_ActorRef.SetVehicle(_myMarker)
 		EndIf
-		_ActorRef.SheatheWeapon()
-		If (ActorRef.IsSneaking())
-			ActorRef.StartSneaking()
-		EndIf
 		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", 1)
-		If (ActorRef == _PlayerRef)
+		If (_ActorRef == _PlayerRef)
 			If(_Config.AutoTFC)
 				Game.ForceThirdPerson()
 				MiscUtil.SetFreeCameraState(true)
 				MiscUtil.SetFreeCameraSpeed(_Config.AutoSUCSM)
 			EndIf
 		Else
-			ActorUtil.AddPackageOverride(ActorRef, _Thread.DoNothingPackage, 100, 1)
+			ActorUtil.AddPackageOverride(_ActorRef, _Thread.DoNothingPackage, 100, 1)
 			_ActorRef.EvaluatePackage()
 		EndIf
 		SendDefaultAnimEvent()
@@ -550,7 +549,7 @@ State Paused
 	
 	Function RemoveStrapon()
 		If(_Strapon && !_HadStrapon)
-			ActorRef.RemoveItem(_Strapon, 1, true)
+			_ActorRef.RemoveItem(_Strapon, 1, true)
 		EndIf
 	EndFunction
 
@@ -625,7 +624,7 @@ State Animating
 		If (_stripData != aiStripData)
 			_stripData = aiStripData
 			_equipment = StripByDataEx(_stripData, GetStripSettings(), _stripCstm, _equipment)
-			ActorRef.QueueNiNodeUpdate()
+			_ActorRef.QueueNiNodeUpdate()
 		EndIf
 		_VoiceDelay -= Utility.RandomFloat(0.1, 0.3)
 		if _VoiceDelay < 0.8
@@ -681,13 +680,13 @@ State Animating
 	EndFunction
 	Function RefreshExpression()
 		_RefreshExpressionDelay = 0.0
-		If (_sex > 2 || !ActorRef.Is3DLoaded() || ActorRef.IsDisabled())
+		If (_sex > 2 || !_ActorRef.Is3DLoaded() || _ActorRef.IsDisabled())
 			return
 		ElseIf (OpenMouth)
-			sslBaseExpression.OpenMouth(ActorRef)
+			sslBaseExpression.OpenMouth(_ActorRef)
 			Utility.Wait(1.0)
-		ElseIf (sslBaseExpression.IsMouthOpen(ActorRef))
-			sslBaseExpression.CloseMouth(ActorRef)
+		ElseIf (sslBaseExpression.IsMouthOpen(_ActorRef))
+			sslBaseExpression.CloseMouth(_ActorRef)
 		EndIf
 		If (_Expression && _livestatus == LIVESTATUS_ALIVE)
 			int strength = CalcReaction()
@@ -747,28 +746,28 @@ State Animating
 		/;
 		; SFX
 		If(_Config.OrgasmEffects)
-			If (ActorRef == _PlayerRef && _Config.ShakeStrength > 0 && Game.GetCameraState() >= 8)
+			If (_ActorRef == _PlayerRef && _Config.ShakeStrength > 0 && Game.GetCameraState() >= 8)
 				Game.ShakeCamera(none, _Config.ShakeStrength, _Config.ShakeStrength + 1.0)
 			EndIf
 			If (!IsSilent)
 				Sound snd = _Thread.GetAliasOrgasmSound(Self, _Voice)
 				PlayLouder(snd, _ActorRef, _Config.VoiceVolume)
 			EndIf
-			PlayLouder(_Config.OrgasmFX, ActorRef, _Config.SFXVolume)
+			PlayLouder(_Config.OrgasmFX, _ActorRef, _Config.SFXVolume)
 		EndIf
 		If (_sex != 1 && _sex != 4)
 			_Thread.ApplyCumFX(_ActorRef)
 		EndIf
 		; Events
 		int eid = ModEvent.Create("SexLabOrgasm")
-		ModEvent.PushForm(eid, ActorRef)
+		ModEvent.PushForm(eid, _ActorRef)
 		ModEvent.PushInt(eid, _FullEnjoyment)
 		ModEvent.PushInt(eid, _OrgasmCount)
 		ModEvent.Send(eid)
 		TrackedEvent(TRACK_ORGASM)
 		If (IsSeparateOrgasm())
 			Int handle = ModEvent.Create("SexlabOrgasmSeparate")
-			ModEvent.PushForm(handle, ActorRef)
+			ModEvent.PushForm(handle, _ActorRef)
 			ModEvent.PushInt(handle, _Thread.tid)
 			ModEvent.Send(handle)
 		EndIf
@@ -807,11 +806,11 @@ State Animating
 		_ActorRef.SetVehicle(none)
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", _AnimVarbHumanoidFootIKDisable)
-		If (ActorRef == _PlayerRef)
+		If (_ActorRef == _PlayerRef)
 			MiscUtil.SetFreeCameraState(false)
 		Else
-			ActorUtil.RemovePackageOverride(ActorRef, _Thread.DoNothingPackage)
-			ActorRef.EvaluatePackage()
+			ActorUtil.RemovePackageOverride(_ActorRef, _Thread.DoNothingPackage)
+			_ActorRef.EvaluatePackage()
 		EndIf
 		UnlockActorImpl()
 		GoToState(STATE_PAUSED)
@@ -822,8 +821,8 @@ State Animating
 		_equipment = StripByDataEx(_stripData, GetStripSettings(), _stripCstm, _equipment)
 		_useStrapon = _sex == 1 && Math.LogicalAnd(aiPositionGenders, 0x2) == 0
 		ResolveStrapon()
-		ActorRef.QueueNiNodeUpdate()
-		Debug.SendAnimationEvent(ActorRef, "SOSBend" + aiSchlongAngle)
+		_ActorRef.QueueNiNodeUpdate()
+		Debug.SendAnimationEvent(_ActorRef, "SOSBend" + aiSchlongAngle)
 	EndFunction
 
 	Function Clear()
@@ -860,12 +859,12 @@ State Animating
 			float arousalScene = PapyrusUtil.ClampFloat(_FullEnjoyment as float, 0, 100)
 			SexlabStatistics.SetStatistic(_ActorRef, 17, arousalScene)
 		EndIf
-		If(_Expression || sslBaseExpression.IsMouthOpen(ActorRef))
-			sslBaseExpression.CloseMouth(ActorRef)
+		If(_Expression || sslBaseExpression.IsMouthOpen(_ActorRef))
+			sslBaseExpression.CloseMouth(_ActorRef)
 		EndIf
-		ActorRef.ClearExpressionOverride()
-		ActorRef.ResetExpressionOverrides()
-		sslBaseExpression.ClearMFG(ActorRef)
+		_ActorRef.ClearExpressionOverride()
+		_ActorRef.ResetExpressionOverrides()
+		sslBaseExpression.ClearMFG(_ActorRef)
 		SendDefaultAnimEvent()
 	EndEvent
 EndState
@@ -910,21 +909,21 @@ Form[] Function StripByDataEx(int aiStripData, int[] aiDefaults, int[] aiOverwri
 /;
 
 Function SendDefaultAnimEvent(bool Exit = False)
-	Debug.SendAnimationEvent(ActorRef, "AnimObjectUnequip")
+	Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
 	If(_sex <= 2)	; Human
-		Debug.SendAnimationEvent(ActorRef, "IdleForceDefaultState")
+		Debug.SendAnimationEvent(_ActorRef, "IdleForceDefaultState")
 		return
 	EndIf
-	Debug.SendAnimationEvent(ActorRef, "ReturnDefaultState") 	; chicken, hare and slaughterfish before the "ReturnToDefault"
-	Debug.SendAnimationEvent(ActorRef, "ReturnToDefault") 		; rest creature-animal
-	Debug.SendAnimationEvent(ActorRef, "FNISDefault") 				; dwarvenspider and chaurus
-	Debug.SendAnimationEvent(ActorRef, "IdleReturnToDefault") ; Werewolves and VampirwLords
-	Debug.SendAnimationEvent(ActorRef, "ForceFurnExit") 			; Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
-	Debug.SendAnimationEvent(ActorRef, "Reset") 							; Hagravens afther the "ReturnToDefault" and Dragons
+	Debug.SendAnimationEvent(_ActorRef, "ReturnDefaultState") 	; chicken, hare and slaughterfish before the "ReturnToDefault"
+	Debug.SendAnimationEvent(_ActorRef, "ReturnToDefault") 		; rest creature-animal
+	Debug.SendAnimationEvent(_ActorRef, "FNISDefault") 				; dwarvenspider and chaurus
+	Debug.SendAnimationEvent(_ActorRef, "IdleReturnToDefault") ; Werewolves and VampirwLords
+	Debug.SendAnimationEvent(_ActorRef, "ForceFurnExit") 			; Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
+	Debug.SendAnimationEvent(_ActorRef, "Reset") 							; Hagravens afther the "ReturnToDefault" and Dragons
 EndFunction
 
 function TrackedEvent(string EventName)
-	sslThreadLibrary.SendTrackingEvents(ActorRef, EventName, _Thread.tid)
+	sslThreadLibrary.SendTrackingEvents(_ActorRef, EventName, _Thread.tid)
 endFunction
 
 bool Function IsSeparateOrgasm()
@@ -938,7 +937,7 @@ Function SetStraponAnimationImpl(Form akNewStrapon)
 	If (_Strapon == akNewStrapon)
 		return
 	ElseIf (_Strapon && !_HadStrapon)
-		ActorRef.RemoveItem(_Strapon, 1, true)
+		_ActorRef.RemoveItem(_Strapon, 1, true)
 	EndIf
 	_Strapon = akNewStrapon
 	ResolveStrapon()
@@ -947,11 +946,11 @@ Function ResolveStraponImpl()
 	If (!_Strapon)
 		return
 	EndIf
-	bool equipped = ActorRef.IsEquipped(_Strapon)
+	bool equipped = _ActorRef.IsEquipped(_Strapon)
 	If(!equipped && _useStrapon)
-		ActorRef.EquipItem(_Strapon, true, true)
+		_ActorRef.EquipItem(_Strapon, true, true)
 	ElseIf(equipped && !_useStrapon)
-		ActorRef.UnequipItem(_Strapon, true, true)
+		_ActorRef.UnequipItem(_Strapon, true, true)
 	EndIf
 EndFunction
 
@@ -969,19 +968,19 @@ Function Redress()
 	EndIf
 	; _equipment := [HighHeelSpell, WeaponRight, WeaponLeft, Armor...]
 	If(_equipment[1])
-		ActorRef.EquipItemEx(_equipment[1], ActorRef.EquipSlot_RightHand, equipSound = false)
+		_ActorRef.EquipItemEx(_equipment[1], _ActorRef.EquipSlot_RightHand, equipSound = false)
 	EndIf
 	If(_equipment[2])
-		ActorRef.EquipItemEx(_equipment[2], ActorRef.EquipSlot_LeftHand, equipSound = false)
+		_ActorRef.EquipItemEx(_equipment[2], _ActorRef.EquipSlot_LeftHand, equipSound = false)
 	EndIf
 	int i = 3
 	While (i < _equipment.Length)
-		ActorRef.EquipItemEx(_equipment[i], ActorRef.EquipSlot_Default, equipSound = false)
+		_ActorRef.EquipItemEx(_equipment[i], _ActorRef.EquipSlot_Default, equipSound = false)
 		i += 1
 	EndWhile
 	Spell HDTHeelSpell = _equipment[0] as Spell
-	If(HDTHeelSpell && ActorRef.GetWornForm(0x00000080) && !ActorRef.HasSpell(HDTHeelSpell))
-		ActorRef.AddSpell(HDTHeelSpell, false)
+	If(HDTHeelSpell && _ActorRef.GetWornForm(0x00000080) && !_ActorRef.HasSpell(HDTHeelSpell))
+		_ActorRef.AddSpell(HDTHeelSpell, false)
 	EndIf
 EndFunction
 
@@ -1262,7 +1261,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 function ApplyCum()	; NOTE: Temporary?
-	; TODO: _Tread.ApplyCumFX(Source = ActorRef)
+	; TODO: _Tread.ApplyCumFX(Source = _ActorRef)
 
 	; Log("START", "ApplyCum")
 	if _ActorRef && _ActorRef.Is3DLoaded()
@@ -1437,7 +1436,7 @@ EndFunction
 
 int Property Position
 	int Function Get()
-		return _Thread.Positions.Find(ActorRef)
+		return _Thread.Positions.Find(_ActorRef)
 	EndFunction
 EndProperty
 
@@ -1489,7 +1488,7 @@ Function SetVoice(sslBaseVoice ToVoice = none, bool ForceSilence = false)
 EndFunction
 
 int function GetGender()
-	int ret = SexLabRegistry.GetSex(ActorRef, false)
+	int ret = SexLabRegistry.GetSex(_ActorRef, false)
 	If (ret >= 2)
 		ret -= 1
 	EndIf
@@ -1537,7 +1536,7 @@ endFunction
 
 Function Strip()
 	_equipment = StripByDataEx(0x80, GetStripSettings(), _stripCstm, _equipment)
-	ActorRef.QueueNiNodeUpdate()
+	_ActorRef.QueueNiNodeUpdate()
 EndFunction
 Function UnStrip()
 	Redress()
@@ -1567,13 +1566,13 @@ function ClearEvents()
 endFunction
 
 function EquipStrapon()
-	; if _Strapon && !ActorRef.IsEquipped(_Strapon)
-	; 	ActorRef.EquipItem(_Strapon, true, true)
+	; if _Strapon && !_ActorRef.IsEquipped(_Strapon)
+	; 	_ActorRef.EquipItem(_Strapon, true, true)
 	; endIf
 endFunction
 function UnequipStrapon()
-	; if _Strapon && ActorRef.IsEquipped(_Strapon)
-	; 	ActorRef.UnequipItem(_Strapon, true, true)
+	; if _Strapon && _ActorRef.IsEquipped(_Strapon)
+	; 	_ActorRef.UnequipItem(_Strapon, true, true)
 	; endIf
 endFunction
 

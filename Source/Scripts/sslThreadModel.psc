@@ -1049,7 +1049,7 @@ State Animating
 		ElseIf(ToStage > _StageHistory.Length)
 			PlayNext(0)
 		Else
-			; Dont need to bother about stripping here as were playing an already played stage
+			; Skip stripping for already played stages
 			int i = 0
 			While (i < Positions.Length)
 				ActorAlias[i].TryLock()
