@@ -517,10 +517,9 @@ State Paused
 		LockActor()
 	EndFunction
 	Function LockActor()
-		_ActorRef.SheatheWeapon()
-		If (_ActorRef.IsSneaking())
-			_ActorRef.StartSneaking()
-		EndIf
+		; If (_ActorRef.IsSneaking())
+		; 	_ActorRef.StartSneaking()
+		; EndIf
 		Debug.SendAnimationEvent(_ActorRef, "IdleFurnitureExit")
 		Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
 		Debug.SendAnimationEvent(_ActorRef, "IdleStop")
