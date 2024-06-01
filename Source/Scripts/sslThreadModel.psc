@@ -997,12 +997,12 @@ State Animating
 		return true
 	EndFunction
 
-	bool Function PlayNext(int aiNextBranch)
+	Function PlayNext(int aiNextBranch)
 		UnregisterForUpdate()
 		SendThreadEvent("StageEnd")
 		RunHook(Config.HOOKID_STAGEEND)
 		String newStage = SexLabRegistry.BranchTo(_ActiveScene, _ActiveStage, aiNextBranch)
-		return PlayNextImpl(newStage)
+		PlayNextImpl(newStage)
 	EndFunction
 	Function PlayNextImpl(String asNewStage)
 		If (!asNewStage)
@@ -1012,6 +1012,7 @@ State Animating
 			Else
 				EndAnimation()
 			EndIf
+			return
 		ElseIf(!Leadin)
 			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
 			If (ctype == Config.CLIMAXTYPE_LEGACY && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
@@ -1296,9 +1297,8 @@ EndFunction
 Function EndLeadIn()
 	Log("Cannot end leadin outside the playing state", "EndLeadIn()")
 EndFunction
-bool Function PlayNext(int aiNextBranch)
+Function PlayNext(int aiNextBranch)
 	Log("Cannot play next branch outside the playing state", "PlayNext()")
-	return false
 EndFunction
 Function PlayNextImpl(String asNewStage)
 	Log("Cannot play next branch outside the playing state", "PlayNextImpl()")
