@@ -247,7 +247,9 @@ Event OnPageReset(string page)
 		AnimationEditor()
 	elseif page != ""
 		UnloadCustomContent()
-		if page == "$SSL_AnimationSettings"
+		If page == "$SSL_SexDiary" || page == "$SSL_SexJournal"
+			SexDiary()
+		elseif page == "$SSL_AnimationSettings"
 			AnimationSettings()
 		elseIf page == "$SSL_SoundSettings"
 			SoundSettings()
@@ -265,8 +267,6 @@ Event OnPageReset(string page)
 			AnimationEditor()
 		elseIf page == "$SSL_ExpressionEditor"
 			ExpressionEditor()
-		elseIf page == "$SSL_SexDiary" || page == "$SSL_SexJournal"
-			SexDiary()
 		elseIf page == "$SSL_RebuildClean"
 			RebuildClean()
 		endIf

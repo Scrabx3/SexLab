@@ -34,7 +34,7 @@ int Property Sexuality_Hetero = 0 AutoReadOnly
 int Property Sexuality_Homo   = 1 AutoReadOnly
 int Property Sexuality_Bi     = 2 AutoReadOnly
 
-; The sexuality stat returns a value between 0 and 100, use this to lookup the mapping
+; Get the sexuality mapping (see above) for the given actor
 int Function GetSexuality(Actor akActor) native global
 int Function MapSexuality(float aiSexualityStat) native global
 
