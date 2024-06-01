@@ -711,23 +711,26 @@ State Making
 			return none
 		EndIf
 		Actor[] submissives = GetSubmissives()
-		_CustomScenes = SexLabRegistry.ValidateScenesA(_CustomScenes, Positions, "", submissives)
+		_CustomScenes = ValidateScenes(_CustomScenes, submissives)
 		If(_CustomScenes.Length)
 			If(LeadIn)
 				Log("LeadIn detected on custom Animations. Disabling LeadIn")
 				LeadIn = false
 			EndIf
 		Else
-      _PrimaryScenes = SexLabRegistry.ValidateScenesA(_PrimaryScenes, Positions, "", submissives)
+      _PrimaryScenes = ValidateScenes(_PrimaryScenes, submissives)
 			If(!_PrimaryScenes.Length)
         _PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", submissives, _furniStatus, CenterRef)
 				If (!_PrimaryScenes.Length)
-					Fatal("Failed to start Thread -- No valid animations for given actors")
-					return none
+        	_PrimaryScenes = SexLabRegistry.LookupScenes(Positions, "", none, _furniStatus, CenterRef)
+					If (!_PrimaryScenes.Length)
+						Fatal("Failed to start Thread -- No valid animations for given actors")
+						return none
+					EndIf
 				EndIf
 			EndIf
 			If(LeadIn)
-				_LeadInScenes = SexLabRegistry.ValidateScenesA(_LeadInScenes, Positions, "", submissives)
+				_LeadInScenes = ValidateScenes(_LeadInScenes, submissives)
 				LeadIn = _LeadInScenes.Length
 			EndIf
 		EndIf
@@ -871,6 +874,17 @@ ObjectReference Function FindCenter(String[] asScenes, String[] asOutScenes, flo
 bool Function UpdateBaseCoordinates(String asScene, float[] afBaseOut) native
 Function ApplySceneOffset(String asScene, float[] afBaseOut) native
 Function ShuffleScenes(String[] asScenes, String asStart) native
+
+String[] Function ValidateScenes(String[] asScenes, Actor[] akSubmissives)
+	If(!asScenes.Length)
+		return asScenes
+	EndIf
+	String[] s = SexLabRegistry.ValidateScenesA(asScenes, Positions, "", akSubmissives)
+	If (!s.Length)
+		return SexLabRegistry.ValidateScenes(asScenes, Positions, "", none)
+	EndIf
+	return s
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Thread PLAYING                                  --- ;
