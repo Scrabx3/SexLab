@@ -806,7 +806,7 @@ State Animating
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", _AnimVarbHumanoidFootIKDisable)
 		If (_ActorRef == _PlayerRef)
-			Game.EnablePlayerControls()
+			Game.EnablePlayerControls()	; Some mods dont clean up their own mess \o/
 			MiscUtil.SetFreeCameraState(false)
 		Else
 			ActorUtil.RemovePackageOverride(_ActorRef, _Thread.DoNothingPackage)

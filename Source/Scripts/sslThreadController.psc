@@ -77,9 +77,6 @@ Event OnKeyDown(int KeyCode)
 		Else
 			AdvanceStage(false)
 		EndIf
-		;-----------------------------------------------
-		;insertion by ClimaxEXT to compensate stage skip
-		;-----------------------------------------------
 	ElseIf(hotkey == kChangeAnimation)
 		ChangeAnimation(Config.BackwardsPressed())
 	ElseIf(hotkey == kAdjustForward)
@@ -92,13 +89,13 @@ Event OnKeyDown(int KeyCode)
 		RotateScene(Config.BackwardsPressed())
 	ElseIf(hotkey == kAdjustSchlong)
 		AdjustSchlongEx(Config.BackwardsPressed(), Config.AdjustStagePressed())
-	ElseIf(hotkey == kAdjustChange)			; Change Adjusting Position
+	ElseIf(hotkey == kAdjustChange) ; Change Adjusting Position
 		AdjustChange(Config.BackwardsPressed())
 	ElseIf(hotkey == kRealignActors)
 		RealignActors()
-	ElseIf(hotkey == kChangePositions)	; Change Positions
+	ElseIf(hotkey == kChangePositions)
 		ChangePositions()
-	ElseIf(hotkey == kRestoreOffsets)		; Reset animation offsets
+	ElseIf(hotkey == kRestoreOffsets)
 		RestoreOffsets()
 	ElseIf(hotkey == kMoveScene)
 		MoveScene()
@@ -148,9 +145,9 @@ Function ChangeAnimation(bool backwards = false)
 	UnregisterForUpdate()
 	int current = Scenes.Find(GetActiveScene())
 	String newScene
-	If (!Config.AdjustStagePressed())	; Forward/Backward
+	If (!Config.AdjustStagePressed())
 		newScene = Scenes[sslUtility.IndexTravel(current, Scenes.Length, backwards)]
-	Else	; Random
+	Else
 		int r = Utility.RandomInt(0, Scenes.Length - 1)
 		While(r == current)
 			r = Utility.RandomInt(0, Scenes.Length - 1)
@@ -163,7 +160,7 @@ Function ChangeAnimation(bool backwards = false)
 EndFunction
 
 Function AdjustCoordinate(bool abBackwards, bool abStageOnly, float afValue, int aiKeyIdx, int aiOffsetType)
-	; [X, Y, Z, Rotation]
+	; aiOffsetType := [X, Y, Z, Rotation]
 	UnregisterForUpdate()
 	String scene_ = GetActiveScene()
 	String stage_ = ""

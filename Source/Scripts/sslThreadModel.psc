@@ -705,13 +705,11 @@ State Making
 
   sslThreadController Function StartThread()
 		UnregisterForUpdate()
-    ; Validate Actors
 		Positions = PapyrusUtil.RemoveActor(Positions, none)
 		If(Positions.Length < 1 || Positions.Length >= POSITION_COUNT_MAX)
 			Fatal("Failed to start Thread -- No valid actors available for animation")
 			return none
 		EndIf
-		; Validate Animations
 		Actor[] submissives = GetSubmissives()
 		_CustomScenes = SexLabRegistry.ValidateScenesA(_CustomScenes, Positions, "", submissives)
 		If(_CustomScenes.Length)
@@ -719,7 +717,7 @@ State Making
 				Log("LeadIn detected on custom Animations. Disabling LeadIn")
 				LeadIn = false
 			EndIf
-		Else  ; only validate if these arent overwritten by custom scenes
+		Else
       _PrimaryScenes = SexLabRegistry.ValidateScenesA(_PrimaryScenes, Positions, "", submissives)
 			If(!_PrimaryScenes.Length)
         _PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", submissives, _furniStatus, CenterRef)
@@ -733,7 +731,6 @@ State Making
 				LeadIn = _LeadInScenes.Length
 			EndIf
 		EndIf
-		; Start Animation
 		ShuffleScenes(Scenes, _StartScene)
 		String[] out = new String[16]
 		ObjectReference new_center = FindCenter(Scenes, out, _BaseCoordinates, _furniStatus)
@@ -771,7 +768,6 @@ State Making_M
 		SendThreadEvent("AnimationStarting")
 		RunHook(Config.HOOKID_STARTING)
 		If (useFading)
-			; Utility.Wait(0.5)
 			Config.ApplyFade()
 		EndIf
 		; Base coordinates are first set in FindCenter() above
@@ -1005,20 +1001,16 @@ State Animating
 		ElseIf(!Leadin)
 			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
 			If (ctype == Config.CLIMAXTYPE_LEGACY && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
-				; End of animation climax
 				SendThreadEvent("OrgasmStart")
 				_SceneEndClimax = true
 				TriggerOrgasm()
 			ElseIf (ctype == Config.CLIMAXTYPE_SCENE)
-				; Scene embedded climax
 				int[] cactors = SexLabRegistry.GetClimaxingActors(_ActiveScene, asNewStage)
 				int i = 0
 				While (i < cactors.Length)
 					ActorAlias[cactors[i]].DoOrgasm()
 					i += 1
 				EndWhile
-			; Else
-				; External climax
 			EndIf
 		EndIf
 		int[] strips_ = SexLabRegistry.GetStripDataA(_ActiveScene, "")
@@ -1047,7 +1039,8 @@ State Animating
 		If (ToStage <= 1)
 			ResetScene(_ActiveScene)
 		ElseIf(ToStage > _StageHistory.Length)
-			PlayNext(0)
+			int idx = SelectNextStage(_ActiveScene, _ActiveStage, _ThreadTags)
+			PlayNext(idx)
 		Else
 			; Skip stripping for already played stages
 			int i = 0
@@ -1108,7 +1101,6 @@ State Animating
 		If (AutoAdvance)
 			_StageTimer -= ANIMATING_UPDATE_INTERVAL
 			If (_StageTimer <= 0)
-				; IDEA: Randomize branching..?
 				GoToStage(_StageHistory.Length + 1)
 				; TODO: avoid last stage if GetOrgasmCount() for dom is 0 and enj < 80
 				; perpetutate 2nd last stage or use ChangeAnimation() instead, and skip to 2nd/3rd stage
@@ -1258,8 +1250,6 @@ State Animating
 	EndFunction
 	Function EndAnimation(bool Quickly = false)
 		If(_SceneEndClimax)
-			; Legacy Climax triggers wen the final stage begins, thus the next stage switch will
-			; end the animation, invoking this function and ending the climax stage
 			SendThreadEvent("OrgasmEnd")
 		EndIF
 		GoToState(STATE_END)
@@ -1348,6 +1338,7 @@ Function PlayStageAnimations()
 EndFunction
 
 ; Set location for all positions on CenterAlias, incl offset, and play their respected animation. Positions are assumed to be sorted by scene
+int Function SelectNextStage(String asScene, String asActiveStage, String[] asThreadTags) native
 String Function PlaceAndPlay(Actor[] akPositions, float[] afCoordinates, String asSceneID, String asStageID) native
 Function RePlace(Actor akActor, float[] afBaseCoordinates, String asSceneID, String asStageID, int n) native
 Function UpdatePlacement(int n, sslActorAlias akAlias)
