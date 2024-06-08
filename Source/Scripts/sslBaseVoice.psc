@@ -188,7 +188,7 @@ EndProperty
 
 string[] property RaceKeys hidden
 	String[] Function Get()
-		return PapyrusUtil.RemoveString(GetCompatibleRaces(Registry), "Human")
+		return PapyrusUtil.RemoveString(GetCompatibleRaces(Registry), "Humans")
 	EndFunction
 	Function Set(String[] aSet)
 		SetCompatibleRaces(Registry, aSet)
