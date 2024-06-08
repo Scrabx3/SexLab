@@ -51,13 +51,13 @@ String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, Strin
 String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] akSubmissive) native global
 
 ; Sort akPosition based on the provided scene. The array will be modified directly, the order of the sorted array is unspecified
-; The extended version will take an array and return the index of the n'th scene which the actors are sorted by (usually the first valid scene found)
-; If fallbacks are enabled, will attempt to reinterpret the given actors to find an allowed ordering if the first pass was not successful
-; Return false/-1 if the positions couldnt be sorted; E.g. because the scene is incompatible for the stated actors
-bool Function SortByScene(Actor[] akPositions, Actor akSubmissive, String asScene, bool abAllowFallback) native global
-bool Function SortBySceneA(Actor[] akPositions, Actor[] akSubmissives, String asScene, bool abAllowFallback) native global
-int Function SortBySceneEx(Actor[] akPositions, Actor akSubmissive, String[] asScenes, bool abAllowFallback) native global
-int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[] asScenes, bool abAllowFallback) native global
+; The extended version will take an array and return the index of the n'th scene which the actors are sorted by (the first successfull match)
+; Matching positions vaguely may increase chance of a successfull match, with a potential loss of quality
+; Return false/-1 if the positions couldnt be sorted
+bool Function SortByScene(Actor[] akPositions, Actor akSubmissive, String asScene, bool abVagueMatching) native global
+bool Function SortBySceneA(Actor[] akPositions, Actor[] akSubmissives, String asScene, bool abVagueMatching) native global
+int Function SortBySceneEx(Actor[] akPositions, Actor akSubmissive, String[] asScenes, bool abVagueMatching) native global
+int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[] asScenes, bool abVagueMatching) native global
 
 ; ------------------------------------------------------- ;
 ; --- Scenes                                          --- ;
