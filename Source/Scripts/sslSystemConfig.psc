@@ -77,6 +77,8 @@ SoundCategory property AudioVoice auto
 ; --- Config Properties                               --- ;
 ; ------------------------------------------------------- ;
 
+float Function GetMinSetupTime() native global
+
 int Function GetAnimationCount() native global
 float[] Function GetEnjoymentFactors() native global
 int Function GetEnjoymentSettingInt(String asSetting) native global
@@ -1136,7 +1138,7 @@ bool function CheckSystemPart(string CheckSystem)
   elseIf CheckSystem == "SkyUI"
     return Quest.GetQuest("SKI_ConfigManagerInstance") != none
   elseIf CheckSystem == "SexLabP+"
-    return SKSE.GetPluginVersion("SexLab") > -1
+    return SKSE.GetPluginVersion("SexLabUtil") > -1
   elseIf CheckSystem == "PapyrusUtil"
     return PapyrusUtil.GetVersion() >= 39
   elseIf CheckSystem == "NiOverride"
