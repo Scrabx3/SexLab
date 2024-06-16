@@ -272,7 +272,10 @@ String _Expression
 bool Property ForceOpenMouth Auto Hidden
 bool Property OpenMouth
 	bool Function Get()
-		return ForceOpenMouth && _Thread.HasInteractionType(_Thread.PTYPE_Oral, none, _ActorRef)
+		If (ForceOpenMouth)
+			return true
+		EndIf 
+		return _Thread.IsGivingBlowjob(_ActorRef)
 	EndFunction
 	Function Set(bool abSet)
 		ForceOpenMouth = abSet
@@ -282,8 +285,8 @@ EndProperty
 ; Pathing
 int _PathingFlag
 bool property DoPathToCenter
-	bool function get()
-		return _PathingFlag == PATHING_FORCE || (_PathingFlag == PATHING_ENABLE && _Config.DisableTeleport)
+	bool function get()	; COMEBACK: Disable TP should probably be "force teleportation"
+		return _PathingFlag != PATHING_DISABLE ;  || (_PathingFlag == PATHING_ENABLE && _Config.DisableTeleport)
 	endFunction
 endProperty
 
@@ -353,6 +356,8 @@ EndFunction
 	Pre animation start. The alias is waiting for the underlying thread to begin the animation
 /;
 
+bool __SETUP_DONE
+
 State Ready
 	Event OnBeginState()
 		RegisterForModEvent("SSL_PREPARE_Thread" + _Thread.tid, "OnDoPrepare")
@@ -362,13 +367,42 @@ State Ready
 		_Strapon = ToStrapon
 	EndFunction
 
-	Event OnDoPrepare(string asEventName, string asStringArg, float abUseFade, form akPathTo)
+	Event OnDoPrepare(string asEventName, string asStringArg, float afNumArg, form akPathTo)
 		If(_ActorRef == _PlayerRef)
-			_ActorRef.SheatheWeapon()
 			Game.SetPlayerAIDriven()
 		Else
 			_Config.CheckBardAudience(_ActorRef, true)
 		EndIf
+		; Position
+		_ActorRef.SetActorValue("Paralysis", 0.0)
+		bool dopathing = akPathTo && DoPathToCenter
+		float min_delay = sslSystemConfig.GetMinSetupTime()
+		If(dopathing)
+			ObjectReference target = akPathTo as ObjectReference
+			float target_distance = 128.0
+			float distance = _ActorRef.GetDistance(target)
+			If(distance > target_distance && distance <= 6144.0)
+				float fallback_timer = 15.0
+				float interval = 0.05
+				_ActorRef.SetFactionRank(_AnimatingFaction, 2)
+				_ActorRef.EvaluatePackage()
+				While (min_delay > 0.0 || (_ActorRef.GetDistance(target) > target_distance && fallback_timer > 0))
+					fallback_timer -= interval
+					min_delay -= interval
+					Utility.Wait(interval)
+				EndWhile
+			Else
+				dopathing = false
+			EndIf
+		EndIf
+		_ActorRef.SetFactionRank(_AnimatingFaction, 1)
+		_ActorRef.EvaluatePackage()
+		__SETUP_DONE = false
+		GoToState(STATE_PAUSED)
+		If (asStringArg != "skip")
+			_Thread.PrepareDone()
+		EndIf
+		; Delayed Initialization
 		_AnimVarIsNPC = _ActorRef.GetAnimationVariableInt("IsNPC")
 		_AnimVarbHumanoidFootIKDisable = _ActorRef.GetAnimationVariableBool("bHumanoidFootIKDisable")
 		If (!_IsForcedSilent && !_Voice)
@@ -407,27 +441,11 @@ State Ready
 		_EnjoymentDelay = 1.5
 		_ContextCheckDelay = 8.0
 		_lastHoldBack = 0.0
-		; Position
-		_ActorRef.SetActorValue("Paralysis", 0.0)
-		If(akPathTo && !abUseFade && DoPathToCenter)
-			ObjectReference pathto = akPathTo as ObjectReference
-			float distance = _ActorRef.GetDistance(pathto)
-			If(distance > 256.0 && distance <= 6144.0)
-				float t = SexLabUtil.GetCurrentGameRealTime() + 15.0
-				_ActorRef.SetFactionRank(_AnimatingFaction, 2)
-				_ActorRef.EvaluatePackage()
-				While (_ActorRef.GetDistance(pathto) > 256.0 && SexLabUtil.GetCurrentGameRealTime() < t)
-					Utility.Wait(0.045)
-				EndWhile
-			EndIf
+		If (!dopathing)
+			Utility.Wait(min_delay)
 		EndIf
-		_ActorRef.SetFactionRank(_AnimatingFaction, 1)
-		_ActorRef.EvaluatePackage()
-		GoToState(STATE_PAUSED)
-		If (asStringArg != "skip")
-			_Thread.PrepareDone()
-		EndIf
-		; Delayed Initialization
+		__SETUP_DONE = true
+		; Post Delayed Initialization
 		UpdateBaseEnjoymentCalculations()
 		If (!_Config.DebugMode)
 			return
@@ -449,7 +467,7 @@ State Ready
 	EndEvent
 EndState
 
-Event OnDoPrepare(string asEventName, string asStringArg, float abUseFade, form akPathTo)
+Event OnDoPrepare(string asEventName, string asStringArg, float afNumArg, form akPathTo)
 	Error("Preparation request outside a valid state", "OnDoPrepare()")
 EndEvent
 
@@ -483,6 +501,9 @@ State Paused
 	EndFunction
 	Event OnStartPlaying(string asEventName, string asStringArg, float afNumArg, form akSender)
 		UnregisterForModEvent("SSL_READY_Thread" + _Thread.tid)
+		While (!__SETUP_DONE)
+			Utility.Wait(0.05)
+		EndWhile
 		LockActor()
 		If (_sex <= 2)
 			If (DoUndress)
@@ -520,18 +541,6 @@ State Paused
 		; If (_ActorRef.IsSneaking())
 		; 	_ActorRef.StartSneaking()
 		; EndIf
-		Debug.SendAnimationEvent(_ActorRef, "IdleFurnitureExit")
-		Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
-		Debug.SendAnimationEvent(_ActorRef, "IdleStop")
-		LockActorImpl()
-		If (!sslActorLibrary.HasVehicle(_ActorRef))
-			If (!_myMarker)
-				_myMarker = _ActorRef.PlaceAtMe(_xMarker)
-			EndIf
-			_ActorRef.SetVehicle(_myMarker)
-		EndIf
-		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
-		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", 1)
 		If (_ActorRef == _PlayerRef)
 			If(_Config.AutoTFC)
 				Game.ForceThirdPerson()
@@ -542,7 +551,19 @@ State Paused
 			ActorUtil.AddPackageOverride(_ActorRef, _Thread.DoNothingPackage, 100, 1)
 			_ActorRef.EvaluatePackage()
 		EndIf
+		Debug.SendAnimationEvent(_ActorRef, "IdleFurnitureExit")
+		Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
+		Debug.SendAnimationEvent(_ActorRef, "IdleStop")
+		LockActorImpl()
 		SendDefaultAnimEvent()
+		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
+		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", 1)
+		If (!sslActorLibrary.HasVehicle(_ActorRef))
+			If (!_myMarker)
+				_myMarker = _ActorRef.PlaceAtMe(_xMarker)
+			EndIf
+			_ActorRef.SetVehicle(_myMarker)
+		EndIf
 		GoToState(STATE_PLAYING)
 	EndFunction
 	

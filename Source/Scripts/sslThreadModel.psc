@@ -397,6 +397,24 @@ float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)
 	return GetPhysicVelocity(akPosition, akPartner, aiType)
 EndFunction
 
+bool Function IsGivingBlowjob(Actor akPosition)
+	Actor[] p = GetPhysicPartnersByTypeRev(akPosition, PTYPE_Oral)
+	Log("Is giving bj; p = " + p)
+	If (!p.Length)
+		return false
+	EndIf
+	int i = 0
+	While (i < p.Length)
+		int s = SexLabRegistry.GetPositionSex(_ActiveScene, i)
+		Log("Is giving bj; s = " + s + " / i = " + i)
+		If (Math.LogicalAnd(s, 0x5))
+			return true
+		EndIf
+		i += 1
+	EndWhile
+	return false
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Event Hooks                                     --- ;
 ; ------------------------------------------------------- ;
@@ -766,13 +784,9 @@ State Making_M
 	Event OnBeginState()
 		; Event to all active aliases, resync via PrepareDone() to continue startup
 		_prepareAsyncCount = 0
-		bool useFading = HasPlayer && sslSystemConfig.GetSettingInt("iUseFade") > 0
-		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid, "", useFading as float)
+		CenterRef.SendModEvent("SSL_PREPARE_Thread" + tid)
 		SendThreadEvent("AnimationStarting")
 		RunHook(Config.HOOKID_STARTING)
-		If (useFading)
-			Config.ApplyFade()
-		EndIf
 		; Base coordinates are first set in FindCenter() above
 		ApplySceneOffset(_ActiveScene, _BaseCoordinates)
 		_InUseCoordinates[0] = _BaseCoordinates[0]
@@ -801,6 +815,9 @@ State Making_M
 				AutoAdvance = Config.AutoAdvance
 				; Inheritance is kinda backwards
 				Config.GetThreadControl(self as sslThreadController)
+			EndIf
+			If (sslSystemConfig.GetSettingInt("iUseFade") > 0)
+				Config.ApplyFade()
 			EndIf
 		Else
 			AutoAdvance = true
