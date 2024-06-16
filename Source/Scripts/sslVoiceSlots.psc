@@ -271,7 +271,7 @@ string function GetSavedName(Actor ActorRef)
 endFunction
 
 function SaveVoice(Actor ActorRef, sslBaseVoice Saving)
-	StoreVoice(ActorRef, Saving)
+	StoreVoice(ActorRef, Saving.Registry)
 endFunction
 
 function ForgetVoice(Actor ActorRef)
