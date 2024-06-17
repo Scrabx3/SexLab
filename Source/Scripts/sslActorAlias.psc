@@ -285,8 +285,8 @@ EndProperty
 ; Pathing
 int _PathingFlag
 bool property DoPathToCenter
-	bool function get()	; COMEBACK: Disable TP should probably be "force teleportation"
-		return _PathingFlag != PATHING_DISABLE ;  || (_PathingFlag == PATHING_ENABLE && _Config.DisableTeleport)
+	bool function get()
+		return _PathingFlag != PATHING_DISABLE || (_PathingFlag == PATHING_ENABLE && _Config.DisableTeleport)
 	endFunction
 endProperty
 
@@ -542,8 +542,11 @@ State Paused
 		; 	_ActorRef.StartSneaking()
 		; EndIf
 		If (_ActorRef == _PlayerRef)
-			If(_Config.AutoTFC)
+			If (Game.GetCameraState() == 0)
 				Game.ForceThirdPerson()
+			EndIf
+			Game.DisablePlayerControls(false, false, true, false, false, false, false, false, 0)
+			If(_Config.AutoTFC)
 				MiscUtil.SetFreeCameraState(true)
 				MiscUtil.SetFreeCameraSpeed(_Config.AutoSUCSM)
 			EndIf
@@ -827,7 +830,7 @@ State Animating
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", _AnimVarbHumanoidFootIKDisable)
 		If (_ActorRef == _PlayerRef)
-			Game.EnablePlayerControls()	; Some mods dont clean up their own mess \o/
+			Game.EnablePlayerControls()
 			MiscUtil.SetFreeCameraState(false)
 		Else
 			ActorUtil.RemovePackageOverride(_ActorRef, _Thread.DoNothingPackage)
