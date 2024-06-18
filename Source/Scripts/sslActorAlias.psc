@@ -286,7 +286,7 @@ EndProperty
 int _PathingFlag
 bool property DoPathToCenter
 	bool function get()
-		return _PathingFlag != PATHING_DISABLE || (_PathingFlag == PATHING_ENABLE && _Config.DisableTeleport)
+		return _PathingFlag == PATHING_FORCE || (_PathingFlag == PATHING_ENABLE && _Config.DisableTeleport)
 	endFunction
 endProperty
 
@@ -306,6 +306,9 @@ float _LastOrgasm
 
 Auto State Empty
 	bool Function SetActor(Actor ProspectRef)
+		If (ProspectRef == _PlayerRef)
+			Game.DisablePlayerControls(false, false, false, false, false, false, true, false, 0)
+		EndIf
 		ForceRefTo(ProspectRef)
 		_ActorRef = ProspectRef
 		If (_ActorRef.IsDead())
@@ -331,6 +334,9 @@ Auto State Empty
 			_ActorRef.KillSilent(_killer)
 		Else
 			_Thread.RequestStatisticUpdate(_ActorRef, _StartedAt)
+		EndIf
+		If (_ActorRef == _PlayerRef)
+			Game.EnablePlayerControls()
 		EndIf
 		Parent.Clear()
 	EndFunction
@@ -375,24 +381,24 @@ State Ready
 		EndIf
 		; Position
 		_ActorRef.SetActorValue("Paralysis", 0.0)
-		bool dopathing = akPathTo && DoPathToCenter
 		float min_delay = sslSystemConfig.GetMinSetupTime()
-		If(dopathing)
+		If(akPathTo && DoPathToCenter)
 			ObjectReference target = akPathTo as ObjectReference
 			float target_distance = 128.0
 			float distance = _ActorRef.GetDistance(target)
 			If(distance > target_distance && distance <= 6144.0)
 				float fallback_timer = 15.0
 				float interval = 0.05
+				float prev_dist = distance + 1.0
 				_ActorRef.SetFactionRank(_AnimatingFaction, 2)
 				_ActorRef.EvaluatePackage()
-				While (min_delay > 0.0 || (_ActorRef.GetDistance(target) > target_distance && fallback_timer > 0))
+				While (distance > target_distance && Math.abs(prev_dist - distance) > 0.5 && fallback_timer > 0)
 					fallback_timer -= interval
 					min_delay -= interval
 					Utility.Wait(interval)
+					prev_dist = distance
+					distance = _ActorRef.GetDistance(target)
 				EndWhile
-			Else
-				dopathing = false
 			EndIf
 		EndIf
 		_ActorRef.SetFactionRank(_AnimatingFaction, 1)
@@ -441,7 +447,7 @@ State Ready
 		_EnjoymentDelay = 1.5
 		_ContextCheckDelay = 8.0
 		_lastHoldBack = 0.0
-		If (!dopathing)
+		If (min_delay > 0.05)
 			Utility.Wait(min_delay)
 		EndIf
 		__SETUP_DONE = true
@@ -538,9 +544,6 @@ State Paused
 		LockActor()
 	EndFunction
 	Function LockActor()
-		; If (_ActorRef.IsSneaking())
-		; 	_ActorRef.StartSneaking()
-		; EndIf
 		If (_ActorRef == _PlayerRef)
 			If (Game.GetCameraState() == 0)
 				Game.ForceThirdPerson()
