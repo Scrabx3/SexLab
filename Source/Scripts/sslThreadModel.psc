@@ -761,7 +761,7 @@ State Making
 		EndIf
 		CenterRef = new_center
 		_ActiveScene = out[GetActiveIdx(out)]
-		If (!SexLabRegistry.SortBySceneA(Positions, submissives, _ActiveScene, true))
+		If (!SexLabRegistry.SortBySceneA(Positions, submissives, _ActiveScene, -1))
 			Fatal("Failed to start Thread -- Cannot sort actors to active scene")
 			return none
 		EndIf
@@ -896,9 +896,9 @@ String[] Function ValidateScenes(String[] asScenes, Actor[] akSubmissives)
 	If(!asScenes.Length)
 		return asScenes
 	EndIf
-	String[] s = SexLabRegistry.ValidateScenesA(asScenes, Positions, "", akSubmissives)
+	String[] s = SexLabRegistry.ValidateScenesA(asScenes, Positions, "", akSubmissives, -1)
 	If (!s.Length)
-		return SexLabRegistry.ValidateScenes(asScenes, Positions, "", none)
+		return SexLabRegistry.ValidateScenes(asScenes, Positions, "", none, -1)
 	EndIf
 	return s
 EndFunction
@@ -976,7 +976,7 @@ State Animating
 		UnregisterForUpdate()
 		AddExperience(Positions, _ActiveScene, _StageHistory)
 		If (asNewScene != _ActiveScene)
-			If (!SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), asNewScene, true))
+			If (!SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), asNewScene, -1))
 				Log("Cannot reset scene. New Scene is not compatible with given positions")
 				return false
 			ElseIf (!UpdateBaseCoordinates(asNewScene, _BaseCoordinates))
@@ -1184,7 +1184,7 @@ State Animating
 			CenterAlias.ForceRefTo(newCenter)
 			If (_ActiveScene != out[0])
 				_ActiveScene = out[0]
-				SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), _ActiveScene, true)
+				SexLabRegistry.SortBySceneA(Positions, GetSubmissives(), _ActiveScene, -1)
 			EndIf
 			ApplySceneOffset(_ActiveScene, _BaseCoordinates)
 		EndIf
@@ -1244,7 +1244,7 @@ State Animating
 		; Validate Animations or get new
 		Positions = akNewPositions
 		Actor[] sub = GetSubmissives()
-		If (!SexLabRegistry.ValidateSceneA(_ActiveScene, Positions, "", sub))
+		If (!SexLabRegistry.ValidateSceneA(_ActiveScene, Positions, "", sub, -1))
 			ClearForcedScenes()
 			_PrimaryScenes = SexLabRegistry.LookupScenesA(Positions, "", sub, _furniStatus, CenterRef)
 			If (!_PrimaryScenes.Length)

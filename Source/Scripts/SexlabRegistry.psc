@@ -45,19 +45,20 @@ String[] Function LookupScenes(Actor[] akPositions, String asTags, Actor akSubmi
 String[] Function LookupScenesA(Actor[] akPositions, String asTags, Actor[] akSubmissives, int aiFurniturePreference, ObjectReference akCenter) native global
 
 ; Check if the given Actors can play the stated scene under the stated tag constraints. Return an array of all valid scenes
-bool Function ValidateScene(String asSceneID, Actor[] akPositions, String asTags, Actor akSubmissive) native global
-bool Function ValidateSceneA(String asSceneID, Actor[] akPositions, String asTags, Actor[] akSubmissives) native global
-String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor akSubmissive) native global
-String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] akSubmissive) native global
+; Strictness Mapping: -1 User Config | 0 Loose | 1 Standard | 2 Strict. Higher strictness improves quality but may result in no animations being found
+bool Function ValidateScene(String asSceneID, Actor[] akPositions, String asTags, Actor akSubmissive, int aiStrictness) native global
+bool Function ValidateSceneA(String asSceneID, Actor[] akPositions, String asTags, Actor[] akSubmissives, int aiStrictness) native global
+String[] Function ValidateScenes(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor akSubmissive, int aiStrictness) native global
+String[] Function ValidateScenesA(String[] asSceneIDs, Actor[] akPositions, String asTags, Actor[] akSubmissive, int aiStrictness) native global
 
 ; Sort akPosition based on the provided scene. The array will be modified directly, the order of the sorted array is unspecified
 ; The extended version will take an array and return the index of the n'th scene which the actors are sorted by (the first successfull match)
-; Matching positions vaguely may increase chance of a successfull match, with a potential loss of quality
+; Strictness Mapping: -1 User Config | 0 Loose | 1 Standard | 2 Strict. Higher strictness improves quality but may result in no animations being found
 ; Return false/-1 if the positions couldnt be sorted
-bool Function SortByScene(Actor[] akPositions, Actor akSubmissive, String asScene, bool abVagueMatching) native global
-bool Function SortBySceneA(Actor[] akPositions, Actor[] akSubmissives, String asScene, bool abVagueMatching) native global
-int Function SortBySceneEx(Actor[] akPositions, Actor akSubmissive, String[] asScenes, bool abVagueMatching) native global
-int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[] asScenes, bool abVagueMatching) native global
+bool Function SortByScene(Actor[] akPositions, Actor akSubmissive, String asScene, int aiStrictness) native global
+bool Function SortBySceneA(Actor[] akPositions, Actor[] akSubmissives, String asScene, int aiStrictness) native global
+int Function SortBySceneEx(Actor[] akPositions, Actor akSubmissive, String[] asScenes, int aiStrictness) native global
+int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[] asScenes, int aiStrictness) native global
 
 ; ------------------------------------------------------- ;
 ; --- Scenes                                          --- ;

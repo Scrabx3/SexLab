@@ -87,6 +87,11 @@ Event OnConfigInit()
 	_FadeOpt[1] = "$SSL_UseBlack"
 	_FadeOpt[2] = "$SSL_UseBlur"
 
+	_FilterOpt = new String[3]
+	_FilterOpt[0] = "$SSL_Filter_0"		; Loose
+	_FilterOpt[1] = "$SSL_Filter_1"		; Standard
+	_FilterOpt[2] = "$SSL_Filter_2"		; Strict
+
 	_ClimaxTypes = new String[3]
 	_ClimaxTypes[0] = "$SSL_Climax_0"	; Default
 	_ClimaxTypes[1] = "$SSL_Climax_1"	; Legacy
@@ -458,6 +463,8 @@ Event OnHighlightST()
 		SetInfoText("$SSL_InfoPlayerGender")
 	ElseIf (Options[0] == "UseFade")
 		SetInfoText("$SSL_UseFadeInfo")
+	ElseIf (Options[0] == "FilterStrictness")
+		SetInfoText("$SSL_FilterStrictnessInfo")
 
 	; Animation Toggle
 	Elseif Options[0] == "Animation"
@@ -691,6 +698,10 @@ Event OnMenuOpenST()
 		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iClimaxType"))
 		SetMenuDialogDefaultIndex(0)
 		SetMenuDialogOptions(_ClimaxTypes)
+	ElseIf (s[0] == "FilterStrictness")
+		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iFilterStrictness"))
+		SetMenuDialogDefaultIndex(1)
+		SetMenuDialogOptions(_FilterOpt)
 	ElseIf (s[0] == "SexSelect")
 		int sex
 		If (s[1] == "0")
@@ -726,12 +737,15 @@ EndEvent
 
 Event OnMenuAcceptST(int aiIndex)
 	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
+	If (aiIndex < 0)
+		return
+	EndIf
 	If (s[0] == "ClimaxType")				; Animation Settings
-		If (aiIndex < 0)
-			return
-		EndIf
 		sslSystemConfig.SetSettingInt("iClimaxType", aiIndex)
 		SetMenuOptionValueST(_ClimaxTypes[aiIndex])
+	ElseIf (s[0] == "FilterStrictness")
+		sslSystemConfig.SetSettingInt("iFilterStrictness", aiIndex)
+		SetMenuOptionValueST(_FilterOpt[aiIndex])
 	ElseIf (s[0] == "SexSelect")
 		If (s[1] == "0")
 			ActorLib.TreatAsSex(PlayerRef, aiIndex)
@@ -740,12 +754,8 @@ Event OnMenuAcceptST(int aiIndex)
 		EndIf
 		SetMenuOptionValueST(_Sexes[aiIndex])
 	ElseIf (s[0] == "UseFade")
-		If (aiIndex < 0)
-			return
-		EndIf
 		sslSystemConfig.SetSettingInt("iUseFade", aiIndex)
 		SetMenuOptionValueST(_FadeOpt[aiIndex])
-
 
 	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
 		If (aiIndex == 0)
@@ -1016,6 +1026,7 @@ endFunction
 string[] Chances
 string[] BedOpt
 string[] _FadeOpt
+String[] _FilterOpt
 String[] _ClimaxTypes
 String[] _Sexes
 
@@ -1048,6 +1059,7 @@ function AnimationSettings()
 	AddToggleOptionST("AllowCreatures","$SSL_AllowCreatures", Config.AllowCreatures)
 	AddToggleOptionST("UseCreatureGender","$SSL_UseCreatureGender", Config.UseCreatureGender)
 	AddHeaderOption("$SSL_AnimationHandling")
+	AddMenuOptionST("FilterStrictness", "$SSL_FilterStrictness", _FilterOpt[sslSystemConfig.GetSettingInt("iFilterStrictness")])
 	AddMenuOptionST("UseFade","$SSL_UseFade", _FadeOpt[sslSystemConfig.GetSettingInt("iUseFade")])
 	AddToggleOptionST("DisableScale","$SSL_DisableScale", Config.DisableScale)
 	AddToggleOptionST("RestrictSameSex","$SSL_RestrictSameSex", Config.RestrictSameSex)
