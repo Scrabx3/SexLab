@@ -392,6 +392,7 @@ State Ready
 				float prev_dist = distance + 1.0
 				_ActorRef.SetFactionRank(_AnimatingFaction, 2)
 				_ActorRef.EvaluatePackage()
+				Utility.Wait(2.0)
 				While (distance > target_distance && Math.abs(prev_dist - distance) > 0.5 && fallback_timer > 0)
 					fallback_timer -= interval
 					min_delay -= interval
