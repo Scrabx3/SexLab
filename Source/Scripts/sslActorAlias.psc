@@ -938,16 +938,16 @@ Form[] Function StripByDataEx(int aiStripData, int[] aiDefaults, int[] aiOverwri
 
 Function SendDefaultAnimEvent(bool Exit = False)
 	Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
-	If(_sex <= 2)	; Human
-		Debug.SendAnimationEvent(_ActorRef, "IdleForceDefaultState")
+	Debug.SendAnimationEvent(_ActorRef, "IdleForceDefaultState")
+	If(_sex <= 2)
 		return
 	EndIf
 	Debug.SendAnimationEvent(_ActorRef, "ReturnDefaultState") 	; chicken, hare and slaughterfish before the "ReturnToDefault"
-	Debug.SendAnimationEvent(_ActorRef, "ReturnToDefault") 		; rest creature-animal
-	Debug.SendAnimationEvent(_ActorRef, "FNISDefault") 				; dwarvenspider and chaurus
-	Debug.SendAnimationEvent(_ActorRef, "IdleReturnToDefault") ; Werewolves and VampirwLords
-	Debug.SendAnimationEvent(_ActorRef, "ForceFurnExit") 			; Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
-	Debug.SendAnimationEvent(_ActorRef, "Reset") 							; Hagravens afther the "ReturnToDefault" and Dragons
+	Debug.SendAnimationEvent(_ActorRef, "ReturnToDefault") 			; rest creature-animal
+	Debug.SendAnimationEvent(_ActorRef, "FNISDefault") 					; dwarvenspider and chaurus
+	Debug.SendAnimationEvent(_ActorRef, "IdleReturnToDefault") 	; Werewolves and VampirwLords
+	Debug.SendAnimationEvent(_ActorRef, "ForceFurnExit") 				; Trolls afther the "ReturnToDefault" and draugr, daedras and all dwarven exept spiders
+	Debug.SendAnimationEvent(_ActorRef, "Reset") 								; Hagravens afther the "ReturnToDefault" and Dragons
 EndFunction
 
 function TrackedEvent(string EventName)
