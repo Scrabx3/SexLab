@@ -179,10 +179,6 @@ EndFunction
 float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)
 EndFunction
 
-; If the giving position is giving oral to a male position
-bool Function IsGivingBlowjob(Actor akPosition)
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Time Data			                                  --- ;
 ; ------------------------------------------------------- ;

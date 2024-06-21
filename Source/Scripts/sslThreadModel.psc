@@ -397,24 +397,6 @@ float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)
 	return GetPhysicVelocity(akPosition, akPartner, aiType)
 EndFunction
 
-bool Function IsGivingBlowjob(Actor akPosition)
-	Actor[] p = GetPhysicPartnersByTypeRev(akPosition, PTYPE_Oral)
-	Log("Is giving bj; p = " + p)
-	If (!p.Length)
-		return false
-	EndIf
-	int i = 0
-	While (i < p.Length)
-		int s = SexLabRegistry.GetPositionSex(_ActiveScene, i)
-		Log("Is giving bj; s = " + s + " / i = " + i)
-		If (Math.LogicalAnd(s, 0x5))
-			return true
-		EndIf
-		i += 1
-	EndWhile
-	return false
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Event Hooks                                     --- ;
 ; ------------------------------------------------------- ;
