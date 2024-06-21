@@ -272,10 +272,7 @@ String _Expression
 bool Property ForceOpenMouth Auto Hidden
 bool Property OpenMouth
 	bool Function Get()
-		If (ForceOpenMouth)
-			return true
-		EndIf 
-		return _Thread.IsGivingBlowjob(_ActorRef)
+		return ForceOpenMouth
 	EndFunction
 	Function Set(bool abSet)
 		ForceOpenMouth = abSet
