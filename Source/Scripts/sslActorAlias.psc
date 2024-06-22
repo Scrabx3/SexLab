@@ -302,7 +302,7 @@ float _LastOrgasm
 Auto State Empty
 	bool Function SetActor(Actor ProspectRef)
 		If (ProspectRef == _PlayerRef)
-			Game.DisablePlayerControls(false, false, false, false, false, false, true, false, 0)
+			Game.DisablePlayerControls(false, true, false, false, false, false, true, false, 0)
 		EndIf
 		ForceRefTo(ProspectRef)
 		_ActorRef = ProspectRef
@@ -830,7 +830,7 @@ State Animating
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", _AnimVarbHumanoidFootIKDisable)
 		If (_ActorRef == _PlayerRef)
-			Game.EnablePlayerControls()
+			Game.EnablePlayerControls(abFighting = false, abActivate = false)
 			MiscUtil.SetFreeCameraState(false)
 		Else
 			ActorUtil.RemovePackageOverride(_ActorRef, _Thread.DoNothingPackage)
