@@ -2947,26 +2947,16 @@ state FullInventoryTarget
 endState
 
 ; ------------------------------------------------------- ;
-; --- Rebuild & Clean                                 --- ;
+; --- Debug & installation							              --- ;
 ; ------------------------------------------------------- ;
 
-function RebuildClean()
+Function RebuildClean()
 	SetCursorFillMode(TOP_TO_BOTTOM)
-	AddHeaderOption("SexLab v"+GetStringVer()+" by Ashal@LoversLab.com")
-	if SexLab.Enabled
-		AddTextOptionST("ToggleSystem","$SSL_EnabledSystem", "$SSL_DoDisable")
-	else
-		AddTextOptionST("ToggleSystem","$SSL_DisabledSystem", "$SSL_DoEnable")
-	endIf
-	AddHeaderOption("$SSL_Maintenance")
+	AddHeaderOption("SexLab v" + GetStringVer() + " by Ashal@LoversLab.com")
 	AddToggleOptionST("DebugMode","$SSL_DebugMode", Config.DebugMode)
-	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")			; This can stay
-	; AddTextOptionST("RestoreDefaultSettings","$SSL_RestoreDefaultSettings", "$SSL_ClickHere")		; This should go
-	AddTextOptionST("ResetAnimationRegistry","$SSL_ResetAnimationRegistry", "$SSL_ClickHere")		; TODO: Update, as it only syncs with legacy API
-	AddTextOptionST("ResetVoiceRegistry","$SSL_ResetVoiceRegistry", "$SSL_ClickHere")						; TODO: Review
-	AddTextOptionST("ResetExpressionRegistry","$SSL_ResetExpressionRegistry", "$SSL_ClickHere")	; TODO: Review
-	AddTextOptionST("ResetStripOverrides","$SSL_ResetStripOverrides", "$SSL_ClickHere")					; This can stay
-	AddTextOptionST("CleanSystem","$SSL_CleanSystem", "$SSL_ClickHere")	; This can stay but the underlying implemenation might need a lookover
+	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")
+	AddTextOptionST("ResetStripOverrides","$SSL_ResetStripOverrides", "$SSL_ClickHere")
+	AddTextOptionST("CleanSystem","$SSL_CleanSystem", "$SSL_ClickHere")
 	AddHeaderOption("$SSL_AvailableStrapons")
 	AddTextOptionST("RebuildStraponList","$SSL_RebuildStraponList", "$SSL_ClickHere")
 	int i = Config.Strapons.Length
@@ -2978,12 +2968,40 @@ function RebuildClean()
 
 	SetCursorPosition(1)
 	AddHeaderOption("Registry Info")
+	; IDEA: Allow clicking on this for more info, custom swf mayhaps?
 	AddTextOption("Animations", sslSystemConfig.GetAnimationCount(), OPTION_FLAG_DISABLED)
-	AddTextOption("Voices", VoiceSlots.Slotted+" / 375", OPTION_FLAG_DISABLED)
+	AddTextOption("Voices", sslVoiceSlots.GetAllVoices().Length, OPTION_FLAG_DISABLED)
 	AddTextOption("Expressions", sslExpressionSlots.GetAllProfileIDs().Length, OPTION_FLAG_DISABLED)
 	AddHeaderOption("System Requirements")
-	SystemCheckOptions()	
-endFunction
+	SystemCheckOptions()
+EndFunction
+
+Function InstallMenu()
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	AddHeaderOption("SexLab v" + GetStringVer())
+	SystemCheckOptions()
+
+	SetCursorPosition(1)
+	AddHeaderOption("$SSL_Installation")
+	AddTextOption("$SSL_CurrentlyInstalling", "!")
+
+	While (!SystemAlias.IsInstalled)
+		Utility.WaitMenuMode(0.5)
+	EndWhile
+	ForcePageReset()
+EndFunction
+
+Function SystemCheckOptions()
+	String[] okOrFail = new String[2]
+	okOrFail[0] = "<font color='#FF0000'>X</font>"
+	okOrFail[1] = "<font color='#00FF00'>ok</font>"
+
+	AddTextOption("Skyrim Script Extender", okOrFail[Config.CheckSystemPart("SKSE") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("SexLab.dll", okOrFail[Config.CheckSystemPart("SexLabP+") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("PapyrusUtil.dll", okOrFail[Config.CheckSystemPart("PapyrusUtil") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("RaceMenu", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("Mfg Fix", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Unorganized State Option Dump                   --- ;
