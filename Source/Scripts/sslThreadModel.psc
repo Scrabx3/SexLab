@@ -952,6 +952,7 @@ State Animating
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
 		ReStartTimer()
+		StartTranslations()
 	EndFunction
 
 	bool Function ResetScene(String asNewScene)
@@ -987,12 +988,14 @@ State Animating
 			ActorAlias[i].ResetPosition(strips_[i], sex_[i], schlongs_[i])
 			i += 1
 		EndWhile
+		StopTranslations()
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
 		_StageHistory = new String[1]
 		_StageHistory[0] = _ActiveStage
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
 		ReStartTimer()
+		StartTranslations()
 		return true
 	EndFunction
 
@@ -1034,11 +1037,13 @@ State Animating
 			ActorAlias[i].UpdateNext(strips_[i])
 			i += 1
 		EndWhile
+		StopTranslations()
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, asNewStage)
 		_StageHistory = PapyrusUtil.PushString(_StageHistory, _ActiveStage)
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
 		ReStartTimer()
+		StartTranslations()
 	EndFunction
 	Function TriggerOrgasm()
 		SendModEvent("SSL_ORGASM_Thread" + tid)
@@ -1063,7 +1068,7 @@ State Animating
 				i += 1
 			EndWhile
 			_ActiveStage = _StageHistory[ToStage - 1]
-			PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
+			RealignActors()
 			SendThreadEvent("StageStart")
 			RunHook(Config.HOOKID_STAGESTART)
 			ReStartTimer()
@@ -1180,7 +1185,9 @@ State Animating
 	EndFunction
 
 	Function RealignActors()
+		StopTranslations()
 		PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, _ActiveStage)
+		StartTranslations()
 	EndFunction
 
 	Function ChangeActorsEx(Actor[] akNewPositions, Actor[] akSubmissives)
@@ -1462,6 +1469,34 @@ Function SetFurnitureIgnored(bool disabling = true)
 	CenterRef.SetNoFavorAllowed(disabling)
 EndFunction
 
+Function StopTranslations()
+	int i = 0
+	While (i < Positions.Length)
+		Positions[i].StopTranslation()
+		i += 1
+	EndWhile
+EndFunction
+
+Function StartTranslations()
+	Log("Starting translation..")
+	int i = 0
+	While (i < Positions.Length)
+		; Some creatures (such as horses or spiders) may tilt unnaturaly during scenes, 
+		; forcing them in translation ensures they are angled correctly
+		; translating only Y axis, as it does not have any visual effect on the actor
+		If (ActorAlias[i].GetSex() > 2)
+			float x = Positions[i].X
+			float y = Positions[i].Y
+			float z = Positions[i].Z
+			float ax = Positions[i].GetAngleX()
+			float ay = Positions[i].GetAngleY() + 0.001
+			float az = Positions[i].GetAngleZ()
+			Positions[i].TranslateTo(x, y, z, ax, ay, az, 1.0, 0.0001)
+		EndIf
+		i += 1
+	EndWhile
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- Function Declarations                           --- ;
 ; ------------------------------------------------------- ;
@@ -1582,21 +1617,12 @@ EndFunction
 
 float Function GetInteractionFactor(Actor ActorRef, int typeASL, int infoActor)
 	float ret = 0.0
-	; TODO: add toggle to switch between physic-based enjoyment and tags-based enjoyment
-	;(dont wanna mess with the MCM, so leaving this to you)
-
-	;/if (GetEnjoymentType() == ENJ_PHYSIC) && IsPhysicsRegistered()
+	If (Positions.Length > 1 && IsPhysicsRegistered())
 		ret = CalcPhysicFactor(ActorRef)
-	elseif GetEnjoymentType() == ENJ_TAGS
+	Endif
+	If (ret == 0)
 		ret = CalcInteractionFactorASL(typeASL, infoActor)
-	elseif GetEnjoymentType() == ENJ_DYNAMIC/;
-		If (Positions.Length > 1 && IsPhysicsRegistered())
-			ret = CalcPhysicFactor(ActorRef)
-		Endif
-		If (ret == 0)
-			ret = CalcInteractionFactorASL(typeASL, infoActor)
-		Endif
-	;endif
+	Endif
 	return ret
 EndFunction
 

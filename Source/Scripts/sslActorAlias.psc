@@ -218,8 +218,6 @@ float _lastHoldBack
 ; Enjoyment
 float _EnjoymentDelay
 float _ContextCheckDelay
-
-; Not Implemented
 bool _hasOrgasm
 ;float _EnjRaise
 
@@ -324,6 +322,7 @@ Auto State Empty
 	EndFunction
 
 	Function Clear()
+		_ActorRef.StopTranslation()
 		If (GetIsDead())
 			If (_ActorRef.IsEssential())
 				_ActorRef.GetActorBase().SetEssential(false)
@@ -527,8 +526,8 @@ State Paused
 		_LastOrgasm = _StartedAt
 		_Thread.AnimationStart()
 		TrackedEvent(TRACK_START)
-		Utility.Wait(1)	; Wait for schlong to update
-		Debug.SendAnimationEvent(_ActorRef, "SOSBend" + _schlonganglestart)
+		; Utility.Wait(1)	; Wait for schlong to update
+		; Debug.SendAnimationEvent(_ActorRef, "SOSBend" + _schlonganglestart)
 	EndEvent
 
 	Function SetStrapon(Form ToStrapon)
@@ -559,7 +558,6 @@ State Paused
 		Debug.SendAnimationEvent(_ActorRef, "AnimObjectUnequip")
 		Debug.SendAnimationEvent(_ActorRef, "IdleStop")
 		LockActorImpl()
-		SendDefaultAnimEvent()
 		_ActorRef.SetAnimationVariableInt("IsNPC", 0)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", 1)
 		If (!sslActorLibrary.HasVehicle(_ActorRef))
@@ -568,6 +566,7 @@ State Paused
 			EndIf
 			_ActorRef.SetVehicle(_myMarker)
 		EndIf
+		SendDefaultAnimEvent()
 		GoToState(STATE_PLAYING)
 	EndFunction
 	
