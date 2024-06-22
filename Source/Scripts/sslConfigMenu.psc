@@ -61,26 +61,26 @@ Event OnConfigInit()
 	Pages = new string[11]
 	Pages[0] = "$SSL_SexDiary"
 	Pages[1] = "$SSL_AnimationSettings"
-	Pages[2] = "$SSL_SoundSettings"
-	Pages[3] = "$SSL_PlayerHotkeys"
+	Pages[2] = "$SSL_MatchMaker"
+	Pages[3] = "$SSL_SoundSettings"
 	Pages[4] = "$SSL_TimersStripping"
-	Pages[5] = "$SSL_ToggleAnimations"
-	Pages[6] = "$SSL_MatchMaker"
+	Pages[5] = "$SSL_StripEditor"
+	Pages[6] = "$SSL_ToggleAnimations"
 	Pages[7] = "$SSL_AnimationEditor"
 	Pages[8] = "$SSL_ExpressionEditor"
-	Pages[9] = "$SSL_StripEditor"
+	Pages[9] = "$SSL_PlayerHotkeys"
 	Pages[10] = "$SSL_RebuildClean"
 
 	; Animation Settings
-	Chances = new string[3]
-	Chances[0] = "$SSL_Never"
-	Chances[1] = "$SSL_Sometimes"
-	Chances[2] = "$SSL_Always"
+	_PlFurnOpt = new String[4]
+	_PlFurnOpt[0] = "$SSL_Never"
+	_PlFurnOpt[1] = "$SSL_Always"
+	_PlFurnOpt[2] = "$SSL_AskAlways"
+	_PlFurnOpt[3] = "$SSL_AskNotSub"
 
-	BedOpt = new string[3]
-	BedOpt[0] = "$SSL_Never"
-	BedOpt[1] = "$SSL_Always"
-	BedOpt[2] = "$SSL_NotVictim"
+	_NPCFurnOpt = new String[2]
+	_NPCFurnOpt[0] = "$SSL_Never"
+	_NPCFurnOpt[1] = "$SSL_Always"
 
 	_FadeOpt = new string[3]
 	_FadeOpt[0] = "$SSL_Never"
@@ -177,9 +177,6 @@ Event OnConfigInit()
 		Config.DisableScale = true
 		Debug.MessageBox("[SexLab]\nYou are using an outdated version of Skyrim and scaling has thus been disabled to prevent crashes.")
 	EndIf
-	; If (SKSE.GetPluginVersion("SexLabUtil") > -1)
-	; 	Debug.MessageBox("[SexLab]\nYou seem to have installed SexLabUtil.dll, this plugin is no longer used by SLP+ and may cause problems if kept installed.\nDelete or hide it in your mod manager to ensure SexLab works corretly.")
-	; EndIf
 EndEvent
 
 event OnConfigOpen()
@@ -232,9 +229,9 @@ EndEvent
 Event OnConfigClose()
 	ModEvent.Send(ModEvent.Create("SexLabConfigClose"))
 	; Realign actors if an adjustment in editor was just made
-	If(AutoRealign)
+	If (AutoRealign)
 		AutoRealign = false
-		If(ThreadControlled)
+		If (ThreadControlled)
 			ThreadControlled.RealignActors()
 		EndIf
 	EndIf
@@ -245,51 +242,51 @@ endEvent
 ; ------------------------------------------------------- ;
 
 Event OnPageReset(string page)
-	if !SystemAlias.IsInstalled
-		UnloadCustomContent()
+	If (!SystemAlias.IsInstalled)
 		InstallMenu()
-	elseIf ShowAnimationEditor
-		AnimationEditor()
-	elseif page != ""
+	; ElseIf (ShowAnimationEditor)	; COMEBACK: This variable necessary?
+	; 	AnimationEditor()
+	ElseIf (Page == "")
+		If (Config.GetThreadControlled() || ThreadSlots.FindActorController(PlayerRef) != -1)
+			AnimationEditor()
+			PreventOverwrite = true
+		Else
+			LoadCustomContent("SexLab/logo.dds", 184, 31)
+		EndIf
+	Else
 		UnloadCustomContent()
 		If page == "$SSL_SexDiary" || page == "$SSL_SexJournal"
 			SexDiary()
-		elseif page == "$SSL_AnimationSettings"
+		ElseIf page == "$SSL_AnimationSettings"
 			AnimationSettings()
-		elseIf page == "$SSL_SoundSettings"
-			SoundSettings()
-		elseIf page == "$SSL_PlayerHotkeys"
-			PlayerHotkeys()
-		elseIf page == "$SSL_TimersStripping"
-			TimersStripping()
-		elseIf page == "$SSL_StripEditor"
-			StripEditor()
-		elseIf page == "$SSL_ToggleAnimations"
-			ToggleAnimations()
-		elseIf page == "$SSL_MatchMaker"
+		ElseIf page == "$SSL_MatchMaker"
 			MatchMaker()
-		elseIf page == "$SSL_AnimationEditor"
+		ElseIf page == "$SSL_SoundSettings"
+			SoundSettings()
+		ElseIf page == "$SSL_TimersStripping"
+			TimersStripping()
+		ElseIf page == "$SSL_StripEditor"
+			StripEditor()
+		ElseIf page == "$SSL_ToggleAnimations"
+			ToggleAnimations()
+		ElseIf page == "$SSL_AnimationEditor"
 			AnimationEditor()
-		elseIf page == "$SSL_ExpressionEditor"
+		ElseIf page == "$SSL_ExpressionEditor"
 			ExpressionEditor()
-		elseIf page == "$SSL_RebuildClean"
+		ElseIf page == "$SSL_PlayerHotkeys"
+			PlayerHotkeys()
+		ElseIf page == "$SSL_RebuildClean"
 			RebuildClean()
-		endIf
-	else
-		if (Config.GetThreadControlled() || ThreadSlots.FindActorController(PlayerRef) != -1)
-			AnimationEditor()
-			PreventOverwrite = true
-		else
-			LoadCustomContent("SexLab/logo.dds", 184, 31)
-		endIf
-	endIf
-endEvent
+		EndIf
+	EndIf
+EndEvent
 
-bool ShowAnimationEditor = false
+; bool ShowAnimationEditor = false
 event OnPageSelected(String a_eventName, String a_strArg, Float a_numArg, Form a_sender)
-	if ShowAnimationEditor && (a_numArg as int) != Pages.Find("$SSL_ToggleAnimations")
-		ShowAnimationEditor = false
-	elseIf EditOpenMouth && (a_numArg as int) != Pages.Find("$SSL_ExpressionEditor")
+	; if ShowAnimationEditor && (a_numArg as int) != Pages.Find("$SSL_ToggleAnimations")
+	; 	ShowAnimationEditor = false
+	; else
+		If EditOpenMouth && (a_numArg as int) != Pages.Find("$SSL_ExpressionEditor")
 		EditOpenMouth = false
 	endIf
 endEvent
