@@ -170,6 +170,12 @@ Event OnConfigInit()
 	_stripView[0] = "$SSL_DefaultStripping"
 	_stripView[1] = "$SSL_DominantStripping"
 
+	; Animation Toggles
+	_toggleGroup = new String[3]
+	_toggleGroup[0] = "$SSL_Human"
+	_toggleGroup[1] = "$SSL_Creatures"
+	_toggleGroup[2] = "$SSL_Everything"
+
 	If (SKSE.GetVersionMinor() < 2)
 		Config.DisableScale = true
 		Debug.MessageBox("[SexLab]\nYou are using an outdated version of Skyrim and scaling has thus been disabled to prevent crashes.")
@@ -202,6 +208,10 @@ Event OnConfigOpen()
 	_stripViewIdx = 0
 	_playerDisplayAll = false
 	_targetDisplayAll = false
+	_animPack = sslAnimationSlots.GetAllPackages()
+	_animPackIdx = 0
+	_toggleGroupIdx = 0
+	_currentTogglePage = 0
 
 	; TODO: Review below
 
@@ -223,12 +233,6 @@ Event OnConfigOpen()
 	PerPage = 125
 	; AnimationEditor
 	AnimEditPage = 1
-	; ToggleAnimations
-	TogglePage = 1
-	ta = 0
-	EditTags = false
-	TagFilter = ""
-	TagMode = ""
 EndEvent
 
 Event OnConfigClose()
@@ -721,6 +725,45 @@ Function StripEditor()
 EndFunction
 
 ; ------------------------------------------------------- ;
+; --- Toggle Animations                               --- ;
+; ------------------------------------------------------- ;
+
+String[] _animPack
+int _animPackIdx
+String[] _toggleGroup
+int _toggleGroupIdx
+String _toggleTags
+
+int Property ANIMS_PER_PAGE = 120 AutoReadOnly Hidden
+int _currentTogglePage
+
+Function ToggleAnimations()
+	SetCursorFillMode(LEFT_TO_RIGHT)
+	String animpack = ""
+	If (_animPackIdx != 0)
+		animpack = _animPack[_animPackIdx]
+	EndIf
+	String[] animations = sslAnimationSlots.CreateProxyArray(0, _toggleGroupIdx, _toggleTags, animpack)
+	int animpages = Math.Ceiling(animations.Length as float / ANIMS_PER_PAGE as float)
+	If (_currentTogglePage >= animpages)
+		_currentTogglePage = 0
+	EndIf
+	AddMenuOptionST("togglepackage", "$SSL_TockePackage", _animPack[_animPackIdx])
+	AddMenuOptionST("togglecategory", "$SSL_ToggleGroup", _toggleGroup[_toggleGroupIdx])
+	AddEmptyOption()
+	AddInputOptionST("toggletags", "$SSL_TagFilter", _toggleTags)
+	AddHeaderOption("")
+	AddTextOptionST("AnimationTogglePage", "$SSL_Page{" + (_currentTogglePage + 1) + "}{" + animpages + "}", DoDisable(animpages <= 1))
+	int i = _currentTogglePage * ANIMS_PER_PAGE
+	While (i < animations.Length && i < (_currentTogglePage + 1) * ANIMS_PER_PAGE)
+		String name = SexLabRegistry.GetSceneName(animations[i])
+		bool enab = SexLabRegistry.IsSceneEnabled(animations[i])
+		AddToggleOptionST("AnimationToggle_" + enab + "_" + animations[i], name, enab)
+		i += 1
+	EndWhile
+EndFunction
+
+; ------------------------------------------------------- ;
 ; --- Object Pagination                               --- ;
 ; ------------------------------------------------------- ;
 
@@ -790,13 +833,11 @@ Event OnSelectST()
 	ElseIf (s[0] == "ShowInMap")
 		Config.ShowInMap = !Config.ShowInMap
 		SetToggleOptionValueST(Config.ShowInMap)
-
 	ElseIf (s[0] == "Voice")
 		int idx = s[1] as int
 		bool e = sslBaseVoice.GetEnabled(_voices[idx])
 		sslBaseVoice.SetEnabled(_voices[idx], !e)
 		SetToggleOptionValueST(!e)
-
 	ElseIf(s[0] == "StrippingW")
 		int i = s[1] as int
 		int value = 1 - sslSystemConfig.GetSettingIntA("iStripForms", i)
@@ -809,7 +850,6 @@ Event OnSelectST()
 		int value = Math.LogicalXor(sslSystemConfig.GetSettingIntA("iStripForms", i), bit)
 		sslSystemConfig.SetSettingIntA("iStripForms", value, i)
     SetToggleOptionValueST(Math.LogicalAnd(value, bit))
-
 	ElseIf (s[0] == "FullInventory")
 		If (s[1] as int == 0)
 			_playerDisplayAll = !_playerDisplayAll
@@ -835,56 +875,14 @@ Event OnSelectST()
 			sslActorLibrary.WriteStrip(item, true)
 		EndIf
 		SetTextOptionValueST(GetStripState(item))
-		
-	; Animation Toggle
-	elseIf Options[0] == "Animation"
-		; Get animation to toggle
-		sslBaseAnimation Slot
-		Slot = AnimToggles[(Options[1] as int)]
-		
-		if Config.MirrorPress(Config.AdjustStage)
-			Position = 0
-			Animation = Slot
-			AdjustKey = "Global"
-			PreventOverwrite = true
-			; ShowAnimationEditor = true
-			ForcePageReset()
-		;	AnimationEditor()
-		else
-			; if ta == 3
-			; 	; Slot = CreatureSlots.GetBySlot(Options[1] as int)
-			; 	Slot = AnimToggles[i]
-			; else
-			; 	; Slot = AnimSlots.GetBySlot(Options[1] as int)
-			; endIf
-			; Toggle action
-			if ta == 1
-				Slot.ToggleTag("LeadIn")
-				; Invalite all cache so it can now include this one
-				; LeadIn, Aggressive and Bed animations are not goods for the InvalidateByTags() funtion
-				AnimationSlots.ClearAnimCache()
-			elseIf ta == 2
-				Slot.ToggleTag("Aggressive")
-				; Invalite all cache so it can now include this one
-				; LeadIn, Aggressive and Bed animations are not goods for the InvalidateByTags() funtion
-				AnimationSlots.ClearAnimCache()
-			elseIf EditTags
-				Slot.ToggleTag(TagFilter)
-				; Invalite all cache so it can now include this one
-				AnimationSlots.InvalidateByTags(TagFilter)
-			else
-				Slot.Enabled = !Slot.Enabled
-				if Slot.Enabled
-					; Invalite cache by tags so it can now include this one
-					AnimationSlots.InvalidateByTags(PapyrusUtil.StringJoin(Slot.GetRawTags()))
-				else
-					; Invalidate cache containing animation
-					AnimationSlots.InvalidateByAnimation(Slot)
-				endIf
-			endIf
-
-			SetToggleOptionValueST(GetToggle(Slot))
-		endIf
+	ElseIf (s[0] == "AnimationTogglePage")
+		_currentTogglePage += 1
+		ForcePageReset()
+	ElseIf (s[0] == "AnimationToggle")
+		bool e = s[1] as bool
+		String anim = s[2]
+		SexLabRegistry.SetSceneEnabled(anim, !e)
+		SetToggleOptionValueST(!e)
 
 	; Toggle Expressions
 	elseIf Options[0] == "Expression"
@@ -928,7 +926,6 @@ Event OnSelectST()
 		endWhile
 		Config.Strapons = Output
 		ForcePageReset()
-
 	ElseIf (s[0] == "InputTags")	; Matchmaker Tags
 		ShowMessage(sslSystemConfig.ParseMMTagString(), false, "$Done")
 	ElseIf (s[0] == "TextResetTags")
@@ -965,7 +962,6 @@ event OnSliderOpenST()
 		SetSliderDialogDefaultValue(120)
 		SetSliderDialogRange(0, 43200)
 		SetSliderDialogInterval(10)
-
 	ElseIf (s[0] == "VoiceVolume")
 		SetSliderDialogStartValue(Config.VoiceVolume * 100)
 		SetSliderDialogDefaultValue(100)
@@ -991,7 +987,6 @@ event OnSliderOpenST()
 		SetSliderDialogDefaultValue(3)
 		SetSliderDialogRange(1, 30)
 		SetSliderDialogInterval(1)
-
 	ElseIf(s[0] == "StageTimers")
 		int i = s[1] as int
 		SetSliderDialogStartValue(sslSystemConfig.GetSettingFltA("fTimers", i))
@@ -1081,7 +1076,6 @@ event OnSliderAcceptST(float value)
 	ElseIf (s[0] == "CumEffectTimer")
 		Config.CumTimer = value
 		SetSliderOptionValueST(Config.CumTimer, "$SSL_Seconds")
-		
 	ElseIf (s[0] == "VoiceVolume")
 		Config.VoiceVolume = (value / 100.0)
 		Config.AudioVoice.SetVolume(Config.VoiceVolume)
@@ -1099,7 +1093,6 @@ event OnSliderAcceptST(float value)
 	ElseIf (s[0] == "SFXDelay")
 		Config.SFXDelay = value
 		SetSliderOptionValueST(Config.SFXDelay, "$SSL_Seconds")
-
 	ElseIf(s[0] == "StageTimers")
 		int i = s[1] as int
 		sslSystemConfig.SetSettingFltA("fTimers", value, i)
@@ -1198,11 +1191,18 @@ Event OnMenuOpenST()
 		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iUseFade"))
 		SetMenuDialogDefaultIndex(0)
 		SetMenuDialogOptions(_FadeOpt)
-
 	ElseIf (s[0] == "TSModeSelect")
 		SetMenuDialogStartIndex(_stripViewIdx)
 		SetMenuDialogDefaultIndex(0)
 		SetMenuDialogOptions(_stripView)
+	ElseIf (s[0] == "togglepackage")
+		SetMenuDialogStartIndex(_animPackIdx)
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_animPack)
+	ElseIf (s[0] == "togglecategory")
+		SetMenuDialogStartIndex(_toggleGroupIdx)
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_toggleGroup)
 
 	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
 		string[] LipsPhonemes = new String[1]
@@ -1235,9 +1235,14 @@ Event OnMenuAcceptST(int aiIndex)
 	ElseIf (s[0] == "UseFade")
 		sslSystemConfig.SetSettingInt("iUseFade", aiIndex)
 		SetMenuOptionValueST(_FadeOpt[aiIndex])
-
 	ElseIf (s[0] == "TSModeSelect")
 		_stripViewIdx = aiIndex
+		ForcePageReset()
+	ElseIf (s[0] == "togglepackage")
+		_animPackIdx = aiIndex
+		ForcePageReset()
+	ElseIf (s[0] == "togglecategory")
+		_toggleGroupIdx = aiIndex
 		ForcePageReset()
 
 	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
@@ -1252,34 +1257,32 @@ Event OnMenuAcceptST(int aiIndex)
 EndEvent
 
 Event OnInputOpenST()
-	String[] options = PapyrusUtil.StringSplit(GetState(), "_")
-	; --- Matchmaker Tags
-	If (options[0] == "InputRequiredTags")
+	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
+	If (s[0] == "InputRequiredTags")
 		SetInputDialogStartText(Config.RequiredTags)
-		ForcePageReset()
-	ElseIf (options[0] == "InputExcludedTags")
+	ElseIf (s[0] == "InputExcludedTags")
 		SetInputDialogStartText(Config.ExcludedTags)
-		ForcePageReset()
-	ElseIf (options[0] == "InputOptionalTags")
+	ElseIf (s[0] == "InputOptionalTags")
 		SetInputDialogStartText(Config.OptionalTags)
-		ForcePageReset()
-	Else
-		SetInputDialogStartText("Error: Invalid Option ID " + options)
+	ElseIf (s[0] == "toggletags")
+		SetInputDialogStartText(_toggleTags)
 	EndIf
 EndEvent
 
 Event OnInputAcceptST(String inputString)
-	String[] options = PapyrusUtil.StringSplit(GetState(), "_")
-	; --- Matchmaker Tags
-	If (options[0] == "InputRequiredTags")
+	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
+	If (s[0] == "InputRequiredTags")
 		Config.RequiredTags = inputString
 		SetInputOptionValueST(Config.RequiredTags)
-	ElseIf (options[0] == "InputExcludedTags")
+	ElseIf (s[0] == "InputExcludedTags")
 		Config.ExcludedTags = inputString
 		SetInputOptionValueST(Config.ExcludedTags)
-	ElseIf (options[0] == "InputOptionalTags")
+	ElseIf (s[0] == "InputOptionalTags")
 		Config.OptionalTags = inputString
 		SetInputOptionValueST(Config.OptionalTags)
+	ElseIf (s[0] == "toggletags")
+		_toggleTags = inputString
+		ForcePageReset()
 	EndIf
 EndEvent
 
@@ -1325,7 +1328,6 @@ Event OnHighlightST()
 		SetInfoText("$SSL_InfoDisableTeleport")
 	ElseIf (s[0] == "ShowInMap")
 		SetInfoText("$SSL_InfoShowInMap")
-
 	ElseIf (s[0] == "VoiceVolume")
 		SetInfoText("$SSL_InfoVoiceVolume")
 	ElseIf (s[0] == "SFXVolume")
@@ -1340,7 +1342,6 @@ Event OnHighlightST()
 		int idx = s[1] as int
 		String[] tags = sslBaseVoice.GetVoiceTags(_voices[idx])
 		SetInfoText("Tags: " + PapyrusUtil.StringJoin(tags, ", "))
-
 	ElseIf(s[0] == "Stripping")
 		int i = s[2] as int
 		String info = PlayerRef.GetLeveledActorBase().GetName() + " Slot " + (i + 30) + ": "
@@ -1350,7 +1351,6 @@ Event OnHighlightST()
 			info += GetItemName(Config.TargetRef.GetWornForm(Armor.GetMaskForSlot(i + 30)), "?")
 		EndIf
 		SetInfoText(info)
-
 	ElseIf(s[0] == "StripFlag")
 		int n = s[1] as int
 		int i = s[2] as int
@@ -1368,16 +1368,9 @@ Event OnHighlightST()
 			InfoText += "\nWeapon"
 		EndIf
 		SetInfoText(InfoText)
-
-	; Animation Toggle
-	Elseif Options[0] == "Animation"
-		sslBaseAnimation Slot = AnimToggles[(Options[1] as int)]
-		if Config.MirrorPress(Config.AdjustStage)
-			SetInfoText("$SSL_AnimationEditor") ; TODO: ?
-		else
-			SetInfoText(Slot.Name+" Tags:\n"+StringJoin(Slot.GetTags(), ", "))
-		endIf
-
+	Elseif (s[0] == "AnimationToggle")
+		String anim = s[2]
+		SetInfoText("Tags: " + PapyrusUtil.StringJoin(SexLabRegistry.GetSceneTags(anim), ", "))
 
 	; Advanced OpenMouth Expression
 	elseIf Options[0] == "AdvancedOpenMouth"
@@ -1428,8 +1421,8 @@ function PlayerHotkeys()
 
 	SetCursorPosition(1)
 	AddHeaderOption("$SSL_AlignmentAdjustments")
-	AddTextOptionST("AdjustTargetStage", "$SSL_AdjustTargetStage", StringIfElse(Config.AdjustTargetStage, "$SSL_CurrentStage", "$SSL_AllStages"))
-	AddKeyMapOptionST("AdjustStage", StringIfElse(Config.AdjustTargetStage, "$SSL_AdjustAllStages", "$SSL_AdjustStage"), Config.AdjustStage)
+	AddTextOptionST("AdjustTargetStage", "$SSL_AdjustTargetStage", PapyrusUtil.StringIfElse(Config.AdjustTargetStage, "$SSL_CurrentStage", "$SSL_AllStages"))
+	AddKeyMapOptionST("AdjustStage", PapyrusUtil.StringIfElse(Config.AdjustTargetStage, "$SSL_AdjustAllStages", "$SSL_AdjustStage"), Config.AdjustStage)
 	AddKeyMapOptionST("BackwardsModifier", "$SSL_ReverseDirectionModifier", Config.Backwards)
 	AddKeyMapOptionST("AdjustChange","$SSL_ChangeActorBeingMoved", Config.AdjustChange)
 	AddKeyMapOptionST("AdjustForward","$SSL_MoveActorForwardBackward", Config.AdjustForward)
@@ -2194,318 +2187,6 @@ state AnimationTest
 		endIf
 	endEvent
 endState
-
-; ------------------------------------------------------- ;
-; --- Toggle Animations                               --- ;
-; ------------------------------------------------------- ;
-
-sslBaseAnimation[] AnimToggles
-string[] TAModes
-string[] TFAction
-string[] TagCache
-string TagFilter
-string TagMode
-bool EditTags
-int TogglePage
-int ta
-int TFA
-
-function AddAnimationsTag(string Tag)
-	if Tag == "" || AnimToggles.Length < 1
-		return
-	endIf
-	
-	int i
-	while i < AnimToggles.Length
-		if AnimToggles[i] && AnimToggles[i].Registered && (!TagFilter || EditTags || AnimToggles[i].HasTag(TagFilter))
-			AnimToggles[i].AddTag(Tag)
-		endIf
-		i += 1
-	endWhile
-endFunction
-
-function RemoveAnimationsTag(string Tag)
-	if Tag == "" || AnimToggles.Length < 1
-		return
-	endIf
-	
-	int i
-	while i < AnimToggles.Length
-		if AnimToggles[i] && AnimToggles[i].Registered && (!TagFilter || EditTags || AnimToggles[i].HasTag(TagFilter))
-			AnimToggles[i].RemoveTag(Tag)
-		endIf
-		i += 1
-	endWhile
-endFunction
-
-function ToggleAnimationsTag(string Tag)
-	if Tag == "" || AnimToggles.Length < 1
-		return
-	endIf
-	
-	int i
-	while i < AnimToggles.Length
-		if AnimToggles[i] && AnimToggles[i].Registered && (!TagFilter || EditTags || AnimToggles[i].HasTag(TagFilter))
-			AnimToggles[i].ToggleTag(Tag)
-		endIf
-		i += 1
-	endWhile
-endFunction
-
-function ToggleAnimations()
-	SetCursorFillMode(LEFT_TO_RIGHT)
-
-	; Allow tag toggling only on main animation toggle and creature
-	bool AllowTagToggle = (ta == 0 || ta == 3)
-
-	;if !AllowTagToggle
-	;	TagFilter = ""
-	;	EditTags = false
-	;endIf
-
-	; Get relevant slot registry
-	AnimationSlots = AnimSlots
-	if ta == 3
-		AnimationSlots = CreatureSlots		
-	endIf
-
-	; Setup pagination
-	PerPage  = 122
-	LastPage = AnimationSlots.PageCount(PerPage)
-	if TogglePage > LastPage || TogglePage < 1
-		TogglePage = 1
-	endIf
-
-	; Get animations to be toggled
-	AnimToggles = AnimationSlots.GetSlots(TogglePage, PerPage)
-	int Slotted = AnimationSlots.Slotted
-
-	; Mode select
-	if Config.AllowCreatures
-		TAModes = new string[4]
-		TAModes[0] = "$SSL_ToggleAnimations"
-		TAModes[1] = "$SSL_ForeplayAnimations"
-		TAModes[2] = "$SSL_AggressiveAnimations"
-		TAModes[3] = "$SSL_CreatureAnimations"
-	else
-		TAModes = new string[3]
-		TAModes[0] = "$SSL_ToggleAnimations"
-		TAModes[1] = "$SSL_ForeplayAnimations"
-		TAModes[2] = "$SSL_AggressiveAnimations"
-	endIf
-
-	TFA = 0
-	If TagFilter
-		if EditTags
-			TFAction = new string[5]
-			TFAction[0] = "$SSL_ToggleTag{"+TagFilter+"}"
-			TFAction[1] = "$SSL_ToggleFilter"
-			TFAction[2] = "$SSL_InvertTagFromAll{"+TagFilter+"}"
-			TFAction[3] = "$SSL_AddTagToAll{"+TagFilter+"}"
-			TFAction[4] = "$SSL_RemoveTagFromAll{"+TagFilter+"}"
-		else
-			TFAction = new string[2]
-			TFAction[0] = "$SSL_ToggleAnimations"
-			TFAction[1] = "$SSL_ToggleFilter"
-		endIf
-	elseIf ta == 1 || ta == 2
-		TFAction = new string[4]
-		if ta == 1
-			TagMode = "LeadIn"
-		else
-			TagMode = "Aggressive"
-		endIf
-		TFAction[0] = "$SSL_ToggleTag{"+TagMode+"}"
-		TFAction[1] = "$SSL_InvertTagFromAll{"+TagMode+"}"
-		TFAction[2] = "$SSL_AddTagToAll{"+TagMode+"}"
-		TFAction[3] = "$SSL_RemoveTagFromAll{"+TagMode+"}"
-	else
-		TFAction = new string[1]
-		TFAction[0] = "$SSL_ToggleAnimations"
-	endIf
-	
-	SetTitleText(TAModes[ta])
-	AddMenuOptionST("TAModeSelect", "$SSL_View", TAModes[ta])
-
-	; Page select
-	AddTextOptionST("AnimationTogglePage", "Page #", TogglePage+" / "+LastPage, DoDisable(Slotted <= PerPage))
-
-
-	;if AllowTagToggle
-		AddMenuOptionST("FilterByTag", "Filter By Tag:", StringIfElse(!TagFilter, "---", TagFilter), DoDisable(!AllowTagToggle))
-		AddMenuOptionST("FilterAction", "Action:", TFAction[TFA], DoDisable(TFAction.Length < 2))
-	;	AddTextOptionST("ToggleAction", "Toggle Action:", StringIfElse(EditTags && TagFilter, "Has: \""+TagFilter+"\"", "$SSL_DoDisable"), DoDisable(!TagFilter))
-	;endIf
-
-	AddHeaderOption("")
-	AddHeaderOption("")
-
-	int i
-	while i < AnimToggles.Length
-		if AnimToggles[i] && AnimToggles[i].Registered && (!TagFilter || EditTags || AnimToggles[i].HasTag(TagFilter))
-			AddToggleOptionST("Animation_"+i, AnimToggles[i].Name, GetToggle(AnimToggles[i]))
-		endIf
-		i += 1
-	endWhile
-endFunction
-
-bool function GetToggle(sslBaseAnimation Anim)
-	if ta == 1
-		return Anim.HasTag("LeadIn")
-	elseIf ta == 2
-		return Anim.HasTag("Aggressive")
-	elseIf EditTags
-		return Anim.HasTag(TagFilter)
-	else
-		return Anim.Enabled
-	endIf
-endFunction
-
-state TAModeSelect
-	event OnMenuOpenST()
-		SetMenuDialogStartIndex(ta)
-		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(TAModes)
-	endEvent
-	event OnMenuAcceptST(int i)
-		if i != ta
-			TagFilter = ""
-			EditTags = false
-		endIf
-		ta = i
-		TogglePage = 1
-		SetMenuOptionValueST(TAModes[ta])
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		ta = 0
-		TogglePage = 1
-		SetMenuOptionValueST(TAModes[ta])
-		ForcePageReset()
-	endEvent
-endState
-
-state AnimationTogglePage
-	event OnSelectST()
-		TogglePage += 1
-		if TogglePage > LastPage
-			TogglePage = 1
-		endIf
-		SetTextOptionValueST(TogglePage)
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		TogglePage = 1
-		SetTextOptionValueST(TogglePage)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("")
-	endEvent
-endState
-
-state FilterByTag
-	event OnMenuOpenST()
-		TagCache    = new string[1]
-		TagCache[0] = "( NONE )"
-		if ta == 3
-			TagCache = MergeStringArray(TagCache, AnimationSlots.GetTagCache())
-		else
-			TagCache = MergeStringArray(TagCache, RemoveString(RemoveString(AnimationSlots.GetTagCache(),"LeadIn"),"Aggressive"))
-		endIf
-		SortStringArray(TagCache)
-		if TagFilter && TagCache.Find(TagFilter) != -1
-			SetMenuDialogStartIndex(TagCache.Find(TagFilter))
-		else
-			SetMenuDialogStartIndex(0)
-		endIf
-		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(TagCache)
-	endEvent
-	event OnMenuAcceptST(int i)
-		TagFilter = StringIfElse(i < 1, "", TagCache[i])
-		TagCache = Utility.CreateStringArray(0)
-		TogglePage = 1
-		SetMenuOptionValueST(TagFilter)
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		TagFilter = ""
-		TogglePage = 1
-		SetMenuOptionValueST(TAModes[ta])
-		ForcePageReset()
-	endEvent
-endState
-
-state FilterAction
-	event OnMenuOpenST()
-		SetMenuDialogStartIndex(TFA)
-		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(TFAction)
-	endEvent
-	event OnMenuAcceptST(int i)
-		if i >= 0
-			TFA = i
-		endIf
-		SetMenuOptionValueST(TFAction[TFA])
-		if TagFilter
-			if TFA == 1
-				EditTags = !EditTags
-			elseIf TFA == 2
-				if ShowMessage("$SSL_WarnInvertTagFromAll{"+TagFilter+"}", true, "$Yes", "$No")
-					ToggleAnimationsTag(TagFilter)
-				endIf
-			elseIf TFA == 3
-				if ShowMessage("$SSL_WarnAddTagToAll{"+TagFilter+"}", true, "$Yes", "$No")
-					AddAnimationsTag(TagFilter)
-				endIf
-			elseIf TFA == 4
-				if ShowMessage("$SSL_WarnRemoveTagFromAll{"+TagFilter+"}", true, "$Yes", "$No")
-					RemoveAnimationsTag(TagFilter)
-				endIf
-			endIf
-			ForcePageReset()
-		elseIf ta == 1 || ta == 2
-			TFAction = new string[4]
-			if TFA == 1
-				if ShowMessage("$SSL_WarnInvertTagFromAll{"+TagMode+"}", true, "$Yes", "$No")
-					ToggleAnimationsTag(TagMode)
-				endIf
-			elseIf TFA == 2
-				if ShowMessage("$SSL_WarnAddTagToAll{"+TagMode+"}", true, "$Yes", "$No")
-					AddAnimationsTag(TagMode)
-				endIf
-			elseIf TFA == 3
-				if ShowMessage("$SSL_WarnRemoveTagFromAll{"+TagMode+"}", true, "$Yes", "$No")
-					RemoveAnimationsTag(TagMode)
-				endIf
-			endIf
-			if TFA != 0
-				ForcePageReset()
-			endIf
-		endIf
-	endEvent
-	event OnDefaultST()
-		TFA = 0
-		SetMenuOptionValueST(TFAction[TFA])
-	endEvent
-endState
-
-state ToggleAction
-	event OnSelectST()
-		EditTags = !EditTags
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		EditTags = false
-		SetTextOptionValueST("Enable/Disable")
-		ForcePageReset()
-	endEvent
-	event OnHighlightST()
-		SetInfoText("")
-	endEvent
-endState
-
-
 
 ; ------------------------------------------------------- ;
 ; --- Toggle Expressions                              --- ;
@@ -3400,4 +3081,17 @@ float[] function GetTimersDef()
 		ret[4] = 9.0
 	endIf
 	return ret
+endFunction
+
+function AddAnimationsTag(string Tag)
+endFunction
+
+function RemoveAnimationsTag(string Tag)
+endFunction
+
+function ToggleAnimationsTag(string Tag)
+endFunction
+
+bool function GetToggle(sslBaseAnimation Anim)
+	return Anim.Enabled
 endFunction

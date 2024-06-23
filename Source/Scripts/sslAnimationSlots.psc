@@ -15,8 +15,11 @@ scriptname sslAnimationSlots extends Quest
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-; OnlyCrt: 0 - Only non creature, 1 - Only creatures, else: either
-String[] Function CreateProxyArray(int aiReturnSize, int aiOnlyCreatures) native
+; aiReturnSize: Upper bound array size. 0 to uncap
+; aiOnlyCreatures: 0 - Only non creature, 1 - Only creatures, else: either
+; asPackage: The package id to filter by
+String[] Function CreateProxyArray(int aiReturnSize, int aiOnlyCreatures, String asTags = "", String asPackage = "") native global
+String[] Function GetAllPackages() native global
 
 String[] _proxyid
 int property Slotted Hidden
@@ -64,7 +67,21 @@ String[] Function GetByTagsImpl(int aiActorCount, String[] asTags) native
 String[] Function GetByTypeImpl(int aiActorCount, int aiMales, int aiFemales, String[] asTags) native
 String[] Function PickByActorsImpl(Actor[] akActors, String[] asTags) native
 
+Function SyncBackEnd()
+  Alias[] aliases = GetAliases()
+  _proxyid = CreateProxyArray(aliases.Length, GetCrtSpecifier())
+  int i = 0
+  While (i < _proxyid.Length)
+    sslBaseAnimation anim = aliases[i] as sslBaseAnimation
+    If (anim)
+      anim.Registry = _proxyid[i]
+    EndIf
+    i += 1
+  EndWhile
+EndFunction
+
 sslBaseAnimation Function GetSetAnimation(String asScene)
+  SyncBackEnd()
   int where = _proxyid.Find(asScene)
   If (where > -1)
     return GetNthAlias(where) as sslBaseAnimation
@@ -80,6 +97,7 @@ EndFunction
 sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
   Log("Translating " + asSceneIDs.Length + " Animations to Legacy Class (" + asSceneIDs + ")")
   sslBaseAnimation[] ret = sslUtility.AnimationArray(asSceneIDs.Length)
+  SyncBackEnd()
   int i = 0
   While (i < ret.Length)
     int where = _proxyid.Find(asSceneIDs[i])
@@ -181,6 +199,7 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 sslBaseAnimation Function GetBySlot(int index)
+  SyncBackEnd()
   Alias[] aliases = GetAliases()
   If (index < 0 || aliases.Length <= index)
     return none
@@ -197,19 +216,12 @@ sslBaseAnimation function GetbyRegistrar(string Registrar)
 endFunction
 
 int function FindByRegistrar(string Registrar)
-  Alias[] aliases = GetAliases()
-  int i = 0
-  While (i < aliases.Length)
-    sslBaseAnimation item = aliases[i] as sslBaseAnimation
-    If (item.Registry == Registrar)
-      return i
-    EndIf
-    i += 1
-  EndWhile
-  return -1
+  SyncBackEnd()
+  return _proxyid.Find(Registrar)
 endFunction
 
 int function FindByName(string FindName)
+  SyncBackEnd()
   Alias[] aliases = GetAliases()
   int i = 0
   While (i < aliases.Length)
@@ -511,25 +523,12 @@ string property JLoaders Hidden
 EndProperty
 
 Event OnInit()
-  ; This is NOT connected to the rest of the framework
-  ; Will be explicitely called when resetting the animation registry
-  Setup()
 EndEvent
 
 int Function GetCrtSpecifier()
   return 0
 EndFunction
 function Setup()
-  Alias[] aliases = GetAliases()
-  _proxyid = CreateProxyArray(aliases.Length, GetCrtSpecifier())
-  int i = 0
-  While (i < _proxyid.Length)
-    sslBaseAnimation anim = aliases[i] as sslBaseAnimation
-    If (anim)
-      anim.Registry = _proxyid[i]
-    EndIf
-    i += 1
-  EndWhile
 endFunction
 
 string property CacheID Hidden
