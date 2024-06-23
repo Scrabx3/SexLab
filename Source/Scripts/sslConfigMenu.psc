@@ -14,9 +14,6 @@ scriptname sslConfigMenu extends SKI_ConfigBase
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-import PapyrusUtil
-import SexLabUtil
-
 ; Framework
 Actor property PlayerRef auto
 SexLabFramework property SexLab auto
@@ -193,6 +190,15 @@ event OnConfigOpen()
 		i += 1
 	EndWhile
 
+	_voices = sslVoiceSlots.GetAllVoices()
+	_voiceCachedActors = sslVoiceSlots.GetAllCachedUniqueActorsSorted(Config.TargetRef)
+	_voiceCachedNames = Utility.CreateStringArray(_voiceCachedActors.Length)
+	int i = 0
+	While (i < _voiceCachedNames.Length)
+		_voiceCachedNames[i] = _voiceCachedActors[i].GetActorBase().GetName()
+		i += 1
+	EndWhile
+
 	; TODO: Review below
 
 	; Player & Target info
@@ -328,13 +334,6 @@ EndFunction
 
 Function SexDiary()
 	SetCursorFillMode(LEFT_TO_RIGHT)
-	If (!_trackedActors.Length)
-		; Initialized every time the Config Menu is opened
-		_trackedActors = new Actor[1]
-		_trackedNames = new String[1]
-		_trackedActors[0] = PlayerRef
-		_trackedNames[0] = PlayerRef.GetActorBase().GetName()
-	EndIf
 	If (_trackedIndex >= _trackedActors.Length)
 		_trackedIndex = 0
 	EndIf
@@ -524,6 +523,90 @@ State ToggleMatchMaker
 EndState
 
 ; ------------------------------------------------------- ;
+; --- Sound Settings                                  --- ;
+; ------------------------------------------------------- ;
+
+String[] _voices
+Actor[] _voiceCachedActors
+String[] _voiceCachedNames
+int _voiceCacheIndex
+
+String Function GetSavedVoice(Actor akActor) global
+	String ret = sslVoiceSlots.GetSavedVoice(akActor)
+	If (!ret)
+		return "$SSL_Random"
+	EndIf
+	return ret
+EndFunction
+
+Function SoundSettings()
+	SetCursorFillMode(LEFT_TO_RIGHT)
+	If (_voiceCacheIndex >= _voiceCachedNames.Length)
+		_voiceCacheIndex = 0
+	EndIf
+	; Voices & SFX
+	AddSliderOptionST("VoiceVolume","$SSL_VoiceVolume", Config.VoiceVolume * 100, "{0}%")
+	AddSliderOptionST("SFXVolume","$SSL_SFXVolume", Config.SFXVolume * 100, "{0}%")
+	AddSliderOptionST("MaleVoiceDelay","$SSL_MaleVoiceDelay", Config.MaleVoiceDelay, "$SSL_Seconds")
+	AddSliderOptionST("SFXDelay","$SSL_SFXDelay", Config.SFXDelay, "$SSL_Seconds")
+	AddSliderOptionST("FemaleVoiceDelay","$SSL_FemaleVoiceDelay", Config.FemaleVoiceDelay, "$SSL_Seconds")
+	AddEmptyOption()
+	; Cached Voices
+	AddHeaderOption("$SSL_CachedVoices")
+	AddEmptyOption()
+	AddMenuOptionST("SelectVoiceCache", "$SSL_SelectVoiceCache", _voiceCachedNames[_voiceCacheIndex])
+	AddMenuOptionST("SelectVoiceCacheV", "$SSL_SelectVoiceCacheV", GetSavedVoice(_voiceCachedActors[_voiceCacheIndex]))
+	; Toggle Voices
+	AddHeaderOption("$SSL_ToggleVoices")
+	AddEmptyOption()
+	int i = 0
+	While (i < _voices.Length)
+		AddToggleOptionST("Voice_" + i, _voices[i], sslBaseVoice.GetEnabled(_voices[i]))
+		i += 1
+	EndWhile
+EndFunction
+
+State SelectVoiceCache
+	Event OnMenuOpenST()
+		SetMenuDialogStartIndex(_voiceCacheIndex)
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_voiceCachedNames)
+	EndEvent
+	Event OnMenuAcceptST(Int aiIndex)
+		_voiceCacheIndex = aiIndex
+		ForcePageReset()
+		; SetMenuOptionValueST(_voiceCachedNames[aiIndex])
+	EndEvent
+	Event OnDefaultST()
+		_voiceCacheIndex = 0
+		ForcePageReset()
+		; SetMenuOptionValueST(_voiceCachedNames[_voiceCacheIndex])
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_SelectVoieCacheInfo")
+	EndEvent
+EndState
+
+State SelectVoiceCacheV
+	Event OnMenuOpenST()
+		int idx = _voices.Find(GetSavedVoice(_voiceCachedActors[_voiceCacheIndex]))
+		If (idx < 0)
+			idx = 0
+		Endif
+		SetMenuDialogStartIndex(idx)
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_voices)
+	EndEvent
+	Event OnMenuAcceptST(Int aiIndex)
+		sslVoiceSlots.StoreVoice(_voiceCachedActors[_voiceCacheIndex], _voices[aiIndex])
+		SetMenuOptionValueST(_voices[aiIndex])
+	EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_SelectVoiceCacheVInfo")
+	EndEvent
+EndState
+
+; ------------------------------------------------------- ;
 ; --- Object Pagination                               --- ;
 ; ------------------------------------------------------- ;
 
@@ -594,13 +677,11 @@ Event OnSelectST()
 		Config.ShowInMap = !Config.ShowInMap
 		SetToggleOptionValueST(Config.ShowInMap)
 
-
-
-	; Sound Settings - Voice Toggle
-	Elseif Options[0] == "Voice"
-		sslBaseVoice Slot = VoiceSlots.GetBySlot(Options[1] as int)
-		Slot.Enabled = !Slot.Enabled
-		SetToggleOptionValueST(Slot.Enabled)
+	ElseIf (s[0] == "Voice")
+		int idx = s[1] as int
+		bool e = sslBaseVoice.GetEnabled(_voices[idx])
+		sslBaseVoice.SetEnabled(_voices[idx], !e)
+		SetToggleOptionValueST(!e)
 
 	; Timers & Stripping - Stripping
 	ElseIf(Options[0] == "StrippingW")
@@ -773,7 +854,31 @@ event OnSliderOpenST()
 		SetSliderDialogRange(0, 43200)
 		SetSliderDialogInterval(10)
 
-		
+	ElseIf (s[0] == "VoiceVolume")
+		SetSliderDialogStartValue(Config.VoiceVolume * 100)
+		SetSliderDialogDefaultValue(100)
+		SetSliderDialogRange(1, 100)
+		SetSliderDialogInterval(1)
+	ElseIf (s[0] == "SFXVolume")
+		SetSliderDialogStartValue(Config.SFXVolume * 100)
+		SetSliderDialogDefaultValue(100)
+		SetSliderDialogRange(1, 100)
+		SetSliderDialogInterval(1)
+	ElseIf (s[0] == "MaleVoiceDelay")
+		SetSliderDialogStartValue(Config.MaleVoiceDelay)
+		SetSliderDialogDefaultValue(5)
+		SetSliderDialogRange(1, 45)
+		SetSliderDialogInterval(1)
+	ElseIf (s[0] == "FemaleVoiceDelay")
+		SetSliderDialogStartValue(Config.FemaleVoiceDelay)
+		SetSliderDialogDefaultValue(4)
+		SetSliderDialogRange(1, 45)
+		SetSliderDialogInterval(1)
+	ElseIf (s[0] == "SFXDelay")
+		SetSliderDialogStartValue(Config.SFXDelay)
+		SetSliderDialogDefaultValue(3)
+		SetSliderDialogRange(1, 30)
+		SetSliderDialogInterval(1)
 		
 	; Animation Editor
 elseif Options[0] == "Adjust"
@@ -866,6 +971,26 @@ event OnSliderAcceptST(float value)
 		Config.CumTimer = value
 		SetSliderOptionValueST(Config.CumTimer, "$SSL_Seconds")
 		
+	ElseIf (s[0] == "VoiceVolume")
+		Config.VoiceVolume = (value / 100.0)
+		Config.AudioVoice.SetVolume(Config.VoiceVolume)
+		SetSliderOptionValueST(value, "{0}%")
+	ElseIf (s[0] == "SFXVolume")
+		Config.SFXVolume = (value / 100.0)
+		Config.AudioSFX.SetVolume(Config.SFXVolume)
+		SetSliderOptionValueST(value, "{0}%")
+	ElseIf (s[0] == "MaleVoiceDelay")
+		Config.MaleVoiceDelay = value
+		SetSliderOptionValueST(Config.MaleVoiceDelay, "$SSL_Seconds")
+	ElseIf (s[0] == "FemaleVoiceDelay")
+		Config.FemaleVoiceDelay = value
+		SetSliderOptionValueST(Config.FemaleVoiceDelay, "$SSL_Seconds")
+	ElseIf (s[0] == "SFXDelay")
+		Config.SFXDelay = value
+		SetSliderOptionValueST(Config.SFXDelay, "$SSL_Seconds")
+		
+
+
 	; Animation Editor
 elseif Options[0] == "Adjust"
 		; Stage, Slot
@@ -935,7 +1060,7 @@ EndEvent
 
 Event OnMenuOpenST()
 	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
-	If (s[0] == "ClimaxType")				; General Animation Settings
+	If (s[0] == "ClimaxType")
 		SetMenuDialogStartIndex(sslSystemConfig.GetSettingInt("iClimaxType"))
 		SetMenuDialogDefaultIndex(0)
 		SetMenuDialogOptions(_ClimaxTypes)
@@ -981,7 +1106,7 @@ Event OnMenuAcceptST(int aiIndex)
 	If (aiIndex < 0)
 		return
 	EndIf
-	If (s[0] == "ClimaxType")				; Animation Settings
+	If (s[0] == "ClimaxType")
 		sslSystemConfig.SetSettingInt("iClimaxType", aiIndex)
 		SetMenuOptionValueST(_ClimaxTypes[aiIndex])
 	ElseIf (s[0] == "FilterStrictness")
@@ -1043,7 +1168,7 @@ EndEvent
 
 Event OnHighlightST()
 	string[] s = PapyrusUtil.StringSplit(GetState(), "_")
-	If (s[0] == "AutoAdvance")	; Animation Settings
+	If (s[0] == "AutoAdvance")
 		SetInfoText("$SSL_InfoAutoAdvance")
 	ElseIf (s[0] == "ClimaxType") 
 		SetInfoText("$SSL_ClimaxInfo")
@@ -1084,6 +1209,16 @@ Event OnHighlightST()
 	ElseIf (s[0] == "ShowInMap")
 		SetInfoText("$SSL_InfoShowInMap")
 
+	ElseIf (s[0] == "VoiceVolume")
+		SetInfoText("$SSL_InfoVoiceVolume")
+	ElseIf (s[0] == "SFXVolume")
+		SetInfoText("$SSL_InfoSFXVolume")
+	ElseIf (s[0] == "MaleVoiceDelay")
+		SetInfoText("$SSL_InfoMaleVoiceDelay")
+	ElseIf (s[0] == "FemaleVoiceDelay")
+		SetInfoText("$SSL_InfoFemaleVoiceDelay")
+	ElseIf (s[0] == "SFXDelay")
+		SetInfoText("$SSL_InfoSFXDelay")
 
 	; Animation Toggle
 	Elseif Options[0] == "Animation"
@@ -1530,38 +1665,6 @@ state AdjustTargetStage
 		SetInfoText("$SSL_InfoAdjustTargetStage")
 	endEvent
 endState
-
-; ------------------------------------------------------- ;
-; --- Sound Settings                                  --- ;
-; ------------------------------------------------------- ;
-
-function SoundSettings()
-	SetCursorFillMode(LEFT_TO_RIGHT)
-
-	; Voices & SFX
-	AddMenuOptionST("PlayerVoice","$SSL_PCVoice", VoiceSlots.GetSavedName(PlayerRef))
-	AddEmptyOption()
-	; AddToggleOptionST("NPCSaveVoice","$SSL_NPCSaveVoice", Config.NPCSaveVoice)
-	AddMenuOptionST("TargetVoice","$SSL_Target{"+TargetName+"}Voice", VoiceSlots.GetSavedName(TargetRef), TargetFlag)
-	AddSliderOptionST("VoiceVolume","$SSL_VoiceVolume", (Config.VoiceVolume * 100), "{0}%")
-	AddSliderOptionST("SFXVolume","$SSL_SFXVolume", (Config.SFXVolume * 100), "{0}%")
-	AddSliderOptionST("MaleVoiceDelay","$SSL_MaleVoiceDelay", Config.MaleVoiceDelay, "$SSL_Seconds")
-	AddSliderOptionST("SFXDelay","$SSL_SFXDelay", Config.SFXDelay, "$SSL_Seconds")
-	AddSliderOptionST("FemaleVoiceDelay","$SSL_FemaleVoiceDelay", Config.FemaleVoiceDelay, "$SSL_Seconds")
-
-	; Toggle Voices
-	AddHeaderOption("$SSL_ToggleVoices")
-	AddHeaderOption("")
-	int ii = VoiceSlots.Slotted
-	int i
-	while i < ii
-		sslBaseVoice Voice = VoiceSlots.GetBySlot(i)
-		if Voice
-			AddToggleOptionST("Voice_"+i, Voice.Name, Voice.Enabled)
-		endIf
-		i += 1
-	endWhile
-endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Animation Editor                                --- ;
@@ -2343,44 +2446,6 @@ function ToggleExpressions()
 		i += 1
 	endWhile
 endFunction
-
-; ------------------------------------------------------- ;
-; --- Matchmaker	                                  --- ;
-; ------------------------------------------------------- ;
-
-Function MatchMaker()
-	SetCursorFillMode(TOP_TO_BOTTOM)
-	int flag = DoDisable(!Config.MatchMaker)
-	AddToggleOptionST("ToggleMatchMaker", "$SSL_ToggleMatchMaker", Config.MatchMaker)
-	AddHeaderOption("$SSL_MatchMakerTagsSettings", flag)
-	AddTextOptionST("InputTags", "$SSL_InputTags", sslSystemConfig.ParseMMTagString(), flag)
-	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", Config.RequiredTags, flag)
-	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", Config.ExcludedTags, flag)
-	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", Config.OptionalTags, flag)
-	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere", flag)
-	SetCursorPosition(1)
-	AddEmptyOption()
-	AddHeaderOption("$SSL_MatchMakerActorSettings", flag)
-	AddToggleOptionST("ToggleSubmissivePlayer", "$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer, flag)
-	AddToggleOptionST("ToggleSubmissiveTarget", "$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget, flag)
-EndFunction
-
-State ToggleMatchMaker
-	; IDEA: Have this be saved natively and read it on game init/reload, add remove Spells based on it
-	Event OnSelectST()
-		Config.MatchMaker = !Config.MatchMaker
-		SetToggleOptionValueST(Config.MatchMaker)
-		ForcePageReset()
-	EndEvent
-	Event OnDefaultST()
-		Config.MatchMaker = false
-		SetToggleOptionValueST(Config.MatchMaker)
-		ForcePageReset()
-	EndEvent
-	Event OnHighlightST()
-		SetInfoText("$SSL_InfoMatchMaker")
-	EndEvent
-EndState
 
 ; ------------------------------------------------------- ;
 ; --- Expression Editor                               --- ;

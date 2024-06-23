@@ -24,6 +24,7 @@ Function DeleteVoice(Actor akActor) native global
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
 String[] Function GetAllVoices() native global
+Actor[] Function GetAllCachedUniqueActorsSorted(Actor akSecondPriority) native global
 String Function SelectVoiceByRace(String asRaceKey) native global
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;

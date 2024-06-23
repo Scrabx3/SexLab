@@ -195,8 +195,8 @@ endFunction
 
 function VehicleFixMode(int mode) global
 	; No longer used
-	; This function used disable the player scale beig forced to 1.0 upon entering vehicle
-	; Player should rely on RaceMenu scaling instead
+	; This function used disable the player ref scale beig forced to 1.0 upon entering vehicle
+	; SLP+ no longer relies on SetScale() uses Node Scaling
 EndFunction
 
 float function FloatIfElse(bool isTrue, float returnTrue, float returnFalse = 0.0) global
