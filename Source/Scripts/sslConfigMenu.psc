@@ -166,9 +166,9 @@ Event OnConfigInit()
 	SoundTreatment[2] = "$SSL_CutOnTime"
 
 	; Timers & Stripping
-	TSModes = new string[2]
-	TSModes[0] = "$SSL_NormalTimersStripping"
-	TSModes[1] = "$SSL_AggressiveTimersStripping"
+	_stripView = new string[2]
+	_stripView[0] = "$SSL_DefaultStripping"
+	_stripView[1] = "$SSL_DominantStripping"
 
 	If (SKSE.GetVersionMinor() < 2)
 		Config.DisableScale = true
@@ -176,12 +176,13 @@ Event OnConfigInit()
 	EndIf
 EndEvent
 
-event OnConfigOpen()
+Event OnConfigOpen()
 	If(PlayerRef.GetLeveledActorBase().GetSex() == 0)
 		Pages[0] = "$SSL_SexJournal"
 	Else
 		Pages[0] = "$SSL_SexDiary"
 	EndIf
+	_trackedIndex = 0
 	_trackedActors = SexLabStatistics.GetAllTrackedUniqueActorsSorted()
 	_trackedNames = Utility.CreateStringArray(_trackedActors.Length)
 	int i = 0
@@ -189,7 +190,7 @@ event OnConfigOpen()
 		_trackedNames[i] = _trackedActors[i].GetActorBase().GetName()
 		i += 1
 	EndWhile
-
+	_voiceCacheIndex = 0
 	_voices = sslVoiceSlots.GetAllVoices()
 	_voiceCachedActors = sslVoiceSlots.GetAllCachedUniqueActorsSorted(Config.TargetRef)
 	_voiceCachedNames = Utility.CreateStringArray(_voiceCachedActors.Length)
@@ -198,6 +199,9 @@ event OnConfigOpen()
 		_voiceCachedNames[i] = _voiceCachedActors[i].GetActorBase().GetName()
 		i += 1
 	EndWhile
+	_stripViewIdx = 0
+	_playerDisplayAll = false
+	_targetDisplayAll = false
 
 	; TODO: Review below
 
@@ -225,11 +229,6 @@ event OnConfigOpen()
 	EditTags = false
 	TagFilter = ""
 	TagMode = ""
-	; Stripping/Timers toggles
-	ts = 0
-	; Strip Editor
-	FullInventoryPlayer = false
-	FullInventoryTarget = false
 EndEvent
 
 Event OnConfigClose()
@@ -607,6 +606,121 @@ State SelectVoiceCacheV
 EndState
 
 ; ------------------------------------------------------- ;
+; --- Timers & Stripping                              --- ;
+; ------------------------------------------------------- ;
+
+String[] _stripView
+int _stripViewIdx
+
+Function TimersStripping()
+	SetCursorFillMode(LEFT_TO_RIGHT)
+	; Timers
+	AddHeaderOption("$SSL_Timers")
+	AddEmptyOption()
+	int t = 0
+	While (t < 4)
+		AddSliderOptionST("StageTimers_" + t, "$SSL_StageTimer_" + t, sslSystemConfig.GetSettingFltA("fTimers", t), "$SSL_Seconds")
+		t += 1
+	EndWhile
+	; Stripping
+	AddHeaderOption("$SSL_Stripping")
+	AddMenuOptionST("TSModeSelect", "$SSL_View", _stripView[_stripViewIdx])
+	AddTextOption("", "$SSL_StrippingFst_" + _stripViewIdx, OPTION_FLAG_DISABLED)
+	AddTextOption("", "$SSL_StrippingSnd_" + _stripViewIdx, OPTION_FLAG_DISABLED)
+	; iStripForms: 0b[Weapon][Female | Submissive][Aggressive]
+	int r1 = _stripViewIdx * 4	; 0 / 4
+	int r2 = r1 + 2	; 2 / 6
+	AddToggleOptionST("StrippingW_" + (r1 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
+	AddToggleOptionST("StrippingW_" + (r2 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 1))
+	int i = 0
+	While (i < 32)
+		int bit = Math.LeftShift(1, i)
+		AddToggleOptionST("Stripping_" + r1 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r1), bit))
+		AddToggleOptionST("Stripping_" + r2 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r2), bit))
+		If (i == 13)
+			AddHeaderOption("$SSL_ExtraSlots")
+			AddHeaderOption("$SSL_ExtraSlots")
+		EndIf
+		i += 1
+	EndWhile
+EndFunction
+
+; ------------------------------------------------------- ;
+; --- Strip Editor                                    --- ;
+; ------------------------------------------------------- ;
+
+Form[] _playerItems
+Form[] _targetItems
+bool _playerDisplayAll
+bool _targetDisplayAll
+
+String Function GetStripState(Form ItemRef)
+	int strip = sslActorLibrary.CheckStrip(ItemRef)
+	If(strip == 1)
+		return "$SSL_AlwaysRemove"
+	ElseIf(strip == -1)
+		return "$SSL_NeverRemove"
+	Else
+		return "---"
+	EndIf
+EndFunction
+
+String Function GetItemName(Form ItemRef, string AltName = "$SSL_Unknown")
+	If (!ItemRef)
+		return "None"
+	EndIf
+	String name = ItemRef.GetName()
+	If (sslUtility.Trim(name) != "")
+		return name
+	EndIf
+	return AltName
+EndFunction
+
+int[] function GetAllMaskSlots(int Mask)
+	int i = 30
+	int Slot = 0x01
+	int[] Output
+	while i < 62
+		if Math.LogicalAnd(Mask, Slot) == Slot
+			Output = PapyrusUtil.PushInt(Output, i)
+		endIf
+		Slot *= 2
+		i += 1
+	endWhile
+	return Output
+endFunction
+
+Function StripEditor()
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	int n = 0
+	While (n < 2)
+		Form[] list
+		If (n == 0)
+			AddHeaderOption("$SSL_Equipment{" + PlayerREf.GetActorBase().GetName() + "}")
+			AddToggleOptionST("FullInventory_" + n, "$SSL_FullInventory", _playerDisplayAll)
+			_playerItems = sslSystemConfig.GetStrippableItems(PlayerRef, !_playerDisplayAll)
+			list = _playerItems
+		Else
+			If (!Config.TargetRef)
+				AddTextOption("$SSL_NoTarget", "")
+				return
+			EndIf
+			AddHeaderOption("$SSL_Equipment{" + Config.TargetRef.GetLeveledActorBase().GetName() + "}")
+			AddToggleOptionST("FullInventory_" + n, "$SSL_FullInventory", _targetDisplayAll)
+			_targetItems = sslSystemConfig.GetStrippableItems(TargetRef, !_targetDisplayAll)
+			list = _targetItems
+		EndIf
+		int MAX_ENTRIES = 62
+		int i = 0
+		While (i < list.Length && i < MAX_ENTRIES)
+			AddTextOptionST("StripFlag_" + n + "_" + i, GetItemName(list[i]), GetStripState(list[i]))
+			i += 1
+		EndWhile
+		n += 1
+	EndWhile
+EndFunction
+
+; ------------------------------------------------------- ;
 ; --- Object Pagination                               --- ;
 ; ------------------------------------------------------- ;
 
@@ -683,35 +797,42 @@ Event OnSelectST()
 		sslBaseVoice.SetEnabled(_voices[idx], !e)
 		SetToggleOptionValueST(!e)
 
-	; Timers & Stripping - Stripping
-	ElseIf(Options[0] == "StrippingW")
-		int i = Options[1] as int
+	ElseIf(s[0] == "StrippingW")
+		int i = s[1] as int
 		int value = 1 - sslSystemConfig.GetSettingIntA("iStripForms", i)
 		sslSystemConfig.SetSettingIntA("iStripForms", value, i)
 		SetToggleOptionValueST(value)
-	ElseIf(Options[0] == "Stripping")
-		int i = Options[1] as int
-		int n = Options[2] as int
+	ElseIf(s[0] == "Stripping")
+		int i = s[1] as int
+		int n = s[2] as int
 		int bit = Math.LeftShift(1, n)
 		int value = Math.LogicalXor(sslSystemConfig.GetSettingIntA("iStripForms", i), bit)
 		sslSystemConfig.SetSettingIntA("iStripForms", value, i)
     SetToggleOptionValueST(Math.LogicalAnd(value, bit))
-		
-	; Strip Editor
-	ElseIf(Options[0] == "StripEditorPlayer" || Options[0] == "StripEditorTarget")
-		Form item
-		If(Options[0] == "StripEditorPlayer")
-			item = ItemsPlayer[Options[1] as int]
+
+	ElseIf (s[0] == "FullInventory")
+		If (s[1] as int == 0)
+			_playerDisplayAll = !_playerDisplayAll
 		Else
-			item = ItemsTarget[Options[1] as int]
+			_targetDisplayAll = !_targetDisplayAll
 		EndIf
-		int i = sslActorLibrary.CheckStrip(item)
-		If(i == -1)			; Never 			-> Always
+		ForcePageReset()
+	ElseIf(s[0] == "StripFlag")
+		int n = s[1] as int
+		int i = s[2] as int
+		Form item
+		If (n == 0)
+			item = _playerItems[i]
+		Else
+			item = _targetItems[i]
+		EndIf
+		int j = sslActorLibrary.CheckStrip(item)
+		If(j == -1)			; Never 			-> Always
 			sslActorLibrary.WriteStrip(item, false)
-		ElseIf(i == 0)	; Unspecified	-> Never
-			sslActorLibrary.WriteStrip(item, true)
-		ElseIf(i == 1)	; Always			-> Unspecified
+		ElseIf(j == 1)	; Always			-> Unspecified
 			sslActorLibrary.EraseStrip(item)
+		ElseIf(j == 0)	; Unspecified	-> Never
+			sslActorLibrary.WriteStrip(item, true)
 		EndIf
 		SetTextOptionValueST(GetStripState(item))
 		
@@ -794,30 +915,21 @@ Event OnSelectST()
 		Config.LipsSoundTime = sslUtility.IndexTravel(Config.LipsSoundTime + 1, 3) - 1
 		SetTextOptionValueST(SoundTreatment[Config.LipsSoundTime + 1])
 
-	; Toggle Strapons
-	elseIf Options[0] == "Strapon"
-		int i = Options[1] as int
+	ElseIf (s[0] == "Strapon")	; Toggle Strapons
+		int i = s[1] as int
 		Form[] Output
 		Form[] Strapons = Config.Strapons
 		int n = Strapons.Length
 		while n
 			n -= 1
 			if n != i
-				Output = PushForm(Output, Strapons[n])
+				Output = PapyrusUtil.PushForm(Output, Strapons[n])
 			endIf
 		endWhile
 		Config.Strapons = Output
 		ForcePageReset()
 
-	; Install System
-	elseIf Options[0] == "InstallSystem"
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("Working...")
-		SystemAlias.InstallSystem()
-		ForcePageReset()
-
-		; --- Matchmaker Tags
-	ElseIf (s[0] == "InputTags")
+	ElseIf (s[0] == "InputTags")	; Matchmaker Tags
 		ShowMessage(sslSystemConfig.ParseMMTagString(), false, "$Done")
 	ElseIf (s[0] == "TextResetTags")
 		If (!ShowMessage("$SSL_TagResetAreYouSure"))
@@ -879,7 +991,14 @@ event OnSliderOpenST()
 		SetSliderDialogDefaultValue(3)
 		SetSliderDialogRange(1, 30)
 		SetSliderDialogInterval(1)
-		
+
+	ElseIf(s[0] == "StageTimers")
+		int i = s[1] as int
+		SetSliderDialogStartValue(sslSystemConfig.GetSettingFltA("fTimers", i))
+		SetSliderDialogRange(3, 180)
+		SetSliderDialogInterval(1)
+		SetSliderDialogDefaultValue(15)
+
 	; Animation Editor
 elseif Options[0] == "Adjust"
 		; Stage, Slot
@@ -948,14 +1067,6 @@ elseif Options[0] == "Adjust"
 		SetSliderDialogRange(0, 100)
 		SetSliderDialogInterval(1)
 		SetSliderDialogDefaultValue(0)
-
-	; Timers & Stripping - Timers
-	ElseIf(Options[0] == "Timers")
-		int i = Options[1] as int
-		SetSliderDialogStartValue(sslSystemConfig.GetSettingFltA("fTimers", ts * 5 + i))
-		SetSliderDialogRange(3, 180)
-		SetSliderDialogInterval(1)
-		SetSliderDialogDefaultValue(GetDefaultTime(ts * 5 + i))
 	EndIf
 endEvent
 
@@ -988,8 +1099,11 @@ event OnSliderAcceptST(float value)
 	ElseIf (s[0] == "SFXDelay")
 		Config.SFXDelay = value
 		SetSliderOptionValueST(Config.SFXDelay, "$SSL_Seconds")
-		
 
+	ElseIf(s[0] == "StageTimers")
+		int i = s[1] as int
+		sslSystemConfig.SetSettingFltA("fTimers", value, i)
+		SetSliderOptionValueST(value, "$SSL_Seconds")
 
 	; Animation Editor
 elseif Options[0] == "Adjust"
@@ -1049,12 +1163,6 @@ elseif Options[0] == "Adjust"
 		Expression.SetIndex(Phase, Options[1] as int, Options[2] as int, Options[3] as int, value as int)
 		; Expression.SavePhase(Phase, Options[1] as int)
 		SetSliderOptionValueST(value as int)
-
-	; Timers & Stripping - Timers
-	ElseIf(Options[0] == "Timers")
-		int i = Options[1] as int
-		sslSystemConfig.SetSettingFltA("fTimers", value, ts * 5 + i)
-		SetSliderOptionValueST(value, "$SSL_Seconds")
 	EndIf
 EndEvent
 
@@ -1091,6 +1199,11 @@ Event OnMenuOpenST()
 		SetMenuDialogDefaultIndex(0)
 		SetMenuDialogOptions(_FadeOpt)
 
+	ElseIf (s[0] == "TSModeSelect")
+		SetMenuDialogStartIndex(_stripViewIdx)
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(_stripView)
+
 	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
 		string[] LipsPhonemes = new String[1]
 		LipsPhonemes[0] = "$SSL_Automatic"
@@ -1122,6 +1235,10 @@ Event OnMenuAcceptST(int aiIndex)
 	ElseIf (s[0] == "UseFade")
 		sslSystemConfig.SetSettingInt("iUseFade", aiIndex)
 		SetMenuOptionValueST(_FadeOpt[aiIndex])
+
+	ElseIf (s[0] == "TSModeSelect")
+		_stripViewIdx = aiIndex
+		ForcePageReset()
 
 	ElseIf (s[0] == "LipsPhoneme")	; Expression OpenMouth & LipSync Editor
 		If (aiIndex == 0)
@@ -1219,6 +1336,38 @@ Event OnHighlightST()
 		SetInfoText("$SSL_InfoFemaleVoiceDelay")
 	ElseIf (s[0] == "SFXDelay")
 		SetInfoText("$SSL_InfoSFXDelay")
+	ElseIf (s[0] == "Voice")
+		int idx = s[1] as int
+		String[] tags = sslBaseVoice.GetVoiceTags(_voices[idx])
+		SetInfoText("Tags: " + PapyrusUtil.StringJoin(tags, ", "))
+
+	ElseIf(s[0] == "Stripping")
+		int i = s[2] as int
+		String info = PlayerRef.GetLeveledActorBase().GetName() + " Slot " + (i + 30) + ": "
+		info += GetItemName(PlayerRef.GetWornForm(Armor.GetMaskForSlot(i + 30)), "?")
+		If (Config.TargetRef)
+			info += "\n" + Config.TargetRef.GetLeveledActorBase().GetName() + " Slot " + (i + 30) + ": "
+			info += GetItemName(Config.TargetRef.GetWornForm(Armor.GetMaskForSlot(i + 30)), "?")
+		EndIf
+		SetInfoText(info)
+
+	ElseIf(s[0] == "StripFlag")
+		int n = s[1] as int
+		int i = s[2] as int
+		Form item
+		If (n == 0)
+			item = _playerItems[i]
+		Else
+			item = _targetItems[i]
+		EndIf
+		String InfoText = GetItemName(item, "?")
+		Armor ArmorRef = item as Armor
+		If(ArmorRef)
+			InfoText += "\nArmor Slots: " + GetAllMaskSlots(ArmorRef.GetSlotMask())
+		Else
+			InfoText += "\nWeapon"
+		EndIf
+		SetInfoText(InfoText)
 
 	; Animation Toggle
 	Elseif Options[0] == "Animation"
@@ -1229,38 +1378,6 @@ Event OnHighlightST()
 			SetInfoText(Slot.Name+" Tags:\n"+StringJoin(Slot.GetTags(), ", "))
 		endIf
 
-	; Voice Toggle
-	elseIf Options[0] == "Voice"
-		sslBaseVoice Slot = VoiceSlots.GetBySlot(Options[1] as int)
-		SetInfoText(Slot.Name+" Tags:\n"+StringJoin(Slot.GetTags(), ", "))
-
-	; Timers & Stripping - Stripping
-	ElseIf(Options[0] == "Stripping")
-		int i = Options[2] as int
-		string InfoText = PlayerRef.GetLeveledActorBase().GetName()+" Slot "+((Options[2] as int) + 30)+": "
-		InfoText += GetItemName(PlayerRef.GetWornForm(Armor.GetMaskForSlot((Options[2] as int) + 30)), "?")
-		if TargetRef
-			InfoText += "\n"+TargetRef.GetLeveledActorBase().GetName()+" Slot "+((Options[2] as int) + 30)+": "
-			InfoText += GetItemName(TargetRef.GetWornForm(Armor.GetMaskForSlot((Options[2] as int) + 30)), "?")
-		endIf
-		SetInfoText(InfoText)
-
-	; Strip Editor
-	ElseIf(Options[0] == "StripEditorPlayer" || Options[0] == "StripEditorTarget")
-		Form item
-		If(Options[0] == "StripEditorPlayer")
-			item = ItemsPlayer[Options[1] as int]
-		Else
-			item = ItemsTarget[Options[1] as int]
-		EndIf
-		String InfoText = GetItemName(item, "?")
-		Armor ArmorRef = item as Armor
-		If(ArmorRef)
-			InfoText += "\nArmor Slots: " + GetAllMaskSlots(ArmorRef.GetSlotMask())
-		Else
-			InfoText += "\nWeapon"
-		EndIf
-		SetInfoText(InfoText)
 
 	; Advanced OpenMouth Expression
 	elseIf Options[0] == "AdvancedOpenMouth"
@@ -2908,180 +3025,6 @@ state MoodAmountMale
 endState
 
 ; ------------------------------------------------------- ;
-; --- Timers & Stripping                              --- ;
-; ------------------------------------------------------- ;
-
-string[] TSModes
-int ts	; 0 - Default / 1 - Lead In / 2 - Aggressive
-
-Function TimersStripping()
-	SetCursorFillMode(LEFT_TO_RIGHT)
-	AddMenuOptionST("TSModeSelect", "$SSL_View", TSModes[ts])
-	AddEmptyOption()
-	; Timers
-	AddHeaderOption("$SSL_TimerType_" + ts)
-	AddHeaderOption("")
-	AddSliderOptionST("Timers_0", "$SSL_Stage1Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 0)), "$SSL_Seconds")
-	AddSliderOptionST("Timers_3", "$SSL_Stage4Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 3)), "$SSL_Seconds")
-	AddSliderOptionST("Timers_1", "$SSL_Stage2Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 1)), "$SSL_Seconds")
-	AddSliderOptionST("Timers_4", "$SSL_StageEndingLength", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 4)), "$SSL_Seconds")
-	AddSliderOptionST("Timers_2", "$SSL_Stage3Length", sslSystemConfig.GetSettingFltA("fTimers", (ts * 5 + 2)), "$SSL_Seconds")
-	AddEmptyOption()
-	; Stripping
-	If(ts == 1)
-		AddHeaderOption("$SSL_VictimStripFrom")
-		AddHeaderOption("$SSL_AggressorStripFrom")
-	Else
-		AddHeaderOption("$SSL_FemaleStripFrom")
-		AddHeaderOption("$SSL_MaleStripFrom")
-	EndIf
-	; iStripForms: 0b[Weapon][Female | Submissive][Aggressive]
-	int r1 = ts * 4	; 0 / 4
-	int r2 = r1 + 2	; 2 / 6
-	AddToggleOptionST("StrippingW_" + (r1 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r1 + 1))
-	AddToggleOptionST("StrippingW_" + (r2 + 1), "$SSL_Weapons", sslSystemConfig.GetSettingIntA("iStripForms", r2 + 1))
-	int i = 0
-	While (i < 32)
-		int bit = Math.LeftShift(1, i)
-		AddToggleOptionST("Stripping_" + r1 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r1), bit))
-		AddToggleOptionST("Stripping_" + r2 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r2), bit))
-		If (i == 13)
-			AddHeaderOption("$SSL_ExtraSlots")
-			AddHeaderOption("$SSL_ExtraSlots")
-		EndIf
-		i += 1
-	EndWhile
-endFunction
-
-float Function GetDefaultTime(int idx)
-	float[] f = new float[15]
-	; Default
-	f[0] = 30.0		
-	f[1] = 20.0
-	f[2] = 15.0
-	f[3] = 15.0
-	f[4] = 9.0
-	; lead In
-	f[5] = 10.0		
-	f[6] = 10.0
-	f[7] = 10.0
-	f[8] = 8.0
-	f[9] = 8.0
-	; Aggressive
-	f[10] = 20.0	
-	f[11] = 15.0
-	f[12] = 10.0
-	f[13] = 10.0
-	f[14] = 4.0
-	return f[idx]
-EndFunction
-
-state TSModeSelect
-	event OnMenuOpenST()
-		SetMenuDialogStartIndex(ts)
-		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(TSModes)
-	endEvent
-	event OnMenuAcceptST(int i)
-		if i < 0
-			i = ts
-		endIf
-		ts = i
-		SetMenuOptionValueST(TSModes[ts])
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		ts = 0
-		SetMenuOptionValueST(TSModes[ts])
-		ForcePageReset()
-	endEvent
-endState
-
-; ------------------------------------------------------- ;
-; --- Strip Editor                                    --- ;
-; ------------------------------------------------------- ;
-
-Form[] ItemsPlayer
-Form[] ItemsTarget
-bool FullInventoryPlayer
-bool FullInventoryTarget
-
-; Strip Page to customize if items should never or always be stripped
-Function StripEditor()
-	SetCursorFillMode(LEFT_TO_RIGHT)
-	AddHeaderOption("$SSL_Equipment{" + PlayerName + "}")
-	AddToggleOptionST("FullInventoryPlayer", "$SSL_FullInventory", FullInventoryPlayer)
-	ItemsPlayer = sslSystemConfig.GetStrippableItems(PlayerRef, !FullInventoryPlayer)
-	int i = 0
-	While(i < ItemsPlayer.Length && i < 127 - 2)	; At most 128 entries per page
-		AddTextOptionST("StripEditorPlayer_" + i, GetItemName(ItemsPlayer[i]), GetStripState(ItemsPlayer[i]))
-		i += 1
-	EndWhile
-	If((i + 2) > 121 || !TargetRef)	; Want at least 6 free spaces for target NPC
-		return
-	EndIf
-	AddHeaderOption("$SSL_Equipment{" + TargetRef.GetLeveledActorBase().GetName() + "}")
-	AddToggleOptionST("FullInventoryTarget", "$SSL_FullInventory", FullInventoryTarget)
-	ItemsTarget = sslSystemConfig.GetStrippableItems(TargetRef, !FullInventoryTarget)
-	int n = 0
-	While(n < ItemsTarget.Length && (i + n) < (127 - 4))
-		AddTextOptionST("StripEditorTarget_" + i, GetItemName(ItemsTarget[i]), GetStripState(ItemsTarget[i]))
-		n += 1
-	EndWhile
-EndFunction
-
-String Function GetStripState(Form ItemRef)
-	int strip = sslActorLibrary.CheckStrip(ItemRef)
-	If(strip == 1)
-		return "$SSL_AlwaysRemove"
-	ElseIf(strip == -1)
-		return "$SSL_NeverRemove"
-	Else
-		return "---"
-	EndIf
-EndFunction
-
-string function GetItemName(Form ItemRef, string AltName = "$SSL_Unknown")
-	if ItemRef
-		string Name = ItemRef.GetName()
-		if sslUtility.Trim(Name) != ""
-			return Name
-		else 
-			return AltName
-		endIf
-	endIf
-	return "None"
-endFunction
-
-int[] function GetAllMaskSlots(int Mask)
-	int i = 30
-	int Slot = 0x01
-	int[] Output
-	while i < 62
-		if Math.LogicalAnd(Mask, Slot) == Slot
-			Output = PapyrusUtil.PushInt(Output, i)
-		endIf
-		Slot *= 2
-		i += 1
-	endWhile
-	return Output
-endFunction
-
-state FullInventoryPlayer
-	event OnSelectST()
-		FullInventoryPlayer = !FullInventoryPlayer
-		ForcePageReset()
-	endEvent
-endState
-
-state FullInventoryTarget
-	event OnSelectST()
-		FullInventoryTarget = !FullInventoryTarget
-		ForcePageReset()
-	endEvent
-endState
-
-; ------------------------------------------------------- ;
 ; --- Debug & installation							              --- ;
 ; ------------------------------------------------------- ;
 
@@ -3142,151 +3085,6 @@ EndFunction
 ; --- Unorganized State Option Dump                   --- ;
 ; ------------------------------------------------------- ;
 
-state AutoAdvance
-	event OnSelectST()
-		Config.AutoAdvance = !Config.AutoAdvance
-		SetToggleOptionValueST(Config.AutoAdvance)
-	endEvent
-	event OnDefaultST()
-		Config.AutoAdvance = false
-		SetToggleOptionValueST(Config.AutoAdvance)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAutoAdvance")
-	endEvent
-endState
-state DisableVictim
-	event OnSelectST()
-		Config.DisablePlayer = !Config.DisablePlayer
-		SetToggleOptionValueST(Config.DisablePlayer)
-	endEvent
-	event OnDefaultST()
-		Config.DisablePlayer = false
-		SetToggleOptionValueST(Config.DisablePlayer)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoDisablePlayer")
-	endEvent
-endState
-state AutomaticTFC
-	event OnSelectST()
-		Config.AutoTFC = !Config.AutoTFC
-		SetToggleOptionValueST(Config.AutoTFC)
-	endEvent
-	event OnDefaultST()
-		Config.AutoTFC = false
-		SetToggleOptionValueST(Config.AutoTFC)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAutomaticTFC")
-	endEvent
-endState
-state AutomaticSUCSM
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.AutoSUCSM)
-		SetSliderDialogDefaultValue(5)
-		SetSliderDialogRange(1, 20)
-		SetSliderDialogInterval(1)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.AutoSUCSM = value
-		SetSliderOptionValueST(Config.AutoSUCSM, "{0}")
-	endEvent
-	event OnDefaultST()
-		Config.AutoSUCSM = 5.0
-		SetToggleOptionValueST(Config.AutoSUCSM, "{0}")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAutomaticSUCSM")
-	endEvent
-endState
-state UseExpressions
-	event OnSelectST()
-		Config.UseExpressions = !Config.UseExpressions
-		SetToggleOptionValueST(Config.UseExpressions)
-	endEvent
-	event OnDefaultST()
-		Config.UseExpressions = true
-		SetToggleOptionValueST(Config.UseExpressions)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoUseExpressions")
-	endEvent
-endState
-state UseLipSync
-	event OnSelectST()
-		Config.UseLipSync = !Config.UseLipSync
-		SetToggleOptionValueST(Config.UseLipSync)
-	endEvent
-	event OnDefaultST()
-		Config.UseLipSync = true
-		SetToggleOptionValueST(Config.UseLipSync)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoUseLipSync")
-	endEvent
-endState
-state ShowInMap
-	event OnSelectST()
-		Config.ShowInMap = !Config.ShowInMap
-		SetToggleOptionValueST(Config.ShowInMap)
-	endEvent
-	event OnDefaultST()
-		Config.ShowInMap = false
-		SetToggleOptionValueST(Config.ShowInMap)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoShowInMap")
-	endEvent
-endState
-state RedressVictim
-	event OnSelectST()
-		Config.RedressVictim = !Config.RedressVictim
-		SetToggleOptionValueST(Config.RedressVictim)
-	endEvent
-	event OnDefaultST()
-		Config.RedressVictim = true
-		SetToggleOptionValueST(Config.RedressVictim)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoReDressVictim")
-	endEvent
-endState
-state UseCum
-	event OnSelectST()
-		Config.UseCum = !Config.UseCum
-		SetToggleOptionValueST(Config.UseCum)
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		Config.UseCum = true
-		SetToggleOptionValueST(Config.UseCum)
-		ForcePageReset()
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoUseCum")
-	endEvent
-endState
-state CumEffectTimer
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.CumTimer)
-		SetSliderDialogDefaultValue(120)
-		SetSliderDialogRange(0, 43200)
-		SetSliderDialogInterval(10)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.CumTimer = value
-		SetSliderOptionValueST(Config.CumTimer, "$SSL_Seconds")
-	endEvent
-	event OnDefaultST()
-		Config.CumTimer = 120.0
-		SetSliderOptionValueST(Config.CumTimer, "$SSL_Seconds")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoCumTimer")
-	endEvent
-endState
-
 
 state OpenMouthSize
 	event OnSliderOpenST()
@@ -3308,437 +3106,11 @@ state OpenMouthSize
 	endEvent
 endState
 
-state OrgasmEffects
-	event OnSelectST()
-		Config.OrgasmEffects = !Config.OrgasmEffects
-		SetToggleOptionValueST(Config.OrgasmEffects)
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		Config.OrgasmEffects = true
-		SetToggleOptionValueST(Config.OrgasmEffects)
-		ForcePageReset()
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoOrgasmEffects")
-	endEvent
-endState
-state RemoveHeelEffect
-	event OnSelectST()
-		Config.RemoveHeelEffect = !Config.RemoveHeelEffect
-		SetToggleOptionValueST(Config.RemoveHeelEffect)
-	endEvent
-	event OnDefaultST()
-		Config.RemoveHeelEffect = Config.HasHDTHeels
-		SetToggleOptionValueST(Config.RemoveHeelEffect)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoRemoveHeelEffect")
-	endEvent
-endState
 
-state AllowCreatures
-	event OnSelectST()
-		Config.AllowCreatures = !Config.AllowCreatures
-		SetToggleOptionValueST(Config.AllowCreatures)
-	endEvent
-	event OnDefaultST()
-		Config.AllowCreatures = false
-		SetToggleOptionValueST(Config.AllowCreatures)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAllowCreatures")
-	endEvent
-endState
-state UseCreatureGender
-	event OnSelectST()
-		Config.UseCreatureGender = !Config.UseCreatureGender
-		CreatureSlots.ClearAnimCache()
-		SetToggleOptionValueST(Config.UseCreatureGender)
-	endEvent
-	event OnDefaultST()
-		if Config.UseCreatureGender
-			CreatureSlots.ClearAnimCache()
-		endIf
-		Config.UseCreatureGender = false
-		SetToggleOptionValueST(Config.UseCreatureGender)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoUseCreatureGender")
-	endEvent
-endState
-state AskBed
-	event OnSelectST()
-		Config.AskBed = sslUtility.IndexTravel(Config.AskBed, 3)
-		SetTextOptionValueST(BedOpt[Config.AskBed])
-	endEvent
-	event OnDefaultST()
-		Config.AskBed = 1
-		SetTextOptionValueST(BedOpt[Config.AskBed])
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoAskBed")
-	endEvent
-endState
-state NPCBed
-	event OnSelectST()
-		Config.NPCBed = sslUtility.IndexTravel(Config.NPCBed, 3)
-		SetTextOptionValueST(Chances[Config.NPCBed])
-	endEvent
-	event OnDefaultST()
-		Config.NPCBed = 0
-		SetTextOptionValueST(Chances[Config.NPCBed])
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoNPCBed")
-	endEvent
-endState
-state BedRemoveStanding
-	event OnSelectST()
-		Config.BedRemoveStanding = !Config.BedRemoveStanding
-		SetToggleOptionValueST(Config.BedRemoveStanding)
-	endEvent
-	event OnDefaultST()
-		Config.BedRemoveStanding = true
-		SetToggleOptionValueST(Config.BedRemoveStanding)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoBedRemoveStanding")
-	endEvent
-endState
-state DisableScale
-	event OnSelectST()
-		Config.DisableScale = !Config.DisableScale
-		SetToggleOptionValueST(Config.DisableScale)
-		SexLabUtil.VehicleFixMode((Config.DisableScale as int))
-		ForcePageReset()
-	endEvent
-	event OnDefaultST()
-		Config.DisableScale = false
-		SexLabUtil.VehicleFixMode(0)
-		SetToggleOptionValueST(Config.DisableScale)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoDisableScale")
-	endEvent
-endState
-state RestrictSameSex
-	event OnSelectST()
-		Config.RestrictSameSex = !Config.RestrictSameSex
-		SetToggleOptionValueST(Config.RestrictSameSex)
-	endEvent
-	event OnDefaultST()
-		Config.RestrictSameSex = false
-		SetToggleOptionValueST(Config.RestrictSameSex)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoRestrictSameSex")
-	endEvent
-endState
-
-state UndressAnimation
-	event OnSelectST()
-		Config.UndressAnimation = !Config.UndressAnimation
-		SetToggleOptionValueST(Config.UndressAnimation)
-	endEvent
-	event OnDefaultST()
-		Config.UndressAnimation = false
-		SetToggleOptionValueST(Config.UndressAnimation)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoUndressAnimation")
-	endEvent
-endState
-
-state StraponsFemale
-	event OnSelectST()
-		Config.UseStrapons = !Config.UseStrapons
-		SetToggleOptionValueST(Config.UseStrapons)
-	endEvent
-	event OnDefaultST()
-		Config.UseStrapons = true
-		SetToggleOptionValueST(Config.UseStrapons)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoUseStrapons")
-	endEvent
-endState
-
-string[] VoiceNames
-state PlayerVoice
-	event OnMenuOpenST()
-		VoiceNames = VoiceSlots.GetNormalSlotNames(true)
-		SetMenuDialogOptions(VoiceNames)
-		SetMenuDialogStartIndex(VoiceNames.Find(VoiceSlots.GetSavedName(PlayerRef)))
-		SetMenuDialogDefaultIndex(0)
-	endEvent
-	event OnMenuAcceptST(int i)
-		if i < 1
-			VoiceSlots.ForgetVoice(PlayerRef)
-			SetMenuOptionValueST("$SSL_Random")
-		else
-			sslBaseVoice Voice = VoiceSlots.GetByName(VoiceNames[i])
-			VoiceSlots.SaveVoice(PlayerRef, Voice)
-			SetMenuOptionValueST(VoiceNames[i])
-			sslThreadController Thread = ThreadSlots.GetActorController(PlayerRef)
-			if Thread
-				Thread.SetVoice(PlayerRef, Voice)
-			endIf
-		endIf
-	endEvent
-	event OnDefaultST()
-		VoiceSlots.ForgetVoice(PlayerRef)
-		SetMenuOptionValueST("$SSL_Random")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoPlayerVoice")
-	endEvent
-endState
-state TargetVoice
-	event OnMenuOpenST()
-		VoiceNames = VoiceSlots.GetNormalSlotNames(true)
-		SetMenuDialogOptions(VoiceNames)
-		SetMenuDialogStartIndex(VoiceNames.Find(VoiceSlots.GetSavedName(TargetRef)))
-		SetMenuDialogDefaultIndex(0)
-	endEvent
-	event OnMenuAcceptST(int i)
-		if i < 1
-			VoiceSlots.ForgetVoice(TargetRef)
-			SetMenuOptionValueST("$SSL_Random")
-		else
-			sslBaseVoice Voice = VoiceSlots.GetByName(VoiceNames[i])
-			VoiceSlots.SaveVoice(TargetRef, Voice)
-			SetMenuOptionValueST(VoiceNames[i])
-			sslThreadController Thread = ThreadSlots.GetActorController(TargetRef)
-			if Thread
-				Thread.SetVoice(TargetRef, Voice)
-			endIf
-		endIf
-	endEvent
-	event OnDefaultST()
-		VoiceSlots.ForgetVoice(TargetRef)
-		SetMenuOptionValueST("$SSL_Random")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoPlayerVoice")
-	endEvent
-endState
-state NPCSaveVoice
-	event OnSelectST()
-		Config.NPCSaveVoice = !Config.NPCSaveVoice
-		SetToggleOptionValueST(Config.NPCSaveVoice)
-	endEvent
-	event OnDefaultST()
-		Config.NPCSaveVoice = false
-		SetToggleOptionValueST(Config.NPCSaveVoice)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoNPCSaveVoice")
-	endEvent
-endState
-state SFXVolume
-	event OnSliderOpenST()
-		SetSliderDialogStartValue((Config.SFXVolume * 100))
-		SetSliderDialogDefaultValue(100)
-		SetSliderDialogRange(1, 100)
-		SetSliderDialogInterval(1)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.SFXVolume = (value / 100.0)
-		Config.AudioSFX.SetVolume(Config.SFXVolume)
-		SetSliderOptionValueST(value, "{0}%")
-	endEvent
-	event OnDefaultST()
-		Config.SFXVolume = 1.0
-		SetSliderOptionValueST((Config.SFXVolume * 100), "{0}%")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoSFXVolume")
-	endEvent
-endState
-state VoiceVolume
-	event OnSliderOpenST()
-		SetSliderDialogStartValue((Config.VoiceVolume * 100))
-		SetSliderDialogDefaultValue(100)
-		SetSliderDialogRange(1, 100)
-		SetSliderDialogInterval(1)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.VoiceVolume = (value / 100.0)
-		Config.AudioVoice.SetVolume(Config.VoiceVolume)
-		SetSliderOptionValueST(value, "{0}%")
-	endEvent
-	event OnDefaultST()
-		Config.VoiceVolume = 1.0
-		SetSliderOptionValueST((Config.VoiceVolume * 100), "{0}%")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoVoiceVolume")
-	endEvent
-endState
-state SFXDelay
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.SFXDelay)
-		SetSliderDialogDefaultValue(3)
-		SetSliderDialogRange(1, 30)
-		SetSliderDialogInterval(1)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.SFXDelay = value
-		SetSliderOptionValueST(Config.SFXDelay, "$SSL_Seconds")
-	endEvent
-	event OnDefaultST()
-		Config.SFXDelay = 3.0
-		SetSliderOptionValueST(Config.SFXDelay, "$SSL_Seconds")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoSFXDelay")
-	endEvent
-endState
-state MaleVoiceDelay
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.MaleVoiceDelay)
-		SetSliderDialogDefaultValue(5)
-		SetSliderDialogRange(1, 45)
-		SetSliderDialogInterval(1)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.MaleVoiceDelay = value
-		SetSliderOptionValueST(Config.MaleVoiceDelay, "$SSL_Seconds")
-	endEvent
-	event OnDefaultST()
-		Config.MaleVoiceDelay = 5.0
-		SetSliderOptionValueST(Config.MaleVoiceDelay, "$SSL_Seconds")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoMaleVoiceDelay")
-	endEvent
-endState
-state FemaleVoiceDelay
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.FemaleVoiceDelay)
-		SetSliderDialogDefaultValue(4)
-		SetSliderDialogRange(1, 45)
-		SetSliderDialogInterval(1)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.FemaleVoiceDelay = value
-		SetSliderOptionValueST(Config.FemaleVoiceDelay, "$SSL_Seconds")
-	endEvent
-	event OnDefaultST()
-		Config.FemaleVoiceDelay = 4.0
-		SetSliderOptionValueST(Config.FemaleVoiceDelay, "$SSL_Seconds")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoFemaleVoiceDelay")
-	endEvent
-endState
-state ExpressionDelay
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.ExpressionDelay)
-		SetSliderDialogDefaultValue(2)
-		SetSliderDialogRange(0.5, 5)
-		SetSliderDialogInterval(0.5)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.ExpressionDelay = value
-		SetSliderOptionValueST(Config.ExpressionDelay, "{1}x")
-	endEvent
-	event OnDefaultST()
-		Config.ExpressionDelay = 2.0
-		SetSliderOptionValueST(Config.ExpressionDelay, "{1}x")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoExpressionDelay")
-	endEvent
-endState
-state ShakeStrength
-	event OnSliderOpenST()
-		SetSliderDialogStartValue(Config.ShakeStrength * 100)
-		SetSliderDialogDefaultValue(70)
-		SetSliderDialogRange(0, 100)
-		SetSliderDialogInterval(5)
-	endEvent
-	event OnSliderAcceptST(float value)
-		Config.ShakeStrength = (value / 100.0)
-		SetSliderOptionValueST(value, "{0}%")
-	endEvent
-	event OnDefaultST()
-		Config.ShakeStrength = 0.7
-		SetSliderOptionValueST((Config.ShakeStrength * 100), "{0}%")
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoShakeStrength")
-	endEvent
-endState
-
-state ToggleSystem
-	event OnSelectST()
-		if SexLab.Enabled && ShowMessage("$SSL_WarnDisableSexLab")
-			SexLab.GoToState("Disabled")
-		elseIf !SexLab.Enabled && ShowMessage("$SSL_WarnEnableSexLab")
-			SexLab.GoToState("Enabled")
-		endIf
-		ForcePageReset()
-	endEvent
-endState
-state RestoreDefaultSettings
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnRestoreDefaults")
-			SetOptionFlagsST(OPTION_FLAG_DISABLED)
-			SetTextOptionValueST("$SSL_Resetting")			
-			Config.SetDefaults()
-			ShowMessage("$SSL_RunRestoreDefaults", false)
-			SetTextOptionValueST("$SSL_ClickHere")
-			SetOptionFlagsST(OPTION_FLAG_NONE)
-			; ForcePageReset()
-		endIf
-	endEvent
-endState
 state StopCurrentAnimations
 	event OnSelectST()
 		ShowMessage("$SSL_StopRunningAnimations", false)
 		ThreadSlots.StopAll()
-	endEvent
-endState
-state ResetAnimationRegistry
-	event OnSelectST()
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("$SSL_Resetting")		
-		ThreadSlots.StopAll()
-		AnimSlots.Setup()
-		CreatureSlots.Setup()
-		ShowMessage("$SSL_RunRebuildAnimations", false)
-		Debug.Notification("$SSL_RunRebuildAnimations")
-		SetTextOptionValueST("$SSL_ClickHere")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
-		ForcePageReset()
-	endEvent
-endState
-state ResetVoiceRegistry
-	event OnSelectST()
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("$SSL_Resetting")		
-		ThreadSlots.StopAll()
-		VoiceSlots.Setup()
-		ShowMessage("$SSL_RunRebuildVoices", false)
-		Debug.Notification("$SSL_RunRebuildVoices")
-		SetTextOptionValueST("$SSL_ClickHere")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
-		ForcePageReset()
-	endEvent
-endState
-state ResetExpressionRegistry
-	event OnSelectST()
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("$SSL_Resetting")		
-		ThreadSlots.StopAll()
-		ExpressionSlots.Setup()
-		ShowMessage("$SSL_RunRebuildExpressions", false)
-		Debug.Notification("$SSL_RunRebuildExpressions")
-		SetTextOptionValueST("$SSL_ClickHere")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
-		ForcePageReset()
 	endEvent
 endState
 state ResetStripOverrides
@@ -3867,6 +3239,10 @@ sslVoiceSlots property VoiceSlots Hidden
   EndFunction
 EndProperty
 
+string[] function MapOptions()
+	return PapyrusUtil.StringSplit(GetState(), "_")
+endFunction
+
 function Troubleshoot()
 endFunction
 
@@ -3946,13 +3322,13 @@ bool function IsToggleable(Form ItemRef)
 endFunction
 
 bool[] function GetStripping(int type)
-	if ts == 1
+	if _stripViewIdx == 1
 		if type == 1
 			return Config.StripLeadInFemale
 		else
 			return Config.StripLeadInMale
 		endIf
-	elseIf ts == 2
+	elseIf _stripViewIdx == 2
 		if type == 1
 			return Config.StripVictim
 		else
@@ -3967,10 +3343,34 @@ bool[] function GetStripping(int type)
 	endIf
 endFunction
 
+float Function GetDefaultTime(int idx)
+	float[] f = new float[15]
+	; Default
+	f[0] = 15.0		
+	f[1] = 20.0
+	f[2] = 15.0
+	f[3] = 15.0
+	f[4] = 9.0
+	; lead In
+	f[5] = 10.0		
+	f[6] = 10.0
+	f[7] = 10.0
+	f[8] = 8.0
+	f[9] = 8.0
+	; Aggressive
+	f[10] = 20.0	
+	f[11] = 15.0
+	f[12] = 10.0
+	f[13] = 10.0
+	f[14] = 4.0
+	return f[idx]
+EndFunction
+
+
 float[] function GetTimers()
-	if ts == 1
+	if _stripViewIdx == 1
 		return Config.StageTimerLeadIn
-	elseIf ts == 2
+	elseIf _stripViewIdx == 2
 		return Config.StageTimerAggr
 	else
 		return Config.StageTimer
@@ -3980,13 +3380,13 @@ endFunction
 ; Default Timer Values
 float[] function GetTimersDef()
 	float[] ret = new float[5]
-	if ts == 1
+	if _stripViewIdx == 1
 		ret[0] = 10.0
 		ret[1] = 10.0
 		ret[2] = 10.0
 		ret[3] = 8.0
 		ret[4] = 8.0
-	elseIf ts == 2
+	elseIf _stripViewIdx == 2
 		ret[0] = 20.0
 		ret[1] = 15.0
 		ret[2] = 10.0
