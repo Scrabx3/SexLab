@@ -416,7 +416,7 @@ State Ready
 				_BaseDelay = _Config.MaleVoiceDelay
 			Else
 				_BaseDelay = _Config.FemaleVoiceDelay
-				If (_Config.UseStrapons && _sex == 1)
+				If (_sex == 1)
 					_HadStrapon = _Config.WornStrapon(_ActorRef)
 					If (!_HadStrapon)
 						_Strapon = _Config.GetStrapon()
