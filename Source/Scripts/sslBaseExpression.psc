@@ -5,12 +5,16 @@ scriptname sslBaseExpression extends sslBaseObject
 	profile, consider creating an Expression.yml file instead and listing all of your values there
 }
 
-String[] Function GetExpressionTags(String asID) native global
-Function SetExpressionTags(String asID, String[] asNewTags) native global
+int Function GetVersion(String asID) native global
 bool Function GetEnabled(String asID) native global
 Function SetEnabled(String asID, bool abEnabled) native global
+int Function GetExpressionScaleMode(String asID) native global
+Function SetExpressionScaleMode(String asID, int aiIdx) native global
+String[] Function GetExpressionTags(String asID) native global
+Function SetExpressionTags(String asID, String[] asNewTags) native global
 int[] Function GetLevelCounts(String asID) native global
-float[] Function GetValues(String asID, bool abFemale, int aiLevel) native global
+float[] Function GetValues(String asID, bool abFemale, float afStrength) native global
+float[] Function GetNthValues(String asID, bool abFemale, int n) native global
 Function SetValues(String asID, bool abFemale, int aiLevel, float[] afValues) native global
 
 float function GetModifier(Actor ActorRef, int id) global native
@@ -22,9 +26,7 @@ float function GetExpression(Actor ActorRef, bool getId) global native
 ; afStrength must be in [0; 100]
 Function ApplyExpression(String asExpression, Actor akActor, float afStrength) global
 	int sex = SexLabRegistry.GetSex(akActor, false)
-	float lvMax = GetLevelCounts(asExpression)[(sex == 1) as int]
-	int lvl = ((afStrength * lvMax) / 100.0) as int
-	float[] values = GetValues(asExpression, sex != 0, lvl)
+	float[] values = GetValues(asExpression, sex != 0, afStrength)
 	ApplyPresetFloats(akActor, values)
 EndFunction
 
@@ -39,48 +41,61 @@ function ClearMFG(Actor ActorRef) global
 endFunction
 
 function OpenMouth(Actor ActorRef) global
-	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
-	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
-	int OpenMouthSize = SexLabUtil.GetConfig().OpenMouthSize
-	float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
-	Int i = 0
-	Int s = 0
-	while i < Phonemes.length
-		if (GetPhoneme(ActorRef, i) != Phonemes[i])
-			sslExpressionUtil.SmoothSetModifier(ActorRef, 0, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
-		endIf
-		if Phonemes[i] >= Phonemes[s] ; seems to be required to prevet issues
-			s = i
-		endIf
+	int[] mods = new int[16]
+	mods[0] = 75
+	mods[1] = 75
+	mods[5] = 100
+	mods[6] = 100
+	mods[7] = 100
+	mods[9] = 68
+	int i = 0
+	While (i < mods.Length)
+		sslExpressionUtil.SmoothSetPhoneme(ActorRef, i, mods[i])
 		i += 1
-	endWhile
-	sslExpressionUtil.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int)
-	if (GetExpression(ActorRef, true) as int == OpenMouthExpression || GetExpression(ActorRef, false) != OpenMouthSize as float / 100.0)
-		sslExpressionUtil.SmoothSetExpression(ActorRef, OpenMouthExpression, OpenMouthSize)
-	endIf
+	EndWhile
+	; bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
+	; int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
+	; int OpenMouthSize = SexLabUtil.GetConfig().OpenMouthSize
+	; float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)
+	; Int i = 0
+	; Int s = 0
+	; while i < Phonemes.length
+	; 	if (GetPhoneme(ActorRef, i) != Phonemes[i])
+	; 		sslExpressionUtil.SmoothSetModifier(ActorRef, 0, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
+	; 	endIf
+	; 	if Phonemes[i] >= Phonemes[s] ; seems to be required to prevet issues
+	; 		s = i
+	; 	endIf
+	; 	i += 1
+	; endWhile
+	; sslExpressionUtil.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int)
+	; if (GetExpression(ActorRef, true) as int == OpenMouthExpression || GetExpression(ActorRef, false) != OpenMouthSize as float / 100.0)
+	; 	sslExpressionUtil.SmoothSetExpression(ActorRef, OpenMouthExpression, OpenMouthSize)
+	; endIf
 endFunction
 
 function CloseMouth(Actor ActorRef) global
-	ClearPhoneme(ActorRef)
-	sslExpressionUtil.SmoothSetExpression(ActorRef,7,70)
+	sslExpressionUtil.resetPhonemesSmooth(ActorRef)
+	; sslExpressionUtil.SmoothSetExpression(ActorRef,7,70)
 endFunction
 
 bool function IsMouthOpen(Actor ActorRef) global
-	bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
-	int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
-	float MinMouthSize = (SexLabUtil.GetConfig().OpenMouthSize * 0.01) - 0.1
-	if GetExpression(ActorRef, true) as Int == OpenMouthExpression && GetExpression(ActorRef, false) >= MinMouthSize
-		return true
-	endIf
-	float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
-	Int i = 0
-	while i < Phonemes.length
-		if (GetPhoneme(ActorRef, i) < (MinMouthSize * Phonemes[i]))
-			return false
-		endIf
-		i += 1
-	endWhile
-	return true
+	return GetPhoneme(ActorRef, 1) >= 0.4 || GetPhoneme(ActorRef, 0) >= 0.6
+	; bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
+	; int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
+	; float MinMouthSize = (SexLabUtil.GetConfig().OpenMouthSize * 0.01) - 0.1
+	; if GetExpression(ActorRef, true) as Int == OpenMouthExpression && GetExpression(ActorRef, false) >= MinMouthSize
+	; 	return true
+	; endIf
+	; float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
+	; Int i = 0
+	; while i < Phonemes.length
+	; 	if (GetPhoneme(ActorRef, i) < (MinMouthSize * Phonemes[i]))
+	; 		return false
+	; 	endIf
+	; 	i += 1
+	; endWhile
+	; return true
 endFunction
 
 float[] function GetCurrentMFG(Actor ActorRef) global
@@ -199,8 +214,8 @@ endFunction
 
 function ApplyPhase(Actor ActorRef, int Phase, int Gender)
 	if Phase <= PhaseCounts[Gender]
-		;	TransitPresetFloats(ActorRef, GetCurrentMFG(ActorRef), GetValues(Registry, Phase, Gender)) 
-		ApplyPresetFloats(ActorRef, GetValues(Registry, Phase, Gender))
+		;	TransitPresetFloats(ActorRef, GetCurrentMFG(ActorRef), GetNthValues(Registry, Phase, Gender)) 
+		ApplyPresetFloats(ActorRef, GetNthValues(Registry, Phase, Gender))
 	endIf
 endFunction
 
@@ -287,7 +302,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function SetIndex(int Phase, int Gender, int Mode, int id, int value)
-	float[] Preset = GetValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Phase, Gender)
 	int i = Mode+id
 	if value > 100
 		value = 100
@@ -346,7 +361,7 @@ function EmptyPhase(int Phase, int Gender)
 endFunction
 
 function AddPhase(int Phase, int Gender)
-	float[] Preset = GetValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Phase, Gender)
 	if Preset[31] == 0.0 || Preset[30] < 0.0 || Preset[30] > 16.0
 		Preset[30] = 7.0
 		Preset[31] = 0.5
@@ -368,7 +383,7 @@ endFunction
 
 float[] function GetPhonemes(int Phase, int Gender)
 	float[] Output = new float[16]
-	float[] Preset = GetValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Phase, Gender)
 	int i
 	while i <= PhonemeIDs
 		Output[i] = Preset[Phoneme + i]
@@ -379,7 +394,7 @@ endFunction
 
 float[] function GetModifiers(int Phase, int Gender)
 	float[] Output = new float[14]
-	float[] Preset = GetValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Phase, Gender)
 	int i
 	while i <= ModifierIDs
 		Output[i] = Preset[Modifier + i]
@@ -389,15 +404,15 @@ float[] function GetModifiers(int Phase, int Gender)
 endFunction
 
 int function GetMoodType(int Phase, int Gender)
-	return GetValues(Registry, Phase, Gender)[30] as int
+	return GetNthValues(Registry, Phase, Gender)[30] as int
 endFunction
 
 int function GetMoodAmount(int Phase, int Gender)
-	return (GetValues(Registry, Phase, Gender)[31] * 100.0) as int
+	return (GetNthValues(Registry, Phase, Gender)[31] * 100.0) as int
 endFunction
 
 int function GetIndex(int Phase, int Gender, int Mode, int id)
-	return (GetValues(Registry, Phase, Gender)[Mode + id] * 100.0) as int
+	return (GetNthValues(Registry, Phase, Gender)[Mode + id] * 100.0) as int
 endFunction
 
 int property MoodIDs = 16 autoreadonly
@@ -406,7 +421,7 @@ function CountPhases()
 endFunction
 
 float[] function GenderPhase(int Phase, int Gender)
-	return GetValues(Registry, Gender == Female, Phase)
+	return GetNthValues(Registry, Gender == Female, Phase)
 endFunction
 
 function SetPhase(int Phase, int Gender, float[] Preset)
