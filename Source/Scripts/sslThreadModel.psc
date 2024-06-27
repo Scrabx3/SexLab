@@ -897,6 +897,7 @@ float Property ANIMATING_UPDATE_INTERVAL = 0.5 AutoReadOnly
 int _animationSyncCount
 
 bool _SceneEndClimax	; If a (legacy) climax has been triggered
+bool _ForceAdvance		; Force fully auto advance (set by timed stages)
 float _StageTimer			; timer for the current stage
 float _SFXTimer				; so long until new SFX effect
 float[] _CustomTimers	; Custom set of timers to use for this animation
@@ -905,10 +906,6 @@ float[] Property Timers hidden
 	float[] Function Get()
 		If (_CustomTimers.Length)
 			return _CustomTimers
-		ElseIf (LeadIn)
-			return Config.StageTimerLeadIn
-		ElseIf (IsAggressive)
-			return Config.StageTimerAggr
 		EndIf
 		return Config.StageTimer
 	EndFunction
@@ -1082,6 +1079,7 @@ State Animating
 	EndFunction
 
 	Function ReStartTimer()
+		_ForceAdvance = false
 		_StageTimer = GetTimer()
 		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
 	EndFunction
@@ -1104,12 +1102,17 @@ State Animating
 		If (!timer)
 			return GetStageTimer(0)
 		EndIf
+		_ForceAdvance = true
 		return timer
 	EndFunction
 
 	float Function GetStageTimer(int maxstage)
-		int stageIdx = _StageHistory.Find(_ActiveStage)
-		int lastTimerIdx = Timers.Length - 1
+		int[] c = SexLabRegistry.GetClimaxingActors(_ActiveScene, _ActiveStage)
+		int stageIdx = _StageHistory.RFind(_ActiveStage)
+		If (c.Find(stageIdx) > -1)
+			return Timers[Timers.Length - 1]
+		EndIf
+		int lastTimerIdx = Timers.Length - 2
 		If (stageIdx <= lastTimerIdx)
 			return Timers[stageIdx]
 		EndIf
@@ -1117,7 +1120,7 @@ State Animating
 	Endfunction
 	
 	Event OnUpdate()
-		If (AutoAdvance)
+		If (AutoAdvance || _ForceAdvance)
 			_StageTimer -= ANIMATING_UPDATE_INTERVAL
 			If (_StageTimer <= 0)
 				GoToStage(_StageHistory.Length + 1)
@@ -2103,28 +2106,20 @@ sslThreadLibrary Property ThreadLib Hidden
 	sslThreadLibrary Function Get()
 		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslThreadLibrary
 	EndFunction
-	Function Set(sslThreadLibrary aSet)
-	EndFunction
 EndProperty
 sslAnimationSlots Property AnimSlots Hidden
 	sslAnimationSlots Function Get()
 		return Game.GetFormFromFile(0x639DF, "SexLab.esm") as sslAnimationSlots
-	EndFunction
-	Function Set(sslAnimationSlots aSet)
 	EndFunction
 EndProperty
 sslCreatureAnimationSlots Property CreatureSlots Hidden
 	sslCreatureAnimationSlots Function Get()
 		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslCreatureAnimationSlots
 	EndFunction
-	Function Set(sslCreatureAnimationSlots aSet)
-	EndFunction
 EndProperty
 sslActorLibrary property ActorLib Hidden
   sslActorLibrary Function Get()
     return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary
-  EndFunction
-  Function Set(sslActorLibrary aSet)
   EndFunction
 EndProperty
 
