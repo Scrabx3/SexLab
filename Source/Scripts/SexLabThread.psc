@@ -117,10 +117,6 @@ EndFunction
 Function SetConsent(bool abIsConsent)
 EndFunction
 
-; If the thread is currently in a lead in phase
-bool Function IsLeadIn()
-EndFunction
-
 ; ------------------------------------------------------- ;
 ; --- Interaction		                                  --- ;
 ; ------------------------------------------------------- ;
