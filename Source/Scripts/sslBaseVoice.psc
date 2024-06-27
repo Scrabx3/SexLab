@@ -71,61 +71,42 @@ EndFunction
 
 Function MoveLips(Actor ActorRef, Sound SoundRef = none, float Strength = 1.0) global
 	sslSystemConfig c = SexLabUtil.GetConfig()
-	MoveLipsEx(ActorRef, SoundRef, Strength, c.LipsSoundTime, c.LipsMoveTime, c.LipsPhoneme, c.LipsMinValue, c.LipsMaxValue, c.LipsFixedValue)
+	MoveLipsEx(ActorRef, SoundRef, Strength, c.LipsSoundTime, IsFixedValue = c.LipsFixedValue)
 endFunction
-function MoveLipsEx(Actor ActorRef, Sound SoundRef = none, float Strength = 1.0, int SoundCut = 0, float MoveTime = 0.2, int Phoneme = 1, int MinValue = 20, int MaxValue = 50, bool IsFixedValue = false, bool UseMFG = false) global	
-	float SavedP
-	int p = Phoneme
-	if p < 0 || p > 15
-		p = 0
-		float[] Phonemes = new float[32]
-		int i
-		; Get Phonemes
-		while i <= 15
-			Phonemes[i] = sslBaseExpression.GetPhoneme(ActorRef, i) ; 0.0 - 1.0
-			if Phonemes[i] >= Phonemes[p] ; seems to be required to prevet issues
-				p = i
-			endIf
-			i += 1
-		endWhile
-		SavedP = Phonemes[p]
-	else
-		SavedP = sslBaseExpression.GetPhoneme(ActorRef, p)
-	endIf
-	int MinP = MinValue
-	int MaxP = MaxValue
+function MoveLipsEx(Actor ActorRef, Sound SoundRef = none, float Strength = 1.0, int SoundCut = 0, float MoveTime = 0.2, int Phoneme = 1, int MinValue = 20, int MaxValue = 50, bool IsFixedValue = false, bool UseMFG = false) global
+	If (Phoneme < 0 || Phoneme > 15)
+		Phoneme = 0
+	EndIf
+	float SavedP = sslBaseExpression.GetPhoneme(ActorRef, Phoneme)
 	if !IsFixedValue
 		float ReferenceP = SavedP
 		if ReferenceP > (1.0 - (0.2 * Strength))
 			ReferenceP = (1.0 - (0.2 * Strength))
 		endIf
-		MinP = ((ReferenceP * 100) - (MinP * Strength)) as int
-		MaxP = ((ReferenceP * 100) + (MaxP * Strength)) as int
+		MinValue = ((ReferenceP * 100) - (MinValue * Strength)) as int
+		MaxValue = ((ReferenceP * 100) + (MaxValue * Strength)) as int
 	endIf
-	if MinP < 0
-		MinP = 0
-	elseIf MinP > 90
-		MinP = 90
+	if MinValue < 0
+		MinValue = 0
+	elseIf MinValue > 90
+		MinValue = 90
 	endIf
-	if (MaxP - MinP) < 10
-		MaxP = MinP + 10
+	if (MaxValue - MinValue) < 10
+		MaxValue = MinValue + 10
 	endIf
-	ActorRef.SetExpressionPhoneme(p, (MinP as float)*0.01)
+	sslExpressionUtil.SmoothSetPhoneme(ActorRef, Phoneme, MinValue)
+	; SoundCut 0 -> Sync | 1 -> Async
+	If (SoundCut != 0 && SoundRef != none)
+		SoundRef.Play(ActorRef)
+	EndIf
 	Utility.Wait(0.1)
-	int Instance = -1
-	if SoundCut != -1 && SoundRef != none
-		Instance = SoundRef.Play(ActorRef)
-	endIf
-	sslExpressionUtil.SmoothSetPhoneme(ActorRef, p, MaxP)
-	if SoundCut == -1 && SoundRef != none
+	sslExpressionUtil.SmoothSetPhoneme(ActorRef, Phoneme, MaxValue)
+	If (SoundCut == 0 && SoundRef != none)
 		SoundRef.PlayAndWait(ActorRef)
-	else
+	Else
 		Utility.Wait(MoveTime)
-	endIf
-	sslExpressionUtil.SmoothSetPhoneme(ActorRef, 0, p, (SavedP*100) as int)
-	if SoundCut == 1 && Instance != -1
-		Sound.StopInstance(Instance)
-	endIf
+	EndIf
+	sslExpressionUtil.SmoothSetPhoneme(ActorRef, 0, Phoneme, (SavedP * 100) as int)
 	Utility.Wait(0.2)
 endFunction
 
@@ -227,7 +208,7 @@ bool property Creature hidden
 endProperty
 
 function PlayMoan(Actor ActorRef, int Strength = 30, bool IsVictim = false, bool UseLipSync = false)
-	PlayMoanEx(ActorRef, Strength, IsVictim, UseLipSync, Config.LipsSoundTime, Config.LipsMoveTime, Config.LipsPhoneme, Config.LipsMinValue, Config.LipsMaxValue, Config.LipsFixedValue)
+	PlayMoanEx(ActorRef, Strength, IsVictim, UseLipSync, Config.LipsSoundTime, IsFixedValue = Config.LipsFixedValue)
 endFunction
 function PlayMoanEx(Actor ActorRef, int Strength = 30, bool IsVictim = false, bool UseLipSync = false, int SoundCut = 0, float MoveTime = 0.2, int Phoneme = 1, int MinValue = 20, int MaxValue = 50, bool IsFixedValue = false, bool UseMFG = false)
 	if !ActorRef
