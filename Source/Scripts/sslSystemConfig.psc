@@ -785,7 +785,7 @@ bool Function AddHook(SexLabThreadHook akHook)
   EndIf
   int idx = _Hooks.Find(none)
   If (idx == -1)
-    Error("Unable to bind new Thread Hook, limit of " + _Hooks.Length + " hooks reached")
+    Log("Unable to bind new Thread Hook, limit of " + _Hooks.Length + " hooks reached")
     Debug.MessageBox("Unable to bind new Thread Hook, limit of possible hooks reached\nPlease report this to Scrab")
     return false
   EndIf
@@ -796,7 +796,7 @@ EndFunction
 bool Function RemoveHook(SexLabThreadHook akHook)
   int idx = _Hooks.Find(akHook)
   If (idx == -1)
-    Error("Hook " + akHook + " is not registered and cannot be removed")
+    Log("Hook " + akHook + " is not registered and cannot be removed")
     return false
   EndIf
   _Hooks[idx] = none
