@@ -41,26 +41,12 @@ endFunction
 	Generic logging utility
 /;
 
-function Log(string msg, string Type = "NOTICE")
-	msg = Type+" - "+msg
-	if InDebugMode
-		SexLabUtil.PrintConsole(msg)
-		Debug.TraceUser("SexLabDebug", msg)
-	endIf
-	if Type == "FATAL"
-		Debug.TraceStack("SEXLAB - "+msg)
-	else
-		Debug.Trace("SEXLAB - "+msg)
-	endIf
-endFunction
-
-Function Error(String asMsg)
-	asMsg = "ERROR - " + asMsg
-	Debug.TraceStack("SEXLAB - " + asMsg)
-	SexLabUtil.PrintConsole(asMsg)
-	if SexLabUtil.GetConfig().DebugMode
-		Debug.TraceUser("SexLabDebug", asMsg)
-	endIf
+Function Log(string Log, string Type = "NOTICE")
+  If(Type == "FATAL")
+    sslLog.Error(Log)
+  Else
+    sslLog.Log(Log)
+  EndIf
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -120,12 +106,13 @@ Actor property PlayerRef Hidden
 	EndFunction
 EndProperty
 
-bool property InDebugMode auto hidden
+bool property InDebugMode hidden
+	bool Function Get()
+		return sslSystemConfig.GetSettingBool("bDebugMode")
+	EndFunction
+EndProperty
 event SetDebugMode(bool ToMode)
-	InDebugMode = ToMode
 endEvent
 
 event OnInit()
-	; LoadLibs(false)
-	; Debug.Trace("SEXLAB -- Init "+self)
 endEvent

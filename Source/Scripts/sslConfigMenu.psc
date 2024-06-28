@@ -454,16 +454,16 @@ Function MatchMaker()
 	int flag = DoDisable(!Config.MatchMaker)
 	AddToggleOptionST("ToggleMatchMaker", "$SSL_ToggleMatchMaker", Config.MatchMaker)
 	AddHeaderOption("$SSL_MatchMakerTagsSettings", flag)
-	AddTextOptionST("InputTags", "$SSL_InputTags", sslSystemConfig.ParseMMTagString(), flag)
-	AddInputOptionST("InputRequiredTags", "$SSL_InputRequiredTags", Config.RequiredTags, flag)
-	AddInputOptionST("InputExcludedTags", "$SSL_InputExcludedTags", Config.ExcludedTags, flag)
-	AddInputOptionST("InputOptionalTags", "$SSL_InputOptionalTags", Config.OptionalTags, flag)
+	AddTextOptionST("matchmakerInputTags", "$SSL_InputTags", sslSystemConfig.ParseMMTagString(), flag)
+	AddInputOptionST("matchmakerInputRequiredTags", "$SSL_InputRequiredTags", Config.RequiredTags, flag)
+	AddInputOptionST("matchmakerInputExcludedTags", "$SSL_InputExcludedTags", Config.ExcludedTags, flag)
+	AddInputOptionST("matchmakerInputOptionalTags", "$SSL_InputOptionalTags", Config.OptionalTags, flag)
 	AddTextOptionST("TextResetTags", "$SSL_TextResetTags", "$SSL_ResetTagsHere", flag)
 	SetCursorPosition(1)
 	AddEmptyOption()
 	AddHeaderOption("$SSL_MatchMakerActorSettings", flag)
-	AddToggleOptionST("ToggleSubmissivePlayer", "$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer, flag)
-	AddToggleOptionST("ToggleSubmissiveTarget", "$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget, flag)
+	AddToggleOptionST("matchmakerToggleSubPlayer", "$SSL_ToggleSubmissivePlayer", Config.SubmissivePlayer, flag)
+	AddToggleOptionST("matchmakerToggleSubTarget", "$SSL_ToggleSubmissiveTarget", Config.SubmissiveTarget, flag)
 EndFunction
 
 State ToggleMatchMaker
@@ -857,7 +857,7 @@ Function TestApply(Actor ActorRef)
 		str = 100.0
 	EndIf
 	sslBaseExpression.ApplyExpression(_expression[_expressionIdx], ActorRef, str)
-	Log("Expression.Applied(" + _expression[_expressionIdx] + ") Low? " + testlow +"; OpenMouth? " + testOpenMouth)
+	sslLog.Log("Testing Expression: " + _expression[_expressionIdx] + ". Low? " + testlow +", OpenMouth? " + testOpenMouth)
 	Utility.Wait(0.1)
 	Debug.Notification("$SSL_AppliedTestExpression")
 	Utility.WaitMenuMode(15.0)
@@ -882,7 +882,7 @@ Function RebuildClean()
 	While i
 		i -= 1
 		String Name = Config.Strapons[i].GetName()
-		AddTextOptionST("Strapon_" + i, Name, "$SSL_Remove")
+		AddTextOptionST("toggleStrapon_" + i, Name, "$SSL_Remove")
 	EndWhile
 
 	SetCursorPosition(1)
@@ -921,6 +921,40 @@ Function SystemCheckOptions()
 	AddTextOption("RaceMenu", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("Mfg Fix", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
 EndFunction
+
+State ResetStripOverrides
+	Event OnSelectST()
+		SetOptionFlagsST(OPTION_FLAG_DISABLED)
+		SetTextOptionValueST("$SSL_Resetting")		
+		ActorLib.ResetStripOverrides()
+		ShowMessage("$Done", false)
+		SetTextOptionValueST("$SSL_ClickHere")
+		SetOptionFlagsST(OPTION_FLAG_NONE)
+	EndEvent
+EndState
+
+State CleanSystem
+	Event OnSelectST()
+		If (!ShowMessage("$SSL_WarnCleanSystem"))
+			return
+		EndIf
+		SystemAlias.SetupSystem()
+		ModEvent.Send(ModEvent.Create("SexLabReset"))
+		Config.CleanSystemFinish.Show()
+	EndEvent
+EndState
+
+State RebuildStraponList
+	Event OnSelectST()
+		Config.LoadStrapons()
+		If (Config.Strapons.Length > 0)
+			ShowMessage("$SSL_FoundStrapon", false)
+		Else
+			ShowMessage("$SSL_NoStrapons", false)
+		EndIf
+		ForcePageReset()
+	EndEvent
+EndState
 
 ; ------------------------------------------------------- ;
 ; --- Mapped State Option Events                      --- ;
@@ -1030,6 +1064,7 @@ Event OnSelectST()
 			tags = PapyrusUtil.PushString(tags, toggle)
 		EndIf
 		sslBaseExpression.SetExpressionTags(_expression[_expressionIdx], tags)
+		SetToggleOptionValueST(tags.Find(toggle) > -1)
 	ElseIf (s[0] == "LipsSoundTime")
 		Config.LipsSoundTime = 1 - Config.LipsSoundTime
 		SetTextOptionValueST(_soundmethod[Config.LipsSoundTime])
@@ -1041,7 +1076,7 @@ Event OnSelectST()
 		ForcePageReset()
 	ElseIf (s[0] == "expressiontest")
 		TestApply(PlayerRef)
-	ElseIf (s[0] == "Strapon")	; Toggle Strapons
+	ElseIf (s[0] == "toggleStrapon")
 		int i = s[1] as int
 		Form[] Output
 		Form[] Strapons = Config.Strapons
@@ -1054,7 +1089,7 @@ Event OnSelectST()
 		endWhile
 		Config.Strapons = Output
 		ForcePageReset()
-	ElseIf (s[0] == "InputTags")	; Matchmaker Tags
+	ElseIf (s[0] == "matchmakerInputTags")	; Matchmaker Tags
 		ShowMessage(sslSystemConfig.ParseMMTagString(), false, "$Done")
 	ElseIf (s[0] == "TextResetTags")
 		If (!ShowMessage("$SSL_TagResetAreYouSure"))
@@ -1064,10 +1099,10 @@ Event OnSelectST()
 		sslSystemConfig.SetSettingStr("sOptionalTags", "")
 		sslSystemConfig.SetSettingStr("sExcludedTags", "")
 		ForcePageReset()
-	ElseIf (s[0] == "ToggleSubmissivePlayer")
+	ElseIf (s[0] == "matchmakerToggleSubPlayer")
 		Config.SubmissivePlayer = !Config.SubmissivePlayer
 		SetToggleOptionValueST(Config.SubmissivePlayer)
-	ElseIf (s[0] == "ToggleSubmissiveTarget")
+	ElseIf (s[0] == "matchmakerToggleSubTarget")
 		Config.SubmissiveTarget = !Config.SubmissiveTarget
 		SetToggleOptionValueST(Config.SubmissiveTarget)
 	ElseIf (s[0] == "expressionprev")
@@ -1076,6 +1111,12 @@ Event OnSelectST()
 	ElseIf (s[0] == "expressionnext")
 		_phaseIdx += 2
 		ForcePageReset()
+	ElseIf (s[0] == "DebugMode")
+		Config.DebugMode = !Config.DebugMode
+		SetToggleOptionValueST(Config.DebugMode)
+	ElseIf (s[0] == "StopCurrentAnimations")
+		ShowMessage("$SSL_StopRunningAnimations", false)
+		ThreadSlots.StopAll()
 	EndIf
 endEvent
 
@@ -1310,11 +1351,11 @@ EndEvent
 
 Event OnInputOpenST()
 	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
-	If (s[0] == "InputRequiredTags")
+	If (s[0] == "matchmakerInputRequiredTags")
 		SetInputDialogStartText(Config.RequiredTags)
-	ElseIf (s[0] == "InputExcludedTags")
+	ElseIf (s[0] == "matchmakerInputExcludedTags")
 		SetInputDialogStartText(Config.ExcludedTags)
-	ElseIf (s[0] == "InputOptionalTags")
+	ElseIf (s[0] == "matchmakerInputOptionalTags")
 		SetInputDialogStartText(Config.OptionalTags)
 	ElseIf (s[0] == "toggletags")
 		SetInputDialogStartText(_toggleTags)
@@ -1325,13 +1366,13 @@ EndEvent
 
 Event OnInputAcceptST(String inputString)
 	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
-	If (s[0] == "InputRequiredTags")
+	If (s[0] == "matchmakerInputRequiredTags")
 		Config.RequiredTags = inputString
 		SetInputOptionValueST(Config.RequiredTags)
-	ElseIf (s[0] == "InputExcludedTags")
+	ElseIf (s[0] == "matchmakerInputExcludedTags")
 		Config.ExcludedTags = inputString
 		SetInputOptionValueST(Config.ExcludedTags)
-	ElseIf (s[0] == "InputOptionalTags")
+	ElseIf (s[0] == "matchmakerInputOptionalTags")
 		Config.OptionalTags = inputString
 		SetInputOptionValueST(Config.OptionalTags)
 	ElseIf (s[0] == "toggletags")
@@ -1441,8 +1482,10 @@ Event OnHighlightST()
 		SetInfoText("$SSL_InfoLipsSoundTime")
 	ElseIf (s[0] == "LipsFixedValue")
 		SetInfoText("$SSL_InfoLipsFixedValue")
+	ElseIf (s[0] == "DebugMode")
+		SetInfoText("$SSL_InfoDebugMode")
 	EndIf
-endEvent
+EndEvent
 
 ; ------------------------------------------------------- ;
 ; --- Player Hotkeys                                  --- ;
@@ -1821,108 +1864,8 @@ state AdjustTargetStage
 endState
 
 ; ------------------------------------------------------- ;
-; --- Unorganized State Option Dump                   --- ;
-; ------------------------------------------------------- ;
-
-state StopCurrentAnimations
-	event OnSelectST()
-		ShowMessage("$SSL_StopRunningAnimations", false)
-		ThreadSlots.StopAll()
-	endEvent
-endState
-
-state ResetStripOverrides
-	event OnSelectST()
-		SetOptionFlagsST(OPTION_FLAG_DISABLED)
-		SetTextOptionValueST("$SSL_Resetting")		
-		ActorLib.ResetStripOverrides()
-		ShowMessage("$Done", false)
-		SetTextOptionValueST("$SSL_ClickHere")
-		SetOptionFlagsST(OPTION_FLAG_NONE)
-	endEvent
-endState
-
-state DebugMode
-	event OnSelectST()
-		Config.DebugMode = !Config.DebugMode
-		SetToggleOptionValueST(Config.DebugMode)
-	endEvent
-	event OnHighlightST()
-		SetInfoText("$SSL_InfoDebugMode")
-	endEvent
-endState
-
-state CleanSystem
-	event OnSelectST()
-		if ShowMessage("$SSL_WarnCleanSystem")
-			SystemAlias.SetupSystem()
-
-			ModEvent.Send(ModEvent.Create("SexLabReset"))
-			Config.CleanSystemFinish.Show()
-		endIf
-	endEvent
-endState
-state RebuildStraponList
-	event OnSelectST()
-		Config.LoadStrapons()
-		if Config.Strapons.Length > 0
-			ShowMessage("$SSL_FoundStrapon", false)
-		else
-			ShowMessage("$SSL_NoStrapons", false)
-		endIf
-		ForcePageReset()
-	endEvent
-endState
-
-; ------------------------------------------------------- ;
 ; --- Misc Utilities                                  --- ;
 ; ------------------------------------------------------- ;
-
-function Log(string Log, string Type = "NOTICE")
-	Log = Type+": "+Log
-	if Config.DebugMode
-		SexLabUtil.PrintConsole(Log)
-	endIf
-	if Type == "FATAL"
-		Debug.TraceStack("SEXLAB - "+Log)
-	else
-		Debug.Trace("SEXLAB - "+Log)
-	endIf
-endFunction
-
-function ResetAllQuests()
-	bool SaveDebug = Config.DebugMode
-	; Reset relevant quests
-	ResetQuest(Game.GetFormFromFile(0x00D62, "SexLab.esm") as Quest)
-	ResetQuest(Game.GetFormFromFile(0x639DF, "SexLab.esm") as Quest)
-	ResetQuest(Game.GetFormFromFile(0x664FB, "SexLab.esm") as Quest)
-	ResetQuest(Game.GetFormFromFile(0x78818, "SexLab.esm") as Quest)
-	sslThreadController[] Threads = ThreadSlots.Threads
-	int i = Threads.Length
-	while i
-		i -= 1
-		ResetQuest(Threads[i])
-	endwhile
-	Config.DebugMode = SaveDebug
-endFunction
-
-function ResetQuest(Quest QuestRef)
-	if QuestRef
-		while QuestRef.IsStarting()
-			Utility.WaitMenuMode(0.1)
-		endWhile
-		QuestRef.Stop()
-		while QuestRef.IsStopping()
-			Utility.WaitMenuMode(0.1)
-		endWhile
-		if !QuestRef.Start()
-			QuestRef.Start()
-			Log("Failed to start quest!", "ResetQuest("+QuestRef+")")
-		endIf
-	else
-		Log("Invalid quest!", "ResetQuest("+QuestRef+")")
-	endIf
-endFunction
 
 int function DoDisable(bool check)
 	if check
@@ -1973,6 +1916,14 @@ sslThreadLibrary Property ThreadLib Hidden
 		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslThreadLibrary
 	EndFunction
 EndProperty
+
+Function Log(string Log, string Type = "NOTICE")
+  If(Type == "FATAL")
+    sslLog.Error(Log)
+  Else
+    sslLog.Log(Log)
+  EndIf
+EndFunction
 
 string[] function MapOptions()
 	return PapyrusUtil.StringSplit(GetState(), "_")
@@ -2179,4 +2130,9 @@ endFunction
 
 bool function GetToggle(sslBaseAnimation Anim)
 	return Anim.Enabled
+endFunction
+
+function ResetAllQuests()
+endFunction
+function ResetQuest(Quest QuestRef)
 endFunction

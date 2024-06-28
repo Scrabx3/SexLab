@@ -95,7 +95,7 @@ sslBaseAnimation Function GetSetAnimation(String asScene)
 EndFunction
 
 sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
-  Log("Translating " + asSceneIDs.Length + " Animations to Legacy Class (" + asSceneIDs + ")")
+  sslLog.Log("Translating " + asSceneIDs.Length + " Animations to Legacy Class (" + asSceneIDs + ")")
   sslBaseAnimation[] ret = sslUtility.AnimationArray(asSceneIDs.Length)
   SyncBackEnd()
   int i = 0
@@ -106,7 +106,7 @@ sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
     EndIf
     i += 1
   EndWhile
-  Log("Returning " + ret.Length + " Objects (" + asSceneIDs + ")")
+  sslLog.Log("Returning " + ret.Length + " Objects (" + asSceneIDs + ")")
   return ret
 EndFunction
 
@@ -555,17 +555,8 @@ function DoCache()
 endFunction
 
 function Log(string msg)
-  if Config.DebugMode
-    MiscUtil.PrintConsole(msg)
-    Debug.TraceUser("SexLabDebug", msg)
-  endIf
-  Debug.Trace("[SexLab] - "+msg)
+  sslLog.Log(msg)
 endFunction
-
-state Locked
-  function Setup()
-  endFunction
-endState
 
 bool function TestSlots()
   return true

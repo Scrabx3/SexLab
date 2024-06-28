@@ -311,27 +311,15 @@ function Tell(string msg)
 endFunction
 
 function Log(string msg)
-	Debug.Trace(msg)
-	SexLabUtil.PrintConsole(msg)
-	Debug.TraceUser("SexLab", msg)
+	sslLog.Log(msg)
 endFunction
 
 function Notify(string msg)
-	Debug.Notification(msg)
-	SexLabUtil.PrintConsole(msg)
-	Debug.Trace(msg)
-	Debug.TraceUser("SexLab", msg)
-	Utility.Wait(0.1)
+	sslLog.Log(msg, true)
 endFunction
 
 function Error(int errorid, string msg)
-	Debug.TraceAndbox(msg)
-	Utility.Wait(0.1)
-	SexLabUtil.PrintConsole(msg)
-	Debug.TraceUser("SexLab", msg)
-	string id = "--- Error ID ( "+errorid+" ) ---"
-	SexLabUtil.PrintConsole(id)
-	Debug.TraceUser("SexLab", id)
+	sslLog.Error(msg, true)
 endFunction
 
 bool function Ask(string msg)

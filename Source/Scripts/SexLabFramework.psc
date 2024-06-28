@@ -1717,7 +1717,7 @@ sslActorLibrary property ActorLib Auto
 sslThreadLibrary property ThreadLib Auto
 sslThreadSlots property ThreadSlots Auto
 
-function Setup()
+Function Setup()
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
 	Config = SexLabQuestFramework as sslSystemConfig
 	ThreadLib = SexLabQuestFramework as sslThreadLibrary
@@ -1725,11 +1725,11 @@ function Setup()
 	ActorLib = SexLabQuestFramework as sslActorLibrary
 
   Log(self + " - Loaded SexLabFramework")
-endFunction
+EndFunction
 
-sslThreadModel function NewThread(float TimeOut = 5.0)
+sslThreadModel Function NewThread(float TimeOut = 5.0)
   return ThreadSlots.PickModel(TimeOut)
-endFunction
+EndFunction
 
 SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, String asContext, Actor[] akSubmissive, ObjectReference akCenter, int aiFurniture, String asHook)
   sslThreadModel thread = NewThread()
@@ -1749,12 +1749,10 @@ SexLabThread Function StartSceneImpl(Actor[] akPositions, String[] asScenes, Str
 EndFunction
 
 Function Log(string Log, string Type = "NOTICE")
-  Log = "[SEXLAB] - " + Type + " - " + Log
-  SexLabUtil.PrintConsole(Log)
   If(Type == "FATAL")
-    Debug.TraceStack(Log)
+    sslLog.Error(Log)
   Else
-    Debug.Trace(Log)
+    sslLog.Log(Log)
   EndIf
 EndFunction
 

@@ -42,7 +42,6 @@ Event OnInit()
 EndEvent
 
 Event OnPlayerLoadGame()
-	Log("Version " + SexLabUtil.GetVersion(), "LOADED")
 	If (!Config.CheckSystem())
 		return
 	ElseIf (IsInstalled)
@@ -66,7 +65,7 @@ bool Function SetupSystem()
 	ThreadLib.Setup()
 	ThreadSlots.Setup()
 	SexLab.GoToState("Enabled")
-	LogAll("SexLab v" + SexLabUtil.GetStringVer() + " - Ready!")
+	sslLog.Log("SexLab v" + SexLabUtil.GetStringVer() + " - Ready!", true)
 	return true
 EndFunction
 
@@ -77,23 +76,6 @@ Event InstallSystem()
 	ModEvent.PushInt(eid, SexLabUtil.GetVersion())
 	ModEvent.Send(eid)
 EndEvent
-
-; ------------------------------------------------------- ;
-; --- System Utils                                    --- ;
-; ------------------------------------------------------- ;
-
-function Log(string Log, string Type = "NOTICE")
-	Log = "SEXLAB - "+Type+": "+Log
-	SexLabUtil.PrintConsole(Log)
-	Debug.Trace(Log)
-endFunction
-
-function LogAll(string Log)
-	Log = "SexLab  - "+Log
-	Debug.Notification(Log)
-	Debug.Trace(Log)
-	MiscUtil.PrintConsole(Log)
-endFunction
 
 function LoadLibs(bool Forced = false)
 	Form SexLabQuestFramework = Game.GetFormFromFile(0xD62, "SexLab.esm")
@@ -151,6 +133,13 @@ sslActorLibrary property ActorLib Hidden
 		return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslActorLibrary
 	EndFunction
 EndProperty
+
+function Log(string Log, string Type = "NOTICE")
+	sslLog.Log(Log)
+endFunction
+function LogAll(string Log)
+	sslLog.Log(Log, true)
+endFunction
 
 bool property UpdatePending hidden
 	bool function get()

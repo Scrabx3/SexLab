@@ -301,15 +301,13 @@ bool Function GetSubmissive(Actor akActor)
 	sslActorAlias it = ActorAlias(akActor)
 	return it && it.IsVictim()
 EndFunction
-
 bool Function IsVictim(Actor ActorRef)
-	sslActorAlias vic = ActorAlias(ActorRef)
-	return vic && vic.IsVictim()
+	return GetSubmissive(ActorRef)
 EndFunction
 
 bool Function IsAggressor(Actor ActorRef)
 	sslActorAlias agr = ActorAlias(ActorRef)
-	return agr && agr.IsAggressor()
+	return GetSubmissives().Length && agr && agr.IsAggressor()
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -2060,36 +2058,17 @@ EndFunction
 /;
 
 Function Log(string msg, string src = "")
-	msg = "Thread[" + thread_id + "] " + src + " - " + msg
-	Debug.Trace("SEXLAB - " + msg)
-	If(Config.DebugMode)
-		SexLabUtil.PrintConsole(msg)
-		Debug.TraceUser("SexLabDebug", msg)
-	EndIf
-EndFunction
-
-Function LogConsole(String asReport)
-	String msg = "Thread[" + thread_id + "] - " + asReport
-	SexLabUtil.PrintConsole(msg)
-	Debug.Trace("SEXLAB - " + msg)
-EndFunction
-
-Function LogRedundant(String asFunction)
-	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function made redundant.\nNo mod should ever be calling this. If you see this, the mod starting this scene integrates into SexLab in undesired ways.")
+	msg = "Thread[" + thread_id + "] " + msg
+	sslLog.Log(msg)
 EndFunction
 
 Function Fatal(string msg, string src = "", bool halt = true)
-	msg = "Thread["+thread_id+"] - FATAL - " + src + " - " + msg
-	Debug.TraceStack("SEXLAB - " + msg)
-	SexLabUtil.PrintConsole(msg)
-	If(Config.DebugMode)
-		Debug.TraceUser("SexLabDebug", msg)
-	EndIf
+	msg = "Thread["+thread_id+"] - FATAL - " + msg
+	sslLog.Error(msg, true)
 	If (halt)
 		Initialize()
 	EndIf
 EndFunction
-
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
@@ -2374,6 +2353,15 @@ sslBaseAnimation[] Property Animations hidden
 		return GetAnimationsLegacyCast(Scenes)
 	EndFunction
 EndProperty
+
+Function LogConsole(String asReport)
+	String msg = "Thread[" + thread_id + "] - " + asReport
+	sslLog.Log(msg, true)
+EndFunction
+Function LogRedundant(String asFunction)
+	Debug.MessageBox("[SexLab]\nState '" + GetState() + "'; Function '" + asFunction + "' is an internal function that is no longer used.\nThis is most likely due to a file conflict. Ensure no other mod overwrites SexLab files.\nSee Papyrus Log for more information.")
+	Debug.TraceStack("[SexLab] Redundant function called: " + asFunction)
+EndFunction
 
 Function AddAnimation(sslBaseAnimation AddAnimation, bool ForceTo = false)
 	If(!AddAnimation)

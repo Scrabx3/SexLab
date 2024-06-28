@@ -40,7 +40,5 @@ endEvent
 ;\-----------------------------------------------/;
 
 function Log(string log)
-	Debug.Trace(log)
-	Debug.TraceUser("SexLabDebug", log)
-	SexLabUtil.PrintConsole(log)
+	sslLog.Log(log)
 endfunction

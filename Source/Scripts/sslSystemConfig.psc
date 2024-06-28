@@ -18,30 +18,6 @@ ScriptName sslSystemConfig extends sslSystemLibrary
 ; --- System Resources                                --- ;
 ; ------------------------------------------------------- ;
 
-bool property DebugMode hidden
-  bool function get()
-    return GetSettingBool("bDebugMode")
-  endFunction
-  function set(bool value)
-    SetSettingBool("bDebugMode", value)
-    ; TODO: Move this into some uniform logging function !IMPORTANT
-    ; InDebugMode = value
-    ; if InDebugMode
-    ;   Debug.OpenUserLog("SexLabDebug")
-    ;   Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
-    ;   MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")        
-    ; else
-    ;   if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
-    ;     Debug.CloseUserLog("SexLabDebug")
-    ;   endIf
-    ;   MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")     
-    ; endIf
-    ; int eid = ModEvent.Create("SexLabDebugMode")
-    ; ModEvent.PushBool(eid, value)
-    ; ModEvent.Send(eid)
-  endFunction
-endProperty
-
 Sound[] property HotkeyUp auto
 Sound[] property HotkeyDown auto
 
@@ -138,6 +114,14 @@ String Function ParseMMTagString() global
 EndFunction
 
 ; Booleans
+bool property DebugMode hidden
+  bool function get()
+    return GetSettingBool("bDebugMode")
+  endFunction
+  function set(bool value)
+    SetSettingBool("bDebugMode", value)
+  endFunction
+endProperty
 bool property AllowCreatures hidden
   bool Function Get()
     return GetSettingBool("bAllowCreatures")
@@ -154,7 +138,6 @@ bool property UseCreatureGender hidden
     SetSettingBool("bCreatureGender", aSet)
   EndFunction
 EndProperty
-
 bool property RedressVictim hidden
   bool Function Get()
     return GetSettingBool("bRedressVictim")

@@ -123,11 +123,7 @@ sslSystemConfig Property Config Hidden
 EndProperty
 
 function Log(string Log, string Type = "NOTICE")
-	Log = Type+" "+Registry+" - "+Log
-	if Config.DebugMode
-		SexLabUtil.PrintConsole(Log)
-	endIf
-	Debug.Trace("SEXLAB - "+Log)
+	sslLog.Log(Log)
 endFunction
 
 function Initialize()

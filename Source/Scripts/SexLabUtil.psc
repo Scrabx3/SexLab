@@ -109,43 +109,6 @@ String[] Function MergeSplitTags(String asTags, String asTagsSuppress, bool abRe
   EndIf
 EndFunction
 
-function Log(string msg, string source, string type = "NOTICE", string display = "trace", bool minimal = true) global
-	if StringUtil.Find(display, "trace") != -1
-		if minimal
-			Debug.Trace("-- SexLab "+type+"-- "+source+": "+msg)
-		else
-			Debug.Trace("--- SexLab "+source+" --------------------------------")
-			Debug.Trace(" "+type+":")
-			Debug.Trace("   "+msg)
-			Debug.Trace("-----------------------------------------------------------")
-		endIf
-	endIf
-	if StringUtil.Find(display, "box") != -1
-		Debug.MessageBox(type+" "+source+": "+msg)
-	endIf
-	if StringUtil.Find(display, "notif") != -1
-		Debug.Notification(type+": "+msg)
-	endIf
-	if StringUtil.Find(display, "stack") != -1
-		Debug.TraceStack("-- SexLab "+type+"-- "+source+": "+msg)
-	endIf
-	if StringUtil.Find(display, "console") != -1
-		SexLabUtil.PrintConsole(type+" SexLab "+source+": "+msg)
-	endIf
-endFunction
-
-function DebugLog(string Log, string Type = "NOTICE", bool DebugMode = false) global
-	Log = Type+": "+Log
-	if DebugMode
-		SexLabUtil.PrintConsole(Log)
-	endIf
-	if Type == "FATAL" || Type == "ERROR" || Type == "DEPRECATED"
-		Debug.TraceStack("SEXLAB - "+Log)
-	else
-		Debug.Trace("SEXLAB - "+Log)
-	endIf
-endFunction
-
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;								██╗     ███████╗ ██████╗  █████╗  ██████╗██╗   ██╗							;
@@ -254,8 +217,44 @@ ReferenceAlias function AliasIfElse(bool isTrue, ReferenceAlias returnTrue, Refe
 	return returnFalse
 EndFunction
 
+function Log(string msg, string source, string type = "NOTICE", string display = "trace", bool minimal = true) global
+	if StringUtil.Find(display, "trace") != -1
+		if minimal
+			Debug.Trace("-- SexLab "+type+"-- "+source+": "+msg)
+		else
+			Debug.Trace("--- SexLab "+source+" --------------------------------")
+			Debug.Trace(" "+type+":")
+			Debug.Trace("   "+msg)
+			Debug.Trace("-----------------------------------------------------------")
+		endIf
+	endIf
+	if StringUtil.Find(display, "box") != -1
+		Debug.MessageBox(type+" "+source+": "+msg)
+	endIf
+	if StringUtil.Find(display, "notif") != -1
+		Debug.Notification(type+": "+msg)
+	endIf
+	if StringUtil.Find(display, "stack") != -1
+		Debug.TraceStack("-- SexLab "+type+"-- "+source+": "+msg)
+	endIf
+	if StringUtil.Find(display, "console") != -1
+		SexLabUtil.PrintConsole(type+" SexLab "+source+": "+msg)
+	endIf
+endFunction
+
+function DebugLog(string Log, string Type = "NOTICE", bool DebugMode = false) global
+	Log = Type+": "+Log
+	if DebugMode
+		SexLabUtil.PrintConsole(Log)
+	endIf
+	if Type == "FATAL" || Type == "ERROR" || Type == "DEPRECATED"
+		Debug.TraceStack("SEXLAB - "+Log)
+	else
+		Debug.Trace("SEXLAB - "+Log)
+	endIf
+endFunction
+
 string function RemoveSubString(string InputString, string RemoveString) global native
-int function GetPluginVersion() global native
 int function IntMinMaxValue(int[] searchArray, bool findHighestValue = true) global native
 int function IntMinMaxIndex(int[] searchArray, bool findHighestValue = true) global native
 float function FloatMinMaxValue(float[] searchArray, bool findHighestValue = true) global native

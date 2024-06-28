@@ -702,13 +702,13 @@ State Animating
 			return
 		ElseIf (OpenMouth)
 			sslBaseExpression.OpenMouth(_ActorRef)
-			Utility.Wait(1.0)
+			Utility.Wait(0.7)
 		ElseIf (sslBaseExpression.IsMouthOpen(_ActorRef))
 			sslBaseExpression.CloseMouth(_ActorRef)
 		EndIf
 		If (_Expression && _livestatus == LIVESTATUS_ALIVE)
 			sslBaseExpression.ApplyExpression(_Expression, _ActorRef, afStrength)
-			Log("sslBaseExpression.ApplyExpression(" + _Expression + ") Strength? " + afStrength + "; OpenMouth? " + OpenMouth)
+			Log("Expression? " + _Expression + "; Strength? " + afStrength + "; OpenMouth? " + OpenMouth, "sslBaseExpression.ApplyExpression()")
 		EndIf
 	EndFunction
 
@@ -1299,7 +1299,7 @@ function ApplyCum()	; NOTE: Temporary?
 			analPen = _Thread.IsAnal()
 		endIf
 
-		Log("Adding v = " + vaginalPen + " o = " + oralPen + " a = " + analPen, "ApplyCum")
+		Log("Adding v = " + vaginalPen + " o = " + oralPen + " a = " + analPen)
 
 		if (vaginalPen || oralPen || analPen) && ParentCell && ParentCell.IsAttached() 
 			; thanks a lot for removing ActorLib scrab
@@ -1391,26 +1391,13 @@ EndEvent
 /;
 
 function Log(string msg, string src = "")
-	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] State" + GetState() + "] " + src + " - " + msg
-	Debug.Trace("SEXLAB - " + msg)
-	if _Config.DebugMode
-		SexLabUtil.PrintConsole(msg)
-		Debug.TraceUser("SexLabDebug", msg)
-	endIf
+	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] State [" + GetState() + "] " + msg
+	sslLog.Log(msg)
 endFunction
 
 Function Error(String msg, string src = "")
-	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] State" + GetState() + "] - ERROR - " + src + " - " + msg
-	Debug.TraceStack("SEXLAB - " + msg)
-	SexLabUtil.PrintConsole(msg)
-	if _Config.DebugMode
-		Debug.TraceUser("SexLabDebug", msg)
-	endIf
-EndFunction
-
-Function LogRedundant(String asFunction)
-	Debug.MessageBox("[SEXLAB]\nState '" + GetState() + "'; Function '" + asFunction + "' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
-	Debug.TraceStack("Invoking Legacy Function " + asFunction)
+	msg = "Thread[" + _Thread.tid + "] ActorAlias[" + GetActorName() + "] State [" + GetState() + "] " + msg
+	sslLog.Error(msg)
 EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
@@ -1645,6 +1632,11 @@ endFunction
 ; Most of these functions had a specific functionality to operate on the underlying actor, allowing them to be invoked illegally
 ; would create issues in the framework itself while having them fail silently would potentially introduce issues on 
 ; the code illegally calling these functions, hence they all fail with an error message
+Function LogRedundant(String asFunction)
+	Debug.MessageBox("[SexLab]\nState '" + GetState() + "'; Function '" + asFunction + "' is a strictiyl redundant function that should not be called under any circumstance. See Papyrus Logs for more information.")
+	Debug.TraceStack("[SexLab] Invoking Legacy Function " + asFunction)
+EndFunction
+
 function GetPositionInfo()
 	LogRedundant("GetPositionInfo")
 endFunction

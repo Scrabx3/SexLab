@@ -364,8 +364,5 @@ bool function TestSlots()
 endFunction
 
 function Log(string msg)
-	if Config.DebugMode
-		MiscUtil.PrintConsole(msg)
-	endIf
-	Debug.Trace("SEXLAB - "+msg)
+	sslLog.Log(msg)
 endFunction

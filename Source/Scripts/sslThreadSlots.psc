@@ -97,7 +97,7 @@ EndFunction
 
 Function StopThread(sslThreadController Slot)
   If (Slot.GetStatus() != Slot.STATUS_IDLE)
-    SexLabUtil.DebugLog("Force stop-request on thread + " + Slot + " during State " + Slot.GetState(), "", true)
+    sslLog.Log("Stopping thread " + Slot + " in state " + Slot.GetState())
   EndIf
   Slot.Initialize()
 EndFunction
@@ -179,27 +179,6 @@ Auto State ToBeInitialized
     return none
   EndFunction
 EndState
-
-; ------------------------------------------------------- ;
-; --- Logging                                         --- ;
-; ------------------------------------------------------- ;
-
-function Log(String asMsg)
-	Debug.Trace("SEXLAB - " + asMsg)
-	if Config.DebugMode
-		SexLabUtil.PrintConsole(asMsg)
-		Debug.TraceUser("SexLabDebug", asMsg)
-	endIf
-endFunction
-
-Function Error(String asMsg)
-	asMsg = "ERROR - " + asMsg
-	Debug.TraceStack("SEXLAB - " + asMsg)
-	SexLabUtil.PrintConsole(asMsg)
-	if Config.DebugMode
-		Debug.TraceUser("SexLabDebug", asMsg)
-	endIf
-EndFunction
 
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
