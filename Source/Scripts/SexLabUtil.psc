@@ -7,13 +7,15 @@ ScriptName SexLabUtil Hidden
 ; --- SexLab Accessors                                --- ;
 ; ------------------------------------------------------- ;
 
-int function GetVersion() global
-	return 25000
-endFunction
+int Function GetPluginVersion() global native
+int Function GetVersion() global
+	return GetPluginVersion()
+EndFunction
 
-string function GetStringVer() global
-	return "2.5 P+"
-endFunction
+String function GetStringVer() global
+	int[] pack = GetVersionPack()
+	return pack[0] + "." + pack[1] + "." + pack[2] + "." + pack[3]
+EndFunction
 
 SexLabFramework function GetAPI() global
 	return Game.GetFormFromFile(0xD62, "SexLab.esm") as SexLabFramework
@@ -60,6 +62,16 @@ EndFunction
 sslSystemConfig function GetConfig() global
 	return Game.GetFormFromFile(0xD62, "SexLab.esm") as sslSystemConfig
 endFunction
+
+int[] Function GetVersionPack() global
+	int v = GetPluginVersion()
+	int[] ret = new int[4]
+	ret[0] = Math.LogicalAnd(Math.RightShift(v, 24), 0xFFF)
+	ret[1] = Math.LogicalAnd(Math.RightShift(v, 16), 0x0FF)
+	ret[2] = Math.LogicalAnd(Math.RightShift(v, 4), 0xFFF)
+	ret[3] = Math.LogicalAnd(Math.RightShift(v, 0), 0x00F)
+	return ret
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Developer Utilities                             --- ;
