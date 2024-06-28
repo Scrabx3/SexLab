@@ -92,76 +92,16 @@ Event OnConfigInit()
 		_moods[i] = "$SSL_DialogueMood_" + i
 		i += 1
 	EndWhile
-	; "Dialogue Anger"
-	; "Dialogue Fear"
-	; "Dialogue Happy"
-	; "Dialogue Sad"
-	; "Dialogue Surprise"
-	; "Dialogue Puzzled"
-	; "Dialogue Disgusted"
-	; "Mood Neutral"
-	; "Mood Anger"
-	; "Mood Fear"
-	; "Mood Happy"
-	; "Mood Sad"
-	; "Mood Surprise"
-	; "Mood Puzzled"
-	; "Mood Disgusted"
-	; "Combat Anger"
-	; "Combat Shout"
-
-	_phonemes = new string[16]
-	i = 0
-	While (i < _phonemes.Length)
-		_phonemes[i] = "$SSL_Phoneme_" + i
-		i += 1
-	EndWhile
-	; "0: Aah"
-	; "1: BigAah"
-	; "2: BMP"
-	; "3: ChjSh"
-	; "4: DST"
-	; "5: Eee"
-	; "6: Eh"
-	; "7: FV"
-	; "8: i"
-	; "9: k"
-	; "10: N"
-	; "11: Oh"
-	; "12: OohQ"
-	; "13: R"
-	; "14: Th"
-	; "15: W"
-
-	_modifiers = new string[14]
-	i = 0
-	While (i < _modifiers.Length)
-		_modifiers[i] = "$SSL_Modifier_" + i
-		i += 1
-	EndWhile
-	; "0: BlinkL"
-	; "1: BlinkR"
-	; "2: BrowDownL"
-	; "3: BrownDownR"
-	; "4: BrowInL"
-	; "5: BrowInR"
-	; "6: BrowUpL"
-	; "7: BrowUpR"
-	; "8: LookDown"
-	; "9: LookLeft"
-	; "10: LookRight"
-	; "11: LookUp"
-	; "12: SquintL"
-	; "13: SquintR"
 
 	_soundmethod = new string[2]
 	_soundmethod[0] = "$SSL_Sync"
 	_soundmethod[1] = "$SSL_Async"
 
-	_expressionScales = new String[3]
+	_expressionScales = new String[4]
 	_expressionScales[0] = "$SSL_ScaleMode_Linear"
 	_expressionScales[1] = "$SSL_ScaleMode_Square"
 	_expressionScales[2] = "$SSL_ScaleMode_Cubic"
+	_expressionScales[3] = "$SSL_ScaleMode_Exponential"
 
 	; Timers & Stripping
 	_stripView = new string[2]
@@ -170,7 +110,7 @@ Event OnConfigInit()
 
 	; Animation Toggles
 	_toggleGroup = new String[3]
-	_toggleGroup[0] = "$SSL_Human"
+	_toggleGroup[0] = "$SSL_Humans"
 	_toggleGroup[1] = "$SSL_Creatures"
 	_toggleGroup[2] = "$SSL_Everything"
 
@@ -200,9 +140,11 @@ Event OnConfigOpen()
 	_voiceCachedNames = Utility.CreateStringArray(_voiceCachedActors.Length)
 	int n = 0
 	While (n < _voiceCachedNames.Length)
-		_voiceCachedNames[i] = _voiceCachedActors[i].GetActorBase().GetName()
+		_voiceCachedNames[n] = _voiceCachedActors[n].GetActorBase().GetName()
 		n += 1
 	EndWhile
+	Debug.MessageBox(_voiceCachedActors)
+	Debug.MessageBox(_voiceCachedNames)
 	_stripViewIdx = 0
 	_playerDisplayAll = false
 	_targetDisplayAll = false
@@ -393,13 +335,13 @@ Function AnimationSettings()
 	SetCursorFillMode(TOP_TO_BOTTOM)
 	AddHeaderOption("$SSL_PlayerSettings")
 	AddToggleOptionST("AutoAdvance","$SSL_AutoAdvanceStages", Config.AutoAdvance)
-	AddToggleOptionST("DisableVictim","$SSL_DisableVictimControls", Config.DisablePlayer)
+	AddToggleOptionST("DisableSub","$SSL_DisableSubControls", Config.DisablePlayer)
 	AddToggleOptionST("AutomaticTFC","$SSL_AutomaticTFC", Config.AutoTFC)
 	AddSliderOptionST("AutomaticSUCSM","$SSL_AutomaticSUCSM", Config.AutoSUCSM, "{0}")
-	AddMenuOptionST("SexSelect_0", "$SSL_PlayerGender", _Sexes[SexLabRegistry.GetSex(PlayerRef, false) % 3])
+	AddMenuOptionST("SexSelect_0", "$SSL_PlayerSex", _Sexes[SexLabRegistry.GetSex(PlayerRef, false) % 3])
 	If (Config.TargetRef)
 		String name = Config.TargetRef.GetLeveledActorBase().GetName()
-		AddMenuOptionST("SexSelect_1", "$SSL_{" + name + "}sGender", _Sexes[SexLabRegistry.GetSex(Config.TargetRef, false) % 3])
+		AddMenuOptionST("SexSelect_1", "$SSL_{" + name + "}Sex", _Sexes[SexLabRegistry.GetSex(Config.TargetRef, false) % 3])
 	Else
 		AddTextOption("$SSL_NoTarget", "$SSL_Male", OPTION_FLAG_DISABLED)
 	EndIf
@@ -538,15 +480,13 @@ State SelectVoiceCache
 	Event OnMenuAcceptST(Int aiIndex)
 		_voiceCacheIndex = aiIndex
 		ForcePageReset()
-		; SetMenuOptionValueST(_voiceCachedNames[aiIndex])
 	EndEvent
 	Event OnDefaultST()
 		_voiceCacheIndex = 0
 		ForcePageReset()
-		; SetMenuOptionValueST(_voiceCachedNames[_voiceCacheIndex])
 	EndEvent
 	Event OnHighlightST()
-		SetInfoText("$SSL_SelectVoieCacheInfo")
+		SetInfoText("$SSL_SelectVoiceCacheInfo")
 	EndEvent
 EndState
 
@@ -599,8 +539,8 @@ Function TimersStripping()
 	int i = 0
 	While (i < 32)
 		int bit = Math.LeftShift(1, i)
-		AddToggleOptionST("Stripping_" + r1 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r1), bit))
-		AddToggleOptionST("Stripping_" + r2 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r2), bit))
+		AddToggleOptionST("Stripping_" + r1 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r1), bit), DoDisable(i >= 30))
+		AddToggleOptionST("Stripping_" + r2 + "_" + i, "$SSL_Strip_" + i, Math.LogicalAnd(sslSystemConfig.GetSettingIntA("iStripForms", r2), bit), DoDisable(i >= 30))
 		If (i == 13)
 			AddHeaderOption("$SSL_ExtraSlots")
 			AddHeaderOption("$SSL_ExtraSlots")
@@ -717,7 +657,7 @@ Function ToggleAnimations()
 	AddEmptyOption()
 	AddInputOptionST("toggletags", "$SSL_TagFilter", _toggleTags)
 	AddHeaderOption("")
-	AddTextOptionST("AnimationTogglePage", "$SSL_Page{" + (_currentTogglePage + 1) + "}{" + animpages + "}", "", DoDisable(animpages <= 1))
+	AddTextOptionST("AnimationTogglePage", "$SSL_Page{" + (_currentTogglePage + 1) + "}{" + animpages + "}", "$SSL_NextPage", DoDisable(animpages <= 1))
 	int i = _currentTogglePage * ANIMS_PER_PAGE
 	While (i < animations.Length && i < (_currentTogglePage + 1) * ANIMS_PER_PAGE)
 		String name = SexLabRegistry.GetSceneName(animations[i])
@@ -731,8 +671,6 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 String[] _moods
-String[] _phonemes
-String[] _modifiers
 String[] _soundmethod
 String[] _expressionScales
 String[] _expression
@@ -808,9 +746,10 @@ Function ExpressionEditor()
 		Else
 			AddEmptyOption()
 		EndIf
+		int MODIFIER_COUNT = 14
 		int n = 0
-		While (n < _modifiers.Length)
-			AddSliderOptionST("expredit_" + n + "_" + i, _modifiers[n], values[n], "{1}", flag)
+		While (n < MODIFIER_COUNT)
+			AddSliderOptionST("expredit_" + n + "_" + i, "$SSL_Modifier_" + n, values[n], "{1}", flag)
 			n += 1
 		EndWhile
 		If (i == 0)
@@ -818,9 +757,10 @@ Function ExpressionEditor()
 		Else
 			AddEmptyOption()
 		EndIf
+		int PHONEME_COUNT = 16
 		int k = 0
-		While (k < _phonemes.Length)
-			AddSliderOptionST("expredit_" + (n + k) + "_" + i, _phonemes[k], values[n + k], "{1}", flag)
+		While (k < PHONEME_COUNT)
+			AddSliderOptionST("expredit_" + (n + k) + "_" + i, "$SSL_Phoneme_" + k, values[n + k], "{1}", flag)
 			k += 1
 		EndWhile
 		If (v == 0)
@@ -841,7 +781,7 @@ Function TestApply(Actor ActorRef)
 	If (!ShowMessage("$SSL_WarnTestExpression{" + name + "}", true, "$Yes", "$No"))
 		return
 	EndIf
-	bool testLow = ShowMessage("$SSL_WarnTestExpressionLowOrHight", true, "$Low", "$High")
+	bool testLow = ShowMessage("$SSL_WarnTestExpressionLowOrHight", true, "$SSL_Low", "$SSL_High")
 	bool testOpenMouth = ShowMessage("$SSL_WarnTestExpressionWithOpenMouth", true, "$Yes", "$No")
 	ShowMessage("$SSL_StartTestExpression{" + _expression[_expressionIdx] + "}", false)
 	Utility.Wait(0.1)
@@ -876,6 +816,15 @@ Function RebuildClean()
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")
 	AddTextOptionST("ResetStripOverrides","$SSL_ResetStripOverrides", "$SSL_ClickHere")
 	AddTextOptionST("CleanSystem","$SSL_CleanSystem", "$SSL_ClickHere")
+	AddHeaderOption("System Requirements")
+	SystemCheckOptions()
+
+	SetCursorPosition(1)
+	AddHeaderOption("Registry Info")
+	; IDEA: Allow clicking on this for more info, custom swf mayhaps?
+	AddTextOption("$SSL_Animations", sslSystemConfig.GetAnimationCount(), OPTION_FLAG_DISABLED)
+	AddTextOption("$SSL_Voices", sslVoiceSlots.GetAllVoices().Length, OPTION_FLAG_DISABLED)
+	AddTextOption("$SSL_Expressions", sslExpressionSlots.GetAllProfileIDs().Length, OPTION_FLAG_DISABLED)
 	AddHeaderOption("$SSL_AvailableStrapons")
 	AddTextOptionST("RebuildStraponList","$SSL_RebuildStraponList", "$SSL_ClickHere")
 	int i = Config.Strapons.Length
@@ -884,15 +833,6 @@ Function RebuildClean()
 		String Name = Config.Strapons[i].GetName()
 		AddTextOptionST("toggleStrapon_" + i, Name, "$SSL_Remove")
 	EndWhile
-
-	SetCursorPosition(1)
-	AddHeaderOption("Registry Info")
-	; IDEA: Allow clicking on this for more info, custom swf mayhaps?
-	AddTextOption("Animations", sslSystemConfig.GetAnimationCount(), OPTION_FLAG_DISABLED)
-	AddTextOption("Voices", sslVoiceSlots.GetAllVoices().Length, OPTION_FLAG_DISABLED)
-	AddTextOption("Expressions", sslExpressionSlots.GetAllProfileIDs().Length, OPTION_FLAG_DISABLED)
-	AddHeaderOption("System Requirements")
-	SystemCheckOptions()
 EndFunction
 
 Function InstallMenu()
@@ -919,7 +859,7 @@ Function SystemCheckOptions()
 	AddTextOption("SexLab.dll", okOrFail[Config.CheckSystemPart("SexLabP+") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("PapyrusUtil.dll", okOrFail[Config.CheckSystemPart("PapyrusUtil") as int], OPTION_FLAG_DISABLED)
 	AddTextOption("RaceMenu", okOrFail[Config.CheckSystemPart("NiOverride") as int], OPTION_FLAG_DISABLED)
-	AddTextOption("Mfg Fix", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
+	AddTextOption("MfgFix NG", okOrFail[Config.CheckSystemPart("MfgFix") as int], OPTION_FLAG_DISABLED)
 EndFunction
 
 State ResetStripOverrides
@@ -965,7 +905,7 @@ Event OnSelectST()
 	If (s[0] == "AutoAdvance")
 		Config.AutoAdvance = !Config.AutoAdvance
 		SetToggleOptionValueST(Config.AutoAdvance)
-	ElseIf (s[0] == "DisableVictim")
+	ElseIf (s[0] == "DisableSub")
 		Config.DisablePlayer = !Config.DisablePlayer
 		SetToggleOptionValueST(Config.DisablePlayer)
 	ElseIf (s[0] == "AutomaticTFC")
@@ -1395,13 +1335,13 @@ Event OnHighlightST()
 	ElseIf (s[0] == "ClimaxType") 
 		SetInfoText("$SSL_ClimaxInfo")
 	ElseIf (s[0] == "SexSelect")
-		SetInfoText("$SSL_InfoPlayerGender")
+		SetInfoText("$SSL_SexSelectInfo")
 	ElseIf (s[0] == "UseFade")
 		SetInfoText("$SSL_UseFadeInfo")
 	ElseIf (s[0] == "FilterStrictness")
 		SetInfoText("$SSL_FilterStrictnessInfo")
-	ElseIf (s[0] == "DisableVictim")
-		SetInfoText("$SSL_InfoDisablePlayer")
+	ElseIf (s[0] == "DisableSub")
+		SetInfoText("$SSL_DisableSubControlsInfo")
 	ElseIf (s[0] == "AutomaticTFC")
 		SetInfoText("$SSL_InfoAutomaticTFC")
 	ElseIf (s[0] == "AutomaticSUCSM")
@@ -1484,6 +1424,8 @@ Event OnHighlightST()
 		SetInfoText("$SSL_InfoLipsFixedValue")
 	ElseIf (s[0] == "DebugMode")
 		SetInfoText("$SSL_InfoDebugMode")
+	ElseIf (s[0] == "setexprscaling")
+		SetInfoText("$SSL_ExpressionScalingInfo")
 	EndIf
 EndEvent
 
