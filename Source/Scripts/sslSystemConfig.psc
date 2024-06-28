@@ -546,20 +546,18 @@ float[] property StageTimer hidden
   EndFunction
 EndProperty
 float[] Function _GetfTimers(int aiIdx0)
-    float[] ret = new float[5]
-    ret[0] = GetSettingFltA("fTimers", aiIdx0 + 0)
-    ret[1] = GetSettingFltA("fTimers", aiIdx0 + 1)
-    ret[2] = GetSettingFltA("fTimers", aiIdx0 + 2)
-    ret[3] = GetSettingFltA("fTimers", aiIdx0 + 3)
-    ret[4] = GetSettingFltA("fTimers", aiIdx0 + 4)
+    float[] ret = new float[4]
+    ret[0] = GetSettingFltA("fTimers", 0)
+    ret[1] = GetSettingFltA("fTimers", 1)
+    ret[2] = GetSettingFltA("fTimers", 2)
+    ret[3] = GetSettingFltA("fTimers", 3)
     return ret
 EndFunction
 Function _SetfTimers(int aiIdx0, float[] afSet)
-    SetSettingFltA("fTimers", afSet[0], aiIdx0 + 0)
-    SetSettingFltA("fTimers", afSet[1], aiIdx0 + 1)
-    SetSettingFltA("fTimers", afSet[2], aiIdx0 + 2)
-    SetSettingFltA("fTimers", afSet[3], aiIdx0 + 3)
-    SetSettingFltA("fTimers", afSet[4], aiIdx0 + 4)
+    SetSettingFltA("fTimers", afSet[0], 0)
+    SetSettingFltA("fTimers", afSet[1], 1)
+    SetSettingFltA("fTimers", afSet[2], 2)
+    SetSettingFltA("fTimers", afSet[3], 3)
 EndFunction
 
 ; Compatibility checks
