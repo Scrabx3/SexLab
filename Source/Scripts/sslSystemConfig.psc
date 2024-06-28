@@ -20,45 +20,27 @@ ScriptName sslSystemConfig extends sslSystemLibrary
 
 bool property DebugMode hidden
   bool function get()
-    return InDebugMode
+    return GetSettingBool("bDebugMode")
   endFunction
   function set(bool value)
-    InDebugMode = value
-    if InDebugMode
-      Debug.OpenUserLog("SexLabDebug")
-      Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
-      MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")        
-    else
-      if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
-        Debug.CloseUserLog("SexLabDebug")
-      endIf
-      MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")     
-    endIf
-    int eid = ModEvent.Create("SexLabDebugMode")
-    ModEvent.PushBool(eid, value)
-    ModEvent.Send(eid)
+    SetSettingBool("bDebugMode", value)
+    ; TODO: Move this into some uniform logging function !IMPORTANT
+    ; InDebugMode = value
+    ; if InDebugMode
+    ;   Debug.OpenUserLog("SexLabDebug")
+    ;   Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
+    ;   MiscUtil.PrintConsole("SexLab Debug/Development Mode Activated")        
+    ; else
+    ;   if Debug.TraceUser("SexLabDebug", "SexLab Debug/Development Mode Deactivated")
+    ;     Debug.CloseUserLog("SexLabDebug")
+    ;   endIf
+    ;   MiscUtil.PrintConsole("SexLab Debug/Development Mode Deactivated")     
+    ; endIf
+    ; int eid = ModEvent.Create("SexLabDebugMode")
+    ; ModEvent.PushBool(eid, value)
+    ; ModEvent.Send(eid)
   endFunction
 endProperty
-
-Spell[] Property MatchMakerSpells Auto
-{4 Spells: Solo | Target | OrgySolo | OrgyTarget}
-bool Property MatchMaker Hidden
-  bool Function Get()
-	  return Game.GetPlayer().HasSpell(MatchMakerSpells[0])
-  EndFunction
-  Function set(bool abValue)
-    Actor player = Game.GetPlayer()
-    int i = 0
-    While (i < MatchMakerSpells.Length)
-      If (abValue)
-        player.AddSpell(MatchMakerSpells[i], true)
-      Else
-        player.RemoveSpell(MatchMakerSpells[i])
-      EndIf
-      i += 1
-    EndWhile
-  EndFunction
-EndProperty
 
 Sound[] property HotkeyUp auto
 Sound[] property HotkeyDown auto
@@ -99,6 +81,39 @@ Function SetSettingStr(String asSetting, String asValue) native global
 Function SetSettingIntA(String asSetting, int aiValue, int n) native global
 Function SetSettingFltA(String asSetting, float aiValue, int n) native global
 
+int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
+int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
+int Property CLIMAXTYPE_EXTERN = 2 AutoReadOnly
+
+Spell[] Property MatchMakerSpells Auto
+{4 Spells: Solo | Target | OrgySolo | OrgyTarget}
+bool Property MatchMaker Hidden
+  bool Function Get()
+    return GetSettingBool("bMatchMakerActive")
+  EndFunction
+  Function Set(bool abValue)
+    SetSettingBool("bMatchMakerActive", abValue)
+    AddRemoveMatchmakerSpells()
+  EndFunction
+EndProperty
+
+Function AddRemoveMatchmakerSpells()
+  bool shouldhavespells = GetSettingBool("bMatchMakerActive")
+  Actor player = Game.GetPlayer()
+  If (player.HasSpell(MatchMakerSpells[0]) == shouldhavespells)
+    return
+  EndIf
+  int i = 0
+  While (i < MatchMakerSpells.Length)
+    If (shouldhavespells)
+      player.AddSpell(MatchMakerSpells[i], true)
+    Else
+      player.RemoveSpell(MatchMakerSpells[i])
+    EndIf
+    i += 1
+  EndWhile
+EndFunction
+
 String Function ParseMMTagString() global
 	String req = sslSystemConfig.GetSettingStr("sRequiredTags")
 	String opt = sslSystemConfig.GetSettingStr("sOptionalTags")
@@ -106,6 +121,10 @@ String Function ParseMMTagString() global
 	String[] optA = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(opt, ","))
 	String[] negA = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(neg, ","))
 	int i = 0
+  If (req == "")
+    req = optA[0]
+    i = 1
+  EndIf
 	While (i < optA.Length)
 		req += ", ~" + optA[i]
 		i += 1
@@ -117,10 +136,6 @@ String Function ParseMMTagString() global
 	EndWhile
 	return req
 EndFunction
-
-int Property CLIMAXTYPE_SCENE  = 0 AutoReadOnly
-int Property CLIMAXTYPE_LEGACY = 1 AutoReadOnly
-int Property CLIMAXTYPE_EXTERN = 2 AutoReadOnly
 
 ; Booleans
 bool property AllowCreatures hidden
@@ -140,14 +155,6 @@ bool property UseCreatureGender hidden
   EndFunction
 EndProperty
 
-bool property UseStrapons hidden
-  bool Function Get()
-    return GetSettingBool("bUseStrapons")
-  EndFunction
-  Function Set(bool aSet)
-    SetSettingBool("bUseStrapons", aSet)
-  EndFunction
-EndProperty
 bool property RedressVictim hidden
   bool Function Get()
     return GetSettingBool("bRedressVictim")
@@ -210,14 +217,6 @@ bool property OrgasmEffects hidden
   EndFunction
   Function Set(bool aSet)
     SetSettingBool("bOrgasmEffects", aSet)
-  EndFunction
-EndProperty
-bool property RestrictSameSex hidden
-  bool Function Get()
-    return GetSettingBool("bRestrictSameSex")
-  EndFunction
-  Function Set(bool aSet)
-    SetSettingBool("bRestrictSameSex", aSet)
   EndFunction
 EndProperty
 bool property ShowInMap hidden
@@ -286,14 +285,6 @@ int property NPCBed hidden
     SetSettingInt("iNPCBed", aiSet)
   EndFunction
 EndProperty
-int property OpenMouthSize hidden
-  int Function Get()
-    return GetSettingInt("iOpenMouthSize")
-  EndFunction
-  Function Set(int aiSet)
-    SetSettingInt("iOpenMouthSize", aiSet)
-  EndFunction
-EndProperty
 int property UseFade hidden
   int Function Get()
     return GetSettingInt("iUseFade")
@@ -302,17 +293,8 @@ int property UseFade hidden
     SetSettingInt("iUseFade", aiSet)
   EndFunction
 EndProperty
-int property Backwards hidden
-  int Function Get()
-    return GetSettingInt("iBackwards")
-  EndFunction
-  Function Set(int aiSet)
-    SetSettingInt("iBackwards", aiSet)
-  EndFunction
-EndProperty
 
 ; Strings
-
 string property RequiredTags hidden
 	string Function Get()
 		return GetSettingStr("sRequiredTags")
@@ -339,15 +321,6 @@ string property OptionalTags hidden
 EndProperty
 
 ; Expressions
-
-int property LipsPhoneme hidden
-  int Function Get()
-    return GetSettingInt("iLipsPhoneme")
-  EndFunction
-  Function Set(int aiSet)
-    SetSettingInt("iLipsPhoneme", aiSet)
-  EndFunction
-EndProperty
 bool property LipsFixedValue hidden
   bool Function Get()
     return GetSettingBool("bLipsFixedValue")
@@ -356,36 +329,12 @@ bool property LipsFixedValue hidden
     SetSettingBool("bLipsFixedValue", aiSet)
   EndFunction
 EndProperty
-int property LipsMinValue hidden
-  int Function Get()
-    return GetSettingInt("iLipsSoundTime")
-  EndFunction
-  Function Set(int aiSet)
-    SetSettingInt("iLipsSoundTime", aiSet)
-  EndFunction
-EndProperty
-int property LipsMaxValue hidden
-  int Function Get()
-    return GetSettingInt("iLipsMaxValue")
-  EndFunction
-  Function Set(int aiSet)
-    SetSettingInt("iLipsMaxValue", aiSet)
-  EndFunction
-EndProperty
 int property LipsSoundTime hidden
   int Function Get()
     return GetSettingInt("iLipsSoundTime")
   EndFunction
   Function Set(int aiSet)
     SetSettingInt("iLipsSoundTime", aiSet)
-  EndFunction
-EndProperty
-float property LipsMoveTime hidden
-  float Function Get()
-    return GetSettingFlt("fLipsMoveTime")
-  EndFunction
-  Function Set(float aiSet)
-    SetSettingFlt("fLipsMoveTime", aiSet)
   EndFunction
 EndProperty
 
@@ -510,6 +459,14 @@ int property AdjustSchlong hidden
     SetSettingInt("iAdjustSchlong", aiSet)
   EndFunction
 EndProperty
+int property Backwards hidden
+  int Function Get()
+    return GetSettingInt("iBackwards")
+  EndFunction
+  Function Set(int aiSet)
+    SetSettingInt("iBackwards", aiSet)
+  EndFunction
+EndProperty
 
 ; Misc Keys
 int property ToggleFreeCamera hidden
@@ -570,14 +527,6 @@ float property FemaleVoiceDelay hidden
     SetSettingFlt("fFemaleVoiceDelay", afSet)
   EndFunction
 EndProperty
-float property ExpressionDelay hidden
-  float Function Get()
-    return GetSettingFlt("fExpressionDelay")
-  EndFunction
-  Function Set(float afSet)
-    SetSettingFlt("fExpressionDelay", afSet)
-  EndFunction
-EndProperty
 float property VoiceVolume hidden
   float Function Get()
     return GetSettingFlt("fVoiceVolume")
@@ -613,22 +562,6 @@ float[] property StageTimer hidden
     _SetfTimers(0, aSet)
   EndFunction
 EndProperty
-float[] property StageTimerLeadIn hidden
-  float[] Function Get()
-    return _GetfTimers(5)
-  EndFunction
-  Function Set(float[] aSet)
-    _SetfTimers(5, aSet)
-  EndFunction
-EndProperty
-float[] property StageTimerAggr hidden
-  float[] Function Get()
-    return _GetfTimers(10)
-  EndFunction
-  Function Set(float[] aSet)
-    _SetfTimers(10, aSet)
-  EndFunction
-EndProperty
 float[] Function _GetfTimers(int aiIdx0)
     float[] ret = new float[5]
     ret[0] = GetSettingFltA("fTimers", aiIdx0 + 0)
@@ -645,50 +578,6 @@ Function _SetfTimers(int aiIdx0, float[] afSet)
     SetSettingFltA("fTimers", afSet[3], aiIdx0 + 3)
     SetSettingFltA("fTimers", afSet[4], aiIdx0 + 4)
 EndFunction
-
-
-float[] property OpenMouthMale hidden
-  float[] Function Get()
-    float[] ret = new float[17]
-    int i = 0
-    While (i < ret.Length)
-      ret[i] = GetSettingFltA("fOpenMouthMale", i)
-      i += 1
-    EndWhile
-    return ret
-  EndFunction
-  Function Set(float[] aSet)
-    If (aSet.Length != 17)
-      return
-    EndIf
-    int i = 0
-    While (i < aSet.Length)
-      SetSettingFltA("fOpenMouthMale", aSet[i], i)
-      i += 1
-    EndWhile
-  EndFunction
-EndProperty
-float[] property OpenMouthFemale hidden
-  float[] Function Get()
-    float[] ret = new float[17]
-    int i = 0
-    While (i < ret.Length)
-      ret[i] = GetSettingFltA("fOpenMouthFemale", i)
-      i += 1
-    EndWhile
-    return ret
-  EndFunction
-  Function Set(float[] aSet)
-    If (aSet.Length != 17)
-      return
-    EndIf
-    int i = 0
-    While (i < aSet.Length)
-      SetSettingFltA("fOpenMouthFemale", aSet[i], i)
-      i += 1
-    EndWhile
-  EndFunction
-EndProperty
 
 ; Compatibility checks
 bool property HasNiOverride hidden
@@ -733,66 +622,6 @@ int[] Function GetStripForms(bool abFemaleOrSubmissive, bool abAggressive) globa
   ret[1] = GetSettingIntA("iStripForms", idx + 1)
   return ret
 EndFunction
-
-float[] function GetOpenMouthPhonemes(bool isFemale)
-  If (isFemale)
-    return Utility.ResizeFloatArray(OpenMouthFemale, 16)
-  Else
-    return Utility.ResizeFloatArray(OpenMouthMale, 16)
-  EndIf
-endFunction
-
-bool function SetOpenMouthPhonemes(bool isFemale, float[] Phonemes)
-  if Phonemes.Length < 16
-    return false
-  endIf
-  String setting = "fOpenMouthMale"
-  If (isFemale)
-    setting = "fOpenMouthFemale"
-  EndIf
-  int i = 16
-  while i > 0
-    i -= 1
-    float value = PapyrusUtil.ClampFloat(Phonemes[i], 0.0, 1.0)
-    SetSettingFltA(setting, value, i)
-  endWhile
-  return true
-endFunction
-
-bool function SetOpenMouthPhoneme(bool isFemale, int id, float value)
-  if id < 0 || id > 15 
-    return false
-  endIf
-  String setting = "fOpenMouthMale"
-  If (isFemale)
-    setting = "fOpenMouthFemale"
-  EndIf
-  float clamped = PapyrusUtil.ClampFloat(value, 0.0, 1.0)
-  SetSettingFltA(setting, clamped, id)
-  return true
-endFunction
-
-int function GetOpenMouthExpression(bool isFemale)
-  String setting = "fOpenMouthMale"
-  If (isFemale)
-    setting = "fOpenMouthFemale"
-  EndIf
-  int ret = GetSettingFltA(setting, 16) as int
-  If (ret <= 16 && ret >= 0)
-    return ret
-  EndIf
-  return 16
-endFunction
-
-bool function SetOpenMouthExpression(bool isFemale, int value)
-  String setting = "fOpenMouthMale"
-  If (isFemale)
-    setting = "fOpenMouthFemale"
-  EndIf
-  int clamped = PapyrusUtil.ClampInt(value, 0, 16)
-  SetSettingFltA(setting, clamped, 16)
-  return true
-endFunction
 
 ; TODO: Nativy
 bool function SetCustomBedOffset(Form BaseBed, float Forward = 0.0, float Sideward = 0.0, float Upward = 37.0, float Rotation = 0.0)
@@ -1145,8 +974,6 @@ bool function CheckSystemPart(string CheckSystem)
 		return HasNiOverride
   elseIf CheckSystem == "MfgFix"
 		return HasMFGFix
-  elseIf CheckSystem == "FNIS"
-    return FNIS.VersionCompare(7, 0, 0) >= 0
   endIf
   return false
 endFunction
@@ -1181,6 +1008,7 @@ Function Reload()
   RegisterForKey(TargetActor)
   RegisterForKey(EndAnimation)
 
+  AddRemoveMatchmakerSpells()
   DisableThreadControl(_ActiveControl)
 EndFunction
 
@@ -1736,11 +1564,16 @@ bool property ForceSort = true auto hidden
 bool property LimitedStrip = false auto hidden
 bool property ScaleActors = false auto hidden ; Scale is encoded in animation, disable all scale with other setting
 int property AnimProfile = 1 auto hidden  ; scaling is considered absolute, 1 profile to fit them all
-
+float property ExpressionDelay = 2.0 auto hidden
 float property LeadInCoolDown = 0.0 auto hidden
-
-; COMEBACK: Re-implement?
 bool property RaceAdjustments = false auto hidden    ; this and v is used for ActorKey scale profile settings
+bool property UseStrapons = true auto hidden
+bool property RestrictSameSex = false auto hidden
+int property LipsPhoneme = 0 auto hidden
+int property LipsMinValue = 20 auto hidden
+int property LipsMaxValue = 50 auto hidden
+float property LipsMoveTime = 0.2 auto hidden
+int property OpenMouthSize = 80 auto hidden
 
 bool property SeparateOrgasms Hidden
   bool Function Get()
@@ -1754,6 +1587,51 @@ bool property SeparateOrgasms Hidden
     EndIf
   EndFunction
 EndProperty
+
+float[] property StageTimerLeadIn hidden
+  float[] Function Get()
+    return _GetfTimers(0)
+  EndFunction
+EndProperty
+float[] property StageTimerAggr hidden
+  float[] Function Get()
+    return _GetfTimers(0)
+  EndFunction
+EndProperty
+
+float[] property OpenMouthMale hidden
+  float[] Function Get()
+    float[] ret = new float[17]
+    ret[1] = 0.8
+    return ret
+  EndFunction
+EndProperty
+float[] property OpenMouthFemale hidden
+  float[] Function Get()
+    float[] ret = new float[17]
+    ret[1] = 0.8
+    return ret
+  EndFunction
+EndProperty
+float[] function GetOpenMouthPhonemes(bool isFemale)
+  If (isFemale)
+    return Utility.ResizeFloatArray(OpenMouthFemale, 16)
+  Else
+    return Utility.ResizeFloatArray(OpenMouthMale, 16)
+  EndIf
+endFunction
+bool function SetOpenMouthPhonemes(bool isFemale, float[] Phonemes)
+  return false
+endFunction
+bool function SetOpenMouthPhoneme(bool isFemale, int id, float value)
+  return false
+endFunction
+int function GetOpenMouthExpression(bool isFemale)
+  return 16
+endFunction
+bool function SetOpenMouthExpression(bool isFemale, int value)
+  return true
+endFunction
 
 ; ------------------------------------------------------- ;
 ; --- Functions                                       --- ;
