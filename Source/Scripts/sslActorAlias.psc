@@ -630,7 +630,6 @@ Int Property HoldBackKeyCode = 0x100 AutoReadOnly Hidden ; LMB
 
 float _LoopDelay
 float _LoopExpressionDelay
-float _RefreshExpressionDelay
 float _LoopEnjoymentDelay
 float _LoopContextCheckDelay
 
@@ -677,22 +676,19 @@ State Animating
 			UpdateEffectiveEnjoymentCalculations()
 		EndIf
 		int strength = CalcReaction()
-		If (_LoopDelay >= _VoiceDelay && strength > 10 && !IsSilent)
+		If (_LoopDelay >= _VoiceDelay && !IsSilent)
 			_LoopDelay = 0.0
 			bool lipsync = !OpenMouth && _Config.UseLipSync && _sex <= 2
 			Sound snd = _Thread.GetAliasSound(Self, _Voice, strength)
 			sslBaseVoice.PlaySound(_ActorRef, snd, strength, lipsync)
 		EndIf
-		If (_RefreshExpressionDelay > 8.0)
-			RefreshExpression()
-		EndIf
+		RefreshExpressionEx(strength)
 		If (IsSeparateOrgasm())
 			DoOrgasm()
 		EndIf
 		; Loop
 		_LoopDelay += UpdateInterval
 		_LoopExpressionDelay += UpdateInterval
-		_RefreshExpressionDelay += UpdateInterval
 		_LoopEnjoymentDelay += UpdateInterval
 		_LoopContextCheckDelay += UpdateInterval
 		RegisterForSingleUpdate(UpdateInterval)
@@ -701,9 +697,8 @@ State Animating
 	Function TryRefreshExpression()
 		RefreshExpression()
 	EndFunction
-	Function RefreshExpression()
-		_RefreshExpressionDelay = 0.0
-		If (_sex > 2 || !_ActorRef.Is3DLoaded() || _ActorRef.IsDisabled())
+	Function RefreshExpressionEx(float afStrength)
+		If (_sex > 2)
 			return
 		ElseIf (OpenMouth)
 			sslBaseExpression.OpenMouth(_ActorRef)
@@ -712,9 +707,8 @@ State Animating
 			sslBaseExpression.CloseMouth(_ActorRef)
 		EndIf
 		If (_Expression && _livestatus == LIVESTATUS_ALIVE)
-			int strength = CalcReaction()
-			sslBaseExpression.ApplyExpression(_Expression, _ActorRef, strength)
-			Log("sslBaseExpression.ApplyExpression(" + _Expression + ") Strength:" + strength + "; OpenMouth:" + OpenMouth)
+			sslBaseExpression.ApplyExpression(_Expression, _ActorRef, afStrength)
+			Log("sslBaseExpression.ApplyExpression(" + _Expression + ") Strength? " + afStrength + "; OpenMouth? " + OpenMouth)
 		EndIf
 	EndFunction
 
@@ -903,8 +897,12 @@ Function ResetPosition(int aiStripData, int aiPositionGenders, int aiSchlongAngl
 	Error("Cannot reset position outside of playing state", "ResetPosition()")
 EndFunction
 function RefreshExpression()
-	Error("Cannot refresh expression outside of playing state", "RefreshExpression()")
+	int strength = CalcReaction()
+	RefreshExpressionEx(strength)
 endFunction
+Function RefreshExpressionEx(float afStrength)
+	Error("Cannot refresh expression outside of playing state", "RefreshExpressionEx()")
+EndFunction
 function DoOrgasm(bool Forced = false)
 	Error("Cannot create an orgasm outside of playing state", "DoOrgasm()")
 endFunction

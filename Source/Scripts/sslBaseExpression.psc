@@ -159,8 +159,8 @@ function ApplyPresetFloats(Actor ActorRef, float[] Preset) global
 	bool bMouthOpen = IsMouthOpen(ActorRef)
 	float currExpr = GetExpression(ActorRef, true)
 	float currValue = GetExpression(ActorRef, false)
-	If (!bMouthOpen && currExpr != Preset[30])
-		sslExpressionUtil.SmoothSetExpression(ActorRef, currExpr as int, 0, currValue)
+	If (!bMouthOpen && (currExpr != Preset[30] || currValue != Preset[31]))
+		sslExpressionUtil.SmoothSetExpression(ActorRef, Preset[30] as int, 0, Preset[31])
 	endIf
 	sslExpressionUtil.ApplyExpressionPreset(ActorRef, Preset, bMouthOpen)
 endFunction
