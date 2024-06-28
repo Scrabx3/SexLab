@@ -7,9 +7,8 @@ ScriptName SexLabUtil Hidden
 ; --- SexLab Accessors                                --- ;
 ; ------------------------------------------------------- ;
 
-int Function GetPluginVersion() global native
 int Function GetVersion() global
-	return GetPluginVersion()
+	return SKSE.GetPluginVersion("SexLabUtil")
 EndFunction
 
 String function GetStringVer() global
@@ -64,8 +63,11 @@ sslSystemConfig function GetConfig() global
 endFunction
 
 int[] Function GetVersionPack() global
-	int v = GetPluginVersion()
+	int v = GetVersion()
 	int[] ret = new int[4]
+	If (v == -1)
+		return ret
+	EndIf
 	ret[0] = Math.LogicalAnd(Math.RightShift(v, 24), 0xFFF)
 	ret[1] = Math.LogicalAnd(Math.RightShift(v, 16), 0x0FF)
 	ret[2] = Math.LogicalAnd(Math.RightShift(v, 4), 0xFFF)
@@ -254,6 +256,9 @@ function DebugLog(string Log, string Type = "NOTICE", bool DebugMode = false) gl
 	endIf
 endFunction
 
+int Function GetPluginVersion() global
+	return SKSE.GetPluginVersion("SexLabUtil")
+EndFunction
 string function RemoveSubString(string InputString, string RemoveString) global native
 int function IntMinMaxValue(int[] searchArray, bool findHighestValue = true) global native
 int function IntMinMaxIndex(int[] searchArray, bool findHighestValue = true) global native
