@@ -49,7 +49,6 @@ Event OnConfigInit()
 	Pages[4] = "$SSL_TimersStripping"
 	Pages[5] = "$SSL_StripEditor"
 	Pages[6] = "$SSL_ToggleAnimations"
-	; Pages[7] = "$SSL_AnimationEditor"
 	Pages[7] = "$SSL_ExpressionEditor"
 	Pages[8] = "$SSL_PlayerHotkeys"
 	Pages[9] = "$SSL_RebuildClean"
