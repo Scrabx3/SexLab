@@ -550,6 +550,7 @@ State Paused
 				MiscUtil.SetFreeCameraState(true)
 				MiscUtil.SetFreeCameraSpeed(_Config.AutoSUCSM)
 			EndIf
+			UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", false)
 		Else
 			ActorUtil.AddPackageOverride(_ActorRef, _Thread.DoNothingPackage, 100, 1)
 			_ActorRef.EvaluatePackage()
@@ -824,6 +825,7 @@ State Animating
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", _AnimVarbHumanoidFootIKDisable)
 		If (_ActorRef == _PlayerRef)
+			UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", true)
 			Game.EnablePlayerControls(abFighting = false, abActivate = false)
 			MiscUtil.SetFreeCameraState(false)
 		Else
