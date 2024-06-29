@@ -142,8 +142,6 @@ Event OnConfigOpen()
 		_voiceCachedNames[n] = _voiceCachedActors[n].GetActorBase().GetName()
 		n += 1
 	EndWhile
-	Debug.MessageBox(_voiceCachedActors)
-	Debug.MessageBox(_voiceCachedNames)
 	_stripViewIdx = 0
 	_playerDisplayAll = false
 	_targetDisplayAll = false
