@@ -937,6 +937,7 @@ State Animating
 			return
 		EndIf
 		Log("AnimationStart fully setup, begin animating")
+		SexLabUtil.PrintConsole("[SexLab] Playing Animation " + SexLabRegistry.GetSceneName(_ActiveScene)) ; NOTE: Temporary until UI
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
 		_StageHistory = new String[1]
 		_StageHistory[0] = _ActiveStage
