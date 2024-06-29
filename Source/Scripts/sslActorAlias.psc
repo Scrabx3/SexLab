@@ -1323,7 +1323,8 @@ Function Setup()
 	_Thread = GetOwningQuest() as sslThreadModel
 	_AnimatingFaction = _Config.AnimatingFaction
 	_PlayerRef = Game.GetPlayer()
-	_xMarker = Game.GetFormFromFile(0x045A93, "SexLab.esm") ; 0x3B)
+	; _xMarker = Game.GetFormFromFile(0x045A93, "SexLab.esm") ; 0x3B)
+	_xMarker = Game.GetForm(0x3B)
 
 	Initialize()
 EndFunction
