@@ -795,16 +795,16 @@ State Animating
 		_EnjFactor = _BaseFactor
 		_HoldBackSpamPenalty = 0
 		_TimeInter = _EnjoymentDelay
-		If _sex == 0 || _sex == 3
+		If (_sex == 0 || _sex == 3)
 			_timeAdjusted = ((_timeAdjusted - 40) / (4 * _OrgasmCount))
 			int orgasmlimit = sslSystemConfig.GetEnjoymentSettingInt("iMaxNoPainOrgasmsM")
-			If _OrgasmCount > orgasmlimit
+			If (_OrgasmCount > orgasmlimit)
 				_timeAdjusted -= _OrgasmCount * 20
 			EndIf
 		Else
 			_timeAdjusted = ((_timeAdjusted - 40) / (3 + _OrgasmCount))
 			int orgasmlimit = sslSystemConfig.GetEnjoymentSettingInt("iMaxNoPainOrgasmsF")
-			If _OrgasmCount > orgasmlimit
+			If (_OrgasmCount > orgasmlimit)
 				_timeAdjusted -= _OrgasmCount * 10
 			EndIf
 		EndIf

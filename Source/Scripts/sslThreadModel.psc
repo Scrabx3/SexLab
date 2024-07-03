@@ -1395,6 +1395,13 @@ State Ending
 		EndIf
 		UpdateAllEncounters()
 		SendModEvent("SSL_CLEAR_Thread" + tid, "", 1.0)
+		int i = 0
+		While (i < ActorAlias.Length)
+			Utility.Wait(0.05)
+			If (!ActorAlias[i].GetReference())
+				i += 1
+			EndIf
+		EndWhile
 		SendThreadEvent("AnimationEnding")
 		SendThreadEvent("AnimationEnd")
 		RunHook(Config.HOOKID_END)
