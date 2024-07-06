@@ -529,7 +529,7 @@ String[] _StageHistory
 
 int Property Stage Hidden
 	int Function Get()
-		return _StageHistory.Length
+		return _StageHistory.RFind(_ActiveStage)
 	EndFunction
 	Function Set(int aSet)
 		return GoToStage(aSet)
@@ -1056,6 +1056,8 @@ State Animating
 		ElseIf(ToStage > _StageHistory.Length)
 			int idx = SelectNextStage(_ActiveScene, _ActiveStage, _ThreadTags)
 			PlayNext(idx)
+		ElseIf (ToStage == Stage)
+			ReStartTimer()
 		Else
 			; Skip stripping for already played stages
 			int i = 0
@@ -1063,6 +1065,7 @@ State Animating
 				ActorAlias[i].TryLock()
 				i += 1
 			EndWhile
+			_StageHistory = Utility.ResizeStringArray(_StageHistory, ToStage)
 			_ActiveStage = _StageHistory[ToStage - 1]
 			RealignActors()
 			SendThreadEvent("StageStart")
@@ -1107,13 +1110,13 @@ State Animating
 
 	float Function GetStageTimer(int maxstage)
 		int[] c = SexLabRegistry.GetClimaxingActors(_ActiveScene, _ActiveStage)
-		int stageIdx = _StageHistory.RFind(_ActiveStage)
-		If (c.Find(stageIdx) > -1)
+		bool isClimaxStage = c.Length > 0
+		If (isClimaxStage)
 			return Timers[Timers.Length - 1]
 		EndIf
 		int lastTimerIdx = Timers.Length - 2
-		If (stageIdx <= lastTimerIdx)
-			return Timers[stageIdx]
+		If (_StageHistory.Length < lastTimerIdx)
+			return Timers[_StageHistory.Length]
 		EndIf
 		return Timers[lastTimerIdx]
 	Endfunction
