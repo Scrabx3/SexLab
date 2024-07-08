@@ -529,7 +529,7 @@ String[] _StageHistory
 
 int Property Stage Hidden
 	int Function Get()
-		return _StageHistory.RFind(_ActiveStage)
+		return _StageHistory.Length + 1
 	EndFunction
 	Function Set(int aSet)
 		return GoToStage(aSet)
@@ -1046,7 +1046,7 @@ State Animating
 	EndFunction
 
 	Function ResetStage()
-		GoToStage(_StageHistory.Length)
+		GoToStage(Stage)
 	EndFunction
 
 	; NOTE: This here counts from 1 instead of 0
