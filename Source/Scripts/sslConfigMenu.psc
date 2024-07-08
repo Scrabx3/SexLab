@@ -737,7 +737,7 @@ Function ExpressionEditor()
 		EndIf
 		AddHeaderOption("$SSL_EditExpressions_" + i)
 		AddMenuOptionST("expredit_" + 30 + "_" + i, "$SSL_MoodType", _moods[values[30] as int], flag)
-		AddSliderOptionST("expredit_" + 31 + "_" + i, "$SSL_MoodStrength", values[31], "{1}", flag)
+		AddSliderOptionST("expredit_" + 31 + "_" + i, "$SSL_MoodStrength", values[31], "{2}", flag)
 		If (i == 0)
 			AddHeaderOption("$SSL_Modifier")
 		Else
@@ -746,7 +746,7 @@ Function ExpressionEditor()
 		int MODIFIER_COUNT = 14
 		int n = 0
 		While (n < MODIFIER_COUNT)
-			AddSliderOptionST("expredit_" + n + "_" + i, "$SSL_Modifier_" + n, values[n], "{1}", flag)
+			AddSliderOptionST("expredit_" + n + "_" + i, "$SSL_Modifier_" + n, values[n], "{2}", flag)
 			n += 1
 		EndWhile
 		If (i == 0)
@@ -757,7 +757,7 @@ Function ExpressionEditor()
 		int PHONEME_COUNT = 16
 		int k = 0
 		While (k < PHONEME_COUNT)
-			AddSliderOptionST("expredit_" + (n + k) + "_" + i, "$SSL_Phoneme_" + k, values[n + k], "{1}", flag)
+			AddSliderOptionST("expredit_" + (n + k) + "_" + i, "$SSL_Phoneme_" + k, values[n + k], "{2}", flag)
 			k += 1
 		EndWhile
 		If (v == 0)
@@ -781,6 +781,7 @@ Function TestApply(Actor ActorRef)
 	bool testLow = ShowMessage("$SSL_WarnTestExpressionLowOrHight", true, "$SSL_Low", "$SSL_High")
 	bool testOpenMouth = ShowMessage("$SSL_WarnTestExpressionWithOpenMouth", true, "$Yes", "$No")
 	ShowMessage("$SSL_StartTestExpression{" + _expression[_expressionIdx] + "}", false)
+	sslLog.Log("Testing Expression: " + _expression[_expressionIdx] + ". Low? " + testlow +", OpenMouth? " + testOpenMouth)
 	Utility.Wait(0.1)
 	If (ActorRef == PlayerRef)
 		Game.ForceThirdPerson()
@@ -794,7 +795,6 @@ Function TestApply(Actor ActorRef)
 		str = 100.0
 	EndIf
 	sslBaseExpression.ApplyExpression(_expression[_expressionIdx], ActorRef, str)
-	sslLog.Log("Testing Expression: " + _expression[_expressionIdx] + ". Low? " + testlow +", OpenMouth? " + testOpenMouth)
 	Utility.Wait(0.1)
 	Debug.Notification("$SSL_AppliedTestExpression")
 	Utility.WaitMenuMode(15.0)
@@ -1114,8 +1114,8 @@ event OnSliderOpenST()
 			values = _high
 		EndIf
 		SetSliderDialogStartValue(values[i])
-		SetSliderDialogRange(0, 100)
-		SetSliderDialogInterval(0.5)
+		SetSliderDialogRange(0, 1)
+		SetSliderDialogInterval(0.05)
 		SetSliderDialogDefaultValue(0)
 	EndIf
 EndEvent
@@ -1163,7 +1163,7 @@ event OnSliderAcceptST(float value)
 		EndIf
 		values[i] = value
 		sslBaseExpression.SetValues(_expression[_expressionIdx], _editFemale, _phaseidx + n, values)
-		SetSliderOptionValueST(value, "{1}")
+		SetSliderOptionValueST(value, "{2}")
 	EndIf
 EndEvent
 
