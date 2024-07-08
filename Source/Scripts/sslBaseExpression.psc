@@ -53,49 +53,15 @@ function OpenMouth(Actor ActorRef) global
 		sslExpressionUtil.SmoothSetPhoneme(ActorRef, i, mods[i])
 		i += 1
 	EndWhile
-	; bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
-	; int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
-	; int OpenMouthSize = SexLabUtil.GetConfig().OpenMouthSize
-	; float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)
-	; Int i = 0
-	; Int s = 0
-	; while i < Phonemes.length
-	; 	if (GetPhoneme(ActorRef, i) != Phonemes[i])
-	; 		sslExpressionUtil.SmoothSetModifier(ActorRef, 0, PapyrusUtil.ClampInt((OpenMouthSize * Phonemes[i]) as int, 0, 100))
-	; 	endIf
-	; 	if Phonemes[i] >= Phonemes[s] ; seems to be required to prevet issues
-	; 		s = i
-	; 	endIf
-	; 	i += 1
-	; endWhile
-	; sslExpressionUtil.SmoothSetPhoneme(ActorRef, s, (Phonemes[s] * 100.0) as int)
-	; if (GetExpression(ActorRef, true) as int == OpenMouthExpression || GetExpression(ActorRef, false) != OpenMouthSize as float / 100.0)
-	; 	sslExpressionUtil.SmoothSetExpression(ActorRef, OpenMouthExpression, OpenMouthSize)
-	; endIf
 endFunction
 
 function CloseMouth(Actor ActorRef) global
-	sslExpressionUtil.resetPhonemesSmooth(ActorRef)
+	ClearPhoneme(ActorRef)
 	; sslExpressionUtil.SmoothSetExpression(ActorRef,7,70)
 endFunction
 
 bool function IsMouthOpen(Actor ActorRef) global
 	return GetPhoneme(ActorRef, 1) >= 0.4 || GetPhoneme(ActorRef, 0) >= 0.6
-	; bool isRealFemale = ActorRef.GetLeveledActorBase().GetSex() == 1
-	; int OpenMouthExpression = SexLabUtil.GetConfig().GetOpenMouthExpression(isRealFemale)
-	; float MinMouthSize = (SexLabUtil.GetConfig().OpenMouthSize * 0.01) - 0.1
-	; if GetExpression(ActorRef, true) as Int == OpenMouthExpression && GetExpression(ActorRef, false) >= MinMouthSize
-	; 	return true
-	; endIf
-	; float[] Phonemes = SexLabUtil.GetConfig().GetOpenMouthPhonemes(isRealFemale)											 
-	; Int i = 0
-	; while i < Phonemes.length
-	; 	if (GetPhoneme(ActorRef, i) < (MinMouthSize * Phonemes[i]))
-	; 		return false
-	; 	endIf
-	; 	i += 1
-	; endWhile
-	; return true
 endFunction
 
 float[] function GetCurrentMFG(Actor ActorRef) global
@@ -156,12 +122,13 @@ Function _SetTags(String[] asSet)
 EndFunction
 
 function ApplyPresetFloats(Actor ActorRef, float[] Preset) global
+	; sslLog.Log("Applying Expr Preset to " + ActorRef + ": " + Preset)
 	bool bMouthOpen = IsMouthOpen(ActorRef)
-	float currExpr = GetExpression(ActorRef, true)
-	float currValue = GetExpression(ActorRef, false)
-	If (!bMouthOpen && (currExpr != Preset[30] || currValue != Preset[31]))
-		sslExpressionUtil.SmoothSetExpression(ActorRef, Preset[30] as int, 0, Preset[31])
-	endIf
+	; float currExpr = GetExpression(ActorRef, true)
+	; float currValue = GetExpression(ActorRef, false)
+	; If (!bMouthOpen && currExpr != Preset[30])
+	; 	sslExpressionUtil.SmoothSetExpression(ActorRef, currExpr as int, 0, currValue)
+	; endIf
 	sslExpressionUtil.ApplyExpressionPreset(ActorRef, Preset, bMouthOpen)
 endFunction
 
