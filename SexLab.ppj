@@ -38,7 +38,7 @@
         <Folder>@ThisProject\Source\Scripts</Folder>
     </Folders>
     <ZipFiles Output="@Rel">
-        <ZipFile Name="@ModName - @Ver - 1.6.1130" RootDir="@ThisProject" Compression="deflate">
+        <ZipFile Name="@ModName - @Ver - 1.6.1170" RootDir="@ThisProject" Compression="deflate">
         	<!-- <Include>meshes</Include> -->
             <Include>SexLab.esm</Include>
             <Include>Interface</Include>
