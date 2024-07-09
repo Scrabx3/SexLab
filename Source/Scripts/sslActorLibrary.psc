@@ -289,9 +289,12 @@ EndFunction
 
 Function TreatAsSex(Actor akActor, int aiSexTag)
 	int baseSex = SexLabRegistry.GetSex(akActor, true)
-	If (aiSexTag == baseSex)
+	If (aiSexTag == (baseSex % 3))
 		akActor.RemoveFromFaction(GenderFaction)
 	Else
+		If (baseSex > 3 && aiSexTag == 2)
+			aiSexTag = 1
+		EndIf
 		akActor.SetFactionRank(GenderFaction, aiSexTag)
 	EndIf
 	int handle = ModEvent.Create("SexLabActorGenderChange")
