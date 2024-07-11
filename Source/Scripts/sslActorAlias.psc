@@ -783,7 +783,7 @@ State Animating
 		ModEvent.PushInt(eid, _OrgasmCount)
 		ModEvent.Send(eid)
 		TrackedEvent(TRACK_ORGASM)
-		If (IsSeparateOrgasm())
+		If (sslSystemConfig.GetSettingInt("iClimaxType") != _Config.CLIMAXTYPE_LEGACY)
 			Int handle = ModEvent.Create("SexlabOrgasmSeparate")
 			ModEvent.PushForm(handle, _ActorRef)
 			ModEvent.PushInt(handle, _Thread.tid)
