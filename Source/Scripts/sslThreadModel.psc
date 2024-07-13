@@ -529,7 +529,7 @@ String[] _StageHistory
 
 int Property Stage Hidden
 	int Function Get()
-		return _StageHistory.Length + 1
+		return _StageHistory.Length
 	EndFunction
 	Function Set(int aSet)
 		return GoToStage(aSet)
@@ -1053,7 +1053,7 @@ State Animating
 	Function GoToStage(int ToStage)
 		If (ToStage <= 1)
 			ResetScene(_ActiveScene)
-		ElseIf(ToStage > _StageHistory.Length)
+		ElseIf (ToStage > Stage)
 			int idx = SelectNextStage(_ActiveScene, _ActiveStage, _ThreadTags)
 			PlayNext(idx)
 		ElseIf (ToStage == Stage)
@@ -1490,7 +1490,6 @@ Function StopTranslations()
 EndFunction
 
 Function StartTranslations()
-	Log("Starting translation..")
 	int i = 0
 	While (i < Positions.Length)
 		; Some creatures (such as horses or spiders) may tilt unnaturaly during scenes, 
