@@ -89,6 +89,13 @@ Function SetCustomStrip(Actor akActor, int aiSlots, bool abWeapon, bool abApplyN
 	EndIf
 	it.SetStripping(aiSlots, abWeapon, abApplyNow)
 EndFunction
+Function ResetCustomStrip(Actor akActor)
+	sslActorAlias it = ActorAlias(akActor)
+	If (!it)
+		return
+	EndIf
+	it.DeleteCustomStripping()
+EndFunction
 
 bool Function IsUndressAnimationAllowed(Actor akActor)
 	sslActorAlias it = ActorAlias(akActor)

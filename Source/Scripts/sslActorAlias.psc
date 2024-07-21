@@ -83,6 +83,10 @@ Function SetStripping(int aiSlots, bool abStripWeapons, bool abApplyNow)
 	EndIf
 EndFunction
 
+Function DeleteCustomStripping()
+	_stripCstm = new int[1]
+EndFunction
+
 Function DisableStripAnimation(bool abDisable)
 	_DoUndress = !abDisable
 EndFunction

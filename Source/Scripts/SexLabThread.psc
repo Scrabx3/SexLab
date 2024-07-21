@@ -234,6 +234,8 @@ EndFunction
 ; aiSlots represents a slot mask of all slots that should be unequipped (if possible)
 Function SetCustomStrip(Actor akActor, int aiSlots, bool abWeapon, bool abApplyNow)
 EndFunction
+Function ResetCustomStrip(Actor akActor)
+EndFunction
 ; If the actor will play a short animation on scene start when undressing. Only used before entering playing state
 bool Function IsUndressAnimationAllowed(Actor akActor)
 EndFunction
