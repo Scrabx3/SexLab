@@ -1356,6 +1356,7 @@ Function Initialize()
 	_PathingFlag = 0
 	_OrgasmCount = 0
 	_FullEnjoyment	= 0
+	_stripCstm = new int[1]
 	; Floats
 	_LastOrgasm = 0.0
 	_StartedAt = 0.0
