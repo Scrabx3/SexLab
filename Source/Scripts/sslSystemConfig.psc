@@ -944,13 +944,13 @@ EndFunction
 
 bool function CheckSystemPart(string CheckSystem)
   If CheckSystem == "SKSE"
-    return SKSE.GetScriptVersionRelease() >= 64
+    return SKSE.GetScriptVersionRelease() >= 60
   elseIf CheckSystem == "SkyUI"
     return Quest.GetQuest("SKI_ConfigManagerInstance") != none
   elseIf CheckSystem == "SexLabP+"
     return SKSE.GetPluginVersion("SexLabUtil") > -1
   elseIf CheckSystem == "PapyrusUtil"
-    return PapyrusUtil.GetVersion() >= 39
+    return PapyrusUtil.GetVersion() >= 36
   elseIf CheckSystem == "NiOverride"
 		return HasNiOverride
   elseIf CheckSystem == "MfgFix"
@@ -960,13 +960,16 @@ bool function CheckSystemPart(string CheckSystem)
 endFunction
 
 bool function CheckSystem()
-  If !CheckSystemPart("SKSE")
+  If (!CheckSystemPart("SKSE"))
     CheckSKSE.Show(2.22)
     return false
-  elseIf !CheckSystemPart("SkyUI")
+  ElseIf (!CheckSystemPart("SexLabP+"))
+    Debug.MessageBox("[SexLab]\nMissing SexLabUtil.dll.\nThis plugin is mandatory for SexLab to function. Ensure you have a with your game compatible version of SexLab installed.")
+    return false
+  ElseIf (!CheckSystemPart("SkyUI"))
     CheckSkyUI.Show(5.2)
     return false
-  elseIf !CheckSystemPart("PapyrusUtil")
+  ElseIf (!CheckSystemPart("PapyrusUtil"))
     CheckPapyrusUtil.Show(4.4)
     return false
   endIf

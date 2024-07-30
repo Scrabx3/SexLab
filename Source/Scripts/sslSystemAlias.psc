@@ -33,6 +33,8 @@ endProperty
 Event OnInit()
 	If (!GetReference())
 		return
+	ElseIf (!Config.CheckSystem())
+		return
 	EndIf
 	Quest UnboundQ = Quest.GetQuest("MQ101")
 	While (!UnboundQ.GetStageDone(250) && UnboundQ.GetStage() > 0)
