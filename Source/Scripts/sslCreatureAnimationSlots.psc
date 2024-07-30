@@ -20,7 +20,11 @@ ScriptName sslCreatureAnimationSlots extends sslAnimationSlots
 ; ------------------------------------------------------- ;
 
 string function GetRaceKey(Race RaceRef) global
-  return SexLabRegistry.GetRaceKeyByRace(RaceRef)
+  String ret = SexLabRegistry.GetRaceKeyByRace(RaceRef)
+  If (ret == "humans")
+    return ""
+  EndIf
+  return ret
 EndFunction
 
 Race Function GetRaceByEditorID(String asEditorID) global native
@@ -56,10 +60,12 @@ bool function HasRaceType(Race RaceRef) global
 EndFunction
 
 string[] function GetAllRaceKeys(Race RaceRef = none) global
+  String[] ret
   If (!RaceRef)
-    return SexLabRegistry.GetAllRaceKeys(false)
+    ret = SexLabRegistry.GetAllRaceKeys(false)
   EndIf
-  return SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
+  ret = SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
+  return PapyrusUtil.RemoveString(ret, "humans")
 EndFunction
 
 string[] function GetAllRaceIDs(string RaceKey) global native
