@@ -363,7 +363,7 @@ Function AnimationSettings()
 	AddToggleOptionST("RedressVictim","$SSL_VictimsRedress", Config.RedressVictim)
 	AddToggleOptionST("DisableTeleport","$SSL_DisableTeleport", Config.DisableTeleport)
 	AddToggleOptionST("ShowInMap","$SSL_ShowInMap", Config.ShowInMap)
-	AddToggleOptionST("SetAnimSpeedByEnjoyment", "$SSL_SetAnimSpeedByEnjoyment", Config.SetAnimSpeedByEnjoyment)
+	AddToggleOptionST("SetAnimSpeedByEnjoyment", "$SSL_SetAnimSpeedByEnjoyment", Config.SetAnimSpeedByEnjoyment, DoDisable(!sslSystemConfig.HasAnimSpeedSE()))
 	; TODO: Reimplement these once the new UI stands
 	; AddTextOptionST("NPCBed","$SSL_NPCsUseBeds", Chances[ClampInt(Config.NPCBed, 0, 2)])
 	; AddTextOptionST("AskBed","$SSL_AskBed", BedOpt[ClampInt(Config.AskBed, 0, 2)])

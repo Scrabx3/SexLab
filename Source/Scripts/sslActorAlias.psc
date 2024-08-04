@@ -688,7 +688,7 @@ State Animating
 			_LoopEnjoymentDelay = 0
 			UpdateEffectiveEnjoymentCalculations()
 		EndIf
-		If _Config.SetAnimSpeedByEnjoyment
+		If (_Config.SetAnimSpeedByEnjoyment && sslSystemConfig.HasAnimSpeedSE())
 			SetAnimSpeedByEnjoyment()
 		EndIf
 		int strength = CalcReaction()
@@ -711,8 +711,8 @@ State Animating
 	EndEvent
 
 	Function SetAnimSpeedByEnjoyment() 
-		float _FullEnjoymentMOD = PapyrusUtil.ClampFloat((GetFullEnjoyment() as float)/30/3, 0.8, 1.2)
-		AnimSpeedHelper.SetAnimationSpeed(_ActorRef, _FullEnjoymentMOD, UpdateInterval, 0)
+		float _FullEnjoymentMOD = PapyrusUtil.ClampFloat((GetFullEnjoyment() as float) / 90, 0.8, 1.2)
+		sslAnimSpeedHelper.SetAnimationSpeed(_ActorRef, _FullEnjoymentMOD, UpdateInterval, 0)
 	EndFunction
 
 	Function TryRefreshExpression()
