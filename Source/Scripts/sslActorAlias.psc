@@ -157,6 +157,14 @@ Function SetPathing(int aiPathingFlag)
 	_PathingFlag = PapyrusUtil.ClampInt(_PathingFlag, PATHING_DISABLE, PATHING_FORCE)
 EndFunction
 
+; ------------------------------------------------------- ;
+; --- AnimSpeed --									--- ;
+; ------------------------------------------------------- ;
+Function SetAnimSpeedByEnjoyment()
+	Error("Called from invalid state", "SetAnimSpeedByEnjoyment()")
+EndFunction
+
+
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 ; ----------------------------------------------------------------------------- ;
 ;        ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗            ;
@@ -680,6 +688,9 @@ State Animating
 			_LoopEnjoymentDelay = 0
 			UpdateEffectiveEnjoymentCalculations()
 		EndIf
+		If _Config.SetAnimSpeedByEnjoyment
+			SetAnimSpeedByEnjoyment()
+		EndIf
 		int strength = CalcReaction()
 		If (_LoopDelay >= _VoiceDelay && !IsSilent)
 			_LoopDelay = 0.0
@@ -698,6 +709,11 @@ State Animating
 		_LoopContextCheckDelay += UpdateInterval
 		RegisterForSingleUpdate(UpdateInterval)
 	EndEvent
+
+	Function SetAnimSpeedByEnjoyment() 
+		float _FullEnjoymentMOD = PapyrusUtil.ClampFloat((GetFullEnjoyment() as float)/30/3, 0.8, 1.2)
+		AnimSpeedHelper.SetAnimationSpeed(_ActorRef, _FullEnjoymentMOD, UpdateInterval, 0)
+	EndFunction
 
 	Function TryRefreshExpression()
 		RefreshExpression()

@@ -210,6 +210,14 @@ bool property ShowInMap hidden
     SetSettingBool("bShowInMap", aSet)
   EndFunction
 EndProperty
+bool property SetAnimSpeedByEnjoyment hidden
+  bool Function Get()
+    return GetSettingBool("bSetAnimSpeedByEnjoyment")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bSetAnimSpeedByEnjoyment", aSet)
+  EndFunction
+EndProperty
 bool property DisableTeleport hidden
   bool Function Get()
     return GetSettingBool("bDisableTeleport")
