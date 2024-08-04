@@ -210,6 +210,14 @@ bool property ShowInMap hidden
     SetSettingBool("bShowInMap", aSet)
   EndFunction
 EndProperty
+bool property SetAnimSpeedByEnjoyment hidden
+  bool Function Get()
+    return GetSettingBool("bSetAnimSpeedByEnjoyment")
+  EndFunction
+  Function Set(bool aSet)
+    SetSettingBool("bSetAnimSpeedByEnjoyment", aSet)
+  EndFunction
+EndProperty
 bool property DisableTeleport hidden
   bool Function Get()
     return GetSettingBool("bDisableTeleport")
@@ -573,6 +581,10 @@ bool property HasMFGFix hidden
     return SKSE.GetPluginVersion("mfgfix") > -1
   EndFunction
 EndProperty
+
+bool Function HasAnimSpeedSE() global
+  return SKSE.GetPluginVersion("AnimSpeedSE") > -1
+EndFunction
 
 ; ------------------------------------------------------- ;
 ; --- Config Accessors                                --- ;
@@ -980,6 +992,9 @@ Function Reload()
   If (DebugMode)
     Debug.OpenUserLog("SexLabDebug")
     Debug.TraceUser("SexLabDebug", "Config Reloading...")
+  EndIf
+  If (!HasAnimSpeedSE())
+    SetAnimSpeedByEnjoyment = false
   EndIf
   AudioVoice.SetVolume(VoiceVolume)
   AudioSFX.SetVolume(SFXVolume)
