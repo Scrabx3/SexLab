@@ -374,32 +374,32 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 bool Function IsPhysicsEnabled()
-	return IsPhysicsRegistered()
+	return IsCollisionRegistered()
 EndFunction
 
 int[] Function GetInteractionTypes(Actor akPosition, Actor akPartner)
-	return GetPhysicTypes(akPosition, akPartner)
+	return GetCollisionAction(akPosition, akPartner)
 EndFunction
 
 bool Function HasInteractionType(int aiType, Actor akPosition, Actor akPartner)
-	return HasPhysicType(aiType, akPosition, akPartner)
+	return HasCollisionAction(aiType, akPosition, akPartner)
 EndFunction
 
 Actor Function GetPartnerByType(Actor akPosition, int aiType)
-	return GetPhysicPartnerByType(akPosition, aiType)
+	return GetPartnerByAction(akPosition, aiType)
 EndFUnction
 Actor[] Function GetPartnersByType(Actor akPosition, int aiType)
-	return GetPhysicPartnersByType(akPosition, aiType)
+	return GetPartnersByAction(akPosition, aiType)
 EndFUnction
 Actor Function GetPartnerByTypeRev(Actor akPartner, int aiType)
-	return GetPhysicPartnerByTypeRev(akPartner, aiType)
+	return GetPartnerByActionRev(akPartner, aiType)
 EndFunction
 Actor[] Function GetPartnersByTypeRev(Actor akPartner, int aiType)
-	return GetPhysicPartnersByTypeRev(akPartner, aiType)
+	return GetPartnersByActionRev(akPartner, aiType)
 EndFunction
 
 float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)
-	return GetPhysicVelocity(akPosition, akPartner, aiType)
+	return GetActionVelocity(akPosition, akPartner, aiType)
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -935,7 +935,7 @@ State Animating
 		SendModEvent("SSL_READY_Thread" + tid)
 		StartedAt = SexLabUtil.GetCurrentGameRealTime()
 		AnimationStart()
-		RegisterPhysics(Positions, _ActiveScene)
+		RegisterCollision(Positions, _ActiveScene)
 	EndEvent
 	Function AnimationStart()
 		If (_animationSyncCount < Positions.Length)
@@ -978,7 +978,7 @@ State Animating
 			_InUseCoordinates[1] = _BaseCoordinates[1]
 			_InUseCoordinates[2] = _BaseCoordinates[2]
 			_InUseCoordinates[3] = _BaseCoordinates[3]
-			RegisterPhysics(Positions, asNewScene)
+			RegisterCollision(Positions, asNewScene)
 			SortAliasesToPositions()
 			_ActiveScene = asNewScene
 		EndIf
@@ -1141,8 +1141,8 @@ State Animating
 		If (_SFXTimer > 0)
 			_SFXTimer -= ANIMATING_UPDATE_INTERVAL
 		Else
-			bool penetration = HasPhysicType(PTYPE_VAGINALP, none, none) || HasPhysicType(PTYPE_ANALP, none, none)
-			bool oral = HasPhysicType(PTYPE_ORAL, none, none)
+			bool penetration = HasCollisionAction(PTYPE_VAGINALP, none, none) || HasCollisionAction(PTYPE_ANALP, none, none)
+			bool oral = HasCollisionAction(PTYPE_ORAL, none, none)
 			Log("SFX Testing; penetration = " + penetration + " / oral = " + oral)
 			If (oral && penetration)
 				Config.SexMixedFX.Play(CenterRef)
@@ -1293,7 +1293,7 @@ State Animating
 	EndFunction
 
 	Event OnEndState()
-		UnregisterPhysics()
+		UnregisterCollision()
 		UnregisterForUpdate()
 		SetFurnitureIgnored(false)
 	EndEvent
@@ -1377,16 +1377,16 @@ Function UpdatePlacement(int n, sslActorAlias akAlias)
 	RePlace(akAlias.GetReference() as Actor, _InUseCoordinates, _ActiveScene, _ActiveStage, n)
 EndFunction
 ; Physics/SFX Related
-bool Function IsPhysicsRegistered() native
-Function RegisterPhysics(Actor[] akPosition, String asActiveScene) native
-Function UnregisterPhysics() native
-int[] Function GetPhysicTypes(Actor akPosition, Actor akPartner) native
-bool Function HasPhysicType(int aiType, Actor akPosition, Actor akPartner) native
-Actor Function GetPhysicPartnerByType(Actor akPosition, int aiType) native
-Actor[] Function GetPhysicPartnersByType(Actor akPosition, int aiType) native
-Actor Function GetPhysicPartnerByTypeRev(Actor akPartner, int aiType) native
-Actor[] Function GetPhysicPartnersByTypeRev(Actor akPartner, int aiType) native
-float Function GetPhysicVelocity(Actor akPosition, Actor akPartner, int aiType) native
+bool Function IsCollisionRegistered() native
+Function RegisterCollision(Actor[] akPosition, String asActiveScene) native
+Function UnregisterCollision() native
+int[] Function GetCollisionAction(Actor akPosition, Actor akPartner) native
+bool Function HasCollisionAction(int aiType, Actor akPosition, Actor akPartner) native
+Actor Function GetPartnerByAction(Actor akPosition, int aiType) native
+Actor[] Function GetPartnersByAction(Actor akPosition, int aiType) native
+Actor Function GetPartnerByActionRev(Actor akPartner, int aiType) native
+Actor[] Function GetPartnersByActionRev(Actor akPartner, int aiType) native
+float Function GetActionVelocity(Actor akPosition, Actor akPartner, int aiType) native
 
 ; ------------------------------------------------------- ;
 ; --- Thread END                                      --- ;
@@ -1635,7 +1635,7 @@ EndFunction
 
 float Function GetInteractionFactor(Actor ActorRef, int typeASL, int infoActor)
 	float ret = 0.0
-	If (Positions.Length > 1 && IsPhysicsRegistered())
+	If (Positions.Length > 1 && IsCollisionRegistered())
 		ret = CalcPhysicFactor(ActorRef)
 	Endif
 	If (ret == 0)
@@ -1651,12 +1651,12 @@ float Function CalcPhysicFactor(Actor ActorRef)
 	bool actor_pFoot = false
 	bool actor_pHand = false
 
-	int[] typesPhysic = GetPhysicTypes(ActorRef, none)
+	int[] typesPhysic = GetCollisionAction(ActorRef, none)
 	float[] factors = sslSystemConfig.GetEnjoymentFactors()
 	int i = 0
   While (i < typesPhysic.Length)
 		int typePhysic = typesPhysic[i]
-		float mult = 1 + Math.Abs(GetPhysicVelocity(ActorRef, none, typePhysic)) / velocityMax
+		float mult = 1 + Math.Abs(GetActionVelocity(ActorRef, none, typePhysic)) / velocityMax
 		If (typePhysic == PTYPE_VAGINALP)
 			factorPhysic += factors[ASLTYPE_VG] * mult
 		ElseIf (typePhysic == PTYPE_ANALP)
@@ -1679,13 +1679,13 @@ float Function CalcPhysicFactor(Actor ActorRef)
 		EndIf
 		i += 1
   EndWhile
-	If (!actor_pOral && HasPhysicType(PTYPE_Oral, none, ActorRef))
+	If (!actor_pOral && HasCollisionAction(PTYPE_Oral, none, ActorRef))
 		factorPhysic += factors[ASLTYPE_OR + 1]
 	Endif
-	If (!actor_pFoot && HasPhysicType(PTYPE_Foot, none, ActorRef))
+	If (!actor_pFoot && HasCollisionAction(PTYPE_Foot, none, ActorRef))
 		factorPhysic += factors[ASLTYPE_FJ + 1]
 	Endif
-	If (!actor_pHand && HasPhysicType(PTYPE_Hand, none, ActorRef))
+	If (!actor_pHand && HasCollisionAction(PTYPE_Hand, none, ActorRef))
 		factorPhysic += factors[ASLTYPE_HJ + 1]
 	Endif
 	return factorPhysic
@@ -1944,7 +1944,7 @@ EndFunction
 
 bool Function IsVaginalComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
-	If (IsPhysicsRegistered() && (HasPhysicType(PTYPE_VAGINALP, ActorRef, none) || HasPhysicType(PTYPE_VAGINALA, ActorRef, none))) \
+	If (IsCollisionRegistered() && (HasCollisionAction(PTYPE_VAGINALP, ActorRef, none) || HasCollisionAction(PTYPE_VAGINALA, ActorRef, none))) \
 		|| (TypeInterASL >= ASLTYPE_VG && (TypeInterASL != ASLTYPE_AN && TypeInterASL != ASLTYPE_SRAN))
 		ret = True
 	EndIf
@@ -1953,7 +1953,7 @@ EndFunction
 
 bool Function IsAnalComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
-	If (IsPhysicsRegistered() && (HasPhysicType(PTYPE_ANALP, ActorRef, none) || HasPhysicType(PTYPE_ANALA, ActorRef, none))) \
+	If (IsCollisionRegistered() && (HasCollisionAction(PTYPE_ANALP, ActorRef, none) || HasCollisionAction(PTYPE_ANALA, ActorRef, none))) \
 		|| (TypeInterASL >= ASLTYPE_AN && (TypeInterASL != ASLTYPE_SRVG))
 		ret = True
 	EndIf
@@ -1962,7 +1962,7 @@ EndFunction
 
 bool Function IsOralComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
-	If (IsPhysicsRegistered() && HasPhysicType(PTYPE_ORAL, ActorRef, none)) \
+	If (IsCollisionRegistered() && HasCollisionAction(PTYPE_ORAL, ActorRef, none)) \
 		|| (TypeInterASL >= ASLTYPE_OR && (TypeInterASL != ASLTYPE_VG && TypeInterASL != ASLTYPE_AN))
 		ret = True
 	EndIf
