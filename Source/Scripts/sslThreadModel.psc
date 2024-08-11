@@ -373,12 +373,12 @@ EndFunction
 ; --- Physics					                                --- ;
 ; ------------------------------------------------------- ;
 
-bool Function IsPhysicsEnabled()
+bool Function IsInteractionRegistered()
 	return IsCollisionRegistered()
 EndFunction
 
 int[] Function GetInteractionTypes(Actor akPosition, Actor akPartner)
-	return GetCollisionAction(akPosition, akPartner)
+	return GetCollisionActions(akPosition, akPartner)
 EndFunction
 
 bool Function HasInteractionType(int aiType, Actor akPosition, Actor akPartner)
@@ -1141,8 +1141,8 @@ State Animating
 		If (_SFXTimer > 0)
 			_SFXTimer -= ANIMATING_UPDATE_INTERVAL
 		Else
-			bool penetration = HasCollisionAction(PTYPE_VAGINALP, none, none) || HasCollisionAction(PTYPE_ANALP, none, none)
-			bool oral = HasCollisionAction(PTYPE_ORAL, none, none)
+			bool penetration = HasCollisionAction(CTYPE_Vaginal, none, none) || HasCollisionAction(CTYPE_Anal, none, none)
+			bool oral = HasCollisionAction(CTYPE_Oral, none, none)
 			Log("SFX Testing; penetration = " + penetration + " / oral = " + oral)
 			If (oral && penetration)
 				Config.SexMixedFX.Play(CenterRef)
@@ -1380,7 +1380,7 @@ EndFunction
 bool Function IsCollisionRegistered() native
 Function RegisterCollision(Actor[] akPosition, String asActiveScene) native
 Function UnregisterCollision() native
-int[] Function GetCollisionAction(Actor akPosition, Actor akPartner) native
+int[] Function GetCollisionActions(Actor akPosition, Actor akPartner) native
 bool Function HasCollisionAction(int aiType, Actor akPosition, Actor akPartner) native
 Actor Function GetPartnerByAction(Actor akPosition, int aiType) native
 Actor[] Function GetPartnersByAction(Actor akPosition, int aiType) native
@@ -1651,41 +1651,45 @@ float Function CalcPhysicFactor(Actor ActorRef)
 	bool actor_pFoot = false
 	bool actor_pHand = false
 
-	int[] typesPhysic = GetCollisionAction(ActorRef, none)
+	int[] typesPhysic = GetCollisionActions(ActorRef, none)
 	float[] factors = sslSystemConfig.GetEnjoymentFactors()
 	int i = 0
   While (i < typesPhysic.Length)
 		int typePhysic = typesPhysic[i]
 		float mult = 1 + Math.Abs(GetActionVelocity(ActorRef, none, typePhysic)) / velocityMax
-		If (typePhysic == PTYPE_VAGINALP)
+		If (typePhysic == CTYPE_Vaginal)
 			factorPhysic += factors[ASLTYPE_VG] * mult
-		ElseIf (typePhysic == PTYPE_ANALP)
+		ElseIf (typePhysic == CTYPE_Anal)
 			factorPhysic += factors[ASLTYPE_AN] * mult
-		ElseIf (typePhysic == PTYPE_VAGINALA)
-			factorPhysic += factors[ASLTYPE_VG + 1] * mult
-		ElseIf (typePhysic == PTYPE_ANALA)
-			factorPhysic += factors[ASLTYPE_AN + 1] * mult
-		ElseIf (typePhysic == PTYPE_Oral)
+		ElseIf (typePhysic == CTYPE_Oral)
 			factorPhysic += factors[ASLTYPE_OR] * mult
 			actor_pOral = true
-		ElseIf (typePhysic == PTYPE_Foot)
+		ElseIf (typePhysic == CTYPE_FootJob)
 			factorPhysic += factors[ASLTYPE_FJ]
 			actor_pFoot = true
-		ElseIf (typePhysic == PTYPE_Hand)
+		ElseIf (typePhysic == CTYPE_HandJob)
 			factorPhysic += factors[ASLTYPE_HJ]
 			actor_pHand = true
-		ElseIf (typePhysic == PTYPE_GRINDING)
+		ElseIf (typePhysic == CTYPE_Grinding)
 			factorPhysic += factors[ASLTYPE_GR]
 		EndIf
 		i += 1
   EndWhile
-	If (!actor_pOral && HasCollisionAction(PTYPE_Oral, none, ActorRef))
-		factorPhysic += factors[ASLTYPE_OR + 1]
+	If (HasCollisionAction(CTYPE_Vaginal, none, ActorRef))
+		float mult = 1 + Math.Abs(GetActionVelocity(none, ActorRef, CTYPE_Vaginal)) / velocityMax
+		factorPhysic += factors[ASLTYPE_VG + 1] * mult
 	Endif
-	If (!actor_pFoot && HasCollisionAction(PTYPE_Foot, none, ActorRef))
+	If (HasCollisionAction(CTYPE_Anal, none, ActorRef))
+		float mult = 1 + Math.Abs(GetActionVelocity(none, ActorRef, CTYPE_Anal)) / velocityMax
+		factorPhysic += factors[ASLTYPE_AN + 1] * mult
+	Endif
+	If (!actor_pOral && HasCollisionAction(CTYPE_Oral, none, ActorRef))
+		factorPhysic += factors[ASLTYPE_OR]
+	Endif
+	If (!actor_pFoot && HasCollisionAction(CTYPE_FootJob, none, ActorRef))
 		factorPhysic += factors[ASLTYPE_FJ + 1]
 	Endif
-	If (!actor_pHand && HasCollisionAction(PTYPE_Hand, none, ActorRef))
+	If (!actor_pHand && HasCollisionAction(CTYPE_HandJob, none, ActorRef))
 		factorPhysic += factors[ASLTYPE_HJ + 1]
 	Endif
 	return factorPhysic
@@ -1944,7 +1948,7 @@ EndFunction
 
 bool Function IsVaginalComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
-	If (IsCollisionRegistered() && (HasCollisionAction(PTYPE_VAGINALP, ActorRef, none) || HasCollisionAction(PTYPE_VAGINALA, ActorRef, none))) \
+	If (IsCollisionRegistered() && (HasCollisionAction(CTYPE_Vaginal, ActorRef, none) || HasCollisionAction(CTYPE_Vaginal, none, ActorRef))) \
 		|| (TypeInterASL >= ASLTYPE_VG && (TypeInterASL != ASLTYPE_AN && TypeInterASL != ASLTYPE_SRAN))
 		ret = True
 	EndIf
@@ -1953,7 +1957,7 @@ EndFunction
 
 bool Function IsAnalComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
-	If (IsCollisionRegistered() && (HasCollisionAction(PTYPE_ANALP, ActorRef, none) || HasCollisionAction(PTYPE_ANALA, ActorRef, none))) \
+	If (IsCollisionRegistered() && (HasCollisionAction(CTYPE_Anal, ActorRef, none) || HasCollisionAction(CTYPE_Anal, none, ActorRef))) \
 		|| (TypeInterASL >= ASLTYPE_AN && (TypeInterASL != ASLTYPE_SRVG))
 		ret = True
 	EndIf
@@ -1962,7 +1966,7 @@ EndFunction
 
 bool Function IsOralComplex(Actor ActorRef, int TypeInterASL)
 	bool ret = False
-	If (IsCollisionRegistered() && HasCollisionAction(PTYPE_ORAL, ActorRef, none)) \
+	If (IsCollisionRegistered() && HasCollisionAction(CTYPE_Oral, ActorRef, none)) \
 		|| (TypeInterASL >= ASLTYPE_OR && (TypeInterASL != ASLTYPE_VG && TypeInterASL != ASLTYPE_AN))
 		ret = True
 	EndIf

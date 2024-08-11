@@ -1222,8 +1222,8 @@ float Function CalcEffectivePain()
 	float analXP = SexlabStatistics.GetStatistic(_ActorRef, 3)
 	If (_Thread.IsVaginalComplex(_ActorRef, _TypeInterASL) || _Thread.IsAnalComplex(_ActorRef, _TypeInterASL)) \
 		&& (vaginalXP < reqxp || analXP < reqxp) && (_TotalInterTime < timemax)
-		If ((_Thread.HasPhysicType(_Thread.PTYPE_VAGINALP, _ActorRef, none) && (_sex == 1 || _sex == 4)) \
-			|| _Thread.HasPhysicType(_Thread.PTYPE_ANALP, _ActorRef, none)) \
+		If (((_sex == 1 || _sex == 4) && _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, _ActorRef, none)) \
+			|| _Thread.HasCollisionAction(_Thread.CTYPE_Anal, _ActorRef, none)) \
 			|| (_ActorInterInfo == _Thread.ACTORINT_PASSIVE)
 			float factorXP = (2 - ((1 / (reqxp * 2)) * (1 + vaginalXP + analXP)))
 			float factorPP = 0.0
@@ -1296,7 +1296,7 @@ Function DebugBaseCalcVariables()
 EndFunction
 
 Function DebugEffectiveCalcVariables()
-	string EffectiveCalcLog = "[ClimaxEXT] PhysicTypes: " + _Thread.GetPhysicTypes(_ActorRef, none) + ", ASLType: " + _TypeInterASL + ", EnjFactor: " + _EnjFactor + ", IntFactor: " + _InterFactor + ", AdjustedTime: " + _timeAdjusted as int + ", IntTime: " + _TimeInter as int + ", Pain: " + _PainEffective as int + ", Enjoyment: " + _FullEnjoyment
+	string EffectiveCalcLog = "[ClimaxEXT] PhysicTypes: " + _Thread.GetCollisionActions(_ActorRef, none) + ", ASLType: " + _TypeInterASL + ", EnjFactor: " + _EnjFactor + ", IntFactor: " + _InterFactor + ", AdjustedTime: " + _timeAdjusted as int + ", IntTime: " + _TimeInter as int + ", Pain: " + _PainEffective as int + ", Enjoyment: " + _FullEnjoyment
 	Log(EffectiveCalcLog)
 EndFunction
 

@@ -126,18 +126,21 @@ EndFunction
 	how well aligned the animation is
 /;
 
-int Property PTYPE_ANY			= -1 AutoReadOnly
-int Property PTYPE_VAGINALP = 0  AutoReadOnly	; being penetrated
-int Property PTYPE_ANALP 		= 1  AutoReadOnly
-int Property PTYPE_VAGINALA = 2  AutoReadOnly	; penetrating someone else
-int Property PTYPE_ANALA 		= 3  AutoReadOnly
-int Property PTYPE_Oral 		= 4  AutoReadOnly	; receiving oral
-int Property PTYPE_Foot 		= 5  AutoReadOnly	; receiving footjob
-int Property PTYPE_Hand 		= 6  AutoReadOnly	; receiving handjob
-int Property PTYPE_GRINDING = 7  AutoReadOnly	; grinding against someone else
+int Property CTYPE_ANY					= -1 	AutoReadOnly
+int Property CTYPE_Vaginal 			= 1 	AutoReadOnly	; Position is being penetrated by partner
+int Property CTYPE_Anal 				= 2 	AutoReadOnly	; Position is being penetrated by partner
+int Property CTYPE_Oral 				= 3 	AutoReadOnly	; Position is licking/sucking partner
+int Property CTYPE_Grinding 		= 4 	AutoReadOnly	; Position is being grinded against by partner (crotch area)
+int Property CTYPE_Deepthroat 	= 5 	AutoReadOnly	; Oral, with partner's penis close to/at maximum depth
+int Property CTYPE_Skullfuck 		= 6 	AutoReadOnly	; Positions head penetrated in an "unusual" way by partner (Usually gore)
+int Property CTYPE_LickingShaft = 7 	AutoReadOnly	; Position licking partners shaft
+int Property CTYPE_FootJob 			= 8 	AutoReadOnly	; Position being pleasured by partner
+int Property CTYPE_HandJob 			= 9 	AutoReadOnly	; Position being pleasured by partner
+int Property CTYPE_Kissing 			= 10 	AutoReadOnly	; Position kissing partner
+int Property CTYPE_Facial 			= 11 	AutoReadOnly	; Partner penis in front of this face
 
-; If physics related data is currently available or not
-bool Function IsPhysicsEnabled()
+; If collision related data is currently available or not
+bool Function IsInteractionRegistered()
 EndFunction
 
 ; Get a list of all types the two actors interact with another
