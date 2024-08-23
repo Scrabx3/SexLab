@@ -282,7 +282,12 @@ String _Expression
 bool Property ForceOpenMouth Auto Hidden
 bool Property OpenMouth
 	bool Function Get()
-		return ForceOpenMouth
+		If (ForceOpenMouth)
+			return true
+		EndIf
+		return _Thread.HasCollisionAction(_Thread.CTYPE_Oral, _ActorRef, none) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_LickingShaft, _ActorRef, none) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_AnimObjFace, _ActorRef, none)
 	EndFunction
 	Function Set(bool abSet)
 		ForceOpenMouth = abSet
@@ -538,8 +543,8 @@ State Paused
 		_LastOrgasm = _StartedAt
 		_Thread.AnimationStart()
 		TrackedEvent(TRACK_START)
-		; Utility.Wait(1)	; Wait for schlong to update
-		; Debug.SendAnimationEvent(_ActorRef, "SOSBend" + _schlonganglestart)
+		Utility.Wait(1)	; Wait for schlong to update
+		Debug.SendAnimationEvent(_ActorRef, "SOSBend" + _schlonganglestart)
 	EndEvent
 
 	Function SetStrapon(Form ToStrapon)
@@ -642,7 +647,6 @@ float Property UpdateInterval = 0.25 AutoReadOnly
 Int Property HoldBackKeyCode = 0x100 AutoReadOnly Hidden ; LMB
 
 float _LoopDelay
-float _LoopExpressionDelay
 float _LoopEnjoymentDelay
 float _LoopContextCheckDelay
 
@@ -698,13 +702,12 @@ State Animating
 			Sound snd = _Thread.GetAliasSound(Self, _Voice, strength)
 			sslBaseVoice.PlaySound(_ActorRef, snd, strength, lipsync)
 		EndIf
-		RefreshExpressionEx(strength)
 		If (IsSeparateOrgasm())
 			DoOrgasm()
 		EndIf
+		RefreshExpressionEx(strength)
 		; Loop
 		_LoopDelay += UpdateInterval
-		_LoopExpressionDelay += UpdateInterval
 		_LoopEnjoymentDelay += UpdateInterval
 		_LoopContextCheckDelay += UpdateInterval
 		RegisterForSingleUpdate(UpdateInterval)
@@ -721,11 +724,13 @@ State Animating
 	Function RefreshExpressionEx(float afStrength)
 		If (_sex > 2)
 			return
+		ElseIf (sslBaseExpression.IsMouthOpen(_ActorRef))
+			If (!OpenMouth)
+				sslBaseExpression.CloseMouth(_ActorRef)
+			EndIf
 		ElseIf (OpenMouth)
 			sslBaseExpression.OpenMouth(_ActorRef)
 			Utility.Wait(0.7)
-		ElseIf (sslBaseExpression.IsMouthOpen(_ActorRef))
-			sslBaseExpression.CloseMouth(_ActorRef)
 		EndIf
 		If (_Expression && _livestatus == LIVESTATUS_ALIVE)
 			sslBaseExpression.ApplyExpression(_Expression, _ActorRef, afStrength)
@@ -802,13 +807,11 @@ State Animating
 		ModEvent.PushInt(eid, _FullEnjoyment)
 		ModEvent.PushInt(eid, _OrgasmCount)
 		ModEvent.Send(eid)
+		Int handle = ModEvent.Create("SexlabOrgasmSeparate")
+		ModEvent.PushForm(handle, _ActorRef)
+		ModEvent.PushInt(handle, _Thread.tid)
+		ModEvent.Send(handle)
 		TrackedEvent(TRACK_ORGASM)
-		If (sslSystemConfig.GetSettingInt("iClimaxType") != _Config.CLIMAXTYPE_LEGACY)
-			Int handle = ModEvent.Create("SexlabOrgasmSeparate")
-			ModEvent.PushForm(handle, _ActorRef)
-			ModEvent.PushInt(handle, _Thread.tid)
-			ModEvent.Send(handle)
-		EndIf
 		_LastOrgasm = SexLabUtil.GetCurrentGameRealTime()
 		_OrgasmCount += 1
 		; Enjoyment

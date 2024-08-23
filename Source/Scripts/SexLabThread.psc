@@ -138,6 +138,7 @@ int Property CTYPE_FootJob 			= 8 	AutoReadOnly	; Position being pleasured by pa
 int Property CTYPE_HandJob 			= 9 	AutoReadOnly	; Position being pleasured by partner
 int Property CTYPE_Kissing 			= 10 	AutoReadOnly	; Position kissing partner
 int Property CTYPE_Facial 			= 11 	AutoReadOnly	; Partner penis in front of this face
+int Property CTYPE_AnimObjFace 	= 12 	AutoReadOnly	; Anim object owned by partner close to position mouth opening
 
 ; If collision related data is currently available or not
 bool Function IsInteractionRegistered()
