@@ -63,8 +63,9 @@ string[] function GetAllRaceKeys(Race RaceRef = none) global
   String[] ret
   If (!RaceRef)
     ret = SexLabRegistry.GetAllRaceKeys(false)
+  Else
+    ret = SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
   EndIf
-  ret = SexLabRegistry.GetRaceKeyByRaceA(RaceRef)
   return PapyrusUtil.RemoveString(ret, "humans")
 EndFunction
 
