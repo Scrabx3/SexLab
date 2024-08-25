@@ -1066,7 +1066,8 @@ endFunction
 
 ;/* DEPRECATED! */;
 sslBaseAnimation function GetAnimationObject(string Token)
-  return none
+  String ret = SexLabRegistry.GetSceneByName(Token)
+  return AnimSlots.GetSetAnimation(ret)
 endFunction
 
 ;/* DEPRECATED! */;

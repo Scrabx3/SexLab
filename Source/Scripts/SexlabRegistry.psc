@@ -60,6 +60,10 @@ bool Function SortBySceneA(Actor[] akPositions, Actor[] akSubmissives, String as
 int Function SortBySceneEx(Actor[] akPositions, Actor akSubmissive, String[] asScenes, int aiStrictness) native global
 int Function SortBySceneExA(Actor[] akPositions, Actor[] akSubmissives, String[] asScenes, int aiStrictness) native global
 
+; Returns a scene id representing a scene with the given argument as name or an empty string if no scene with this name exists
+; In case more than 1 scene with that name exists, returns the first one found
+String Function GetSceneByName(String asName) native global
+
 ; ------------------------------------------------------- ;
 ; --- Scenes                                          --- ;
 ; ------------------------------------------------------- ;
