@@ -651,8 +651,8 @@ Function ToggleAnimations()
 		_currentTogglePage = 0
 	EndIf
 	AddMenuOptionST("togglepackage", "$SSL_TogglePackage", _animPack[_animPackIdx])
+	AddTextOptionST("togglevisible", "$SSL_ToggleVisible", "$SSL_ClickHere")
 	AddMenuOptionST("togglecategory", "$SSL_ToggleGroup", _toggleGroup[_toggleGroupIdx])
-	AddEmptyOption()
 	AddInputOptionST("toggletags", "$SSL_TagFilter", _toggleTags)
 	AddHeaderOption("")
 	AddTextOptionST("AnimationTogglePage", "$SSL_Page{" + (_currentTogglePage + 1) + "}{" + animpages + "}", "$SSL_NextPage", DoDisable(animpages <= 1))
@@ -987,6 +987,17 @@ Event OnSelectST()
 	ElseIf (s[0] == "AnimationTogglePage")
 		_currentTogglePage += 1
 		ForcePageReset()
+	ElseIf (s[0] == "togglevisible")
+		String[] anims = sslAnimationSlots.CreateProxyArray(0, _toggleGroupIdx, _toggleTags, _animPack[_animPackIdx])
+		If (!anims.Length)
+			return
+		EndIf
+		bool e = SexLabRegistry.IsSceneEnabled(anims[0])
+		int i = 0
+		While (i < anims.Length)
+			SexLabRegistry.SetSceneEnabled(anims[i], !e)
+			i += 1
+		EndWhile
 	ElseIf (s[0] == "AnimationToggle")
 		String anim = s[1]
 		bool e = SexLabRegistry.IsSceneEnabled(anim)

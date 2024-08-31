@@ -99,13 +99,24 @@ sslBaseAnimation[] Function AsBaseAnimation(String[] asSceneIDs)
   sslBaseAnimation[] ret = sslUtility.AnimationArray(asSceneIDs.Length)
   SyncBackEnd()
   int i = 0
+  int ii = 0
   While (i < ret.Length)
     int where = _proxyid.Find(asSceneIDs[i])
     If (where > -1)
-      ret[i] = GetNthAlias(where) as sslBaseAnimation
+      ret[ii] = GetNthAlias(where) as sslBaseAnimation
+      ii += 1
     EndIf
     i += 1
   EndWhile
+  If (ii < ret.Length)
+    sslBaseAnimation[] argRet = sslUtility.AnimationArray(ii)
+    int k = 0
+    While (k < argRet.Length)
+      argRet[k] = ret[k]
+      k += 1
+    EndWhile
+    ret = argRet
+  EndIf
   sslLog.Log("Returning " + ret.Length + " Objects (" + asSceneIDs + ")")
   return ret
 EndFunction
