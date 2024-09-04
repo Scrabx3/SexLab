@@ -387,32 +387,38 @@ State Ready
 	EndFunction
 
 	Event OnDoPrepare(string asEventName, string asStringArg, float afNumArg, form akPathTo)
+		float min_delay = sslSystemConfig.GetMinSetupTime()
+		_ActorRef.SetActorValue("Paralysis", 0.0)
+		float interval = 0.05
 		If(_ActorRef == _PlayerRef)
 			Game.SetPlayerAIDriven()
-		Else
-			_Config.CheckBardAudience(_ActorRef, true)
-		EndIf
-		; Position
-		_ActorRef.SetActorValue("Paralysis", 0.0)
-		float min_delay = sslSystemConfig.GetMinSetupTime()
-		If(akPathTo && DoPathToCenter)
-			ObjectReference target = akPathTo as ObjectReference
-			float target_distance = 128.0
-			float distance = _ActorRef.GetDistance(target)
-			If(distance > target_distance && distance <= 6144.0)
-				float fallback_timer = 15.0
-				float interval = 0.05
-				float prev_dist = distance + 1.0
-				_ActorRef.SetFactionRank(_AnimatingFaction, 2)
-				_ActorRef.EvaluatePackage()
-				Utility.Wait(2.0)
-				While (distance > target_distance && Math.abs(prev_dist - distance) > 0.5 && fallback_timer > 0)
-					fallback_timer -= interval
+			If (UI.IsMenuOpen("Dialogue Menu"))
+				UI.InvokeString("Dialogue Menu", "_global.skse.CloseMenu", "Dialogue Menu")
+				While (UI.IsMenuOpen("Dialogue Menu"))
 					min_delay -= interval
 					Utility.Wait(interval)
-					prev_dist = distance
-					distance = _ActorRef.GetDistance(target)
 				EndWhile
+			EndIf
+		Else
+			_Config.CheckBardAudience(_ActorRef, true)
+			If(akPathTo && DoPathToCenter)
+				ObjectReference target = akPathTo as ObjectReference
+				float target_distance = 128.0
+				float distance = _ActorRef.GetDistance(target)
+				If(distance > target_distance && distance <= 6144.0)
+					float fallback_timer = 15.0
+					float prev_dist = distance + 1.0
+					_ActorRef.SetFactionRank(_AnimatingFaction, 2)
+					_ActorRef.EvaluatePackage()
+					Utility.Wait(2.0)
+					While (distance > target_distance && Math.abs(prev_dist - distance) > 0.5 && fallback_timer > 0)
+						fallback_timer -= interval
+						min_delay -= interval
+						Utility.Wait(interval)
+						prev_dist = distance
+						distance = _ActorRef.GetDistance(target)
+					EndWhile
+				EndIf
 			EndIf
 		EndIf
 		_ActorRef.SetFactionRank(_AnimatingFaction, 1)
@@ -461,7 +467,7 @@ State Ready
 		_EnjoymentDelay = 1.5
 		_ContextCheckDelay = 8.0
 		_lastHoldBack = 0.0
-		If (min_delay > 0.05)
+		If (min_delay > 0.0)
 			Utility.Wait(min_delay)
 		EndIf
 		__SETUP_DONE = true
