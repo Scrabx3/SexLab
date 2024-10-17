@@ -21,3 +21,4 @@ SKSE/Plugins/SexLabUtil.pdb
 *.dll
 *.pdb
 *.code-workspace
+*.pex
