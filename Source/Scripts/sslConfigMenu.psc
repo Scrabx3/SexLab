@@ -998,6 +998,7 @@ Event OnSelectST()
 			SexLabRegistry.SetSceneEnabled(anims[i], !e)
 			i += 1
 		EndWhile
+		ForcePageReset()
 	ElseIf (s[0] == "AnimationToggle")
 		String anim = s[1]
 		bool e = SexLabRegistry.IsSceneEnabled(anim)
