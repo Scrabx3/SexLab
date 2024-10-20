@@ -1321,13 +1321,13 @@ Event OnInputAcceptST(String inputString)
 	String[] s = PapyrusUtil.StringSplit(GetState(), "_")
 	If (s[0] == "matchmakerInputRequiredTags")
 		Config.RequiredTags = inputString
-		SetInputOptionValueST(Config.RequiredTags)
+		ForcePageReset()
 	ElseIf (s[0] == "matchmakerInputExcludedTags")
 		Config.ExcludedTags = inputString
-		SetInputOptionValueST(Config.ExcludedTags)
+		ForcePageReset()
 	ElseIf (s[0] == "matchmakerInputOptionalTags")
 		Config.OptionalTags = inputString
-		SetInputOptionValueST(Config.OptionalTags)
+		ForcePageReset()
 	ElseIf (s[0] == "toggletags")
 		_toggleTags = inputString
 		ForcePageReset()
