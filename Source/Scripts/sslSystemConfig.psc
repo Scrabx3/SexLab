@@ -96,8 +96,8 @@ String Function ParseMMTagString() global
 	String neg = sslSystemConfig.GetSettingStr("sExcludedTags")
 	String[] optA = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(opt, ","))
 	String[] negA = PapyrusUtil.ClearEmpty(PapyrusUtil.StringSplit(neg, ","))
-  req += MergeTagString(req, optA, "~")
-  req += MergeTagString(req, negA, "-")
+  req = MergeTagString(req, optA, "~")
+  req = MergeTagString(req, negA, "-")
   return req
 EndFunction
 String Function MergeTagString(String req, String[] add, String prefix) global
