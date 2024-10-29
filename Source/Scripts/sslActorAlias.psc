@@ -63,6 +63,29 @@ Function AdjustEnjoyment(int AdjustBy)
 	_AdjustEnjoyment = AdjustBy
 EndFunction
 
+bool Function IsAnalPenetrated()
+	return _Thread.HasCollisionAction(_Thread.CTYPE_Anal, _ActorRef, none)
+EndFunction
+
+bool Function IsGenitalInteraction()
+	int pSex = SexLabRegistry.GetSex(_ActorRef, false)
+	If (pSex == 1)
+		return _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, _ActorRef, none)
+	Else
+		If (pSex == 2 && _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, _ActorRef, none))
+			return true
+		EndIf
+		return _Thread.HasCollisionAction(_Thread.CTYPE_Anal, none, _ActorRef) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, none, _ActorRef) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_Oral, none, _ActorRef) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_Grinding, none, _ActorRef) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_Skullfuck, none, _ActorRef) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_LickingShaft, none, _ActorRef) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_FootJob, _ActorRef, none) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_HandJob, _ActorRef, none)
+	EndIf
+EndFunction
+
 ; for compatibility with SLSO-based mods
 int Function GetFullEnjoyment()
 	return _FullEnjoyment
@@ -708,8 +731,17 @@ State Animating
 			Sound snd = _Thread.GetAliasSound(Self, _Voice, strength)
 			sslBaseVoice.PlaySound(_ActorRef, snd, strength, lipsync)
 		EndIf
+		int countTmp = _OrgasmCount
 		If (IsSeparateOrgasm())
 			DoOrgasm()
+		EndIf
+		If (_ActorRef == _PlayerRef && countTmp != _OrgasmCount && sslLovense.IsLovenseInstalled())
+			int lovenseStrength = sslSystemConfig.GetSettingInt("iLovenseStrength")
+			If (IsAnalPenetrated())
+				sslLovense.StartAnalAction(lovenseStrength)
+			ElseIf (IsGenitalInteraction())
+				sslLovense.StartGenitalAction(lovenseStrength)
+			EndIf
 		EndIf
 		RefreshExpressionEx(strength)
 		; Loop
@@ -803,6 +835,10 @@ State Animating
 				PlayLouder(snd, _ActorRef, _Config.VoiceVolume)
 			EndIf
 			PlayLouder(_Config.OrgasmFX, _ActorRef, _Config.SFXVolume)
+			If (sslLovense.IsLovenseInstalled())
+				int strength = sslSystemConfig.GetSettingInt("iLovenseStrengthOrgasm")
+				sslLovense.StartOrgasmAction(strength)
+			EndIf
 		EndIf
 		If (_sex != 1 && _sex != 4)
 			_Thread.ApplyCumFX(_ActorRef)

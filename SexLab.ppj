@@ -17,7 +17,7 @@
         <!-- <Import>@ThisProject\Scripts\Source</Import> -->
         <Import>@ThisProject\Source\Scripts</Import>
         <!-- Ressources -->
-		<!-- <Import>@MO2\Skyrim Script Extender\Source\Scripts</Import> -->
+		<Import>@MO2\SkyrimLovense\Source\Scripts</Import>
         <Import>@MO2\PapyrusUtil SE - Modders Scripting Utility Functions\Source\Scripts</Import>
         <Import>@MO2\SkyUI SDK\Source\Scripts</Import>
         <Import>@MO2\XP32 Maximum Skeleton Special Extended\Source\Scripts</Import>
