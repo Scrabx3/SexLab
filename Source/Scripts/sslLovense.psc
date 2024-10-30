@@ -4,8 +4,6 @@ bool Function IsLovenseInstalled() global
   return SKSE.GetPluginVersion("SkyrimLovense") > -1
 EndFunction
 
-; TODO: ALl these functions should prbly get a MCM Setting of sorts for the strength
-
 Function StartAnalAction(int aiStrength) global
   String[] analToys = Lovense.GetToysByCategory("Anal")
   StartDefaultActions(analToys, aiStrength)

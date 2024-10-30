@@ -672,16 +672,18 @@ Form[] Function StripByData(int aiStripData, int[] aiDefaults, int[] aiOverwrite
 	And the "Playing" state, in this state actors are assumed in the animation and have voice logic and all applied to them
 /;
 
-float Property UpdateInterval = 0.25 AutoReadOnly
+float Property UpdateInterval = 0.250 AutoReadOnly Hidden
 Int Property HoldBackKeyCode = 0x100 AutoReadOnly Hidden ; LMB
 
 float _LoopDelay
+float _LoopLovenseDelay
 float _LoopEnjoymentDelay
 float _LoopContextCheckDelay
 
 State Animating
 	Event OnBeginState()
 		RegisterForModEvent("SSL_ORGASM_Thread" + _Thread.tid, "OnOrgasm")
+		_LoopLovenseDelay = 0
 		RegisterForSingleUpdate(UpdateInterval)
 		If (_ActorRef == _PlayerRef)
 			RegisterForKey(HoldBackKeyCode)
@@ -731,17 +733,20 @@ State Animating
 			Sound snd = _Thread.GetAliasSound(Self, _Voice, strength)
 			sslBaseVoice.PlaySound(_ActorRef, snd, strength, lipsync)
 		EndIf
-		int countTmp = _OrgasmCount
 		If (IsSeparateOrgasm())
 			DoOrgasm()
 		EndIf
-		If (_ActorRef == _PlayerRef && countTmp != _OrgasmCount && sslLovense.IsLovenseInstalled())
-			int lovenseStrength = sslSystemConfig.GetSettingInt("iLovenseStrength")
-			If (IsAnalPenetrated())
-				sslLovense.StartAnalAction(lovenseStrength)
-			ElseIf (IsGenitalInteraction())
-				sslLovense.StartGenitalAction(lovenseStrength)
+		If (_LoopLovenseDelay <= 0)
+			If (_ActorRef == _PlayerRef && sslLovense.IsLovenseInstalled())
+				int lovenseStrength = sslSystemConfig.GetSettingInt("iLovenseStrength")
+				If (IsAnalPenetrated())
+					sslLovense.StartAnalAction(lovenseStrength)
+				ElseIf (IsGenitalInteraction())
+					sslLovense.StartGenitalAction(lovenseStrength)
+				EndIf
 			EndIf
+		Else
+			_LoopLovenseDelay -= UpdateInterval
 		EndIf
 		RefreshExpressionEx(strength)
 		; Loop
@@ -836,6 +841,7 @@ State Animating
 			EndIf
 			PlayLouder(_Config.OrgasmFX, _ActorRef, _Config.SFXVolume)
 			If (sslLovense.IsLovenseInstalled())
+				_LoopLovenseDelay = sslSystemConfig.GetSettingFlt("fLovenseDurationOrgasm")
 				int strength = sslSystemConfig.GetSettingInt("iLovenseStrengthOrgasm")
 				sslLovense.StartOrgasmAction(strength)
 			EndIf
