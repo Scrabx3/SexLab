@@ -131,14 +131,15 @@ int Property CTYPE_Vaginal 			= 1 	AutoReadOnly	; Position is being penetrated b
 int Property CTYPE_Anal 				= 2 	AutoReadOnly	; Position is being penetrated by partner
 int Property CTYPE_Oral 				= 3 	AutoReadOnly	; Position is licking/sucking partner
 int Property CTYPE_Grinding 		= 4 	AutoReadOnly	; Position is being grinded against by partner (crotch area)
-int Property CTYPE_Deepthroat 	= 5 	AutoReadOnly	; Oral, with partner's penis close to/at maximum depth
-int Property CTYPE_Skullfuck 		= 6 	AutoReadOnly	; Positions head penetrated in an "unusual" way by partner (Usually gore)
+int Property CTYPE_Deepthroat 	= 5 	AutoReadOnly	; Implies Oral, partner's penis close to/at maximum depth
+int Property CTYPE_Skullfuck 		= 6 	AutoReadOnly	; Positions head penetrated in an unexpected way by partner (Usually gore)
 int Property CTYPE_LickingShaft = 7 	AutoReadOnly	; Position licking partners shaft
-int Property CTYPE_FootJob 			= 8 	AutoReadOnly	; Position being pleasured by partner
-int Property CTYPE_HandJob 			= 9 	AutoReadOnly	; Position being pleasured by partner
+int Property CTYPE_FootJob 			= 8 	AutoReadOnly	; Position pleasuring partner using at least one foot
+int Property CTYPE_HandJob 			= 9 	AutoReadOnly	; Position pleasuring partner using at least one hand
 int Property CTYPE_Kissing 			= 10 	AutoReadOnly	; Position kissing partner
-int Property CTYPE_Facial 			= 11 	AutoReadOnly	; Partner penis in front of this face
-int Property CTYPE_AnimObjFace 	= 12 	AutoReadOnly	; Anim object owned by partner close to position mouth opening
+int Property CTYPE_Facial 			= 11 	AutoReadOnly	; Positions face in front of partner penis
+int Property CTYPE_AnimObjFace 	= 12 	AutoReadOnly	; Position mouth close to partner anim object node
+int Property CTYPE_SuckingToes	= 13	AutoReadOnly	; Position mouth close to partner toes
 
 ; If collision related data is currently available or not
 bool Function IsInteractionRegistered()

@@ -69,21 +69,30 @@ EndFunction
 
 bool Function IsGenitalInteraction()
 	int pSex = SexLabRegistry.GetSex(_ActorRef, false)
-	If (pSex == 1)
-		return _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, _ActorRef, none)
-	Else
-		If (pSex == 2 && _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, _ActorRef, none))
+	bool handjob = _Thread.HasCollisionAction(_Thread.CTYPE_HandJob, none, _ActorRef)
+	bool footjob = _Thread.HasCollisionAction(_Thread.CTYPE_FootJob, none, _ActorRef)
+	bool oral = _Thread.HasCollisionAction(_Thread.CTYPE_Oral, none, _ActorRef)
+	If (handjob || footjob || oral)
+		return true
+	EndIf
+	If (pSex != 0)
+		bool vaginal = _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, _ActorRef, none)
+		bool grinding = _Thread.HasCollisionAction(_Thread.CTYPE_Grinding, _ActorRef, none)
+		If (vaginal || grinding)
 			return true
 		EndIf
-		return _Thread.HasCollisionAction(_Thread.CTYPE_Anal, none, _ActorRef) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, none, _ActorRef) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_Oral, none, _ActorRef) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_Grinding, none, _ActorRef) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_Skullfuck, none, _ActorRef) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_LickingShaft, none, _ActorRef) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_FootJob, _ActorRef, none) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_HandJob, _ActorRef, none)
 	EndIf
+	If (pSex != 1)
+		bool anal = _Thread.HasCollisionAction(_Thread.CTYPE_Anal, none, _ActorRef)
+		bool vaginal = _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, none, _ActorRef)
+		bool grinding = _Thread.HasCollisionAction(_Thread.CTYPE_Grinding, none, _ActorRef)
+		bool skull = _Thread.HasCollisionAction(_Thread.CTYPE_Skullfuck, none, _ActorRef)
+		bool shaft = _Thread.HasCollisionAction(_Thread.CTYPE_LickingShaft, none, _ActorRef)
+		If (anal || vaginal || grinding || skull || shaft)
+			return true
+		EndIf
+	EndIf
+	return false
 EndFunction
 
 ; for compatibility with SLSO-based mods
@@ -310,7 +319,8 @@ bool Property OpenMouth
 		EndIf
 		return _Thread.HasCollisionAction(_Thread.CTYPE_Oral, _ActorRef, none) || \
 			_Thread.HasCollisionAction(_Thread.CTYPE_LickingShaft, _ActorRef, none) || \
-			_Thread.HasCollisionAction(_Thread.CTYPE_AnimObjFace, _ActorRef, none)
+			_Thread.HasCollisionAction(_Thread.CTYPE_AnimObjFace, _ActorRef, none) || \
+			_Thread.HasCollisionAction(_Thread.CTYPE_SuckingToes, _ActorRef, none)
 	EndFunction
 	Function Set(bool abSet)
 		ForceOpenMouth = abSet
