@@ -749,10 +749,15 @@ State Animating
 		If (_LoopLovenseDelay <= 0)
 			If (_ActorRef == _PlayerRef && sslLovense.IsLovenseInstalled())
 				int lovenseStrength = sslSystemConfig.GetSettingInt("iLovenseStrength")
+				If (IsGenitalInteraction())
+					sslLovense.StartGenitalAction(lovenseStrength)
+				Else
+					sslLovense.StopGenitalAction()
+				EndIf
 				If (IsAnalPenetrated())
 					sslLovense.StartAnalAction(lovenseStrength)
-				ElseIf (IsGenitalInteraction())
-					sslLovense.StartGenitalAction(lovenseStrength)
+				Else
+					sslLovense.StopAnalAction()
 				EndIf
 			EndIf
 		Else
@@ -853,7 +858,8 @@ State Animating
 			If (sslLovense.IsLovenseInstalled())
 				_LoopLovenseDelay = sslSystemConfig.GetSettingFlt("fLovenseDurationOrgasm")
 				int strength = sslSystemConfig.GetSettingInt("iLovenseStrengthOrgasm")
-				sslLovense.StartOrgasmAction(strength)
+				float duration = sslSystemConfig.GetSettingInt("fLovenseDurationOrgasm")
+				sslLovense.StartOrgasmAction(strength, duration)
 			EndIf
 		EndIf
 		If (_sex != 1 && _sex != 4)
@@ -909,6 +915,9 @@ State Animating
 			UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", true)
 			Game.EnablePlayerControls(abFighting = false, abActivate = false)
 			MiscUtil.SetFreeCameraState(false)
+			If (sslLovense.IsLovenseInstalled())
+				sslLovense.StopAllActions()
+			EndIf
 		Else
 			ActorUtil.RemovePackageOverride(_ActorRef, _Thread.DoNothingPackage)
 			_ActorRef.EvaluatePackage()
