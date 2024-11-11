@@ -690,10 +690,15 @@ float _LoopLovenseDelay
 float _LoopEnjoymentDelay
 float _LoopContextCheckDelay
 
+bool _LovenseGenital
+bool _LovenseAnal
+
 State Animating
 	Event OnBeginState()
 		RegisterForModEvent("SSL_ORGASM_Thread" + _Thread.tid, "OnOrgasm")
 		_LoopLovenseDelay = 0
+		_LovenseGenital = false
+		_LovenseAnal = false
 		RegisterForSingleUpdate(UpdateInterval)
 		If (_ActorRef == _PlayerRef)
 			RegisterForKey(HoldBackKeyCode)
@@ -749,16 +754,28 @@ State Animating
 		If (_LoopLovenseDelay <= 0)
 			If (_ActorRef == _PlayerRef && sslLovense.IsLovenseInstalled())
 				int lovenseStrength = sslSystemConfig.GetSettingInt("iLovenseStrength")
-				If (IsGenitalInteraction())
-					sslLovense.StartGenitalAction(lovenseStrength)
+				bool LovenseGenital = IsGenitalInteraction()
+				bool LovenseAnal = IsAnalPenetrated()
+				If (!LovenseGenital && !LovenseAnal && (_LovenseGenital || _LovenseAnal))
+					sslLovense.StopAllActions()
 				Else
-					sslLovense.StopGenitalAction()
+					If (LovenseGenital)
+						If (!_LovenseGenital)
+							sslLovense.StartGenitalAction(lovenseStrength)
+						EndIf
+					ElseIf (_LovenseGenital)
+						sslLovense.StopGenitalAction(true)
+					EndIf
+					If (LovenseAnal)
+						If (!_LovenseAnal)
+							sslLovense.StartAnalAction(lovenseStrength)
+						EndIf
+					ElseIf (_LovenseAnal)
+						sslLovense.StopAnalAction(true)
+					EndIf
 				EndIf
-				If (IsAnalPenetrated())
-					sslLovense.StartAnalAction(lovenseStrength)
-				Else
-					sslLovense.StopAnalAction()
-				EndIf
+				_LovenseGenital = LovenseGenital
+				_LovenseAnal = LovenseAnal
 			EndIf
 		Else
 			_LoopLovenseDelay -= UpdateInterval

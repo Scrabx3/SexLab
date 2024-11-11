@@ -1,7 +1,7 @@
 ScriptName sslLovense Hidden
 
 bool Function IsLovenseInstalled() global
-  return SKSE.GetPluginVersion("SkyrimLovense") > -1
+  return SKSE.GetPluginVersion("SkyrimLovense") > -1 && Lovense.GetConnectedCount() > 0
 EndFunction
 
 ; ------------------------------------------------------- ;
@@ -9,13 +9,13 @@ EndFunction
 ; ------------------------------------------------------- ;
 
 Function StartGenitalAction(int aiStrength) global
-  String[] analToys = Lovense.GetToysByCategory("Genital")
-  StartDefaultActions(analToys, aiStrength)
+  String[] toys = Lovense.GetToysByCategory("Genital")
+  StartDefaultActions(toys, aiStrength)
 EndFunction
 
 Function StartAnalAction(int aiStrength) global
-  String[] analToys = Lovense.GetToysByCategory("Anal")
-  StartDefaultActions(analToys, aiStrength)
+  String[] toys = Lovense.GetToysByCategory("Anal")
+  StartDefaultActions(toys, aiStrength)
 EndFunction
 
 Function StartOrgasmAction(int aiStrength, float duration) global
@@ -42,14 +42,33 @@ EndFunction
 ; --- Stop Actions                                    --- ;
 ; ------------------------------------------------------- ;
 
-Function StopGenitalAction() global
-  String[] analToys = Lovense.GetToysByCategory("Genital")
-  StopAction(analToys)
+String[] Function RemoveMismatchedCategory(String[] in, String filter) global
+  String[] out = Utility.CreateStringArray(in.Length)
+  int i = 0
+  While (i < in.Length)
+    String c = Lovense.GetToyCategory(in[i])
+    If (c == filter)
+      out[i] = in[i]
+    EndIf
+    i += 1
+  EndWhile
+  return PapyrusUtil.RemoveString(out, "")
 EndFunction
 
-Function StopAnalAction() global
-  String[] analToys = Lovense.GetToysByCategory("Anal")
-  StopAction(analToys)
+Function StopGenitalAction(bool abFilterGeneric) global
+  String[] toys = Lovense.GetToysByCategory("Genital")
+  If (abFilterGeneric)
+    toys = RemoveMismatchedCategory(toys, "Genital")
+  EndIf
+  StopAction(toys)
+EndFunction
+
+Function StopAnalAction(bool abFilterGeneric) global
+  String[] toys = Lovense.GetToysByCategory("Anal")
+  If (abFilterGeneric)
+    toys = RemoveMismatchedCategory(toys, "Anal")
+  EndIf
+  StopAction(toys)
 EndFunction
 
 Function StopAction(String[] toys) global
