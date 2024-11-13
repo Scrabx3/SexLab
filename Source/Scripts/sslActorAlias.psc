@@ -764,14 +764,14 @@ State Animating
 							sslLovense.StartGenitalAction(lovenseStrength)
 						EndIf
 					ElseIf (_LovenseGenital)
-						sslLovense.StopGenitalAction(true)
+						sslLovense.StopGenitalAction(!LovenseAnal)
 					EndIf
 					If (LovenseAnal)
 						If (!_LovenseAnal)
 							sslLovense.StartAnalAction(lovenseStrength)
 						EndIf
 					ElseIf (_LovenseAnal)
-						sslLovense.StopAnalAction(true)
+						sslLovense.StopAnalAction(!LovenseGenital)
 					EndIf
 				EndIf
 				_LovenseGenital = LovenseGenital

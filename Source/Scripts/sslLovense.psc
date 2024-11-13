@@ -10,20 +10,20 @@ EndFunction
 
 Function StartGenitalAction(int aiStrength) global
   String[] toys = Lovense.GetToysByCategory("Genital")
-  StartDefaultActions(toys, aiStrength)
+  StartDefaultActions(toys, aiStrength, abStopPrevious = false)
 EndFunction
 
 Function StartAnalAction(int aiStrength) global
   String[] toys = Lovense.GetToysByCategory("Anal")
-  StartDefaultActions(toys, aiStrength)
+  StartDefaultActions(toys, aiStrength, abStopPrevious = false)
 EndFunction
 
 Function StartOrgasmAction(int aiStrength, float duration) global
   String[] toys = new String[1]
-  StartDefaultActions(toys, aiStrength, duration)
+  StartDefaultActions(toys, aiStrength, duration, true)
 EndFunction
 
-Function StartDefaultActions(String[] toys, int strength, float duration = 0.0) global
+Function StartDefaultActions(String[] toys, int strength, float duration = 0.0, bool abStopPrevious) global
   If (strength <= 0)
     return
   EndIf
@@ -33,7 +33,7 @@ Function StartDefaultActions(String[] toys, int strength, float duration = 0.0) 
   argType[0] = "All"
   int i = 0
   While (i < toys.Length)
-    Lovense.FunctionRequest(argType, argStrength, duration, asToy = toys[i])
+    Lovense.FunctionRequest(argType, argStrength, duration, asToy = toys[i], abStopPrevious = abStopPrevious)
     i += 1
   EndWhile
 EndFunction
