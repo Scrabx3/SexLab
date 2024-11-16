@@ -1,0 +1,13 @@
+name: debug
+script: Debug
+help: SexLab debug script
+subs:
+  - name: notification
+    alias: notify
+    func: Notification
+    help: Debug.Notifcation
+    args:
+      - name: message
+        type: String
+        required: true
+        help: Message to print
