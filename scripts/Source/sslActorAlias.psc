@@ -704,6 +704,7 @@ endState
 ; --- Animation Loop                                  --- ;
 ; ------------------------------------------------------- ;
 
+bool LovenseActive
 
 function SendAnimation()
 endFunction
@@ -787,6 +788,10 @@ state Animating
 						Log("PlayMoan:True; UseLipSync:"+UseLipSync+"; OpenMouth:"+OpenMouth)
 					endIf
 				endIf
+				If (!LovenseActive && ActorRef == PlayerRef && sslLovense.IsLovenseConnected() && Animation.IsSexual)
+					sslLovense.StartAction(Config.LovenseStrength)
+					LovenseActive = true
+				EndIf
 				if Expressions && Expressions.Length > 0
 					if LoopExpressionDelay >= ExpressionDelay && Config.RefreshExpressions
 						sslBaseExpression oldExpression = Expression
@@ -976,6 +981,9 @@ state Animating
 		UnregisterForUpdate()
 		LastOrgasm = RealTime[0]
 		Orgasms   += 1
+		If (ActorRef == PlayerRef && sslLovense.IsLovenseConnected())
+			sslLovense.StartOrgasmAction(Config.LovenseStrengthOrgasm, 0.0)
+		EndIf
 		; Send an orgasm event hook with actor and orgasm count
 		int eid = ModEvent.Create("SexLabOrgasm")
 		ModEvent.PushForm(eid, ActorRef)
@@ -1128,6 +1136,8 @@ function StopAnimating(bool Quick = false, string ResetAnim = "IdleForceDefaultS
 		Log(ActorName +"- WARNING: ActorRef if Missing or Invalid", "StopAnimating("+Quick+")")
 		return
 	endIf
+	sslLovense.StopAllActions()
+	LovenseActive = false
 	; Disable free camera, if in it
 	; if IsPlayer
 	; 	MiscUtil.SetFreeCameraState(false)
@@ -1945,6 +1955,7 @@ function Initialize()
 	ForceOpenMouth = false
 	Prepared       = false
 	StartedUp      = false
+	LovenseActive	 = false
 	; Integers
 	Orgasms        = 0
 	BestRelation   = 0

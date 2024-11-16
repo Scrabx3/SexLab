@@ -221,6 +221,8 @@ int property EndAnimation auto hidden
 int property ToggleFreeCamera auto hidden
 int property TargetActor auto hidden
 int property AdjustSchlong auto hidden
+int property LovenseStrength auto hidden
+int property LovenseStrengthOrgasm auto hidden
 
 ; Floats
 float property CumTimer auto hidden
