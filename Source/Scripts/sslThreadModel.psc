@@ -928,8 +928,12 @@ State Animating
 		int i = 0
 		While (i < Positions.Length)
 			ActorAlias[i].ReadyActor(strips_[i], sex_[i], schlongs_[i])
+			If (Positions[i] == PlayerRef)
+				sslSceneMenu.OpenMenu()
+			EndIf
 			i += 1
 		EndWhile
+		sslSceneMenu.SetPositions(Positions)
 		_SFXTimer = Config.SFXDelay
 		_animationSyncCount = 0;
 		SendModEvent("SSL_READY_Thread" + tid)
@@ -1263,6 +1267,7 @@ State Animating
 		Else
 			ResetScene(_ActiveScene)
 		EndIf
+		sslSceneMenu.SetPositions(Positions)
 		SendThreadEvent("ActorChangeEnd")
 	EndFunction
 
@@ -1296,6 +1301,9 @@ State Animating
 		UnregisterCollision()
 		UnregisterForUpdate()
 		SetFurnitureIgnored(false)
+		If (HasPlayer)
+			sslSceneMenu.CloseMenu()
+		EndIf
 	EndEvent
 EndState
 
@@ -1400,11 +1408,14 @@ float Function GetActionVelocity(Actor akPosition, Actor akPartner, int aiType) 
 State Ending
 	Event OnBeginState()
 		Config.DisableThreadControl(self as sslThreadController)
+		SendModEvent("SSL_CLEAR_Thread" + tid, "", 1.0)
 		If(IsObjectiveDisplayed(0))
 			SetObjectiveDisplayed(0, False)
 		EndIf
 		UpdateAllEncounters()
-		SendModEvent("SSL_CLEAR_Thread" + tid, "", 1.0)
+		If (sslSceneMenu.IsMenuOpen() && HasPlayer)
+			sslSceneMenu.CloseMenu()
+		EndIf
 		int i = 0
 		While (i < ActorAlias.Length)
 			Utility.Wait(0.05)

@@ -606,7 +606,6 @@ State Paused
 				MiscUtil.SetFreeCameraState(true)
 				MiscUtil.SetFreeCameraSpeed(_Config.AutoSUCSM)
 			EndIf
-			UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", false)
 		Else
 			ActorUtil.AddPackageOverride(_ActorRef, _Thread.DoNothingPackage, 100, 1)
 			_ActorRef.EvaluatePackage()
@@ -929,7 +928,6 @@ State Animating
 		_ActorRef.SetAnimationVariableInt("IsNPC", _AnimVarIsNPC)
 		_ActorRef.SetAnimationVariableBool("bHumanoidFootIKDisable", _AnimVarbHumanoidFootIKDisable)
 		If (_ActorRef == _PlayerRef)
-			UI.SetBool("HUD Menu", "_root.HUDMovieBaseInstance._visible", true)
 			Game.EnablePlayerControls(abFighting = false, abActivate = false)
 			MiscUtil.SetFreeCameraState(false)
 			If (sslLovense.IsLovenseInstalled())
@@ -1222,6 +1220,7 @@ Function UpdateEffectiveEnjoymentCalculations()
 	_PainEffective = CalcEffectivePain()
 	If _AdjustPain
 		_PainEffective = _PainEffective + _AdjustPain as float
+		_AdjustPain = 0
 	EndIf
 	; Enjoyment
 	_FullEnjoyment = CalcEffectiveEnjoyment() as int
@@ -1230,7 +1229,9 @@ Function UpdateEffectiveEnjoymentCalculations()
 	EndIf
 	If _AdjustEnjoyment
 		_FullEnjoyment = _FullEnjoyment + _AdjustEnjoyment
+		_AdjustEnjoyment = 0
 	EndIf
+	sslSceneMenu.UpdateEnjoyment(_ActorRef, _FullEnjoyment)
 	; Debug
 	If _Config.DebugMode
 		DebugEffectiveCalcVariables()
