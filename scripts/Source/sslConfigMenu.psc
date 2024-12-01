@@ -598,8 +598,18 @@ endEvent
 event OnSliderOpenST()
 	string[] Options = MapOptions()
 
+	if (Options[0] == "LovenseStrength")
+		SetSliderDialogStartValue(Config.LovenseStrength)
+		SetSliderDialogRange(0, 20)
+		SetSliderDialogInterval(1)
+		SetSliderDialogDefaultValue(10)
+	elseif (Options[0] == "LovenseStrengthOrgasm")
+		SetSliderDialogStartValue(Config.LovenseStrengthOrgasm)
+		SetSliderDialogRange(0, 20)
+		SetSliderDialogInterval(1)
+		SetSliderDialogDefaultValue(20)
 	; Animation Editor
-	if Options[0] == "Adjust"
+	elseif Options[0] == "Adjust"
 		; Stage, Slot
 		if Options[2] == "3" ; SOS
 			SetSliderDialogStartValue(Animation.GetSchlong(AdjustKey, Position, Options[1] as int))
@@ -695,8 +705,14 @@ endEvent
 event OnSliderAcceptST(float value)
 	string[] Options = MapOptions()
 
+	if ("LovenseStrength")
+		Config.LovenseStrength = value as int
+		SetSliderOptionValueST(value, "{0}")
+	elseif ("LovenseStrengthOrgasm")
+		Config.LovenseStrengthOrgasm = value as int
+		SetSliderOptionValueST(value, "{0}")
 	; Animation Editor
-	if Options[0] == "Adjust"
+	elseif Options[0] == "Adjust"
 		; Stage, Slot
 		if Config.MirrorPress(Config.AdjustStage) && ShowMessage("$SSL_WarnApplyAllStages", true, "$Yes", "$No")
 			int Stage = 1
@@ -1297,6 +1313,11 @@ function AnimationSettings()
 	AddToggleOptionST("ShowInMap","$SSL_ShowInMap", Config.ShowInMap)
 	AddTextOptionST("NPCBed","$SSL_NPCsUseBeds", Chances[ClampInt(Config.NPCBed, 0, 2)])
 	AddTextOptionST("AskBed","$SSL_AskBed", BedOpt[ClampInt(Config.AskBed, 0, 2)])
+
+	int lovenseFlag = DoDisable(sslLovense.IsLovenseInstalled())
+	AddHeaderOption("$SSL_Lovense")
+	AddSliderOptionST("LovenseStrength","$SSL_LovenseStrength", Config.LovenseStrength, "{0}", lovenseFlag)
+	AddSliderOptionST("LovenseStrengthOrgasm","$SSL_LovenseStrength", Config.LovenseStrengthOrgasm, "{0}", lovenseFlag)
 
 	SetCursorPosition(1)
 	AddMenuOptionST("AnimationProfile", "$SSL_AnimationProfile", "Profile #"+Config.AnimProfile)
