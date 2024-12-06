@@ -789,7 +789,7 @@ State Animating
 
 	Function SetAnimSpeedByEnjoyment() 
 		float _FullEnjoymentMOD = PapyrusUtil.ClampFloat((GetFullEnjoyment() as float) / 90, 0.8, 1.2)
-		sslAnimSpeedHelper.SetAnimationSpeed(_ActorRef, _FullEnjoymentMOD, UpdateInterval, 0)
+		sslAnimSpeedHelper.SetAnimationSpeedRelative(_ActorRef, _FullEnjoymentMOD, UpdateInterval, 0)
 	EndFunction
 
 	Function TryRefreshExpression()
@@ -951,6 +951,9 @@ State Animating
 	EndFunction
 
 	Function Clear()
+		If (sslSystemConfig.HasAnimSpeedSE())
+			sslAnimSpeedHelper.ResetAnimationSpeed(_ActorRef)
+		EndIf
 		UnlockActor() ; will go to idle state
 		Clear()
 	EndFunction

@@ -70,6 +70,24 @@ Function DisableHotkeys()
 	sslSceneMenu.CloseMenu(Self)
 EndFunction
 
+Event StageAdvance(string asEventName, string asStringArg, float afNumArg, form akSender)
+	sslLog.Log("StageAdvance: " + asStringArg)
+	PlayNextImpl(asStringArg)
+EndEvent
+
+Event SetSpeed(string asEventName, string asStringArg, float afNumArg, form akSender)
+	sslLog.Log("SetSpeed: " + afNumArg)
+	If (!sslSystemConfig.HasAnimSpeedSE())
+		sslLog.Log("SetSpeed: AnimSpeedSE not found")
+		return
+	EndIf
+	int i = 0
+	While (i < Positions.Length)
+		sslAnimSpeedHelper.SetAnimationSpeed(Positions[i], afNumArg, 0.5, 0)
+		i += 1
+	EndWhile
+EndEvent
+
 Event OnKeyDown(int KeyCode)
 	If(Utility.IsInMenuMode() || _SkipHotkeyEvents)
 		return
