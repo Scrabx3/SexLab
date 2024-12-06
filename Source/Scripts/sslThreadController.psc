@@ -36,30 +36,41 @@ int Property kEndAnimation     = 11 AutoReadOnly
 int Property kAdjustSchlong    = 12 AutoReadOnly
 
 Function EnableHotkeys(bool forced = false)
-	If(!HasPlayer && !forced)
+	If(!HasPlayer && !forced || sslSceneMenu.IsMenuOpen())
 		return
 	EndIf
-	Hotkeys = new int[13]
-	Hotkeys[kAdvanceAnimation] = Config.AdvanceAnimation
-	Hotkeys[kChangeAnimation] = Config.ChangeAnimation
-	Hotkeys[kChangePositions] = Config.ChangePositions
-	Hotkeys[kAdjustSideways] = Config.AdjustSideways
-	Hotkeys[kRestoreOffsets] = Config.RestoreOffsets
-	Hotkeys[kAdjustForward] = Config.AdjustForward
-	Hotkeys[kRealignActors] = Config.RealignActors
-	Hotkeys[kAdjustSchlong] = Config.AdjustSchlong
-	Hotkeys[kAdjustUpward] = Config.AdjustUpward
-	Hotkeys[kAdjustChange] = Config.AdjustChange
-	Hotkeys[kEndAnimation] = Config.EndAnimation
-	Hotkeys[kRotateScene] = Config.RotateScene
-	Hotkeys[kMoveScene] = Config.MoveScene
-	int i = 0
-	While(i < Hotkeys.Length)
-		RegisterForKey(Hotkeys[i])
-		i += 1
-	Endwhile
+	sslSceneMenu.OpenMenu()
+	sslSceneMenu.SetPositions(Positions)
+	RegisterForModEvent("SL_StageAdvance", "StageAdvance")
+	RegisterForModEvent("SL_SetSpeed", "SetSpeed")
+
+	; Hotkeys = new int[13]
+	; Hotkeys[kAdvanceAnimation] = Config.AdvanceAnimation
+	; Hotkeys[kChangeAnimation] = Config.ChangeAnimation
+	; Hotkeys[kChangePositions] = Config.ChangePositions
+	; Hotkeys[kAdjustSideways] = Config.AdjustSideways
+	; Hotkeys[kRestoreOffsets] = Config.RestoreOffsets
+	; Hotkeys[kAdjustForward] = Config.AdjustForward
+	; Hotkeys[kRealignActors] = Config.RealignActors
+	; Hotkeys[kAdjustSchlong] = Config.AdjustSchlong
+	; Hotkeys[kAdjustUpward] = Config.AdjustUpward
+	; Hotkeys[kAdjustChange] = Config.AdjustChange
+	; Hotkeys[kEndAnimation] = Config.EndAnimation
+	; Hotkeys[kRotateScene] = Config.RotateScene
+	; Hotkeys[kMoveScene] = Config.MoveScene
+	; int i = 0
+	; While(i < Hotkeys.Length)
+	; 	RegisterForKey(Hotkeys[i])
+	; 	i += 1
+	; Endwhile
 EndFunction
-	
+
+Function DisableHotkeys()
+	If (sslSceneMenu.IsMenuOpen())
+		sslSceneMenu.CloseMenu()
+	EndIf
+EndFunction
+
 Event OnKeyDown(int KeyCode)
 	If(Utility.IsInMenuMode() || _SkipHotkeyEvents)
 		return
@@ -104,10 +115,6 @@ Event OnKeyDown(int KeyCode)
 	EndIf
 	_SkipHotkeyEvents = false
 EndEvent
-
-Function DisableHotkeys()
-	UnregisterForAllKeys()
-EndFunction
 
 int Function GetAdjustPos()
 	int AdjustPos = -1
@@ -388,5 +395,5 @@ ObjectReference Function GetCenterFX()
 EndFunction
 
 Function AdjustSchlong(bool backwards = false)
-	AdjustSchlongEx(backwards, true)
+	; AdjustSchlongEx(backwards, true)
 EndFunction
