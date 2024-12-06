@@ -19,6 +19,8 @@ sslVoiceSlots property Slots hidden
 	sslVoiceSlots Function Get()
 		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
 	EndFunction
+	Function Set(sslVoiceSlots Slots)
+	EndFunction
 EndProperty
 
 ; Gender Types
