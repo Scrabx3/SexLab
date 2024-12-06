@@ -57,10 +57,10 @@ int Function GetEnjoyment()
 EndFunction
 
 Function AdjustPain(int AdjustBy)
-	_AdjustPain = AdjustBy
+	_PainEffective += AdjustBy
 EndFunction
 Function AdjustEnjoyment(int AdjustBy)
-	_AdjustEnjoyment = AdjustBy
+	_FullEnjoyment += AdjustBy
 EndFunction
 
 bool Function IsAnalPenetrated()
@@ -1137,9 +1137,6 @@ float _PainEffective
 float _InterEnjBackup
 int _FullEnjoyment
 int _HoldBackSpamPenalty
-; Adjustment
-int _AdjustPain
-int _AdjustEnjoyment
 
 Function ResetEnjoymentVariables()
 	; Thread
@@ -1162,9 +1159,6 @@ Function ResetEnjoymentVariables()
 	_InterEnjBackup = 0.0
 	_FullEnjoyment = 0
 	_HoldBackSpamPenalty = 0
-	; Adjustment
-	_AdjustPain = 0
-	_AdjustEnjoyment = 0
 EndFunction
 
 Function UpdateBaseEnjoymentCalculations()
@@ -1218,18 +1212,10 @@ Function UpdateEffectiveEnjoymentCalculations()
 	_numStage = numStageTemp
 	; Pain
 	_PainEffective = CalcEffectivePain()
-	If _AdjustPain
-		_PainEffective = _PainEffective + _AdjustPain as float
-		_AdjustPain = 0
-	EndIf
 	; Enjoyment
 	_FullEnjoyment = CalcEffectiveEnjoyment() as int
 	If _HoldBackSpamPenalty
 		_FullEnjoyment = _FullEnjoyment - _HoldBackSpamPenalty
-	EndIf
-	If _AdjustEnjoyment
-		_FullEnjoyment = _FullEnjoyment + _AdjustEnjoyment
-		_AdjustEnjoyment = 0
 	EndIf
 	sslSceneMenu.UpdateEnjoyment(_ActorRef, _FullEnjoyment)
 	; Debug
