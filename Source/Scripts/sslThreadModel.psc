@@ -952,9 +952,7 @@ State Animating
 		If(LeadIn)
 			SendThreadEvent("LeadInStart")
 		EndIf
-		SendThreadEvent("StageStart")
-		RunHook(Config.HOOKID_STAGESTART)
-		ReStartTimer()
+		StartStage()
 		StartTranslations()
 	EndFunction
 
@@ -995,9 +993,7 @@ State Animating
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, "")
 		_StageHistory = new String[1]
 		_StageHistory[0] = _ActiveStage
-		SendThreadEvent("StageStart")
-		RunHook(Config.HOOKID_STAGESTART)
-		ReStartTimer()
+		StartStage()
 		StartTranslations()
 		return true
 	EndFunction
@@ -1043,9 +1039,7 @@ State Animating
 		StopTranslations()
 		_ActiveStage = PlaceAndPlay(Positions, _InUseCoordinates, _ActiveScene, asNewStage)
 		_StageHistory = PapyrusUtil.PushString(_StageHistory, _ActiveStage)
-		SendThreadEvent("StageStart")
-		RunHook(Config.HOOKID_STAGESTART)
-		ReStartTimer()
+		StartStage()
 		StartTranslations()
 	EndFunction
 	Function TriggerOrgasm()
@@ -1054,6 +1048,13 @@ State Animating
 
 	Function ResetStage()
 		GoToStage(Stage)
+	EndFunction
+
+	Function StartStage()
+		SendThreadEvent("StageStart")
+		RunHook(Config.HOOKID_STAGESTART)
+		ReStartTimer()
+		sslSceneMenu.SetStage(_ActiveScene, _ActiveStage)
 	EndFunction
 
 	; NOTE: This here counts from 1 instead of 0
@@ -1075,9 +1076,7 @@ State Animating
 			_StageHistory = Utility.ResizeStringArray(_StageHistory, ToStage)
 			_ActiveStage = _StageHistory[ToStage - 1]
 			RealignActors()
-			SendThreadEvent("StageStart")
-			RunHook(Config.HOOKID_STAGESTART)
-			ReStartTimer()
+			StartStage()
 		EndIf
 	EndFunction
 	Function BranchTo(int aiNextBranch)
@@ -1090,12 +1089,14 @@ State Animating
 	Function ReStartTimer()
 		_ForceAdvance = false
 		_StageTimer = GetTimer()
+		sslSceneMenu.SetTimer(_StageTimer)
 		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
 	EndFunction
 
 	Function UpdateTimer(float AddSeconds = 0.0)
 		_StageTimer += AddSeconds
 		AutoAdvance = true
+		sslSceneMenu.SetTimer(_StageTimer)
 	EndFunction
 
 	Function SetTimers(float[] SetTimers)
@@ -1312,6 +1313,9 @@ bool Function ResetScene(String asNewScene)
 EndFunction
 Function ResetStage()
 	Log("Cannot reset outside the playing state", "ResetStage()")
+EndFunction
+Function StartStage()
+	Log("Cannot reset outside the playing state", "StartStage()")
 EndFunction
 Function EndLeadIn()
 	Log("Cannot end leadin outside the playing state", "EndLeadIn()")
@@ -2849,7 +2853,7 @@ bool property DisableOrgasms hidden
 	bool Function Get()
 		bool ret = false
 		int i = 0
-		While (i < ActorAlias.Length && !ret)
+		While (i < Positions.Length && !ret)
 			ret = !ActorAlias[i].IsOrgasmAllowed()
 			i += 1
 		EndWhile
@@ -2857,7 +2861,7 @@ bool property DisableOrgasms hidden
 	EndFunction
 	Function Set(bool abDisable)
 		int i = 0
-		While (i < ActorAlias.Length)
+		While (i < Positions.Length)
 			ActorAlias[i].DisableOrgasm(abDisable)
 			i += 1
 		EndWhile
