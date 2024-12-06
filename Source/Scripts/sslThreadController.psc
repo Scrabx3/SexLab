@@ -41,6 +41,7 @@ Function EnableHotkeys(bool forced = false)
 	EndIf
 	RegisterForModEvent("SL_StageAdvance", "StageAdvance")
 	RegisterForModEvent("SL_SetSpeed", "SetSpeed")
+	RegisterForModEvent("SL_EndScene", "EndScene")
 	sslSceneMenu.OpenMenu(Self)
 	sslSceneMenu.SetPositions(Self, Positions)
 
@@ -86,6 +87,11 @@ Event SetSpeed(string asEventName, string asStringArg, float afNumArg, form akSe
 		sslAnimSpeedHelper.SetAnimationSpeed(Positions[i], afNumArg, 0.5, 0)
 		i += 1
 	EndWhile
+EndEvent
+
+Event EndScene(string asEventName, string asStringArg, float afNumArg, form akSender)
+	sslLog.Log("EndScene: " + asStringArg)
+	EndAnimation()
 EndEvent
 
 Event OnKeyDown(int KeyCode)
