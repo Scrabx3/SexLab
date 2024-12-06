@@ -14,12 +14,12 @@ ScriptName sslSceneMenu Hidden
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-Function OpenMenu() native global
-Function CloseMenu() native global
+Function OpenMenu(Quest akSelf) native global
+Function CloseMenu(Quest akSelf) native global
 bool Function IsMenuOpen() native global
 
-Function SetPositions(Actor[] akPositions) native global
-Function SetStage(String asScene, String asStage) native global
-Function SetTimer(float afTime) native global
-Function UpdateEnjoyment(Actor akPosition, float afEnjoyment) native global
-Function SetEnjoyment(Actor akPosition, float afEnjoyment) native global
+Function SetPositions(Quest akSelf, Actor[] akPositions) native global
+Function SetStage(Quest akSelf, String asScene, String asStage) native global
+Function SetTimer(Quest akSelf, float afTime) native global
+Function UpdateEnjoyment(Quest akSelf, Actor akPosition, float afEnjoyment) native global
+Function SetEnjoyment(Quest akSelf, Actor akPosition, float afEnjoyment) native global

@@ -1054,7 +1054,7 @@ State Animating
 		SendThreadEvent("StageStart")
 		RunHook(Config.HOOKID_STAGESTART)
 		ReStartTimer()
-		sslSceneMenu.SetStage(_ActiveScene, _ActiveStage)
+		sslSceneMenu.SetStage(Self, _ActiveScene, _ActiveStage)
 	EndFunction
 
 	; NOTE: This here counts from 1 instead of 0
@@ -1089,14 +1089,14 @@ State Animating
 	Function ReStartTimer()
 		_ForceAdvance = false
 		_StageTimer = GetTimer()
-		sslSceneMenu.SetTimer(_StageTimer)
+		sslSceneMenu.SetTimer(Self, _StageTimer)
 		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
 	EndFunction
 
 	Function UpdateTimer(float AddSeconds = 0.0)
 		_StageTimer += AddSeconds
 		AutoAdvance = true
-		sslSceneMenu.SetTimer(_StageTimer)
+		sslSceneMenu.SetTimer(Self, _StageTimer)
 	EndFunction
 
 	Function SetTimers(float[] SetTimers)
@@ -1264,7 +1264,7 @@ State Animating
 		Else
 			ResetScene(_ActiveScene)
 		EndIf
-		sslSceneMenu.SetPositions(Positions)
+		sslSceneMenu.SetPositions(Self, Positions)
 		SendThreadEvent("ActorChangeEnd")
 	EndFunction
 

@@ -36,13 +36,13 @@ int Property kEndAnimation     = 11 AutoReadOnly
 int Property kAdjustSchlong    = 12 AutoReadOnly
 
 Function EnableHotkeys(bool forced = false)
-	If(!HasPlayer && !forced || sslSceneMenu.IsMenuOpen())
+	If(!HasPlayer && !forced || sslSceneMenu.IsMenuOpen(Self))
 		return
 	EndIf
-	sslSceneMenu.OpenMenu()
-	sslSceneMenu.SetPositions(Positions)
 	RegisterForModEvent("SL_StageAdvance", "StageAdvance")
 	RegisterForModEvent("SL_SetSpeed", "SetSpeed")
+	sslSceneMenu.OpenMenu(Self)
+	sslSceneMenu.SetPositions(Self, Positions)
 
 	; Hotkeys = new int[13]
 	; Hotkeys[kAdvanceAnimation] = Config.AdvanceAnimation
@@ -66,9 +66,8 @@ Function EnableHotkeys(bool forced = false)
 EndFunction
 
 Function DisableHotkeys()
-	If (sslSceneMenu.IsMenuOpen())
-		sslSceneMenu.CloseMenu()
-	EndIf
+	UnregisterForAllModEvents()
+	sslSceneMenu.CloseMenu(Self)
 EndFunction
 
 Event OnKeyDown(int KeyCode)
