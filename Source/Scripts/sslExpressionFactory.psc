@@ -21,7 +21,7 @@ sslExpressionSlots property Slots hidden
 	sslExpressionSlots Function Get()
 		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
 	EndFunction
-	Function Get(sslExpressionSlots Slots)
+	Function Set(sslExpressionSlots akSet)
 	EndFunction
 EndProperty
 

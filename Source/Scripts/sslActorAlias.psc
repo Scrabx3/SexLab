@@ -1217,7 +1217,7 @@ Function UpdateEffectiveEnjoymentCalculations()
 	If _HoldBackSpamPenalty
 		_FullEnjoyment = _FullEnjoyment - _HoldBackSpamPenalty
 	EndIf
-	sslSceneMenu.UpdateEnjoyment(_ActorRef, _FullEnjoyment)
+	sslSceneMenu.UpdateEnjoyment(_Thread, _ActorRef, _FullEnjoyment)
 	; Debug
 	If _Config.DebugMode
 		DebugEffectiveCalcVariables()

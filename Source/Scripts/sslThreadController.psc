@@ -36,7 +36,7 @@ int Property kEndAnimation     = 11 AutoReadOnly
 int Property kAdjustSchlong    = 12 AutoReadOnly
 
 Function EnableHotkeys(bool forced = false)
-	If(!HasPlayer && !forced || sslSceneMenu.IsMenuOpen(Self))
+	If(!HasPlayer && !forced || sslSceneMenu.IsMenuOpen())
 		return
 	EndIf
 	RegisterForModEvent("SL_StageAdvance", "StageAdvance")
