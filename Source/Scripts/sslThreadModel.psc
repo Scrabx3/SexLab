@@ -1089,13 +1089,17 @@ State Animating
 	Function ReStartTimer()
 		_ForceAdvance = false
 		_StageTimer = GetTimer()
-		sslSceneMenu.SetTimer(Self, _StageTimer)
+		If (!_ForceAdvance && !AutoAdvance)
+			sslSceneMenu.SetTimer(Self, 0.0)
+		Else
+			sslSceneMenu.SetTimer(Self, _StageTimer)
+		EndIf
 		RegisterForSingleUpdate(ANIMATING_UPDATE_INTERVAL)
 	EndFunction
 
 	Function UpdateTimer(float AddSeconds = 0.0)
 		_StageTimer += AddSeconds
-		AutoAdvance = true
+		_ForceAdvance = true
 		sslSceneMenu.SetTimer(Self, _StageTimer)
 	EndFunction
 
