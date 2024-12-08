@@ -1015,12 +1015,13 @@ State Animating
 			EndIf
 			return
 		ElseIf(!Leadin)
-			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
-			If (ctype == Config.CLIMAXTYPE_LEGACY && SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
+			If (SexLabRegistry.GetNodeType(_ActiveScene, asNewStage) == 2)
 				SendThreadEvent("OrgasmStart")
 				_SceneEndClimax = true
 				TriggerOrgasm()
-			ElseIf (ctype == Config.CLIMAXTYPE_SCENE)
+			EndIf
+			int ctype = sslSystemConfig.GetSettingInt("iClimaxType")
+			If (ctype == Config.CLIMAXTYPE_SCENE)
 				int[] cactors = SexLabRegistry.GetClimaxingActors(_ActiveScene, asNewStage)
 				int i = 0
 				While (i < cactors.Length)
