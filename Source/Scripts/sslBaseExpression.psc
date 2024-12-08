@@ -190,8 +190,7 @@ endFunction
 
 function ApplyPhase(Actor ActorRef, int Phase, int Gender)
 	if Phase <= PhaseCounts[Gender]
-		;	TransitPresetFloats(ActorRef, GetCurrentMFG(ActorRef), GetNthValues(Registry, Phase, Gender)) 
-		ApplyPresetFloats(ActorRef, GetNthValues(Registry, Phase, Gender))
+		ApplyPresetFloats(ActorRef, GetNthValues(Registry, Gender, Phase - 1))
 	endIf
 endFunction
 
@@ -278,7 +277,7 @@ endFunction
 ; ------------------------------------------------------- ;
 
 function SetIndex(int Phase, int Gender, int Mode, int id, int value)
-	float[] Preset = GetNthValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Gender, Phase - 1)
 	int i = Mode+id
 	if value > 100
 		value = 100
@@ -337,7 +336,7 @@ function EmptyPhase(int Phase, int Gender)
 endFunction
 
 function AddPhase(int Phase, int Gender)
-	float[] Preset = GetNthValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Gender, Phase - 1)
 	if Preset[31] == 0.0 || Preset[30] < 0.0 || Preset[30] > 16.0
 		Preset[30] = 7.0
 		Preset[31] = 0.5
@@ -359,7 +358,7 @@ endFunction
 
 float[] function GetPhonemes(int Phase, int Gender)
 	float[] Output = new float[16]
-	float[] Preset = GetNthValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Gender, Phase - 1)
 	int i
 	while i <= PhonemeIDs
 		Output[i] = Preset[Phoneme + i]
@@ -370,7 +369,7 @@ endFunction
 
 float[] function GetModifiers(int Phase, int Gender)
 	float[] Output = new float[14]
-	float[] Preset = GetNthValues(Registry, Phase, Gender)
+	float[] Preset = GetNthValues(Registry, Gender, Phase - 1)
 	int i
 	while i <= ModifierIDs
 		Output[i] = Preset[Modifier + i]
@@ -380,15 +379,15 @@ float[] function GetModifiers(int Phase, int Gender)
 endFunction
 
 int function GetMoodType(int Phase, int Gender)
-	return GetNthValues(Registry, Phase, Gender)[30] as int
+	return GetNthValues(Registry, Gender, Phase - 1)[30] as int
 endFunction
 
 int function GetMoodAmount(int Phase, int Gender)
-	return (GetNthValues(Registry, Phase, Gender)[31] * 100.0) as int
+	return (GetNthValues(Registry, Gender, Phase - 1)[31] * 100.0) as int
 endFunction
 
 int function GetIndex(int Phase, int Gender, int Mode, int id)
-	return (GetNthValues(Registry, Phase, Gender)[Mode + id] * 100.0) as int
+	return (GetNthValues(Registry, Gender, Phase - 1)[Mode + id] * 100.0) as int
 endFunction
 
 int property MoodIDs = 16 autoreadonly
