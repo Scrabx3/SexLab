@@ -74,21 +74,8 @@ EndFunction
 Event MenuEvent(string asEventName, string asStringArg, float afNumArg, form akSender)
 	sslLog.Log("MenuEvent: " + asEventName)
 	If(asEventName == "SL_StageAdvance")
-		StageAdvance(asEventName, asStringArg, afNumArg, akSender)
+		PlayNextImpl(asStringArg)
 	ElseIf(asEventName == "SL_SetSpeed")
-		SetSpeed(asEventName, asStringArg, afNumArg, akSender)
-	ElseIf(asEventName == "SL_EndScene")
-		EndScene(asEventName, asStringArg, afNumArg, akSender)
-	EndIf
-EndEvent
-
-Event StageAdvance(string asEventName, string asStringArg, float afNumArg, form akSender)
-	sslLog.Log("StageAdvance: " + asStringArg)
-	PlayNextImpl(asStringArg)
-EndEvent
-
-Event SetSpeed(string asEventName, string asStringArg, float afNumArg, form akSender)
-	sslLog.Log("SetSpeed: " + afNumArg)
 	If (!sslSystemConfig.HasAnimSpeedSE())
 		sslLog.Log("SetSpeed: AnimSpeedSE not found")
 		return
@@ -98,11 +85,9 @@ Event SetSpeed(string asEventName, string asStringArg, float afNumArg, form akSe
 		sslAnimSpeedHelper.SetAnimationSpeed(Positions[i], afNumArg, 0.5, 0)
 		i += 1
 	EndWhile
-EndEvent
-
-Event EndScene(string asEventName, string asStringArg, float afNumArg, form akSender)
-	sslLog.Log("EndScene: " + asStringArg)
-	EndAnimation()
+	ElseIf(asEventName == "SL_EndScene")
+		EndAnimation()
+	EndIf
 EndEvent
 
 Event OnKeyDown(int KeyCode)
