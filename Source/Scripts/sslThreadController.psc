@@ -39,9 +39,9 @@ Function EnableHotkeys(bool forced = false)
 	If(!HasPlayer && !forced || sslSceneMenu.IsMenuOpen())
 		return
 	EndIf
-	RegisterForModEvent("SL_StageAdvance", "StageAdvance")
-	RegisterForModEvent("SL_SetSpeed", "SetSpeed")
-	RegisterForModEvent("SL_EndScene", "EndScene")
+	RegisterForModEvent("SL_StageAdvance", "MenuEvent")
+	RegisterForModEvent("SL_SetSpeed", "MenuEvent")
+	RegisterForModEvent("SL_EndScene", "MenuEvent")
 	sslSceneMenu.OpenMenu(Self)
 	sslSceneMenu.SetPositions(Self, Positions)
 
@@ -70,6 +70,17 @@ Function DisableHotkeys()
 	UnregisterForAllModEvents()
 	sslSceneMenu.CloseMenu(Self)
 EndFunction
+
+Event MenuEvent(string asEventName, string asStringArg, float afNumArg, form akSender)
+	sslLog.Log("MenuEvent: " + asEventName)
+	If(asEventName == "SL_StageAdvance")
+		StageAdvance(asEventName, asStringArg, afNumArg, akSender)
+	ElseIf(asEventName == "SL_SetSpeed")
+		SetSpeed(asEventName, asStringArg, afNumArg, akSender)
+	ElseIf(asEventName == "SL_EndScene")
+		EndScene(asEventName, asStringArg, afNumArg, akSender)
+	EndIf
+EndEvent
 
 Event StageAdvance(string asEventName, string asStringArg, float afNumArg, form akSender)
 	sslLog.Log("StageAdvance: " + asStringArg)
