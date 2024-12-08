@@ -77,6 +77,7 @@ Function SyncBackend()
 	While (i < aliases.Length && ii < arr.Length)
 		sslBaseVoice v = aliases[i] as sslBaseVoice
 		If (v)
+			v.Registry = v.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 			v.Registry = arr[ii]
 			ii += 1
 		EndIf
@@ -479,7 +480,7 @@ endFunction
 
 sslBaseVoice function RegisterVoice(string Registrar, Form CallbackForm = none, ReferenceAlias CallbackAlias = none)
 	; Return existing Voice
-	if FindByRegistrar(Registrar) != -1
+	if Registrar == "" || FindByRegistrar(Registrar) != -1
 		return GetbyRegistrar(Registrar)
 	endIf
 	; Get free Voice slot
@@ -487,6 +488,7 @@ sslBaseVoice function RegisterVoice(string Registrar, Form CallbackForm = none, 
 	sslBaseVoice Slot = GetBySlot(id)
 	if id != -1 && Slot != none
 		Slot.Initialize()
+		Slot.Registry = Slot.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 		Slot.Registry = Registrar
 		Slot.Enabled  = true
 		sslObjectFactory.SendCallback(Registrar, id, CallbackForm, CallbackAlias)

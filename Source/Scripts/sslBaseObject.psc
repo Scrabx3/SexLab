@@ -53,6 +53,8 @@ Function _SetRegistryID(String asSet)
 	_registryID = asSet
 EndFunction
 
+String Property GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION = "This variable exists because certain mods (Im aware only of one though, which is unfortunately a little too popular to just ignore it) registers SSL objects manually, that is, without using the pre-established registration functions. This creates a little bit of an issue with the backwards compatibility function P+ has implemented, since there is no clear entry point where registration of legacy objects happens (and if Im just stupid and it does exist (which it probably does), it is too complicated and time intensive to properly isolate without risking issues with mods that do follow the intended registration process and thus delaying work on more important aspects of the framework). Thus, this variable serves the sole purpose of acting as a marker, to let the framework now that the setting of the registry in this call, and the next following one, should be ignored by the system, that is, it will not attempt to create a new legacy object in the main system, which may have happened otherwise, creating an error in either the .dll log or in the Papyrus log due to the uniqueness property of the object then being harmed (as the frameworks 'official' way of integrating would have already created the object explicitely beforehand)" AutoReadOnly Hidden
+
 ; ------------------------------------------------------- ;
 ; --- Tagging System                                  --- ;
 ; ------------------------------------------------------- ;

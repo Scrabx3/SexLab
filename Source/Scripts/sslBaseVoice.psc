@@ -46,6 +46,15 @@ Function SetVoiceTags(String asID, String[] asNewTags) native global
 Function SetCompatibleSex(String asID, int aSet) native global
 Function SetCompatibleRaces(String asID, String[] aSet) native global
 
+String Function _GetRegistryID()
+	return Parent._GetRegistryID()
+EndFunction
+Function _SetRegistryID(String asSet)
+	If (Registry == "" && asSet != "" && asSet != Registry && asSet != GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION)
+		InitializeVoiceObject(asSet)
+	EndIf
+	Parent._SetRegistryID(asSet)
+EndFunction
 String Function _GetName()
 	return Registry
 EndFunction

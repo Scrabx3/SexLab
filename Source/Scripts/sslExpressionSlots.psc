@@ -72,6 +72,7 @@ Function SyncBackend()
 	While (i < aliases.Length && ii < profiles.Length)
 		sslBaseExpression expr = aliases[i] as sslBaseExpression
 		If (expr)
+			expr.Registry = expr.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 			expr.Registry = profiles[ii]
 			ii += 1
 		EndIf
@@ -317,6 +318,7 @@ int function Register(string Registrar)
 	int ret = FindEmpty()
 	If (ret == -1 || !sslBaseExpression.CreateEmptyProfile(Registrar))
 		sslBaseExpression it = GetBySlot(ret) as sslBaseExpression
+		it.Registry = it.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 		it.Registry = Registrar
 		RegisterLock = false
 		return -1

@@ -220,16 +220,19 @@ function Cleanup()
 endFunction
 
 sslBaseAnimation function CopyAnimation(sslBaseAnimation Copy, sslBaseAnimation Orig)
+	Copy.Registry = Copy.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 	Copy.Registry = Orig.Registry
 	return Copy
 endFunction
 
 sslBaseVoice function CopyVoice(sslBaseVoice Copy, sslBaseVoice Orig)
+	Copy.Registry = Copy.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 	Copy.Registry = Orig.Registry
 	return Copy
 endFunction
 
 sslBaseExpression function CopyExpression(sslBaseExpression Copy, sslBaseExpression Orig)
+	Copy.Registry = Copy.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 	Copy.Registry = Orig.Registry
 	return Copy
 endFunction

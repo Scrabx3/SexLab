@@ -819,6 +819,7 @@ Function RebuildClean()
 	AddTextOptionST("StopCurrentAnimations","$SSL_StopCurrentAnimations", "$SSL_ClickHere")
 	AddTextOptionST("ResetStripOverrides","$SSL_ResetStripOverrides", "$SSL_ClickHere")
 	AddTextOptionST("CleanSystem","$SSL_CleanSystem", "$SSL_ClickHere")
+	AddTextOptionST("ForceRegisterVoices", "$SSL_ForceRegisterVoices", "$SSL_ClickHere")
 	AddHeaderOption("System Requirements")
 	SystemCheckOptions()
 
@@ -1854,6 +1855,17 @@ state AdjustTargetStage
 		SetInfoText("$SSL_InfoAdjustTargetStage")
 	endEvent
 endState
+
+State ForceRegisterVoices
+  Event OnSelectST()
+    ModEvent.Send(ModEvent.Create("SexLabSlotVoices"))
+		ModEvent.Send(ModEvent.Create("SexLabSlotExpressions"))
+		SetOptionFlagsST(OPTION_FLAG_DISABLED)
+  EndEvent
+	Event OnHighlightST()
+		SetInfoText("$SSL_ForceRegisterVoicesHighlight")
+	EndEvent
+EndState
 
 ; ------------------------------------------------------- ;
 ; --- Misc Utilities                                  --- ;

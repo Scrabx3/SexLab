@@ -47,6 +47,7 @@ function RegisterVoice(string Registrar)
 		; Init slot
 		sslBaseVoice Slot = Slots.GetBySlot(id)
 		Slot.Initialize()
+		Slot.Registry = Slot.GOTTA_LOVE_PEOPLE_WHO_THINK_REGISTRATION_FUNCTIONS_ARE_JUST_DECORATION
 		Slot.Registry = Registrar
 		Slot.Enabled = true
 		; Send load event
