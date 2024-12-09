@@ -15,13 +15,7 @@ scriptname sslVoiceFactory extends Quest hidden
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-sslVoiceSlots property Slots hidden
-	sslVoiceSlots Function Get()
-		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
-	EndFunction
-	Function Set(sslVoiceSlots akSet)
-	EndFunction
-EndProperty
+sslVoiceSlots property Slots auto hidden
 
 ; Gender Types
 int property Male = 0 autoreadonly hidden
@@ -37,6 +31,7 @@ int property CreatureFemale = 3 autoreadonly hidden
 
 ; Prepare the factory for use
 function PrepareFactory()
+	Slots = Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslVoiceSlots
 endFunction
 
 ; Send callback event to start registration

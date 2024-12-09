@@ -17,13 +17,7 @@ scriptname sslExpressionFactory extends Quest hidden
 ; ----------------------------------------------------------------------------- ;
 ; *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* ;
 
-sslExpressionSlots property Slots hidden
-	sslExpressionSlots Function Get()
-		return Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
-	EndFunction
-	Function Set(sslExpressionSlots akSet)
-	EndFunction
-EndProperty
+sslExpressionSlots property Slots auto hidden
 
 ; Gender Types
 int property Male = 0 autoreadonly hidden
@@ -40,6 +34,7 @@ int property Expression = 30 autoreadonly hidden
 
 ; Prepare the factory for use
 function PrepareFactory()
+	Slots = Game.GetFormFromFile(0x664FB, "SexLab.esm") as sslExpressionSlots
 endFunction
 
 ; Send callback event to start registration
