@@ -16,5 +16,4 @@ Extra:
       423248|SexLab.esm: 0
       423247|SexLab.esm: 75
     Conditions:
-      Context:
-        - Aggressive
+      Submissive: true
