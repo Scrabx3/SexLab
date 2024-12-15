@@ -1117,6 +1117,7 @@ State Animating
 		If (!timer)
 			return GetStageTimer(0)
 		EndIf
+		Log("GetTimer() - Fixed timer: " + timer)
 		_ForceAdvance = true
 		return timer
 	EndFunction
