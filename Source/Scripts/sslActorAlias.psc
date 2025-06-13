@@ -509,7 +509,7 @@ State Ready
 		__SETUP_DONE = true
 		; Post Delayed Initialization
 		UpdateBaseEnjoymentCalculations()
-		If (!_Config.DebugMode)
+		If (!_Config.DebugMode2)
 			return
 		EndIf
 		String LogInfo = ""
@@ -1174,7 +1174,7 @@ Function UpdateBaseEnjoymentCalculations()
 	_PainContext = CalcContextPain(BestRelation)
 	_EnjFactor = CalcEnjoymentFactor(SameSexThread, BestRelation)
 	_BaseFactor = _EnjFactor
-	If _Config.DebugMode
+	If _Config.DebugMode3
 		DebugBaseCalcVariables()
 	EndIf
 EndFunction
@@ -1219,7 +1219,7 @@ Function UpdateEffectiveEnjoymentCalculations()
 	EndIf
 	UpdateEnjoyment(_FullEnjoyment)
 	; Debug
-	If _Config.DebugMode
+	If _Config.DebugMode3
 		DebugEffectiveCalcVariables()
 	EndIf
 EndFunction

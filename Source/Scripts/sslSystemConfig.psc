@@ -117,12 +117,28 @@ String Function MergeTagString(String req, String[] add, String prefix) global
 EndFunction
 
 ; Booleans
-bool property DebugMode hidden
+bool property DebugMode hidden		; thread and scene info
   bool function get()
     return GetSettingBool("bDebugMode")
   endFunction
   function set(bool value)
     SetSettingBool("bDebugMode", value)
+  endFunction
+endProperty
+bool property DebugMode2 hidden		; expression, voice, and strapon info
+  bool function get()
+    return GetSettingBool("bDebugMode2")
+  endFunction
+  function set(bool value)
+    SetSettingBool("bDebugMode2", value)
+  endFunction
+endProperty
+bool property DebugMode3 hidden		; enjoyment and interactions info
+  bool function get()
+    return GetSettingBool("bDebugMode3")
+  endFunction
+  function set(bool value)
+    SetSettingBool("bDebugMode3", value)
   endFunction
 endProperty
 bool property AllowCreatures hidden
