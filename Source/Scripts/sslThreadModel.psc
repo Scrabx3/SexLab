@@ -1081,7 +1081,9 @@ State Animating
 		Else
 			bool penetration = HasCollisionAction(CTYPE_Vaginal, none, none) || HasCollisionAction(CTYPE_Anal, none, none)
 			bool oral = HasCollisionAction(CTYPE_Oral, none, none)
-			Log("SFX Testing; penetration = " + penetration + " / oral = " + oral)
+			If Config.DebugMode2
+				Log("SFX Testing; penetration = " + penetration + " / oral = " + oral)
+			EndIf
 			If (oral && penetration)
 				Config.SexMixedFX.Play(CenterRef)
 			ElseIf (oral)

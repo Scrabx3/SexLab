@@ -509,7 +509,7 @@ State Ready
 		__SETUP_DONE = true
 		; Post Delayed Initialization
 		UpdateBaseEnjoymentCalculations()
-		If (!_Config.DebugMode)
+		If (!_Config.DebugMode2)
 			return
 		EndIf
 		String LogInfo = ""
@@ -804,7 +804,9 @@ State Animating
 		String expression = GetActorExpression()
 		If (expression && _Config.UseExpressions && _livestatus == LIVESTATUS_ALIVE)
 			sslBaseExpression.ApplyExpression(expression, _ActorRef, afStrength)
-			Log("Expression? " + expression + "; Strength? " + afStrength + "; OpenMouth? " + OpenMouth, "sslBaseExpression.ApplyExpression()")
+			If (_Config.DebugMode2)
+				Log("Expression? " + expression + "; Strength? " + afStrength + "; OpenMouth? " + OpenMouth, "sslBaseExpression.ApplyExpression()")
+			EndIf
 		EndIf
 	EndFunction
 
@@ -1174,7 +1176,7 @@ Function UpdateBaseEnjoymentCalculations()
 	_PainContext = CalcContextPain(BestRelation)
 	_EnjFactor = CalcEnjoymentFactor(SameSexThread, BestRelation)
 	_BaseFactor = _EnjFactor
-	If _Config.DebugMode
+	If _Config.DebugMode3
 		DebugBaseCalcVariables()
 	EndIf
 EndFunction
@@ -1219,7 +1221,7 @@ Function UpdateEffectiveEnjoymentCalculations()
 	EndIf
 	UpdateEnjoyment(_FullEnjoyment)
 	; Debug
-	If _Config.DebugMode
+	If _Config.DebugMode3
 		DebugEffectiveCalcVariables()
 	EndIf
 EndFunction
@@ -1395,7 +1397,9 @@ function ApplyCum()	; NOTE: Temporary?
 			analPen = _Thread.IsAnal()
 		endIf
 
-		Log("Adding v = " + vaginalPen + " o = " + oralPen + " a = " + analPen)
+		If _Config.DebugMode2
+			Log("[ApplyCum(): Adding v = " + vaginalPen + " o = " + oralPen + " a = " + analPen)
+		EndIf
 
 		if (vaginalPen || oralPen || analPen) && ParentCell && ParentCell.IsAttached() 
 			; thanks a lot for removing ActorLib scrab
