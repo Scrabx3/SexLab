@@ -175,6 +175,13 @@ EndFunction
 Actor[] Function GetPartnersByTypeRev(Actor akPartner, int aiType)
 EndFunction
 
+; Returns a string containing detected CTYPEs, separated by ","
+; String CTYPEs can start with various prefixes, such as
+; a: active (akPosition is giving/doing CTYPE), e.g. aAnimObjFace
+; p: passive (akPosition is receiving/taking CTYPE) e.g. pHandJob
+string Function GetInteractionsForActor(Actor akPosition)
+EndFunction
+
 ; Return the velocity of the specified interaction type
 ; Velocity may be positive or negative, depending on the direction of movement
 float Function GetVelocity(Actor akPosition, Actor akPartner, int aiType)

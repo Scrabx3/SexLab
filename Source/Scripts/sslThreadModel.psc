@@ -1579,6 +1579,83 @@ float Function CalcPhysicFactor(Actor ActorRef)
 	return factorPhysic
 EndFunction
 
+string Function GetInteractionsForActor(Actor akPosition)
+    if !IsInteractionRegistered()
+        return ""
+    endif
+    string[] interStrings = new string[25]
+	;usually implies an active_male (male is giving/doing)
+    interStrings[0] = "aGrinding" ;pos_crotch_area is grinding against partner
+    interStrings[1] = "aVaginal" ;pos_pp is penetrating partner's vagina
+    interStrings[2] = "aAnal" ;pos_pp is penetrating partner's anus
+    interStrings[3] = "aDeepthroat" ;pos_pp is deep inside partner's mouth
+    interStrings[4] = "aSkullfuck" ;pos_pp is penetrating partner's head
+    interStrings[5] = "aFacial" ;pos_pp is in front of partner's face
+    interStrings[6] = "aAnimObjFace" ;pos anim_obj node is in front of partner's face
+	;usually implies a passive_female (female is receiving/taking)
+    interStrings[7] = "pGrinding" ;pos is being grinded against by partner's crotch area
+    interStrings[8] = "pVaginal" ;pos_vag is being penetrated by partner's pp
+    interStrings[9] = "pAnal" ;pos_anus is being penetrated by partner's pp
+    interStrings[10] = "pDeepthroat" ;pos_mouth has partner's pp deep inside it
+    interStrings[11] = "pSkullfuck" ;pos_head is being penetrated by partner's pp
+    interStrings[12] = "pFacial" ;pos_face is in front of partner's pp
+    interStrings[13] = "pAnimObjFace" ;pos_face is in front of partner's anim_obj node
+	;usually implies active_female (female is giving/doing)
+    interStrings[14] = "aOral" ;pos_mouth is licking/sucking partner's crotch area
+    interStrings[15] = "aLickingShaft" ;pos_tongue is licking shaft of partner's pp
+    interStrings[16] = "aHandJob" ;pos_hand is moving around partner's pp
+    interStrings[17] = "aFootJob" ;pos_foot is moving around partner's pp
+	;usually implies a passive_male (male is receiving/taking)
+    interStrings[18] = "pOral" ;pos_crotch_area is being licked/sucked by partner's mouth
+    interStrings[19] = "pLickingShaft" ;pos_pp's shaft is being licked by partner's tongue
+    interStrings[20] = "pHandJob" ;pos_pp is being pleasured by partner's hands
+    interStrings[21] = "pFootJob" ;pos_pp is being pleasured by partner's feet
+	;any gender can be active/passive
+	interStrings[22] = "bKissing" ;pos_face is closer to partner's face
+    interStrings[23] = "aSuckingToes" ;pos_face is closer to partner's toes
+    interStrings[24] = "pSuckingToes" ;pos_toes are closer to partner's mouth
+	
+    bool[] interActive = new bool[25]
+	interActive[0] = HasInteractionType(CTYPE_Grinding, none, akPosition) 
+	interActive[1] = HasInteractionType(CTYPE_Vaginal, none, akPosition)
+	interActive[2] = HasInteractionType(CTYPE_Anal, none, akPosition)
+	interActive[3] = HasInteractionType(CTYPE_Deepthroat, none, akPosition) 
+	interActive[4] = HasInteractionType(CTYPE_Skullfuck, none, akPosition)	
+	interActive[5] = HasInteractionType(CTYPE_Facial, none, akPosition) 
+	interActive[6] = HasInteractionType(CTYPE_AnimObjFace, none, akPosition) 
+	interActive[7] = HasInteractionType(CTYPE_Grinding, akPosition, none) 
+	interActive[8] = HasInteractionType(CTYPE_Vaginal, akPosition, none) 
+	interActive[9] = HasInteractionType(CTYPE_Anal, akPosition, none) 
+	interActive[10] = HasInteractionType(CTYPE_Deepthroat, akPosition, none) 
+	interActive[11] = HasInteractionType(CTYPE_Skullfuck, akPosition, none) 
+	interActive[12] = HasInteractionType(CTYPE_Facial, akPosition, none) 
+	interActive[13] = HasInteractionType(CTYPE_AnimObjFace, akPosition, none) 
+	interActive[14] = HasInteractionType(CTYPE_Oral, akPosition, none) 
+	interActive[15] = HasInteractionType(CTYPE_LickingShaft, akPosition, none) 
+	interActive[16] = HasInteractionType(CTYPE_HandJob, akPosition, none) 
+	interActive[17] = HasInteractionType(CTYPE_FootJob, akPosition, none) 
+	interActive[18] = HasInteractionType(CTYPE_Oral, none, akPosition) 
+	interActive[19] = HasInteractionType(CTYPE_LickingShaft, none, akPosition) 
+	interActive[20] = HasInteractionType(CTYPE_HandJob, none, akPosition) 
+	interActive[21] = HasInteractionType(CTYPE_FootJob, none, akPosition) 
+	interActive[22] = HasInteractionType(CTYPE_Kissing, akPosition, none) 
+	interActive[23] = HasInteractionType(CTYPE_SuckingToes, akPosition, none) 
+	interActive[24] = HasInteractionType(CTYPE_SuckingToes, none, akPosition) 
+
+    string result = ""
+    int i = 0
+    while i < interActive.Length
+        if interActive[i]
+            if result != ""
+                result += ","
+            endif
+            result += interStrings[i]
+        endif
+        i += 1
+    endWhile
+    return result
+EndFunction
+
 ; ------------------------------------------------------- ;
 ; --- ENJOYMENT: Interaction Info (based on tags)     --- ;
 ; ------------------------------------------------------- ;
