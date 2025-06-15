@@ -56,11 +56,8 @@ int Function GetEnjoyment()
 	return _FullEnjoyment
 EndFunction
 
-Function AdjustPain(int AdjustBy)
-	_PainEffective += AdjustBy
-EndFunction
 Function AdjustEnjoyment(int AdjustBy)
-	_FullEnjoyment += AdjustBy
+	_UserAddedEnj += AdjustBy
 EndFunction
 
 bool Function IsAnalPenetrated()
@@ -1138,6 +1135,7 @@ float _TotalInterTime
 float _PainEffective
 float _InterEnjBackup
 int _FullEnjoyment
+int _UserAddedEnj
 int _HoldBackSpamPenalty
 
 Function ResetEnjoymentVariables()
@@ -1160,6 +1158,7 @@ Function ResetEnjoymentVariables()
 	_PainEffective = 0.0
 	_InterEnjBackup = 0.0
 	_FullEnjoyment = 0
+	_UserAddedEnj = 0
 	_HoldBackSpamPenalty = 0
 EndFunction
 
@@ -1215,7 +1214,7 @@ Function UpdateEffectiveEnjoymentCalculations()
 	; Pain
 	_PainEffective = CalcEffectivePain()
 	; Enjoyment
-	_FullEnjoyment = CalcEffectiveEnjoyment() as int
+	_FullEnjoyment = CalcEffectiveEnjoyment() as int + _UserAddedEnj
 	If _HoldBackSpamPenalty
 		_FullEnjoyment = _FullEnjoyment - _HoldBackSpamPenalty
 	EndIf

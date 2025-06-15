@@ -170,14 +170,6 @@ int Function GetEnjoyment(Actor ActorRef)
 	return ref.GetEnjoyment()
 EndFunction
 
-Function AdjustPain(Actor ActorRef, int AdjustBy)
-	sslActorAlias ref = ActorAlias(ActorRef)
-	If (!ref)
-		return
-	EndIf
-	return ref.AdjustPain(AdjustBy)
-EndFunction
-
 Function AdjustEnjoyment(Actor ActorRef, int AdjustBy)
 	sslActorAlias ref = ActorAlias(ActorRef)
 	If (!ref)

@@ -289,7 +289,11 @@ Function ForceOrgasm(Actor ActorRef)
 EndFunction
 
 ; Return the current enjoyment/arousal level for this actor
-int Function GetEnjoyment(Actor akActor)
+int Function GetEnjoyment(Actor ActorRef)
+EndFunction
+
+; Adjust the current enjoyment for this actor by specified value
+Function AdjustEnjoyment(Actor ActorRef, int AdjustBy)
 EndFunction
 
 ; If the given actor has a chance of impregnation at some point during this scene. That is, the function will check
