@@ -60,6 +60,10 @@ Function AdjustEnjoyment(int AdjustBy)
 	_UserAddedEnj += AdjustBy
 EndFunction
 
+string Function GetInteractionString()
+	return _TypeInterStr
+EndFunction
+
 bool Function IsAnalPenetrated()
 	return _Thread.HasCollisionAction(_Thread.CTYPE_Anal, _ActorRef, none)
 EndFunction
@@ -1127,7 +1131,7 @@ float _PainContext
 float _EnjFactor
 float _BaseFactor
 ; Interaction
-int _TypeInterASL
+string _TypeInterStr
 float _InterFactor
 float _TimeInter
 float _TotalInterTime
@@ -1150,7 +1154,7 @@ Function ResetEnjoymentVariables()
 	_EnjFactor = 0.0
 	_BaseFactor = 0.0
 	; Interaction
-	_TypeInterASL = 0
+	_TypeInterStr = ""
 	_InterFactor = 0.0
 	_TimeInter = 0.0
 	_TotalInterTime = 0.0
@@ -1167,6 +1171,7 @@ Function UpdateBaseEnjoymentCalculations()
 	If _livestatus != LIVESTATUS_ALIVE
 		return
 	EndIf
+	_Thread.CacheEnjoymentJsonValues()
 	_CrtMaleHugePP = _Thread.CrtMaleHugePP()
 	_ConSubStatus = _Thread.IdentifyConsentSubStatus()
 	bool SameSexThread = _Thread.SameSexThread()
@@ -1185,8 +1190,8 @@ Function UpdateEffectiveEnjoymentCalculations()
 		return
 	EndIf
 	; Interactions
-	_TypeInterASL = _Thread.GetInteractionTypeASL()
-	float InterFactorTemp = _Thread.GetInteractionFactor(_ActorRef, _TypeInterASL, _ActorInterInfo)
+	_TypeInterStr = _Thread.CreateInteractionString(_ActorRef, _ActorInterInfo)
+	float InterFactorTemp = _Thread.CalculateInteractionFactor(_ActorRef, _TypeInterStr)
 	If InterFactorTemp > 0 && _InterFactor == 0
 		_TimeInter = _EnjoymentDelay
 		_TotalInterTime = _EnjoymentDelay
@@ -1295,7 +1300,7 @@ float Function CalcEffectivePain()
 	float reqxp = sslSystemConfig.GetEnjoymentSettingFlt("fRequiredXP")
 	float vaginalXP = SexlabStatistics.GetStatistic(_ActorRef, 2)
 	float analXP = SexlabStatistics.GetStatistic(_ActorRef, 3)
-	If (_Thread.IsVaginalComplex(_ActorRef, _TypeInterASL) || _Thread.IsAnalComplex(_ActorRef, _TypeInterASL)) \
+	If (_Thread.IsVaginalComplex(_ActorRef) || _Thread.IsAnalComplex(_ActorRef)) \
 		&& (vaginalXP < reqxp || analXP < reqxp) && (_TotalInterTime < timemax)
 		If (((_sex == 1 || _sex == 4) && _Thread.HasCollisionAction(_Thread.CTYPE_Vaginal, _ActorRef, none)) \
 			|| _Thread.HasCollisionAction(_Thread.CTYPE_Anal, _ActorRef, none)) \
@@ -1371,7 +1376,7 @@ Function DebugBaseCalcVariables()
 EndFunction
 
 Function DebugEffectiveCalcVariables()
-	string EffectiveCalcLog = "[ClimaxEXT] PhysicTypes: " + _Thread.GetCollisionActions(_ActorRef, none) + ", ASLType: " + _TypeInterASL + ", EnjFactor: " + _EnjFactor + ", IntFactor: " + _InterFactor + ", AdjustedTime: " + _timeAdjusted as int + ", IntTime: " + _TimeInter as int + ", Pain: " + _PainEffective as int + ", Enjoyment: " + _FullEnjoyment
+	string EffectiveCalcLog = "[ClimaxEXT] InterTypes: " + _TypeInterStr + ", EnjFactor: " + _EnjFactor + ", IntFactor: " + _InterFactor + ", AdjustedTime: " + _timeAdjusted as int + ", IntTime: " + _TimeInter as int + ", Pain: " + _PainEffective as int + ", Enjoyment: " + _FullEnjoyment
 	Log(EffectiveCalcLog)
 EndFunction
 
@@ -1386,18 +1391,12 @@ function ApplyCum()	; NOTE: Temporary?
 	if _ActorRef && _ActorRef.Is3DLoaded()
 		Cell ParentCell = _ActorRef.GetParentCell()
 
-		bool vaginalPen = _Thread.IsVaginalComplex(_ActorRef, _TypeInterASL)
-		bool oralPen = _Thread.IsOralComplex(_ActorRef, _TypeInterASL)
-		bool analPen = _Thread.IsAnalComplex(_ActorRef, _TypeInterASL)
-
-		if !vaginalPen && !oralPen && !analPen && !_Thread.HasStageTag("ASLTagged")
-			vaginalPen = _Thread.IsVaginal()
-			oralPen = _Thread.IsOral()
-			analPen = _Thread.IsAnal()
-		endIf
+		bool vaginalPen = _Thread.IsVaginalComplex(_ActorRef)
+		bool oralPen = _Thread.IsOralComplex(_ActorRef)
+		bool analPen = _Thread.IsAnalComplex(_ActorRef)
 
 		If _Config.DebugMode2
-			Log("[ApplyCum(): Adding v = " + vaginalPen + " o = " + oralPen + " a = " + analPen)
+			Log("ApplyCum(): Adding v = " + vaginalPen + " o = " + oralPen + " a = " + analPen)
 		EndIf
 
 		if (vaginalPen || oralPen || analPen) && ParentCell && ParentCell.IsAttached() 

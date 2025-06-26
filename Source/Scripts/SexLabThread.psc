@@ -179,7 +179,7 @@ EndFunction
 ; String CTYPEs can start with various prefixes, such as
 ; a: active (akPosition is giving/doing CTYPE), e.g. aAnimObjFace
 ; p: passive (akPosition is receiving/taking CTYPE) e.g. pHandJob
-string Function GetInteractionsForActor(Actor akPosition)
+string Function GetInteractionString(Actor akPosition)
 EndFunction
 
 ; Return the velocity of the specified interaction type
