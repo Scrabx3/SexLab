@@ -899,13 +899,13 @@ State Animating
 		_TimeInter = _EnjoymentDelay
 		If (_sex == 0 || _sex == 3)
 			_timeAdjusted = ((_timeAdjusted - 40) / (4 * _OrgasmCount))
-			int orgasmlimit = sslSystemConfig.GetEnjoymentSettingInt("iMaxNoPainOrgasmsM")
+			int orgasmlimit = StorageUtil.GetIntValue(none, "EnjMod_MaxNoPainOrgasmMale")
 			If (_OrgasmCount > orgasmlimit)
 				_timeAdjusted -= _OrgasmCount * 20
 			EndIf
 		Else
 			_timeAdjusted = ((_timeAdjusted - 40) / (3 + _OrgasmCount))
-			int orgasmlimit = sslSystemConfig.GetEnjoymentSettingInt("iMaxNoPainOrgasmsF")
+			int orgasmlimit = StorageUtil.GetIntValue(none, "EnjMod_MaxNoPainOrgasmFemale")
 			If (_OrgasmCount > orgasmlimit)
 				_timeAdjusted -= _OrgasmCount * 10
 			EndIf
@@ -1295,9 +1295,9 @@ EndFunction
 float Function CalcEffectivePain()
 	_PainEffective = 0
 	float PainPen = 0.0
-	float enjraise = sslSystemConfig.GetEnjoymentSettingFlt("fFactorInterEnjRaise")
-	float timemax = sslSystemConfig.GetEnjoymentSettingFlt("fTimeMax")
-	float reqxp = sslSystemConfig.GetEnjoymentSettingFlt("fRequiredXP")
+	float enjraise = StorageUtil.GetFloatValue(none, "EnjMain_InterEnjRaiseMult")
+	float timemax = StorageUtil.GetFloatValue(none, "EnjMod_PainSubsidesInSeconds")
+	float reqxp = StorageUtil.GetFloatValue(none, "EnjMod_PainMitigateRequiredXP")
 	float vaginalXP = SexlabStatistics.GetStatistic(_ActorRef, 2)
 	float analXP = SexlabStatistics.GetStatistic(_ActorRef, 3)
 	If (_Thread.IsVaginalComplex(_ActorRef) || _Thread.IsAnalComplex(_ActorRef)) \
@@ -1331,9 +1331,9 @@ float Function CalcEffectiveEnjoyment()
 	float EnjInter = 0.0
 	;intractions-based enjoyment
 	If _InterFactor > 0 && _TimeInter >= _EnjoymentDelay
-		float enjraise = sslSystemConfig.GetEnjoymentSettingFlt("fFactorInterEnjRaise")
-		float penaltytime = sslSystemConfig.GetEnjoymentSettingFlt("fPenaltyTime")
-		float boosttime = sslSystemConfig.GetEnjoymentSettingFlt("fBoostTime")
+		float enjraise = StorageUtil.GetFloatValue(none, "EnjMain_InterEnjRaiseMult")
+		float penaltytime = StorageUtil.GetFloatValue(none, "EnjMod_SameInterPenaltyTime")
+		float boosttime = StorageUtil.GetFloatValue(none, "EnjMod_SameInterBoostTime")
 		EnjInter = _InterFactor * _TimeInter * enjraise
 		float InterTimeModifier = 0
 		If _TimeInter < boosttime
@@ -1352,7 +1352,7 @@ float Function CalcEffectiveEnjoyment()
 		EnjInter = _InterEnjBackup
 	EndIf
 	;runtime-based enjoyment
-	float enjraisenonintern = sslSystemConfig.GetEnjoymentSettingFlt("fFactorNonInterEnjRaise");
+	float enjraisenonintern = StorageUtil.GetFloatValue(none, "EnjMain_NonInterEnjRaiseMult")
 	NonInterEnj = _EnjFactor * _timeAdjusted * enjraisenonintern
 	;calculating return
 	EnjEffective = NonInterEnj + EnjInter - _PainEffective

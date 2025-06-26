@@ -1,5 +1,21 @@
 {
-	"float" : 
+	"MAIN" : 
+	{
+		"fInterEnjRaiseMult" : 1.2,
+		"fNonInterEnjRaiseMult" : 0.0,
+		"iInterDetectionStrength" : 0
+	},
+	"EnjMod" : 
+	{
+		"fPainSubsidesInSeconds" : 30.0,
+		"fPainMitigateRequiredXP" : 50.0,
+		"fSameInterBoostTime" : 30.0,
+		"fSameInterPenaltyTime" : 80.0,
+		"iMaxNoPainOrgasmMale" : 1,
+		"iMaxNoPainOrgasmFemale" : 2
+	},
+	
+	"InterFactorBase" : 
 	{
 		"pAnimObjFace" : 0.10,
 		"aAnimObjFace" : 0.13,
@@ -28,52 +44,65 @@
 		"aVaginal" : 1.00,
 		"pVaginal" : 1.12,
 		"aAnal" : 1.14,
-		"pAnal" : 1.20,
-		"mult_pAnimObjFace" : 1,
-		"mult_aAnimObjFace" : 1,
-		"mult_bKissing" : 1,
-		"mult_pSuckingToes" : 1,
-		"mult_aSuckingToes" : 1,
-		"mult_pStimulation" : 1,
-		"mult_pFacial" : 1,
-		"mult_aFacial" : 1,
-		"mult_pGrinding" : 1,
-		"mult_aGrinding" : 1,
-		"mult_aHandJob" : 1,
-		"mult_pHandJob" : 1,
-		"mult_aFootJob" : 1,
-		"mult_pFootJob" : 1,
-		"mult_aLickingShaft" : 1,
-		"mult_pLickingShaft" : 1,
-		"mult_aBoobJob" : 1,
-		"mult_pBoobJob" : 1,
-		"mult_aOral" : 1,
-		"mult_pOral" : 1,
-		"mult_pDeepthroat" : 1,
-		"mult_aDeepthroat" : 1,
-		"mult_pSkullfuck" : 1,
-		"mult_aSkullfuck" : 1,
-		"mult_aVaginal" : 1,
-		"mult_pVaginal" : 1,
-		"mult_aAnal" : 1,
-		"mult_pAnal" : 1
+		"pAnal" : 1.20
 	},
-	"int" : 
+	"InterFactorMult" : 
 	{
-		"InterDetectionStrength" : 0,
+		"pAnimObjFace" : 1,
+		"aAnimObjFace" : 1,
+		"bKissing" : 1,
+		"pSuckingToes" : 1,
+		"aSuckingToes" : 1,
+		"pStimulation" : 1,
+		"pFacial" : 1,
+		"aFacial" : 1,
+		"pGrinding" : 1,
+		"aGrinding" : 1,
+		"aHandJob" : 1,
+		"pHandJob" : 1,
+		"aFootJob" : 1,
+		"pFootJob" : 1,
+		"aLickingShaft" : 1,
+		"pLickingShaft" : 1,
+		"aBoobJob" : 1,
+		"pBoobJob" : 1,
+		"aOral" : 1,
+		"pOral" : 1,
+		"pDeepthroat" : 1,
+		"aDeepthroat" : 1,
+		"pSkullfuck" : 1,
+		"aSkullfuck" : 1,
+		"aVaginal" : 1,
+		"pVaginal" : 1,
+		"aAnal" : 1,
+		"pAnal" : 1
+	},
+	"GameInt" : 
+	{
+		"GamePleasurePriority" : 1
+	},
+	"GameBool" : 
+	{
 		"GameEnabled" : 1,
 		"GameEnabledNPC" : 0,
-		"HotkeyPauseGame" : 48,
-		"HotkeyBonusEnj" : 256,
-		"HotkeyHoldback" : 257,
-		"HotkeyOrgasm" : 258,
-		"HotkeySelectPos1" : 2,
-		"HotkeySelectPos2" : 3,
-		"HotkeySelectPos3" : 4,
-		"HotkeySelectPos4" : 5,
-		"HotkeySelectPos5" : 6,
-		"GameVictimAutoplay" : 1,
-		"GameEnjReductionChance" : 1,
-		"HotkeyModifierKey" : 42
+		"PlayerAutoplay" : 0,
+		"VictimAutoplay" : 1,
+		"EnjReductionChance" : 1,
+		"EdgeWithPartner" : 1,
+		"NoStaminaEndsScene" : 1,
+		"MaleOrgasmEndsScene" : 0
+	},
+	"GameHotkey" : 
+	{
+		"UtilityKey" : 42,
+		"PauseGame" : 48,
+		"BonusEnj" : 256,
+		"Holdback" : 257,
+		"Orgasm" : 258,
+		"SelectPos1" : 2,
+		"SelectPos2" : 3,
+		"SelectPos3" : 4,
+		"SelectPos4" : 5,
+		"SelectPos5" : 6
 	}
 }

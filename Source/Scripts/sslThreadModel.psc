@@ -2689,7 +2689,7 @@ EndFunction
 
 string Function CreateInteractionString(Actor akPosition, int ActorInterInfo, int InterDetectionStrength = -1)
     If (InterDetectionStrength == -1)
-        InterDetectionStrength = StorageUtil.GetIntValue(none, "EnjInt_InterDetectionStrength")
+        InterDetectionStrength = StorageUtil.GetIntValue(none, "EnjMain_InterDetectionStrength")
     EndIf
 	If (InterDetectionStrength < 0 || InterDetectionStrength > 3)
 		InterDetectionStrength = 0
@@ -2737,18 +2737,12 @@ EndFunction
 ; --- ENJ: Thread Info                                --- ;
 ; ------------------------------------------------------- ;
 
-int Function GetLegacyStageNum(String asScene, String asStage) global
-	string[] AllStages = SexlabRegistry.GetAllStages(asScene)
-	if SexlabRegistry.StageExists(asScene, asStage)
-		int StageNum = AllStages.find(asStage)+1
-		return StageNum
-	endif
-	return 0
+int Function GetLegacyStageNum()
+	return (SexlabRegistry.GetAllStages(GetActiveScene()).Find(GetActiveStage()) + 1)
 EndFunction
 
-int Function GetLegacyStagesCount(String asScene) global
-	int StagesCount = SexlabRegistry.GetAllStages(asScene).Length
-	return StagesCount
+int Function GetLegacyStagesCount()
+	return SexlabRegistry.GetAllStages(GetActiveScene()).Length
 EndFunction
 
 int Function IdentifyConsentSubStatus()
@@ -2981,8 +2975,8 @@ float Function CalcInterVelocityMultiplier(Actor akPosition, string actType)
 EndFunction
 
 Function CacheEnjoymentJsonValues()
+	JsonUtil.Load(EnjConfigFile)
 	If !JsonUtil.IsGood(EnjConfigFile)
-		MiscUtil.PrintConsole("[ERROR] SexLab Enjoyment's config file is corrupted.")
 		return
 	EndIf
 	string[] interTypes = ListAllEnjInteractions()
@@ -2990,13 +2984,20 @@ Function CacheEnjoymentJsonValues()
 	int len = interTypes.Length
     While (i < len)
         string interType = interTypes[i]
-        float typeValue = JsonUtil.GetFloatValue(EnjConfigFile, interType)
-        float typeMult = JsonUtil.GetFloatValue(EnjConfigFile, ("mult_" + interType))
+        float typeValue = JsonUtil.GetPathFloatValue(EnjConfigFile, "InterFactorBase."+interType)
+        float typeMult = JsonUtil.GetPathFloatValue(EnjConfigFile, "InterFactorMult."+interType)
         StorageUtil.SetFloatValue(None, ("EnjFactor_" + interType), typeValue)
         StorageUtil.SetFloatValue(None, ("EnjFactorMult_" + interType), typeMult)
         i += 1
     EndWhile
-	StorageUtil.SetIntValue(None, ("EnjInt_InterDetectionStrength"), JsonUtil.GetIntValue(EnjConfigFile, "InterDetectionStrength"))
-	;StorageUtil.SetIntValue(None, ("EnjHotkey_PauseGame"), JsonUtil.GetIntValue(EnjConfigFile, "HotkeyPauseGame"))
-	;StorageUtil.SetIntValue(None, ("EnjHotkey_ModifierKey"), JsonUtil.GetIntValue(EnjConfigFile, "HotkeyModifierKey"))
+	StorageUtil.SetFloatValue(None, ("EnjMain_InterEnjRaiseMult"), JsonUtil.GetPathFloatValue(EnjConfigFile, "MAIN.fInterEnjRaiseMult"))
+	StorageUtil.SetFloatValue(None, ("EnjMain_NonInterEnjRaiseMult"), JsonUtil.GetPathFloatValue(EnjConfigFile, "MAIN.fNonInterEnjRaiseMult"))
+	StorageUtil.SetFloatValue(None, ("EnjMod_PainSubsidesInSeconds"), JsonUtil.GetPathFloatValue(EnjConfigFile, "EnjMod.fPainSubsidesInSeconds"))
+	StorageUtil.SetFloatValue(None, ("EnjMod_PainMitigateRequiredXP"), JsonUtil.GetPathFloatValue(EnjConfigFile, "EnjMod.fPainMitigateRequiredXP"))
+	StorageUtil.SetFloatValue(None, ("EnjMod_SameInterBoostTime"), JsonUtil.GetPathFloatValue(EnjConfigFile, "EnjMod.fSameInterBoostTime"))
+	StorageUtil.SetFloatValue(None, ("EnjMod_SameInterPenaltyTime"), JsonUtil.GetPathFloatValue(EnjConfigFile, "EnjMod.fSameInterPenaltyTime"))
+	StorageUtil.SetIntValue(None, ("EnjMain_InterDetectionStrength"), JsonUtil.GetPathIntValue(EnjConfigFile, "MAIN.iInterDetectionStrength"))
+	StorageUtil.SetIntValue(None, ("EnjMod_MaxNoPainOrgasmMale"), JsonUtil.GetPathIntValue(EnjConfigFile, "EnjMod.iMaxNoPainOrgasmMale"))
+	StorageUtil.SetIntValue(None, ("EnjMod_MaxNoPainOrgasmFemale"), JsonUtil.GetPathIntValue(EnjConfigFile, "EnjMod.iMaxNoPainOrgasmFemale"))
+	JsonUtil.Unload(EnjConfigFile, false)
 EndFunction
